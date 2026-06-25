@@ -18,11 +18,7 @@ export default function DocumentosPage() {
   const [kind, setKind] = useState('document');
   const [content, setContent] = useState('');
   const [memberId, setMemberId] = useState('');
-  const [fileName, setFileName] = useState('');
-  const [fileUrl, setFileUrl] = useState('');
-  const [storageKey, setStorageKey] = useState('');
-  const [mimeType, setMimeType] = useState('');
-  const [checksum, setChecksum] = useState('');
+  const [file, setFile] = useState<File | null>(null);
   const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
   const [message, setMessage] = useState('');
 
@@ -43,23 +39,31 @@ export default function DocumentosPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const response = await fetch('/api/documents', {
+
+    if (!file) {
+      setMessage('Selecione um arquivo antes de salvar.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('kind', kind);
+    formData.append('content', content);
+    if (memberId) formData.append('memberId', memberId);
+    formData.append('file', file);
+
+    const response = await fetch('/api/documents/upload', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, kind, content, memberId, fileName, fileUrl, storageKey, mimeType, checksum }),
+      body: formData,
     });
     const data = await response.json();
     if (response.ok) {
-      setMessage('Documento registrado com sucesso.');
+      setMessage('Documento enviado e registrado com sucesso.');
       setTitle('');
       setKind('document');
       setContent('');
       setMemberId('');
-      setFileName('');
-      setFileUrl('');
-      setStorageKey('');
-      setMimeType('');
-      setChecksum('');
+      setFile(null);
       await load();
     } else {
       setMessage(data.error ?? 'Erro ao registrar documento.');
@@ -90,13 +94,12 @@ export default function DocumentosPage() {
               <option value="">Vincular a um membro</option>
               {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
             </select>
-            <input value={fileName} onChange={(event) => setFileName(event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Nome do arquivo" />
-            <input value={fileUrl} onChange={(event) => setFileUrl(event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="URL pública ou storage key" />
-            <input value={storageKey} onChange={(event) => setStorageKey(event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Storage key" />
-            <input value={mimeType} onChange={(event) => setMimeType(event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="mime type" />
-            <input value={checksum} onChange={(event) => setChecksum(event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="checksum" />
+            <label className="rounded-xl border border-dashed border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-300 md:col-span-2">
+              <span className="mb-2 block font-medium">Arquivo</span>
+              <input type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} className="w-full" />
+            </label>
             <textarea value={content} onChange={(event) => setContent(event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 md:col-span-2" placeholder="Resumo ou conteúdo do documento" rows={4} />
-            <button type="submit" className="rounded-full bg-amber-400 px-5 py-3 font-medium text-slate-950 md:col-span-2">Salvar documento</button>
+            <button type="submit" className="rounded-full bg-amber-400 px-5 py-3 font-medium text-slate-950 md:col-span-2">Enviar e salvar documento</button>
           </form>
         </section>
 

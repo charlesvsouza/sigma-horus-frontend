@@ -1,3 +1,15 @@
+export function buildObjectKey(fileName: string, prefix = 'documents') {
+  const safeName = fileName
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'file';
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `${prefix}/${timestamp}-${safeName}`;
+}
+
 export function buildPublicUrl(storageKey: string, baseUrl?: string) {
   if (!storageKey) return null;
 
@@ -6,6 +18,16 @@ export function buildPublicUrl(storageKey: string, baseUrl?: string) {
 
   const segments = storageKey.split('/').filter(Boolean).map((segment) => encodeURIComponent(segment));
   return `${normalizedBase}/${segments.join('/')}`;
+}
+
+export function getR2StorageSettings() {
+  return {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID ?? null,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? null,
+    bucket: process.env.R2_BUCKET ?? 'sygmahorus-documents',
+    endpoint: process.env.R2_ENDPOINT ?? null,
+    publicUrl: process.env.NEXT_PUBLIC_STORAGE_PUBLIC_URL ?? null,
+  };
 }
 
 export function normalizeStoragePayload(body: Record<string, unknown>) {
