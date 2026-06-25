@@ -12,6 +12,10 @@ model Lodge {
   name      String
   slug      String   @unique
   status    String   @default("active")
+  // Asaas (BYO-key): cada loja conecta a própria conta. Chave criptografada (AES-256-GCM).
+  asaasApiKeyEnc    String?
+  asaasEnv          String?  @default("sandbox") // sandbox | production
+  asaasWebhookToken String?  // token p/ validar o webhook do Asaas desta loja
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -90,6 +94,7 @@ model Member {
   masonicNumber      String?
   documents          String?
   notes              String?
+  asaasCustomerId    String?  // id do cliente no Asaas da loja (evita recriar a cada cobrança)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

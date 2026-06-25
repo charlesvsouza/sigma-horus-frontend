@@ -26,6 +26,8 @@ export default function CobrancasPage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [emittingId, setEmittingId] = useState('');
+  const [asaasLinks, setAsaasLinks] = useState<Record<string, string>>({});
   const [form, setForm] = useState({ accountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
 
   async function loadData() {
@@ -68,6 +70,26 @@ export default function CobrancasPage() {
       await loadData();
     } else {
       setMessage(data.error ?? 'Erro ao criar cobrança.');
+    }
+  }
+
+  async function emitAsaas(invoiceId: string) {
+    setEmittingId(invoiceId);
+    setMessage('');
+    const res = await fetch('/api/asaas/payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ invoiceId, billingType: 'UNDEFINED' }),
+    });
+    const data = await res.json();
+    setEmittingId('');
+    if (res.ok) {
+      const link = data.invoiceUrl ?? data.bankSlipUrl ?? '';
+      if (link) setAsaasLinks((prev) => ({ ...prev, [invoiceId]: link }));
+      setMessage('Cobrança emitida no Asaas.');
+      await loadData();
+    } else {
+      setMessage(data.error ?? 'Erro ao emitir no Asaas.');
     }
   }
 
@@ -139,13 +161,31 @@ export default function CobrancasPage() {
                 <div>
                   <p className="font-medium">{invoice.number}</p>
                   <p className="text-sm text-slate-400">{invoice.account?.title ?? 'Conta sem título'} • {invoice.member?.name ?? 'Sem membro'}</p>
+                  <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-xs ${invoice.status === 'paid' ? 'bg-emerald-500/15 text-emerald-200' : invoice.status === 'billed' ? 'bg-sky-500/15 text-sky-200' : invoice.status === 'overdue' ? 'bg-rose-500/15 text-rose-200' : 'bg-slate-700/60 text-slate-300'}`}>
+                    {invoice.status === 'paid' ? 'Paga' : invoice.status === 'billed' ? 'Emitida' : invoice.status === 'overdue' ? 'Vencida' : 'Pendente'}
+                  </span>
                 </div>
-                <div className="text-sm text-slate-400">
+                <div className="text-right text-sm text-slate-400">
                   <p>Valor: R$ {invoice.amount.toFixed(2)}</p>
                   <p>Vencimento: {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</p>
                   {invoice.isRecurring ? (
                     <p className="mt-1 text-amber-300">Recorrente • {invoice.recurringInterval === 'quarterly' ? 'trimestral' : invoice.recurringInterval === 'yearly' ? 'anual' : 'mensal'}</p>
                   ) : null}
+                  <div className="mt-2 flex flex-wrap items-center justify-end gap-3">
+                    {asaasLinks[invoice.id] ? (
+                      <a href={asaasLinks[invoice.id]} target="_blank" rel="noreferrer" className="text-amber-300">Abrir cobrança</a>
+                    ) : null}
+                    {invoice.status !== 'paid' ? (
+                      <button
+                        onClick={() => emitAsaas(invoice.id)}
+                        disabled={emittingId === invoice.id || !invoice.member}
+                        title={!invoice.member ? 'Vincule a cobrança a um membro com CPF' : 'Emite boleto/Pix no Asaas da loja'}
+                        className="rounded-full border border-amber-400/50 px-3 py-1.5 text-xs font-medium text-amber-200 disabled:opacity-40"
+                      >
+                        {emittingId === invoice.id ? 'Emitindo…' : invoice.status === 'billed' ? 'Reemitir no Asaas' : 'Emitir no Asaas'}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ))}
