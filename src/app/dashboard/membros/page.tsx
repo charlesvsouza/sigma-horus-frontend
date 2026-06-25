@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 
 interface Option { id: string; name: string; }
 interface Member {
@@ -91,6 +92,26 @@ export default function MembrosPage() {
     setForm((previous) => ({ ...previous, [field]: value }));
   }
 
+  const [cepStatus, setCepStatus] = useState('');
+
+  async function lookupCep(value: string) {
+    setCepStatus('');
+    const address = await fetchCep(value);
+    if (!address) {
+      if (value.replace(/\D/g, '').length === 8) setCepStatus('CEP não encontrado.');
+      return;
+    }
+    setForm((previous) => ({
+      ...previous,
+      zipCode: address.cep,
+      addressLine: address.logradouro || previous.addressLine,
+      neighborhood: address.bairro || previous.neighborhood,
+      city: address.cidade || previous.city,
+      state: address.uf || previous.state,
+    }));
+    setCepStatus('Endereço preenchido pelo CEP.');
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const response = await fetch('/api/members', {
@@ -124,7 +145,7 @@ export default function MembrosPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <input value={form.name} onChange={(event) => updateField('name', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Nome completo" required />
               <input value={form.email} onChange={(event) => updateField('email', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="E-mail" />
-              <input value={form.phone} onChange={(event) => updateField('phone', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Telefone" />
+              <input value={form.phone} onChange={(event) => updateField('phone', maskPhone(event.target.value))} inputMode="tel" className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Telefone" />
               <input value={form.gradeName} onChange={(event) => updateField('gradeName', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Grau atual" />
               <select value={form.riteId} onChange={(event) => updateField('riteId', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3">
                 <option value="">Selecione um rito</option>
@@ -145,8 +166,8 @@ export default function MembrosPage() {
               <h3 className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-300">Dados pessoais</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <input type="date" value={form.birthDate} onChange={(event) => updateField('birthDate', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" />
-                <input value={form.cpf} onChange={(event) => updateField('cpf', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="CPF" />
-                <input value={form.rg} onChange={(event) => updateField('rg', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="RG" />
+                <input value={form.cpf} onChange={(event) => updateField('cpf', maskCPF(event.target.value))} inputMode="numeric" className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="CPF" />
+                <input value={form.rg} onChange={(event) => updateField('rg', maskRG(event.target.value))} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="RG" />
                 <select value={form.maritalStatus} onChange={(event) => updateField('maritalStatus', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3">
                   <option value="">Estado civil</option>
                   <option value="single">Solteiro</option>
@@ -173,7 +194,10 @@ export default function MembrosPage() {
                 <input value={form.neighborhood} onChange={(event) => updateField('neighborhood', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Bairro" />
                 <input value={form.city} onChange={(event) => updateField('city', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Cidade" />
                 <input value={form.state} onChange={(event) => updateField('state', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Estado" />
-                <input value={form.zipCode} onChange={(event) => updateField('zipCode', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="CEP" />
+                <div className="md:col-span-1">
+                  <input value={form.zipCode} onChange={(event) => updateField('zipCode', maskCEP(event.target.value))} onBlur={(event) => lookupCep(event.target.value)} inputMode="numeric" className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="CEP (preenche o endereço)" />
+                  {cepStatus ? <p className="mt-1 text-xs text-slate-500">{cepStatus}</p> : null}
+                </div>
                 <input value={form.country} onChange={(event) => updateField('country', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="País" />
                 <textarea value={form.documents} onChange={(event) => updateField('documents', event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 md:col-span-2" placeholder="Documentos e observações relevantes" rows={3} />
               </div>
