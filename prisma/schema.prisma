@@ -106,18 +106,24 @@ model Member {
 }
 
 model Document {
-  id        String   @id @default(cuid())
-  lodgeId   String
-  memberId  String
-  title     String
-  kind      String   @default("document")
-  fileUrl   String?
-  content   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  lodgeId      String
+  memberId     String
+  title        String
+  kind         String   @default("document")
+  category     String?  @default("general")
+  status       String?  @default("draft")
+  storageKey   String?
+  fileName     String?
+  fileUrl      String?
+  mimeType     String?
+  content      String?
+  checksum     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member       Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 }
 
 model MessageLog {
