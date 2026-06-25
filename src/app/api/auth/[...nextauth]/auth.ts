@@ -1,12 +1,13 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/prisma';
+import { prismaAdmin } from '@/lib/prisma';
 import type { DefaultSession } from 'next-auth';
 
 declare module 'next-auth' {
   interface Session {
     user: DefaultSession['user'] & {
+      id: string;
       role?: string;
       lodgeId?: string;
     };
@@ -27,7 +28,7 @@ export const authOptions = {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
+        const user = await prismaAdmin.user.findUnique({
           where: { email: String(credentials.email) },
         });
 
@@ -50,6 +51,7 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, user }: { token: any; user?: any }) {
       if (user) {
+        token.id = user.id;
         token.role = user.role;
         token.lodgeId = user.lodgeId;
       }
@@ -57,6 +59,7 @@ export const authOptions = {
     },
     async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
+        session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.lodgeId = token.lodgeId as string;
       }

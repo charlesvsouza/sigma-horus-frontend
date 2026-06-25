@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { logAudit } from '@/lib/audit';
+import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -10,20 +11,22 @@ export async function GET() {
     return NextResponse.json({ items: [] });
   }
 
-  const items = await prisma.member.findMany({
-    where: { lodgeId: String(lodgeId) },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      status: true,
-      gradeName: true,
-      rite: { select: { id: true, name: true } },
-      power: { select: { id: true, name: true } },
-    },
-    orderBy: { name: 'asc' },
-  });
+  const items = await withTenant(String(lodgeId), (db) =>
+    db.member.findMany({
+      where: { lodgeId: String(lodgeId) },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        status: true,
+        gradeName: true,
+        rite: { select: { id: true, name: true } },
+        power: { select: { id: true, name: true } },
+      },
+      orderBy: { name: 'asc' },
+    }),
+  );
 
   return NextResponse.json({ items });
 }
@@ -49,27 +52,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Nome do membro é obrigatório.' }, { status: 400 });
   }
 
-  const item = await prisma.member.create({
-    data: {
-      lodgeId: String(lodgeId),
-      name,
-      email: email || null,
-      phone: phone || null,
-      status,
-      riteId,
-      powerId,
-      gradeName,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      status: true,
-      gradeName: true,
-      rite: { select: { id: true, name: true } },
-      power: { select: { id: true, name: true } },
-    },
+  const item = await withTenant(String(lodgeId), async (db) => {
+    const created = await db.member.create({
+      data: {
+        lodgeId: String(lodgeId),
+        name,
+        email: email || null,
+        phone: phone || null,
+        status,
+        riteId,
+        powerId,
+        gradeName,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        status: true,
+        gradeName: true,
+        rite: { select: { id: true, name: true } },
+        power: { select: { id: true, name: true } },
+      },
+    });
+
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'member', entityId: created.id, metadata: { name } });
+    return created;
   });
 
   return NextResponse.json({ item });

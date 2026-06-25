@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { logAudit } from '@/lib/audit';
+import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -10,14 +11,16 @@ export async function GET() {
     return NextResponse.json({ items: [] });
   }
 
-  const items = await prisma.payment.findMany({
-    where: { lodgeId: String(lodgeId) },
-    include: {
-      account: { select: { id: true, title: true, type: true } },
-      member: { select: { id: true, name: true } },
-    },
-    orderBy: { paidAt: 'desc' },
-  });
+  const items = await withTenant(String(lodgeId), (db) =>
+    db.payment.findMany({
+      where: { lodgeId: String(lodgeId) },
+      include: {
+        account: { select: { id: true, title: true, type: true } },
+        member: { select: { id: true, name: true } },
+      },
+      orderBy: { paidAt: 'desc' },
+    }),
+  );
 
   return NextResponse.json({ items });
 }
@@ -42,16 +45,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
   }
 
-  const account = await prisma.account.findFirst({
-    where: { id: accountId, lodgeId: String(lodgeId) },
-  });
+  const result = await withTenant(String(lodgeId), async (db) => {
+    const account = await db.account.findFirst({
+      where: { id: accountId, lodgeId: String(lodgeId) },
+    });
 
-  if (!account) {
-    return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });
-  }
+    if (!account) {
+      return { notFound: true as const };
+    }
 
-  const payment = await prisma.$transaction(async (tx) => {
-    const created = await tx.payment.create({
+    const created = await db.payment.create({
       data: {
         lodgeId: String(lodgeId),
         accountId,
@@ -67,7 +70,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const aggregate = await tx.payment.aggregate({
+    const aggregate = await db.payment.aggregate({
       _sum: { amount: true },
       where: { accountId },
     });
@@ -75,13 +78,18 @@ export async function POST(request: Request) {
     const totalPaid = Number(aggregate._sum.amount ?? 0);
     const nextStatus = totalPaid >= Number(account.amount) ? 'paid' : 'pending';
 
-    await tx.account.update({
+    await db.account.update({
       where: { id: accountId },
       data: { status: nextStatus },
     });
 
-    return created;
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method } });
+    return { payment: created };
   });
 
-  return NextResponse.json({ item: payment });
+  if ('notFound' in result) {
+    return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });
+  }
+
+  return NextResponse.json({ item: result.payment });
 }

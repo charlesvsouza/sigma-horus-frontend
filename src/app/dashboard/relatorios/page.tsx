@@ -1,10 +1,22 @@
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { withTenant } from '@/lib/prisma';
+import { FiltrosRelatorios } from './filtros';
+import { BotaoExportar } from './exportar';
 
-export default async function RelatoriosPage() {
+function parseDate(value: string | undefined): Date | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d;
+}
+
+export default async function RelatoriosPage(props: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
+
+  const searchParams = await props.searchParams;
+  const fromDate = parseDate(searchParams.from);
+  const toDate = parseDate(searchParams.to);
 
   if (!lodgeId) {
     return (
@@ -17,63 +29,76 @@ export default async function RelatoriosPage() {
     );
   }
 
-  const [accounts, invoices, payments] = await Promise.all([
-    prisma.account.findMany({
-      where: { lodgeId: String(lodgeId) },
-      select: {
-        id: true,
-        title: true,
-        type: true,
-        amount: true,
-        dueDate: true,
-        status: true,
-      },
-      orderBy: { dueDate: 'asc' },
-    }),
-    prisma.invoice.findMany({
-      where: { lodgeId: String(lodgeId) },
-      select: {
-        id: true,
-        number: true,
-        amount: true,
-        dueDate: true,
-        status: true,
-      },
-      orderBy: { dueDate: 'asc' },
-    }),
-    prisma.payment.findMany({
-      where: { lodgeId: String(lodgeId) },
-      select: {
-        id: true,
-        amount: true,
-        paidAt: true,
-        method: true,
-      },
-      orderBy: { paidAt: 'desc' },
-    }),
-  ]);
+  const accountWhere: any = { lodgeId: String(lodgeId) };
+  const invoiceWhere: any = { lodgeId: String(lodgeId) };
+  const paymentWhere: any = { lodgeId: String(lodgeId) };
 
-  const receivables = accounts.filter((account) => account.type === 'RECEIVABLE');
-  const payables = accounts.filter((account) => account.type === 'PAYABLE');
-  const openReceivables = receivables.filter((account) => account.status !== 'paid');
-  const openPayables = payables.filter((account) => account.status !== 'paid');
-  const totalReceivables = receivables.reduce((sum, account) => sum + Number(account.amount ?? 0), 0);
-  const totalPayables = payables.reduce((sum, account) => sum + Number(account.amount ?? 0), 0);
-  const totalPayments = payments.reduce((sum, payment) => sum + Number(payment.amount ?? 0), 0);
+  if (fromDate || toDate) {
+    if (fromDate || toDate) {
+      accountWhere.dueDate = {};
+      invoiceWhere.dueDate = {};
+      paymentWhere.paidAt = {};
+    }
+    if (fromDate) {
+      accountWhere.dueDate.gte = fromDate;
+      invoiceWhere.dueDate.gte = fromDate;
+      paymentWhere.paidAt.gte = fromDate;
+    }
+    if (toDate) {
+      const end = new Date(toDate);
+      end.setHours(23, 59, 59, 999);
+      accountWhere.dueDate.lte = end;
+      invoiceWhere.dueDate.lte = end;
+      paymentWhere.paidAt.lte = end;
+    }
+  }
+
+  const [accounts, invoices, payments] = await withTenant(String(lodgeId), (db) =>
+    Promise.all([
+      db.account.findMany({
+        where: accountWhere,
+        select: { id: true, title: true, type: true, amount: true, dueDate: true, status: true },
+        orderBy: { dueDate: 'asc' },
+      }),
+      db.invoice.findMany({
+        where: invoiceWhere,
+        select: { id: true, number: true, amount: true, dueDate: true, status: true },
+        orderBy: { dueDate: 'asc' },
+      }),
+      db.payment.findMany({
+        where: paymentWhere,
+        select: { id: true, amount: true, paidAt: true, method: true },
+        orderBy: { paidAt: 'desc' },
+      }),
+    ]),
+  );
+
+  const receivables = accounts.filter((a) => a.type === 'RECEIVABLE');
+  const payables = accounts.filter((a) => a.type === 'PAYABLE');
+  const openReceivables = receivables.filter((a) => a.status !== 'paid');
+  const openPayables = payables.filter((a) => a.status !== 'paid');
+  const totalReceivables = receivables.reduce((s, a) => s + Number(a.amount ?? 0), 0);
+  const totalPayables = payables.reduce((s, a) => s + Number(a.amount ?? 0), 0);
+  const totalPayments = payments.reduce((s, p) => s + Number(p.amount ?? 0), 0);
   const netFlow = totalPayments - totalPayables;
 
-  const upcoming = [...receivables, ...payables]
-    .filter((item) => item.status !== 'paid')
+  const upcoming = ([...receivables, ...payables] as Array<{ id: string; title: string; type: string; dueDate: string | Date }>)
+    .filter((item) => !accounts.find((a) => a.id === item.id) || (accounts.find((a) => a.id === item.id)?.status !== 'paid'))
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
     .slice(0, 6);
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
-        <div>
-          <h1 className="text-3xl font-semibold">Relatórios financeiros</h1>
-          <p className="mt-3 text-slate-400">Extrato resumido, contas abertas e fluxo de caixa do período.</p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold">Relatórios financeiros</h1>
+            <p className="mt-3 text-slate-400">Extrato resumido, contas abertas e fluxo de caixa do período.</p>
+          </div>
+          <BotaoExportar from={searchParams.from} to={searchParams.to} />
         </div>
+
+        <FiltrosRelatorios from={searchParams.from ?? ''} to={searchParams.to ?? ''} />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5">
@@ -98,9 +123,7 @@ export default async function RelatoriosPage() {
           <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Resumo de abertura</h2>
-              <Link href="/dashboard/contas" className="text-sm text-amber-300 hover:text-amber-200">
-                Ver contas
-              </Link>
+              <Link href="/dashboard/contas" className="text-sm text-amber-300 hover:text-amber-200">Ver contas</Link>
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">

@@ -11,8 +11,10 @@ export default function MembrosPage() {
   const [powers, setPowers] = useState<Option[]>([]);
   const [form, setForm] = useState({ name: '', email: '', phone: '', status: 'active', gradeName: '', riteId: '', powerId: '' });
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
 
   async function loadData() {
+    setLoading(true);
     const [membersResponse, ritesResponse, powersResponse] = await Promise.all([
       fetch('/api/members'),
       fetch('/api/rites'),
@@ -25,6 +27,7 @@ export default function MembrosPage() {
     setMembers(membersData.items ?? []);
     setRites(ritesData.items ?? []);
     setPowers(powersData.items ?? []);
+    setLoading(false);
   }
 
   useEffect(() => { loadData(); }, []);
@@ -83,7 +86,7 @@ export default function MembrosPage() {
         <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
           <h2 className="text-xl font-semibold">Listagem</h2>
           <div className="mt-6 space-y-3">
-            {members.map((member) => (
+            {loading ? <p className="text-sm text-slate-500">Carregando...</p> : members.length === 0 ? <p className="text-sm text-slate-500">Nenhum membro cadastrado.</p> : members.map((member) => (
               <div key={member.id} className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>

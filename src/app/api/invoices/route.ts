@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { logAudit } from '@/lib/audit';
+import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 function addInterval(date: Date, interval: string) {
@@ -30,14 +31,16 @@ export async function GET() {
     return NextResponse.json({ items: [] });
   }
 
-  const items = await prisma.invoice.findMany({
-    where: { lodgeId: String(lodgeId) },
-    include: {
-      account: { select: { id: true, title: true } },
-      member: { select: { id: true, name: true } },
-    },
-    orderBy: { dueDate: 'asc' },
-  });
+  const items = await withTenant(String(lodgeId), (db) =>
+    db.invoice.findMany({
+      where: { lodgeId: String(lodgeId) },
+      include: {
+        account: { select: { id: true, title: true } },
+        member: { select: { id: true, name: true } },
+      },
+      orderBy: { dueDate: 'asc' },
+    }),
+  );
 
   return NextResponse.json({ items });
 }
@@ -65,24 +68,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
   }
 
-  const item = await prisma.invoice.create({
-    data: {
-      lodgeId: String(lodgeId),
-      accountId,
-      memberId,
-      number,
-      amount,
-      dueDate,
-      description: description || null,
-      isRecurring,
-      recurringInterval: isRecurring ? recurringInterval : null,
-      recurringCount: isRecurring ? recurringCount : null,
-      nextDueDate: isRecurring ? addInterval(dueDate, recurringInterval) : null,
-    },
-    include: {
-      account: { select: { id: true, title: true } },
-      member: { select: { id: true, name: true } },
-    },
+  const item = await withTenant(String(lodgeId), async (db) => {
+    const created = await db.invoice.create({
+      data: {
+        lodgeId: String(lodgeId),
+        accountId,
+        memberId,
+        number,
+        amount,
+        dueDate,
+        description: description || null,
+        isRecurring,
+        recurringInterval: isRecurring ? recurringInterval : null,
+        recurringCount: isRecurring ? recurringCount : null,
+        nextDueDate: isRecurring ? addInterval(dueDate, recurringInterval) : null,
+      },
+      include: {
+        account: { select: { id: true, title: true } },
+        member: { select: { id: true, name: true } },
+      },
+    });
+
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'invoice', entityId: created.id, metadata: { number, amount, accountId } });
+    return created;
   });
 
   return NextResponse.json({ item });

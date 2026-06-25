@@ -43,3 +43,6 @@ next-env.d.ts
 .vercel
 
 /src/generated/prisma
+
+# scratch/test temp files
+.tmp_*

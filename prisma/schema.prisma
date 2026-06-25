@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Lodge {
@@ -23,6 +23,13 @@ model Lodge {
   rites      Rite[]
   powers     Power[]
   invoices   Invoice[]
+  subscription Subscription?
+  sessions   Session[]
+  terms      Term[]
+  offices    Office[]
+  cashCloses CashClose[]
+  attendances   Attendance[]
+  memberOffices MemberOffice[]
 }
 
 model User {
@@ -59,6 +66,8 @@ model Member {
   accounts      Account[]
   payments      Payment[]
   invoices      Invoice[]
+  attendances   Attendance[]
+  memberOffices MemberOffice[]
 }
 
 model Account {
@@ -118,6 +127,22 @@ model Payment {
   member       Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
 }
 
+model Subscription {
+  id              String   @id @default(cuid())
+  lodgeId         String   @unique
+  stripeSubscriptionId String? @unique
+  stripeCustomerId String?
+  plan            String   @default("oficina")
+  status          String   @default("inactive")
+  memberCount     Int      @default(0)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  lodge           Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+}
+
 model AuditLog {
   id           String   @id @default(cuid())
   lodgeId      String
@@ -131,6 +156,101 @@ model AuditLog {
 
   lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  title     String
+  date      DateTime
+  type      String   @default("ordinary")
+  grade     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lodge      Lodge       @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  attendances Attendance[]
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  sessionId String
+  memberId  String
+  status    String   @default("present")
+  notes     String?
+  createdAt DateTime @default(now())
+
+  lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, memberId])
+  @@index([lodgeId])
+}
+
+model Office {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  name      String
+  order     Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lodge        Lodge          @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  memberOffices MemberOffice[]
+}
+
+model Term {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  title     String
+  startDate DateTime
+  endDate   DateTime?
+  status    String   @default("active")
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lodge        Lodge          @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  memberOffices MemberOffice[]
+  cashCloses   CashClose[]
+}
+
+model MemberOffice {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  memberId  String
+  officeId  String
+  termId    String
+  createdAt DateTime @default(now())
+
+  lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  office    Office   @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  term      Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, officeId, termId])
+  @@index([lodgeId])
+}
+
+model CashClose {
+  id          String   @id @default(cuid())
+  lodgeId     String
+  termId      String
+  closedAt    DateTime @default(now())
+  totalReceivables Float  @default(0)
+  totalPayables    Float  @default(0)
+  totalPayments    Float  @default(0)
+  netBalance       Float  @default(0)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  lodge       Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  term        Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@unique([lodgeId, termId])
 }
 
 model Rite {

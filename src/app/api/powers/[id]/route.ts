@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -11,7 +11,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   }
 
   const { id } = await params;
-  await prisma.power.deleteMany({ where: { id, lodgeId: String(lodgeId) } });
+  await withTenant(String(lodgeId), (db) =>
+    db.power.deleteMany({ where: { id, lodgeId: String(lodgeId) } }),
+  );
 
   return NextResponse.json({ ok: true });
 }

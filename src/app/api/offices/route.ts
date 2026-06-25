@@ -1,0 +1,30 @@
+import { auth } from '@/lib/auth';
+import { logAudit } from '@/lib/audit';
+import { withTenant } from '@/lib/prisma';
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  const session = await auth();
+  const lodgeId = session?.user?.lodgeId;
+  if (!lodgeId) return NextResponse.json({ items: [] });
+  const items = await withTenant(String(lodgeId), (db) =>
+    db.office.findMany({ where: { lodgeId: String(lodgeId) }, orderBy: { order: 'asc' } }),
+  );
+  return NextResponse.json({ items });
+}
+
+export async function POST(request: Request) {
+  const session = await auth();
+  const lodgeId = session?.user?.lodgeId;
+  if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const body = await request.json();
+  const name = String(body?.name ?? '').trim();
+  const order = Number(body?.order ?? 1);
+  if (!name) return NextResponse.json({ error: 'Nome é obrigatório.' }, { status: 400 });
+  const item = await withTenant(String(lodgeId), async (db) => {
+    const created = await db.office.create({ data: { lodgeId: String(lodgeId), name, order: Number.isFinite(order) ? order : 1 } });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'office', entityId: created.id, metadata: { name } });
+    return created;
+  });
+  return NextResponse.json({ item });
+}

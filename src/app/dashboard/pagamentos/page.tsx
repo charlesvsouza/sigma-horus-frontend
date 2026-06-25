@@ -19,9 +19,11 @@ export default function PagamentosPage() {
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ accountId: '', memberId: '', amount: '', paidAt: '', method: 'manual', note: '' });
 
   async function loadData() {
+    setLoading(true);
     const [accountsResponse, membersResponse, paymentsResponse] = await Promise.all([
       fetch('/api/accounts'),
       fetch('/api/members'),
@@ -35,6 +37,7 @@ export default function PagamentosPage() {
     setAccounts(accountsData.items ?? []);
     setMembers(membersData.items ?? []);
     setPayments(paymentsData.items ?? []);
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -100,7 +103,7 @@ export default function PagamentosPage() {
         <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
           <h2 className="text-xl font-semibold">Pagamentos recentes</h2>
           <div className="mt-6 space-y-3">
-            {payments.map((payment) => (
+            {loading ? <p className="text-sm text-slate-500">Carregando...</p> : payments.length === 0 ? <p className="text-sm text-slate-500">Nenhum pagamento registrado.</p> : payments.map((payment) => (
               <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4">
                 <div>
                   <p className="font-medium">{payment.account?.title ?? 'Conta removida'}</p>

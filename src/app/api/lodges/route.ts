@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prismaAdmin } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
 
@@ -18,22 +18,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Preencha todos os campos.' }, { status: 400 });
   }
 
-  const existingUser = await prisma.user.findUnique({ where: { email: adminEmail } });
+  const existingUser = await prismaAdmin.user.findUnique({ where: { email: adminEmail } });
   if (existingUser) {
     return NextResponse.json({ error: 'Este e-mail já está cadastrado.' }, { status: 409 });
   }
 
-  const existingLodge = await prisma.lodge.findUnique({ where: { slug } });
+  const existingLodge = await prismaAdmin.lodge.findUnique({ where: { slug } });
   if (existingLodge) {
     return NextResponse.json({ error: 'Este slug já está em uso.' }, { status: 409 });
   }
 
-  const userCount = await prisma.user.count();
+  const userCount = await prismaAdmin.user.count();
   const isFirstRun = userCount === 0;
 
   const passwordHash = await bcrypt.hash(adminPassword, 12);
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prismaAdmin.$transaction(async (tx) => {
     const lodge = await tx.lodge.create({
       data: {
         name,

@@ -24,9 +24,12 @@ export default function CobrancasPage() {
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [form, setForm] = useState({ accountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
 
   async function loadData() {
+    setLoading(true);
     const [invoicesResponse, accountsResponse, membersResponse] = await Promise.all([
       fetch('/api/invoices'),
       fetch('/api/accounts'),
@@ -39,6 +42,7 @@ export default function CobrancasPage() {
     setInvoices(invoicesData.items ?? []);
     setAccounts(accountsData.items ?? []);
     setMembers(membersData.items ?? []);
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -78,6 +82,27 @@ export default function CobrancasPage() {
         {message ? <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
 
         <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Recorrência</h2>
+            <button
+              onClick={async () => {
+                setProcessing(true);
+                setMessage('');
+                const res = await fetch('/api/cron/recurring-invoices', { method: 'POST' });
+                const data = await res.json();
+                setMessage(`Processadas: ${data.processed} cobranças recorrentes.`);
+                setProcessing(false);
+                await loadData();
+              }}
+              disabled={processing}
+              className="rounded-full bg-amber-400 px-4 py-2 text-sm font-medium text-slate-950 disabled:opacity-50"
+            >
+              {processing ? 'Processando...' : 'Processar recorrentes'}
+            </button>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
           <h2 className="text-xl font-semibold">Nova cobrança</h2>
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
             <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" required>
@@ -109,7 +134,7 @@ export default function CobrancasPage() {
         <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
           <h2 className="text-xl font-semibold">Cobranças cadastradas</h2>
           <div className="mt-6 space-y-3">
-            {invoices.map((invoice) => (
+            {loading ? <p className="text-sm text-slate-500">Carregando...</p> : invoices.length === 0 ? <p className="text-sm text-slate-500">Nenhuma cobrança cadastrada.</p> : invoices.map((invoice) => (
               <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4">
                 <div>
                   <p className="font-medium">{invoice.number}</p>
@@ -130,3 +155,4 @@ export default function CobrancasPage() {
     </main>
   );
 }
+

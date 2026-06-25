@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -10,10 +10,12 @@ export async function GET() {
     return NextResponse.json({ items: [] });
   }
 
-  const items = await prisma.rite.findMany({
-    where: { lodgeId: String(lodgeId) },
-    orderBy: [{ order: 'asc' }, { name: 'asc' }],
-  });
+  const items = await withTenant(String(lodgeId), (db) =>
+    db.rite.findMany({
+      where: { lodgeId: String(lodgeId) },
+      orderBy: [{ order: 'asc' }, { name: 'asc' }],
+    }),
+  );
 
   return NextResponse.json({ items });
 }
@@ -34,13 +36,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Nome do rito é obrigatório.' }, { status: 400 });
   }
 
-  const item = await prisma.rite.create({
-    data: {
-      lodgeId: String(lodgeId),
-      name,
-      order: Number.isFinite(order) ? order : 1,
-    },
-  });
+  const item = await withTenant(String(lodgeId), (db) =>
+    db.rite.create({
+      data: {
+        lodgeId: String(lodgeId),
+        name,
+        order: Number.isFinite(order) ? order : 1,
+      },
+    }),
+  );
 
   return NextResponse.json({ item });
 }

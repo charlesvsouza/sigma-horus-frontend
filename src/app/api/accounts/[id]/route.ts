@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { logAudit } from '@/lib/audit';
+import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -12,11 +13,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
 
-  await prisma.account.deleteMany({
-    where: {
-      id,
-      lodgeId: String(lodgeId),
-    },
+  await withTenant(String(lodgeId), async (db) => {
+    const prev = await db.account.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, title: true } });
+    if (prev) {
+      await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'account', entityId: id, metadata: { title: prev.title } });
+    }
+    await db.account.deleteMany({ where: { id, lodgeId: String(lodgeId) } });
   });
 
   return NextResponse.json({ success: true });

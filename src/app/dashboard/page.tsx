@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { withTenant } from '@/lib/prisma';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -17,20 +17,22 @@ export default async function DashboardPage() {
     );
   }
 
-  const [accounts, invoices, payments] = await Promise.all([
-    prisma.account.findMany({
-      where: { lodgeId: String(lodgeId) },
-      select: { id: true, type: true, amount: true, status: true },
-    }),
-    prisma.invoice.findMany({
-      where: { lodgeId: String(lodgeId) },
-      select: { id: true, amount: true, status: true },
-    }),
-    prisma.payment.findMany({
-      where: { lodgeId: String(lodgeId) },
-      select: { id: true, amount: true },
-    }),
-  ]);
+  const [accounts, invoices, payments] = await withTenant(String(lodgeId), (db) =>
+    Promise.all([
+      db.account.findMany({
+        where: { lodgeId: String(lodgeId) },
+        select: { id: true, type: true, amount: true, status: true },
+      }),
+      db.invoice.findMany({
+        where: { lodgeId: String(lodgeId) },
+        select: { id: true, amount: true, status: true },
+      }),
+      db.payment.findMany({
+        where: { lodgeId: String(lodgeId) },
+        select: { id: true, amount: true },
+      }),
+    ]),
+  );
 
   const receivableTotal = accounts
     .filter((account) => account.type === 'RECEIVABLE')

@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { logAudit } from '@/lib/audit';
+import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -10,13 +11,15 @@ export async function GET() {
     return NextResponse.json({ items: [] });
   }
 
-  const items = await prisma.account.findMany({
-    where: { lodgeId: String(lodgeId) },
-    include: {
-      member: { select: { id: true, name: true } },
-    },
-    orderBy: { dueDate: 'asc' },
-  });
+  const items = await withTenant(String(lodgeId), (db) =>
+    db.account.findMany({
+      where: { lodgeId: String(lodgeId) },
+      include: {
+        member: { select: { id: true, name: true } },
+      },
+      orderBy: { dueDate: 'asc' },
+    }),
+  );
 
   return NextResponse.json({ items });
 }
@@ -42,20 +45,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
   }
 
-  const item = await prisma.account.create({
-    data: {
-      lodgeId: String(lodgeId),
-      title,
-      type,
-      amount,
-      dueDate,
-      status,
-      description: description || null,
-      memberId,
-    },
-    include: {
-      member: { select: { id: true, name: true } },
-    },
+  const item = await withTenant(String(lodgeId), async (db) => {
+    const created = await db.account.create({
+      data: {
+        lodgeId: String(lodgeId),
+        title,
+        type,
+        amount,
+        dueDate,
+        status,
+        description: description || null,
+        memberId,
+      },
+      include: {
+        member: { select: { id: true, name: true } },
+      },
+    });
+
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'account', entityId: created.id, metadata: { title, type, amount } });
+    return created;
   });
 
   return NextResponse.json({ item });

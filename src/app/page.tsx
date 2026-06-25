@@ -1,3 +1,5 @@
+import { PlansSection } from '@/components/plans-section';
+
 const features = [
   {
     title: "Tesouraria inteligente",
@@ -21,12 +23,16 @@ export default function Home() {
           <div className="text-xl font-semibold tracking-[0.2em] text-amber-300">
             SIGMA HORUS
           </div>
-          <a
-            href="#contato"
-            className="rounded-full border border-amber-400/40 px-4 py-2 text-sm text-amber-100 transition hover:bg-amber-400/10"
-          >
-            Solicitar demonstração
-          </a>
+          <div className="flex items-center gap-4">
+            <a href="#planos" className="text-sm text-slate-300 transition hover:text-white">Planos</a>
+            <a href="/login" className="text-sm text-slate-300 transition hover:text-white">Entrar</a>
+            <a
+              href="/onboarding"
+              className="rounded-full bg-amber-400 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-amber-300"
+            >
+              Começar
+            </a>
+          </div>
         </nav>
 
         <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
@@ -44,7 +50,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
-                href="#contato"
+                href="/onboarding"
                 className="rounded-full bg-amber-400 px-6 py-3 text-center font-medium text-slate-950 transition hover:bg-amber-300"
               >
                 Começar agora
@@ -95,6 +101,8 @@ export default function Home() {
         </div>
       </section>
 
+      <PlansSection />
+
       <section id="contato" className="mx-auto max-w-7xl px-6 pb-24 lg:px-8">
         <div className="rounded-3xl border border-amber-400/20 bg-amber-400/10 p-8 text-center">
           <h2 className="text-2xl font-semibold text-white">Pronto para modernizar a gestão da sua loja?</h2>
@@ -102,10 +110,10 @@ export default function Home() {
             Acompanhe tesouraria, presença e cobrança com uma plataforma preparada para o presente e para o futuro.
           </p>
           <a
-            href="mailto:contato@sigmahorus.com.br"
+            href="/onboarding"
             className="mt-6 inline-flex rounded-full bg-amber-400 px-6 py-3 font-medium text-slate-950 transition hover:bg-amber-300"
           >
-            Fale com a equipe
+            Criar conta gratuita
           </a>
         </div>
       </section>
