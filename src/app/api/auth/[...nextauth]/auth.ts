@@ -2,8 +2,18 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import type { DefaultSession } from 'next-auth';
 
-const handler = NextAuth({
+declare module 'next-auth' {
+  interface Session {
+    user: DefaultSession['user'] & {
+      role?: string;
+      lodgeId?: string;
+    };
+  }
+}
+
+export const authOptions = {
   secret: process.env.AUTH_SECRET,
   session: { strategy: 'jwt' as const },
   providers: [
@@ -53,7 +63,9 @@ const handler = NextAuth({
       return session;
     },
   },
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export const { GET, POST } = handler;
 export const auth = handler.auth;
