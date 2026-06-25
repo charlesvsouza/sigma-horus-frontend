@@ -14,6 +14,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Link href="/dashboard/contas" className="transition hover:text-white">Contas</Link>
             <Link href="/dashboard/cobrancas" className="transition hover:text-white">Cobranças</Link>
             <Link href="/dashboard/pagamentos" className="transition hover:text-white">Pagamentos</Link>
+            <Link href="/dashboard/relatorios" className="transition hover:text-white">Relatórios</Link>
           </nav>
         </div>
       </aside>
