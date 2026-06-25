@@ -43,6 +43,7 @@ const NAV: NavGroupDef[] = [
   {
     category: 'Administração',
     items: [
+      { href: '/dashboard/configuracoes', label: 'Configurações da loja', roles: ['admin'] },
       { href: '/dashboard/integracoes', label: 'Integrações', roles: ['admin'] },
       { href: '/dashboard/auditoria', label: 'Auditoria', roles: ['admin'] },
     ],

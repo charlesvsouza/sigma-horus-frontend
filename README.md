@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sigma Horus
 
-## Getting Started
+SaaS de gestão financeira e administrativa para lojas maçônicas brasileiras.
 
-First, run the development server:
+**Stack:** Next.js 16, React 19, Prisma 7, PostgreSQL (Railway), Turbopack.
+
+## Começando
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev        # dev server em http://localhost:3000
+npm run build      # build de produção (prisma generate + next build)
+npm run lint       # ESLint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Estrutura
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/
+│   ├── api/          # API routes (REST)
+│   ├── dashboard/    # Dashboard pages (protegidas)
+│   ├── login/        # Login page
+│   └── onboarding/   # Onboarding (criação de loja+admin)
+├── components/
+│   └── ui/           # Design system components (Button, Input, Badge, Card, etc.)
+├── lib/
+│   ├── masonic-reference.ts  # Dados de referência (ritos, potências, cargos, contas)
+│   ├── seed-lodge.ts         # Seed dos dados padrão por loja
+│   ├── masks.ts              # Máscaras BR (CPF, CNPJ, CEP, telefone)
+│   └── rbac.ts               # RBAC granular por papel
+├── generated/prisma/  # Prisma Client (auto-generated)
+└── middleware.ts       # NextAuth + RLS por lodge_id
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Dados de Referência
 
-## Learn More
+Os seguintes dados são semeados automaticamente no onboarding:
 
-To learn more about Next.js, take a look at the following resources:
+- **8 ritos maçônicos** (REAA, York, Adonhiramita, Brasileiro, Moderno, Schröder, Emulação, RER)
+- **37 potências** (GOB + 27 Grandes Lojas estaduais + 8 Grandes Orientes COMAB)
+- **Cargos do rito escolhido** (ex.: 22 cargos para REAA)
+- **Plano de contas** (14 contas típicas de receita/despesa)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Stripe / Asaas
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Stripe: assinaturas (3 planos: Oficina, Areópago, Capitular)
+- Asaas: emissão de boletos/PIX com BYO-key por loja
 
-## Deploy on Vercel
+## Migrations
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Todas as migrations ficam em `prisma/migrations/`. Para criar uma nova:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx prisma migrate dev --name descricao_da_mudanca
+```
+
+Após alterar o schema, execute `npx prisma generate` para regenerar o client.

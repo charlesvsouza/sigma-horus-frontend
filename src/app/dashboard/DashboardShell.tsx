@@ -26,10 +26,9 @@ const ROLE_LABEL: Record<string, string> = {
 
 export default function DashboardShell({ groups, lodgeName, userName, role, children }: Props) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false); // mobile drawer
+  const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  // Restaura categorias recolhidas do navegador.
   useEffect(() => {
     try {
       const saved = localStorage.getItem('sh.nav.collapsed');
@@ -48,21 +47,32 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
   const initials = userName.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('') || 'SH';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-sigma-blue-deep text-sand">
       <div className="flex">
-        {/* Backdrop (mobile) */}
-        {open ? <div onClick={() => setOpen(false)} className="fixed inset-0 z-30 bg-slate-950/70 backdrop-blur-sm lg:hidden" /> : null}
+        {open ? (
+          <div
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-30 bg-sigma-blue-deep/80 backdrop-blur-sm lg:hidden"
+          />
+        ) : null}
 
-        {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/10 bg-slate-900/95 transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/[6%] bg-sigma-blue-dark/95 transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
         >
-          <div className="flex items-center justify-between border-b border-white/5 px-6 py-5">
+          <div className="flex items-center justify-between border-b border-white/[5%] px-6 py-5">
             <Link href="/dashboard" className="block">
-              <p className="text-[0.7rem] uppercase tracking-[0.4em] text-amber-400">Sigma Horus</p>
-              <p className="mt-1 text-sm font-medium text-slate-300">A tesouraria no prumo</p>
+              <p className="text-[0.6rem] uppercase tracking-[0.4em] text-gold">Sigma Horus</p>
+              <p className="mt-0.5 text-xs text-sand-dark">A tesouraria no prumo</p>
             </Link>
-            <button onClick={() => setOpen(false)} className="text-slate-400 lg:hidden" aria-label="Fechar menu">✕</button>
+            <button
+              onClick={() => setOpen(false)}
+              className="text-sand-dark transition hover:text-sand lg:hidden"
+              aria-label="Fechar menu"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
 
           <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-6">
@@ -72,10 +82,15 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                 <div key={group.category}>
                   <button
                     onClick={() => toggleCategory(group.category)}
-                    className="flex w-full items-center justify-between px-2 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500 transition hover:text-slate-300"
+                    className="flex w-full items-center justify-between px-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-sand-dark/70 transition hover:text-sand"
                   >
                     {group.category}
-                    <span className={`text-slate-600 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-90'}`}>›</span>
+                    <svg
+                      className={`h-3 w-3 text-sand-dark/50 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-90'}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
                   {!isCollapsed ? (
                     <div className="mt-2 space-y-0.5">
@@ -86,13 +101,13 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                             key={item.href}
                             href={item.href}
                             onClick={() => setOpen(false)}
-                            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${
                               active
-                                ? 'bg-amber-400/10 font-medium text-amber-200'
-                                : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                                ? 'bg-gold/10 font-medium text-gold'
+                                : 'text-sand/70 hover:bg-white/[3%] hover:text-sand'
                             }`}
                           >
-                            <span className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-amber-400' : 'bg-slate-700'}`} />
+                            <span className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-150 ${active ? 'bg-gold' : 'bg-white/[8%]'}`} />
                             {item.label}
                           </Link>
                         );
@@ -105,29 +120,35 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
           </nav>
         </aside>
 
-        {/* Conteúdo */}
         <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-0">
-          {/* Hero / header de identificação */}
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-white/10 bg-slate-950/85 px-5 py-4 backdrop-blur lg:px-8">
+          <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-white/[6%] bg-sigma-blue-deep/85 px-5 py-3.5 backdrop-blur-sm lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
-              <button onClick={() => setOpen(true)} className="rounded-lg border border-white/10 px-2.5 py-1.5 text-slate-300 lg:hidden" aria-label="Abrir menu">☰</button>
+              <button
+                onClick={() => setOpen(true)}
+                className="flex items-center justify-center rounded-lg border border-white/[8%] px-2.5 py-1.5 text-sand/70 transition hover:border-white/[12%] hover:text-sand lg:hidden"
+                aria-label="Abrir menu"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
               <div className="min-w-0">
-                <p className="text-[0.65rem] uppercase tracking-[0.25em] text-slate-500">Loja maçônica</p>
-                <h1 className="truncate text-lg font-semibold text-white">{lodgeName}</h1>
+                <p className="text-[0.6rem] uppercase tracking-[0.25em] text-sand-dark/60">Loja maçônica</p>
+                <h1 className="truncate text-base font-semibold text-sand-light">{lodgeName}</h1>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="hidden text-right sm:block">
-                <p className="text-sm font-medium text-slate-100">{userName}</p>
-                <p className="text-xs text-amber-300/80">{ROLE_LABEL[role] ?? role}</p>
+                <p className="text-sm font-medium text-sand-light">{userName}</p>
+                <p className="text-xs text-gold/70">{ROLE_LABEL[role] ?? role}</p>
               </div>
-              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10 text-xs font-semibold text-amber-200">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/30 bg-gold/10 text-xs font-semibold text-gold">
                 {initials}
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="rounded-full border border-white/10 px-3.5 py-1.5 text-sm text-slate-300 transition hover:border-rose-400/40 hover:text-rose-200"
+                className="rounded-full border border-white/[8%] px-3.5 py-1.5 text-xs text-sand/60 transition hover:border-rose-500/30 hover:text-rose-300"
               >
                 Sair
               </button>

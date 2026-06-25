@@ -12,6 +12,23 @@ model Lodge {
   name      String
   slug      String   @unique
   status    String   @default("active")
+  // Dados comerciais (loja = PJ sem fins lucrativos com CNPJ)
+  legalName    String?  // Razão Social
+  tradeName    String?  // Nome Fantasia
+  cnpj         String?
+  email        String?
+  phone        String?
+  addressLine  String?
+  addressNumber String?
+  neighborhood String?
+  city         String?
+  state        String?
+  zipCode      String?
+  // Dados bancários
+  bankName     String?
+  bankAgency   String?
+  bankAccount  String?
+  pixKey       String?
   // Asaas (BYO-key): cada loja conecta a própria conta. Chave criptografada (AES-256-GCM).
   asaasApiKeyEnc    String?
   asaasEnv          String?  @default("sandbox") // sandbox | production
@@ -269,13 +286,28 @@ model Attendance {
 model Office {
   id        String   @id @default(cuid())
   lodgeId   String
+  riteId    String?
   name      String
   order     Int      @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   lodge        Lodge          @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  rite         Rite?          @relation(fields: [riteId], references: [id], onDelete: SetNull)
   memberOffices MemberOffice[]
+}
+
+model Rite {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  name      String
+  order     Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  members   Member[]
+  offices   Office[]
 }
 
 model Term {
@@ -327,18 +359,6 @@ model CashClose {
   term        Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
 
   @@unique([lodgeId, termId])
-}
-
-model Rite {
-  id        String   @id @default(cuid())
-  lodgeId   String
-  name      String
-  order     Int      @default(1)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
-  members   Member[]
 }
 
 model Power {

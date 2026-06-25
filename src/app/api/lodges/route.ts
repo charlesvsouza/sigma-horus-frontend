@@ -14,6 +14,7 @@ export async function POST(request: Request) {
   const adminName = String(body?.adminName ?? '').trim();
   const adminEmail = String(body?.adminEmail ?? '').trim().toLowerCase();
   const adminPassword = String(body?.adminPassword ?? '');
+  const riteName = String(body?.riteName ?? '').trim() || undefined;
 
   if (!name || !slug || !adminName || !adminEmail || !adminPassword) {
     return NextResponse.json({ error: 'Preencha todos os campos.' }, { status: 400 });
@@ -53,8 +54,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // Semeia ritos, potências e plano de contas da Maçonaria brasileira.
-    await seedLodgeDefaults(tx, lodge.id);
+    // Semeia ritos, potências, cargos do rito escolhido e plano de contas.
+    await seedLodgeDefaults(tx, lodge.id, riteName);
 
     return { lodge, user };
   });
