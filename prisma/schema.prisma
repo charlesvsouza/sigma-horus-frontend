@@ -36,6 +36,7 @@ model Lodge {
   memberOffices MemberOffice[]
   documents     Document[]
   messageLogs   MessageLog[]
+  chartAccounts ChartAccount[]
 }
 
 model User {
@@ -350,4 +351,22 @@ model Power {
 
   lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   members   Member[]
+}
+
+// Plano de contas da loja (categorias de receita/despesa). Semeado por padrão
+// com as contas típicas de uma loja maçônica (captações, taxas de grau, aluguel...).
+model ChartAccount {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  code      String
+  name      String
+  type      String   // REVENUE | EXPENSE
+  category  String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+
+  @@unique([lodgeId, code])
 }

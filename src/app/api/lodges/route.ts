@@ -1,4 +1,5 @@
 import { prismaAdmin } from '@/lib/prisma';
+import { seedLodgeDefaults } from '@/lib/seed-lodge';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
 
@@ -51,6 +52,9 @@ export async function POST(request: Request) {
         lodgeId: lodge.id,
       },
     });
+
+    // Semeia ritos, potências e plano de contas da Maçonaria brasileira.
+    await seedLodgeDefaults(tx, lodge.id);
 
     return { lodge, user };
   });
