@@ -48,26 +48,57 @@ model User {
 }
 
 model Member {
-  id            String   @id @default(cuid())
-  lodgeId       String
-  name          String
-  email         String?
-  phone         String?
-  status        String   @default("active")
-  riteId        String?
-  powerId       String?
-  gradeName     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  lodgeId            String
+  name               String
+  email              String?
+  phone              String?
+  status             String   @default("active")
+  riteId             String?
+  powerId            String?
+  gradeName          String?
+  birthDate          DateTime?
+  cpf                String?
+  rg                 String?
+  maritalStatus      String?
+  spouseName         String?
+  spouseBirthDate    DateTime?
+  childrenNames      String?
+  fatherName         String?
+  motherName         String?
+  occupation         String?
+  nationality        String?
+  addressLine        String?
+  addressNumber      String?
+  complement         String?
+  neighborhood       String?
+  city               String?
+  state              String?
+  zipCode            String?
+  country            String?
+  initiationDate     DateTime?
+  elevationDate      DateTime?
+  exaltationDate     DateTime?
+  initiationLodge    String?
+  elevationLodge     String?
+  exaltationLodge    String?
+  initiationDegree   String?
+  currentDegree      String?
+  originLodge        String?
+  masonicNumber      String?
+  documents          String?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  lodge         Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
-  rite          Rite?    @relation(fields: [riteId], references: [id], onDelete: SetNull)
-  power         Power?   @relation(fields: [powerId], references: [id], onDelete: SetNull)
-  accounts      Account[]
-  payments      Payment[]
-  invoices      Invoice[]
-  attendances   Attendance[]
-  memberOffices MemberOffice[]
+  lodge              Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  rite               Rite?    @relation(fields: [riteId], references: [id], onDelete: SetNull)
+  power              Power?   @relation(fields: [powerId], references: [id], onDelete: SetNull)
+  accounts           Account[]
+  payments           Payment[]
+  invoices           Invoice[]
+  attendances        Attendance[]
+  memberOffices      MemberOffice[]
 }
 
 model Account {

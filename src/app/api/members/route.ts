@@ -47,6 +47,37 @@ export async function POST(request: Request) {
   const riteId = body?.riteId ? String(body.riteId) : null;
   const powerId = body?.powerId ? String(body.powerId) : null;
   const gradeName = body?.gradeName ? String(body.gradeName) : null;
+  const birthDate = body?.birthDate ? new Date(body.birthDate) : null;
+  const cpf = body?.cpf ? String(body.cpf) : null;
+  const rg = body?.rg ? String(body.rg) : null;
+  const maritalStatus = body?.maritalStatus ? String(body.maritalStatus) : null;
+  const spouseName = body?.spouseName ? String(body.spouseName) : null;
+  const spouseBirthDate = body?.spouseBirthDate ? new Date(body.spouseBirthDate) : null;
+  const childrenNames = body?.childrenNames ? String(body.childrenNames) : null;
+  const fatherName = body?.fatherName ? String(body.fatherName) : null;
+  const motherName = body?.motherName ? String(body.motherName) : null;
+  const occupation = body?.occupation ? String(body.occupation) : null;
+  const nationality = body?.nationality ? String(body.nationality) : null;
+  const addressLine = body?.addressLine ? String(body.addressLine) : null;
+  const addressNumber = body?.addressNumber ? String(body.addressNumber) : null;
+  const complement = body?.complement ? String(body.complement) : null;
+  const neighborhood = body?.neighborhood ? String(body.neighborhood) : null;
+  const city = body?.city ? String(body.city) : null;
+  const state = body?.state ? String(body.state) : null;
+  const zipCode = body?.zipCode ? String(body.zipCode) : null;
+  const country = body?.country ? String(body.country) : null;
+  const initiationDate = body?.initiationDate ? new Date(body.initiationDate) : null;
+  const elevationDate = body?.elevationDate ? new Date(body.elevationDate) : null;
+  const exaltationDate = body?.exaltationDate ? new Date(body.exaltationDate) : null;
+  const initiationLodge = body?.initiationLodge ? String(body.initiationLodge) : null;
+  const elevationLodge = body?.elevationLodge ? String(body.elevationLodge) : null;
+  const exaltationLodge = body?.exaltationLodge ? String(body.exaltationLodge) : null;
+  const initiationDegree = body?.initiationDegree ? String(body.initiationDegree) : null;
+  const currentDegree = body?.currentDegree ? String(body.currentDegree) : null;
+  const originLodge = body?.originLodge ? String(body.originLodge) : null;
+  const masonicNumber = body?.masonicNumber ? String(body.masonicNumber) : null;
+  const documents = body?.documents ? String(body.documents) : null;
+  const notes = body?.notes ? String(body.notes) : null;
 
   if (!name) {
     return NextResponse.json({ error: 'Nome do membro é obrigatório.' }, { status: 400 });
@@ -63,6 +94,37 @@ export async function POST(request: Request) {
         riteId,
         powerId,
         gradeName,
+        birthDate,
+        cpf,
+        rg,
+        maritalStatus,
+        spouseName,
+        spouseBirthDate,
+        childrenNames,
+        fatherName,
+        motherName,
+        occupation,
+        nationality,
+        addressLine,
+        addressNumber,
+        complement,
+        neighborhood,
+        city,
+        state,
+        zipCode,
+        country,
+        initiationDate,
+        elevationDate,
+        exaltationDate,
+        initiationLodge,
+        elevationLodge,
+        exaltationLodge,
+        initiationDegree,
+        currentDegree,
+        originLodge,
+        masonicNumber,
+        documents,
+        notes,
       },
       select: {
         id: true,
