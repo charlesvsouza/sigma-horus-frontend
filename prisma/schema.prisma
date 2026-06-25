@@ -22,6 +22,7 @@ model Lodge {
   auditLogs  AuditLog[]
   rites      Rite[]
   powers     Power[]
+  invoices   Invoice[]
 }
 
 model User {
@@ -57,6 +58,7 @@ model Member {
   power         Power?   @relation(fields: [powerId], references: [id], onDelete: SetNull)
   accounts      Account[]
   payments      Payment[]
+  invoices      Invoice[]
 }
 
 model Account {
@@ -75,6 +77,26 @@ model Account {
   lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   member       Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
   payments     Payment[]
+  invoices     Invoice[]
+}
+
+model Invoice {
+  id           String   @id @default(cuid())
+  lodgeId      String
+  accountId    String
+  memberId     String?
+  number       String
+  status       String   @default("pending")
+  issuedAt     DateTime @default(now())
+  dueDate      DateTime
+  amount       Float
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  member       Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
 }
 
 model Payment {
