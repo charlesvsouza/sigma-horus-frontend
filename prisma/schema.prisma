@@ -15,21 +15,23 @@ model Lodge {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users      User[]
-  members    Member[]
-  accounts   Account[]
-  payments   Payment[]
-  auditLogs  AuditLog[]
-  rites      Rite[]
-  powers     Power[]
-  invoices   Invoice[]
-  subscription Subscription?
-  sessions   Session[]
-  terms      Term[]
-  offices    Office[]
-  cashCloses CashClose[]
+  users         User[]
+  members       Member[]
+  accounts      Account[]
+  payments      Payment[]
+  auditLogs     AuditLog[]
+  rites         Rite[]
+  powers        Power[]
+  invoices      Invoice[]
+  subscription  Subscription?
+  sessions      Session[]
+  terms         Term[]
+  offices       Office[]
+  cashCloses    CashClose[]
   attendances   Attendance[]
   memberOffices MemberOffice[]
+  documents     Document[]
+  messageLogs   MessageLog[]
 }
 
 model User {
@@ -99,6 +101,37 @@ model Member {
   invoices           Invoice[]
   attendances        Attendance[]
   memberOffices      MemberOffice[]
+  documentsList      Document[]
+  messageLogs        MessageLog[]
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  memberId  String
+  title     String
+  kind      String   @default("document")
+  fileUrl   String?
+  content   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+model MessageLog {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  memberId  String?
+  channel   String
+  title     String
+  content   String
+  status    String   @default("queued")
+  createdAt DateTime @default(now())
+
+  lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member    Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
 }
 
 model Account {
