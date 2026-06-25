@@ -81,22 +81,26 @@ model Account {
 }
 
 model Invoice {
-  id           String   @id @default(cuid())
-  lodgeId      String
-  accountId    String
-  memberId     String?
-  number       String
-  status       String   @default("pending")
-  issuedAt     DateTime @default(now())
-  dueDate      DateTime
-  amount       Float
-  description  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  lodgeId            String
+  accountId          String
+  memberId           String?
+  number             String
+  status             String   @default("pending")
+  issuedAt           DateTime @default(now())
+  dueDate            DateTime
+  amount             Float
+  description        String?
+  isRecurring        Boolean  @default(false)
+  recurringInterval  String?
+  recurringCount     Int?
+  nextDueDate        DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
-  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  member       Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  lodge              Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  account            Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  member             Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
 }
 
 model Payment {

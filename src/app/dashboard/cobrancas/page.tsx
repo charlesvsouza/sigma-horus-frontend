@@ -11,6 +11,10 @@ interface InvoiceItem {
   dueDate: string;
   status: string;
   description?: string | null;
+  isRecurring?: boolean;
+  recurringInterval?: string | null;
+  recurringCount?: number | null;
+  nextDueDate?: string | null;
   account?: AccountOption | null;
   member?: MemberOption | null;
 }
@@ -20,7 +24,7 @@ export default function CobrancasPage() {
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [message, setMessage] = useState('');
-  const [form, setForm] = useState({ accountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '' });
+  const [form, setForm] = useState({ accountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
 
   async function loadData() {
     const [invoicesResponse, accountsResponse, membersResponse] = await Promise.all([
@@ -56,7 +60,7 @@ export default function CobrancasPage() {
     const data = await response.json();
     if (response.ok) {
       setMessage('Cobrança criada com sucesso.');
-      setForm({ accountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '' });
+      setForm({ accountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
       await loadData();
     } else {
       setMessage(data.error ?? 'Erro ao criar cobrança.');
@@ -88,6 +92,16 @@ export default function CobrancasPage() {
             <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Valor" required />
             <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" required />
             <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Descrição" rows={3} />
+            <label className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 md:col-span-2">
+              <input type="checkbox" checked={form.isRecurring} onChange={(event) => setForm({ ...form, isRecurring: event.target.checked })} />
+              <span className="text-sm text-slate-300">Criar como cobrança recorrente</span>
+            </label>
+            <select value={form.recurringInterval} onChange={(event) => setForm({ ...form, recurringInterval: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" disabled={!form.isRecurring}>
+              <option value="monthly">Mensal</option>
+              <option value="quarterly">Trimestral</option>
+              <option value="yearly">Anual</option>
+            </select>
+            <input type="number" min="1" value={form.recurringCount} onChange={(event) => setForm({ ...form, recurringCount: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Qtde. de ocorrências" disabled={!form.isRecurring} />
             <button type="submit" className="rounded-full bg-amber-400 px-4 py-3 font-medium text-slate-950 md:col-span-2">Criar cobrança</button>
           </form>
         </section>
@@ -104,6 +118,9 @@ export default function CobrancasPage() {
                 <div className="text-sm text-slate-400">
                   <p>Valor: R$ {invoice.amount.toFixed(2)}</p>
                   <p>Vencimento: {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</p>
+                  {invoice.isRecurring ? (
+                    <p className="mt-1 text-amber-300">Recorrente • {invoice.recurringInterval === 'quarterly' ? 'trimestral' : invoice.recurringInterval === 'yearly' ? 'anual' : 'mensal'}</p>
+                  ) : null}
                 </div>
               </div>
             ))}
