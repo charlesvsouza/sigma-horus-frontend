@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireAccess } from '@/lib/rbac';
+import { deleteObject } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -47,7 +48,19 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  await withTenant(String(lodgeId), (db) => db.document.delete({ where: { id, lodgeId: String(lodgeId) } }));
+  const removed = await withTenant(String(lodgeId), (db) =>
+    db.document.delete({ where: { id, lodgeId: String(lodgeId) } }),
+  );
+
+  // Remove o objeto no R2 depois de apagar o registro. Não falha a requisição
+  // se o storage estiver indisponível — o registro já foi removido.
+  if (removed.storageKey) {
+    try {
+      await deleteObject(removed.storageKey);
+    } catch (error) {
+      console.error('R2 delete failed', error);
+    }
+  }
 
   return NextResponse.json({ ok: true });
 }

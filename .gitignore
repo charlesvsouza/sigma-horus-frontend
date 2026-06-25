@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but keep the template committed
+!.env.example
 
 # vercel
 .vercel
@@ -46,3 +48,7 @@ next-env.d.ts
 
 # scratch/test temp files
 .tmp_*
+tmp_*
+
+# wrangler / cloudflare local simulator state
+.wrangler/

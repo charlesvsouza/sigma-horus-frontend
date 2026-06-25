@@ -1,3 +1,10 @@
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
 export function buildObjectKey(fileName: string, prefix = 'documents') {
   const safeName = fileName
     .normalize('NFKD')
@@ -28,6 +35,58 @@ export function getR2StorageSettings() {
     endpoint: process.env.R2_ENDPOINT ?? null,
     publicUrl: process.env.NEXT_PUBLIC_STORAGE_PUBLIC_URL ?? null,
   };
+}
+
+type R2Settings = ReturnType<typeof getR2StorageSettings>;
+
+/**
+ * Cria um cliente S3 apontando para o Cloudflare R2 a partir das env vars.
+ * Retorna null quando a configuração está incompleta (ex.: dev sem chaves).
+ */
+export function getR2Client(settings: R2Settings = getR2StorageSettings()) {
+  if (!settings.accessKeyId || !settings.secretAccessKey || !settings.endpoint) {
+    return null;
+  }
+
+  return new S3Client({
+    region: 'auto',
+    endpoint: settings.endpoint,
+    credentials: {
+      accessKeyId: settings.accessKeyId,
+      secretAccessKey: settings.secretAccessKey,
+    },
+    forcePathStyle: false,
+  });
+}
+
+/**
+ * Gera uma URL de download assinada e de curta duração para um objeto do bucket.
+ * Mantém o bucket privado (LGPD): o link só funciona por `expiresInSeconds`.
+ */
+export async function getPresignedDownloadUrl(storageKey: string, expiresInSeconds = 300) {
+  const settings = getR2StorageSettings();
+  const client = getR2Client(settings);
+  if (!client || !settings.bucket || !storageKey) {
+    return null;
+  }
+
+  const command = new GetObjectCommand({ Bucket: settings.bucket, Key: storageKey });
+  return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+}
+
+/**
+ * Remove o objeto do bucket. Retorna false (sem lançar) quando o storage não
+ * está configurado, para não travar a exclusão do registro no banco.
+ */
+export async function deleteObject(storageKey: string) {
+  const settings = getR2StorageSettings();
+  const client = getR2Client(settings);
+  if (!client || !settings.bucket || !storageKey) {
+    return false;
+  }
+
+  await client.send(new DeleteObjectCommand({ Bucket: settings.bucket, Key: storageKey }));
+  return true;
 }
 
 export function normalizeStoragePayload(body: Record<string, unknown>) {

@@ -1,8 +1,8 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireAccess } from '@/lib/rbac';
-import { buildObjectKey, buildPublicUrl, getR2StorageSettings, normalizeStoragePayload } from '@/lib/storage';
+import { buildObjectKey, buildPublicUrl, getR2Client, getR2StorageSettings, normalizeStoragePayload } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
@@ -29,7 +29,8 @@ export async function POST(request: Request) {
   }
 
   const settings = getR2StorageSettings();
-  if (!settings.accessKeyId || !settings.secretAccessKey || !settings.endpoint || !settings.bucket) {
+  const client = getR2Client(settings);
+  if (!client || !settings.bucket) {
     return NextResponse.json({ error: 'Configuração de storage incompleta.' }, { status: 500 });
   }
 
@@ -44,16 +45,6 @@ export async function POST(request: Request) {
   });
 
   try {
-    const client = new S3Client({
-      region: 'auto',
-      endpoint: settings.endpoint,
-      credentials: {
-        accessKeyId: settings.accessKeyId,
-        secretAccessKey: settings.secretAccessKey,
-      },
-      forcePathStyle: false,
-    });
-
     await client.send(new PutObjectCommand({
       Bucket: settings.bucket,
       Key: storage.storageKey!,

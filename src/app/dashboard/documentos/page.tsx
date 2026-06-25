@@ -9,6 +9,7 @@ interface DocumentItem {
   content?: string | null;
   fileUrl?: string | null;
   fileName?: string | null;
+  storageKey?: string | null;
   member?: { name: string } | null;
 }
 
@@ -112,7 +113,7 @@ export default function DocumentosPage() {
                   <div>
                     <p className="font-medium">{item.title}</p>
                     <p className="text-sm text-slate-400">{item.kind} • {item.member?.name ?? 'Sem vínculo'}</p>
-                    {item.fileUrl ? <a href={item.fileUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-sm text-amber-300">Abrir arquivo</a> : null}
+                    {item.storageKey ? <a href={`/api/documents/${item.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-sm text-amber-300">Abrir arquivo</a> : null}
                   </div>
                   <p className="max-w-2xl text-sm text-slate-500">{item.content ?? 'Sem resumo.'}</p>
                 </div>
