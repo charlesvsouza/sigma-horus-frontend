@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Lodge {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  members    Member[]
+  accounts   Account[]
+  payments   Payment[]
+  auditLogs  AuditLog[]
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          String   @default("admin")
+  lodgeId       String
+  status        String   @default("active")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  lodge         Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  auditLogs     AuditLog[]
+}
+
+model Member {
+  id            String   @id @default(cuid())
+  lodgeId       String
+  name          String
+  email         String?
+  phone         String?
+  status        String   @default("active")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  lodge         Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  accounts      Account[]
+  payments      Payment[]
+}
+
+model Account {
+  id           String   @id @default(cuid())
+  lodgeId      String
+  memberId     String?
+  type         String   // RECEIVABLE | PAYABLE
+  title        String
+  amount       Decimal  @db.Decimal(12, 2)
+  dueDate      DateTime
+  status       String   @default("pending")
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member       Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  payments     Payment[]
+}
+
+model Payment {
+  id           String   @id @default(cuid())
+  lodgeId      String
+  accountId    String
+  memberId     String?
+  amount       Decimal  @db.Decimal(12, 2)
+  paidAt       DateTime @default(now())
+  method       String   @default("manual")
+  note         String?
+
+  lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  member       Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  lodgeId      String
+  userId       String?
+  action       String
+  entity       String
+  entityId     String
+  before       String?
+  after        String?
+  createdAt    DateTime @default(now())
+
+  lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
