@@ -105,15 +105,17 @@ export async function POST(request: Request) {
   } else {
     // Anual PIX/boleto — pagamento único pré-pago (1 ano). Acesso só após
     // confirmação (assíncrona) tratada no webhook.
+    // PIX não é requestable para contas BR no Stripe hoje; usamos boleto (ativo).
+    // Quando pix_payments estiver disponível, incluir 'pix' aqui novamente.
     checkout = await stripeObj.checkout.sessions.create({
       customer: stripeCustomerId,
       mode: 'payment',
-      payment_method_types: ['pix', 'boleto'],
+      payment_method_types: ['boleto'],
       line_items: [
         {
           price_data: {
             currency: 'brl',
-            product_data: { name: `${plan.name} (anual — PIX/boleto)`, description: plan.description },
+            product_data: { name: `${plan.name} (anual — boleto)`, description: plan.description },
             unit_amount: amount,
           },
           quantity: 1,

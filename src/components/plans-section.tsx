@@ -14,7 +14,7 @@ export function PlansSection() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [interval, setInterval] = useState<BillingInterval>('month');
-  const [method, setMethod] = useState<Extract<PaymentMethod, 'card' | 'pix'>>('card');
+  const [method, setMethod] = useState<Extract<PaymentMethod, 'card' | 'boleto'>>('card');
 
   const isAnnual = interval === 'year';
   const effectiveMethod: PaymentMethod = isAnnual ? method : 'card';
@@ -51,7 +51,7 @@ export function PlansSection() {
         </h2>
         <p className="mt-4 text-base leading-7 text-sand">
           Por faixa de obreiros ativos. Comece com 10 dias de teste; ao final, assine um dos planos.
-          No anual via PIX ou boleto você ganha 10% de desconto.
+          No anual via boleto você ganha 10% de desconto.
         </p>
       </div>
 
@@ -87,12 +87,12 @@ export function PlansSection() {
               Cartão (renova auto)
             </button>
             <button
-              onClick={() => setMethod('pix')}
+              onClick={() => setMethod('boleto')}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                method === 'pix' ? 'bg-gold/90 text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'
+                method === 'boleto' ? 'bg-gold/90 text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'
               }`}
             >
-              PIX/boleto · 10% off
+              Boleto · 10% off
             </button>
           </div>
         ) : null}
