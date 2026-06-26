@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -47,10 +48,15 @@ export default function LoginPage() {
       <div className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-16 px-6 lg:px-12">
         <div className="hidden max-w-md lg:block">
           <div className="animate-slide-up">
-            <p className="text-[0.65rem] uppercase tracking-[0.35em] text-gold/70">
-              Sigma Horus
-            </p>
-            <h1 className="mt-6 text-4xl font-bold leading-tight text-sand-light text-balance">
+            <Image
+              src="/sigmahorus_ouro.png"
+              alt="Sigma Horus"
+              width={1024}
+              height={1024}
+              priority
+              className="h-20 w-auto drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
+            />
+            <h1 className="mt-7 text-4xl font-bold leading-tight text-sand-light text-balance">
               A tesouraria da sua loja no prumo
             </h1>
             <p className="mt-4 text-base leading-relaxed text-sand/80">
@@ -76,6 +82,14 @@ export default function LoginPage() {
 
         <div className="w-full max-w-sm mx-auto lg:mx-0">
           <div className="animate-slide-up rounded-2xl border border-white/[8%] bg-sigma-blue-dark/80 p-8 backdrop-blur-sm">
+            <Image
+              src="/icon.png"
+              alt="Sigma Horus"
+              width={512}
+              height={512}
+              priority
+              className="mx-auto mb-5 h-14 w-auto drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)] lg:hidden"
+            />
             <div className="text-center lg:text-left">
               <p className="text-[0.6rem] uppercase tracking-[0.3em] text-gold/60">
                 Acesse sua conta

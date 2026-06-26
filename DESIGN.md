@@ -9,6 +9,22 @@ maçônicas.
 
 "**A tesouraria da sua loja no prumo**" — precisão egípcia, solidez maçônica.
 
+### Marca oficial (logo)
+
+A marca é o **emblema ouro** — Olho de Hórus integrado a esquadro e compasso, com o
+wordmark "SIGMA HORUS" abaixo. Substitui o antigo Olho de Hórus desenhado em SVG.
+
+| Asset | Arquivo | Uso |
+|-------|---------|-----|
+| Logo completo (emblema + wordmark) | `public/sigmahorus_ouro.png` | Landing (nav, hero, conceito, rodapé), login |
+| Logo preto | `public/sigmahorus_preto.png` | Fundos claros / impressão |
+| Emblema (sem wordmark) | `src/app/icon.png` | Favicon, app icon, marca compacta (sidebar, card mobile) |
+| Favicon | `src/app/favicon.ico` | Aba do navegador (gerado do emblema) |
+| OG / share | `src/app/opengraph-image.png` | Compartilhamento (foto egípcia + logo, 1200×630) |
+
+Fundo de marca (landing/login): foto egípcia `public/backgraund_theme.png` com véu
+azul-noite (`blue-deep` 55–95% de opacidade), mais denso onde há texto.
+
 ## Registro
 
 **Product** (app UI, dashboard, ferramenta de gestão). O design serve ao produto: clareza

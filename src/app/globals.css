@@ -113,6 +113,26 @@
     animation: slide-up 0.3s ease-out;
   }
 
+  /* Reveal cerimonial: sobe com ease-out-expo, mantém estado inicial (fill both)
+     para permitir stagger via animation-delay sem flash. */
+  .animate-rise {
+    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-rise,
+    .animate-slide-up,
+    .animate-fade-in,
+    .animate-pulse-glow {
+      animation: none !important;
+    }
+  }
+
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
   }

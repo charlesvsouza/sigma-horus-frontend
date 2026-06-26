@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { PlansSection } from '@/components/plans-section';
 
@@ -35,77 +36,90 @@ const pillars = [
   { label: 'No prumo, no bolso', detail: 'Funciona de verdade no computador e no celular, sem app a instalar.' },
 ];
 
-// Motivo da marca: o Olho de Hórus abstraído em traços geométricos, atravessado
-// por um fio de prumo. Visão + precisão — "a tesouraria da sua loja no prumo".
-function HorusMark({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 240 260" fill="none" className={className} aria-hidden="true">
-      {/* geometria sutil ao fundo */}
-      <circle cx="120" cy="96" r="92" className="stroke-gold/10" strokeWidth="1" />
-      <circle cx="120" cy="96" r="64" className="stroke-gold/[0.07]" strokeWidth="1" />
-      {/* sobrancelha */}
-      <path d="M34 72 C84 36 168 36 206 64" className="stroke-gold" strokeWidth="2.25" strokeLinecap="round" />
-      {/* pálpebra superior e inferior (amêndoa) */}
-      <path d="M40 104 C84 70 158 70 200 100" className="stroke-sand-light" strokeWidth="2.25" strokeLinecap="round" />
-      <path d="M40 104 C86 132 158 130 200 100" className="stroke-sand-light" strokeWidth="2.25" strokeLinecap="round" />
-      {/* íris / pupila */}
-      <circle cx="118" cy="101" r="20" className="stroke-gold" strokeWidth="2.25" />
-      <circle cx="118" cy="101" r="7" className="fill-gold" />
-      {/* marcação diagonal do wedjat */}
-      <path d="M70 122 L44 168" className="stroke-gold/80" strokeWidth="2.25" strokeLinecap="round" />
-      {/* voluta */}
-      <path d="M120 122 C120 150 150 158 150 134 C150 120 134 120 134 132" className="stroke-gold/80" strokeWidth="2.25" strokeLinecap="round" />
-      {/* fio de prumo: vertical descendo da pupila até o pêndulo */}
-      <line x1="118" y1="101" x2="118" y2="232" className="stroke-sand-dark/50" strokeWidth="1" strokeDasharray="2 5" />
-      <path d="M118 232 l9 16 l-9 8 l-9 -8 z" className="fill-gold stroke-gold" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 export default function Home() {
   return (
-    <main className="relative overflow-hidden">
-      {/* Brilho de ouro no alto, evocando o deserto ao entardecer */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[680px] opacity-70"
-        style={{
-          background:
-            'radial-gradient(60% 70% at 78% 8%, color-mix(in srgb, var(--sigma-gold) 16%, transparent), transparent 60%), radial-gradient(50% 50% at 12% 0%, color-mix(in srgb, var(--sigma-blue-mid) 35%, transparent), transparent 60%)',
-        }}
-      />
+    <main className="relative overflow-x-clip">
+      {/* ===================== HERO CINEMATOGRÁFICO ===================== */}
+      <section className="relative isolate flex min-h-[94svh] flex-col overflow-hidden">
+        {/* Cena egípcia — mesma atmosfera da tela de login, para coesão landing↔app */}
+        <div className="absolute inset-0 -z-10">
+          <Image
+            src="/backgraund_theme.png"
+            alt="Pirâmides de Gizé sob o deserto dourado ao entardecer"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          {/* Véu azul-noite: legibilidade + gravidade institucional.
+              Esquerda densa (onde mora o texto), direita aberta (pirâmide visível). */}
+          <div className="absolute inset-0 bg-gradient-to-b from-sigma-blue-deep/75 via-sigma-blue-deep/45 to-sigma-blue-deep" />
+          <div className="absolute inset-0 bg-gradient-to-r from-sigma-blue-deep via-sigma-blue-deep/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-sigma-blue-deep/70 via-transparent to-transparent" />
+        </div>
 
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-10">
-        {/* Navegação */}
-        <nav className="flex items-center justify-between py-7">
-          <span className="font-display text-lg tracking-[0.35em] text-sand-light">SIGMA&nbsp;HORUS</span>
-          <div className="flex items-center gap-7 text-sm">
-            <a href="#modulos" className="hidden text-sand-dark transition-colors hover:text-sand-light sm:inline">Módulos</a>
-            <a href="#planos" className="hidden text-sand-dark transition-colors hover:text-sand-light sm:inline">Planos</a>
-            <Link href="/login" className="text-sand-dark transition-colors hover:text-sand-light">Entrar</Link>
+        {/* Navegação sobre a foto */}
+        <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-10">
+          <Link href="/" className="flex items-center" aria-label="Sigma Horus — início">
+            <Image
+              src="/sigmahorus_ouro.png"
+              alt="Sigma Horus"
+              width={1024}
+              height={1024}
+              priority
+              className="h-12 w-auto drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]"
+            />
+          </Link>
+          <div className="flex items-center gap-4 text-sm sm:gap-7">
+            <a href="#modulos" className="hidden text-sand-light/80 transition-colors hover:text-sand-light sm:inline">
+              Módulos
+            </a>
+            <a href="#planos" className="hidden text-sand-light/80 transition-colors hover:text-sand-light sm:inline">
+              Planos
+            </a>
+            <Link href="/login" className="text-sand-light/80 transition-colors hover:text-sand-light">
+              Entrar
+            </Link>
             <Link
               href="/onboarding"
-              className="rounded-full bg-gold px-5 py-2 text-sm font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light"
+              className="rounded-full bg-gold px-5 py-2 font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light"
             >
               Começar
             </Link>
           </div>
         </nav>
 
-        {/* Hero assimétrico */}
-        <section className="grid items-center gap-12 pb-20 pt-10 lg:grid-cols-[1.05fr_0.95fr] lg:pb-28 lg:pt-16">
-          <div className="animate-slide-up">
-            <p className="font-display text-xs tracking-[0.4em] text-gold">GESTÃO DA LOJA MAÇÔNICA</p>
-            <h1 className="font-display mt-6 text-balance text-[clamp(2.6rem,6vw,4.6rem)] font-bold leading-[1.05] text-sand-light">
+        {/* Conteúdo do herói — reveal cerimonial em stagger */}
+        <div className="mx-auto flex w-full max-w-7xl flex-1 items-center px-6 pb-20 pt-6 lg:px-10">
+          <div className="max-w-2xl">
+            <Image
+              src="/sigmahorus_ouro.png"
+              alt=""
+              aria-hidden="true"
+              width={1024}
+              height={1024}
+              priority
+              className="animate-rise h-28 w-auto drop-shadow-[0_6px_30px_rgba(0,0,0,0.55)] sm:h-36"
+            />
+            <p className="animate-rise mt-8 font-display text-xs tracking-[0.42em] text-gold" style={{ animationDelay: '120ms' }}>
+              GESTÃO DA LOJA MAÇÔNICA
+            </p>
+            <h1
+              className="animate-rise mt-5 text-balance font-display text-[clamp(2.7rem,6.4vw,5rem)] font-bold leading-[1.04] text-sand-light"
+              style={{ animationDelay: '200ms' }}
+            >
               Toda a loja,
               <br />
               <span className="text-gold">no prumo.</span>
             </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-sand">
-              O Sigma Horus reúne os quatro ofícios da administração maçônica — tesouraria, secretaria,
-              chancelaria e hospitalaria — em uma só plataforma, segura e com a precisão de quem presta contas.
+            <p
+              className="animate-rise mt-7 max-w-xl text-lg leading-8 text-sand"
+              style={{ animationDelay: '300ms' }}
+            >
+              Tesouraria, secretaria, chancelaria e hospitalaria — os quatro ofícios da administração
+              maçônica em uma só plataforma, segura e com a precisão de quem presta contas.
             </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <div className="animate-rise mt-9 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: '400ms' }}>
               <Link
                 href="/onboarding"
                 className="rounded-full bg-gold px-7 py-3 text-center font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light"
@@ -114,25 +128,21 @@ export default function Home() {
               </Link>
               <a
                 href="#modulos"
-                className="rounded-full border border-white/15 px-7 py-3 text-center font-medium text-sand-light transition-colors hover:border-gold/50 hover:text-gold"
+                className="rounded-full border border-sand-light/25 px-7 py-3 text-center font-medium text-sand-light backdrop-blur-sm transition-colors hover:border-gold/60 hover:text-gold"
               >
                 Conhecer os módulos
               </a>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="relative flex justify-center lg:justify-end">
-            <HorusMark className="h-auto w-[min(78vw,420px)] animate-fade-in" />
-          </div>
-        </section>
-      </div>
-
-      {/* Os quatro módulos — colunata de templo sob um arquitrave dourado */}
+      {/* ===================== OS QUATRO OFÍCIOS ===================== */}
       <section id="modulos" className="relative border-t border-white/[0.06] bg-sigma-blue-dark/40">
         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-28">
           <div className="max-w-2xl">
             <p className="font-display text-xs tracking-[0.4em] text-gold">OS QUATRO OFÍCIOS</p>
-            <h2 className="font-display mt-5 text-[clamp(1.8rem,3.5vw,2.6rem)] font-semibold leading-tight text-sand-light">
+            <h2 className="mt-5 font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-semibold leading-tight text-sand-light">
               Uma plataforma, a loja inteira
             </h2>
             <p className="mt-4 text-base leading-7 text-sand">
@@ -141,7 +151,7 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Arquitrave */}
+          {/* Arquitrave dourada */}
           <div className="mt-14 h-px w-full bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -157,7 +167,7 @@ export default function Home() {
                   <span className="font-display text-3xl font-bold text-gold/90">{m.numeral}</span>
                   <span className="h-px flex-1 bg-white/[0.08] transition-colors group-hover:bg-gold/30" />
                 </div>
-                <h3 className="font-display mt-5 text-xl font-semibold tracking-wide text-sand-light">{m.name}</h3>
+                <h3 className="mt-5 font-display text-xl font-semibold tracking-wide text-sand-light">{m.name}</h3>
                 <p className="mt-3 text-sm leading-6 text-sand-dark">{m.description}</p>
               </div>
             ))}
@@ -165,12 +175,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pilares transversais */}
+      {/* ===================== A BASE ===================== */}
       <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-24">
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
           <div>
-            <p className="font-display text-xs tracking-[0.4em] text-gold">A BASE</p>
-            <h2 className="font-display mt-5 text-[clamp(1.6rem,3vw,2.3rem)] font-semibold leading-tight text-sand-light">
+            <h2 className="font-display text-[clamp(1.6rem,3vw,2.3rem)] font-semibold leading-tight text-sand-light">
               Construído sobre confiança
             </h2>
             <p className="mt-4 max-w-md text-base leading-7 text-sand">
@@ -189,15 +198,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Faixa de conceito da marca */}
+      {/* ===================== CONCEITO DA MARCA ===================== */}
       <section className="relative border-y border-white/[0.06] bg-sigma-blue-dark/40">
         <div className="mx-auto flex max-w-5xl flex-col items-center px-6 py-24 text-center lg:py-28">
-          <HorusMark className="h-auto w-20 opacity-90" />
-          <p className="font-display mt-8 text-[clamp(1.6rem,3.4vw,2.6rem)] font-semibold leading-snug text-sand-light">
+          <Image
+            src="/sigmahorus_ouro.png"
+            alt="Emblema Sigma Horus — o Olho de Hórus com esquadro e compasso"
+            width={1024}
+            height={1024}
+            className="h-24 w-auto opacity-95 drop-shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+          />
+          <p className="mt-8 font-display text-[clamp(1.6rem,3.4vw,2.6rem)] font-semibold leading-snug text-sand-light">
             “A tesouraria da sua loja no prumo.”
           </p>
           <p className="mt-5 max-w-2xl text-base leading-7 text-sand">
-            O olho de Hórus mede e protege; o fio de prumo aprova o que está reto. No Egito, suas frações
+            O Olho de Hórus mede e protege; o fio de prumo aprova o que está reto. No Egito, suas frações
             somavam o todo — a mesma exatidão que um sistema de contas e prestação de contas exige.
           </p>
         </div>
@@ -205,7 +220,7 @@ export default function Home() {
 
       <PlansSection />
 
-      {/* CTA final */}
+      {/* ===================== CTA FINAL ===================== */}
       <section className="mx-auto max-w-7xl px-6 pb-28 lg:px-10">
         <div className="relative overflow-hidden rounded-2xl border border-gold/20 px-8 py-16 text-center">
           <div
@@ -233,12 +248,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Rodapé */}
+      {/* ===================== RODAPÉ ===================== */}
       <footer className="border-t border-white/[0.06]">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-12 lg:flex-row lg:items-start lg:justify-between lg:px-10">
           <div className="max-w-sm">
-            <span className="font-display text-base tracking-[0.35em] text-sand-light">SIGMA&nbsp;HORUS</span>
-            <p className="mt-3 text-sm leading-6 text-sand-dark">
+            <Image
+              src="/sigmahorus_ouro.png"
+              alt="Sigma Horus"
+              width={1024}
+              height={1024}
+              className="h-14 w-auto"
+            />
+            <p className="mt-4 text-sm leading-6 text-sand-dark">
               Tesouraria, secretaria, chancelaria e hospitalaria — a loja maçônica inteira, no prumo.
             </p>
           </div>

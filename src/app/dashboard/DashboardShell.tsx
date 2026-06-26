@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -60,9 +61,19 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
           className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/[6%] bg-sigma-blue-dark/95 transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
         >
           <div className="flex items-center justify-between border-b border-white/[5%] px-6 py-5">
-            <Link href="/dashboard" className="block">
-              <p className="text-[0.6rem] uppercase tracking-[0.4em] text-gold">Sigma Horus</p>
-              <p className="mt-0.5 text-xs text-sand-dark">A tesouraria no prumo</p>
+            <Link href="/dashboard" className="flex items-center gap-3">
+              <Image
+                src="/icon.png"
+                alt=""
+                aria-hidden="true"
+                width={512}
+                height={512}
+                className="h-9 w-auto"
+              />
+              <span className="block">
+                <span className="block font-display text-sm font-semibold tracking-[0.18em] text-sand-light">SIGMA HORUS</span>
+                <span className="mt-0.5 block text-xs text-sand-dark">A tesouraria no prumo</span>
+              </span>
             </Link>
             <button
               onClick={() => setOpen(false)}
