@@ -55,47 +55,49 @@ export default function ComunicacaoPage() {
     }
   }
 
+  const INPUT = "w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100">
+    <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
-          <h1 className="text-3xl font-semibold">Comunicação</h1>
-          <p className="mt-3 text-slate-400">Crie lembretes, convocações e avisos para membros e gestores da loja.</p>
+          <h1 className="text-2xl font-bold text-sand-light">Comunicação</h1>
+          <p className="mt-1 text-sm text-sand-dark">Crie lembretes, convocações e avisos para membros e gestores da loja.</p>
         </div>
 
-        {message ? <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
+        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
 
-        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-          <h2 className="text-xl font-semibold">Nova comunicação</h2>
-          <form onSubmit={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
-            <input value={title} onChange={(event) => setTitle(event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Título da mensagem" required />
-            <select value={channel} onChange={(event) => setChannel(event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <h2 className="text-base font-semibold text-sand-light">Nova comunicação</h2>
+          <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
+            <input value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT} placeholder="Título da mensagem" required />
+            <select value={channel} onChange={(event) => setChannel(event.target.value)} className={INPUT}>
               <option value="email">E-mail</option>
               <option value="whatsapp">WhatsApp</option>
               <option value="sms">SMS</option>
             </select>
-            <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3">
+            <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={INPUT}>
               <option value="">Enviar a todos ou a um membro</option>
               {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
             </select>
-            <textarea value={content} onChange={(event) => setContent(event.target.value)} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 md:col-span-2" placeholder="Texto da comunicação" rows={4} />
-            <button type="submit" className="rounded-full bg-amber-400 px-5 py-3 font-medium text-slate-950 md:col-span-2">Enviar</button>
+            <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Texto da comunicação" rows={4} />
+            <button type="submit" className="rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark md:col-span-2">Enviar</button>
           </form>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-          <h2 className="text-xl font-semibold">Histórico</h2>
-          <div className="mt-6 space-y-3">
-            {items.length === 0 ? <p className="text-sm text-slate-500">Nenhuma comunicação registrada.</p> : items.map((item) => (
-              <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <h2 className="text-base font-semibold text-sand-light">Histórico</h2>
+          <div className="mt-5 space-y-3">
+            {items.length === 0 ? <p className="text-sm text-sand-dark">Nenhuma comunicação registrada.</p> : items.map((item) => (
+              <div key={item.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="font-medium">{item.title}</p>
-                    <p className="text-sm text-slate-400">{item.channel} • {item.member?.name ?? 'Todos'}</p>
+                    <p className="text-sm font-medium text-sand-light">{item.title}</p>
+                    <p className="mt-1 text-xs text-sand-dark">{item.channel} • {item.member?.name ?? 'Todos'}</p>
                   </div>
-                  <p className="text-sm text-slate-500">{item.status}</p>
+                  <p className="text-sm text-sand-dark">{item.status}</p>
                 </div>
-                <p className="mt-2 text-sm text-slate-400">{item.content}</p>
+                <p className="mt-2 text-sm text-sand">{item.content}</p>
               </div>
             ))}
           </div>

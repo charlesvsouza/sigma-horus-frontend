@@ -19,7 +19,7 @@ export function BotaoExportar({ from, to }: { from?: string; to?: string }) {
   return (
     <button
       onClick={exportar}
-      className="rounded-full border border-amber-400/40 px-5 py-2 text-sm text-amber-200 hover:bg-amber-400/10"
+      className="rounded-full border border-gold/40 px-5 py-2 text-sm text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold"
     >
       Exportar CSV
     </button>

@@ -92,65 +92,68 @@ export default function CadastrosPage() {
     await loadData();
   }
 
+  const INPUT = "flex-1 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+  const ADD_BTN = "rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark";
+
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100">
+    <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold">Cadastros mestre</h1>
-            <p className="mt-3 text-slate-400">Configure os ritos, potências e o plano de contas da sua loja.</p>
+            <h1 className="text-2xl font-bold text-sand-light">Cadastros mestre</h1>
+            <p className="mt-1 text-sm text-sand-dark">Configure os ritos, potências e o plano de contas da sua loja.</p>
           </div>
           <button
             onClick={seedDefaults}
             disabled={seeding}
             title="Preenche ritos, potências e plano de contas com os dados padrão da Maçonaria brasileira (não duplica)"
-            className="rounded-full border border-amber-400/50 px-4 py-2 text-sm font-medium text-amber-200 disabled:opacity-50"
+            className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-50"
           >
             {seeding ? 'Populando…' : 'Popular dados padrão (Brasil)'}
           </button>
         </div>
 
-        {message ? <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
+        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-            <h2 className="text-xl font-semibold">Ritos</h2>
+          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+            <h2 className="text-base font-semibold text-sand-light">Ritos</h2>
             <form onSubmit={createRite} className="mt-4 flex gap-3">
-              <input value={riteName} onChange={(event) => setRiteName(event.target.value)} className="flex-1 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white" placeholder="Nome do rito" />
-              <button type="submit" className="rounded-full bg-amber-400 px-4 py-3 font-medium text-slate-950">Adicionar</button>
+              <input value={riteName} onChange={(event) => setRiteName(event.target.value)} className={INPUT} placeholder="Nome do rito" />
+              <button type="submit" className={ADD_BTN}>Adicionar</button>
             </form>
             <ul className="mt-6 space-y-3">
               {rites.map((rite) => (
-                <li key={rite.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3">
+                <li key={rite.id} className="flex items-center justify-between rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-3 text-sm text-sand-light transition-colors hover:border-white/[8%]">
                   <span>{rite.name}</span>
-                  <button onClick={() => removeRite(rite.id)} className="text-sm text-rose-400">Remover</button>
+                  <button onClick={() => removeRite(rite.id)} className="text-sm text-rose-300 hover:text-rose-200">Remover</button>
                 </li>
               ))}
             </ul>
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-            <h2 className="text-xl font-semibold">Potências</h2>
+          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+            <h2 className="text-base font-semibold text-sand-light">Potências</h2>
             <form onSubmit={createPower} className="mt-4 flex gap-3">
-              <input value={powerName} onChange={(event) => setPowerName(event.target.value)} className="flex-1 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white" placeholder="Nome da potência" />
-              <button type="submit" className="rounded-full bg-amber-400 px-4 py-3 font-medium text-slate-950">Adicionar</button>
+              <input value={powerName} onChange={(event) => setPowerName(event.target.value)} className={INPUT} placeholder="Nome da potência" />
+              <button type="submit" className={ADD_BTN}>Adicionar</button>
             </form>
             <ul className="mt-6 space-y-3">
               {powers.map((power) => (
-                <li key={power.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3">
+                <li key={power.id} className="flex items-center justify-between rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-3 text-sm text-sand-light transition-colors hover:border-white/[8%]">
                   <span>{power.name}</span>
-                  <button onClick={() => removePower(power.id)} className="text-sm text-rose-400">Remover</button>
+                  <button onClick={() => removePower(power.id)} className="text-sm text-rose-300 hover:text-rose-200">Remover</button>
                 </li>
               ))}
             </ul>
           </section>
         </div>
 
-        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-          <h2 className="text-xl font-semibold">Plano de contas</h2>
-          <p className="mt-2 text-sm text-slate-400">Categorias de receita e despesa típicas de uma loja maçônica.</p>
+        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <h2 className="text-base font-semibold text-sand-light">Plano de contas</h2>
+          <p className="mt-1 text-sm text-sand-dark">Categorias de receita e despesa típicas de uma loja maçônica.</p>
           {chartAccounts.length === 0 ? (
-            <p className="mt-6 text-sm text-slate-500">Nenhuma conta no plano. Use “Popular dados padrão (Brasil)” acima.</p>
+            <p className="mt-6 text-sm text-sand-dark">Nenhuma conta no plano. Use “Popular dados padrão (Brasil)” acima.</p>
           ) : (
             <div className="mt-6 grid gap-6 lg:grid-cols-2">
               {(['REVENUE', 'EXPENSE'] as const).map((type) => (
@@ -160,9 +163,9 @@ export default function CadastrosPage() {
                   </h3>
                   <ul className="mt-3 space-y-2">
                     {chartAccounts.filter((c) => c.type === type).map((c) => (
-                      <li key={c.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/60 px-4 py-2 text-sm">
-                        <span><span className="text-slate-500">{c.code}</span> · {c.name}</span>
-                        {c.category ? <span className="text-xs text-slate-500">{c.category}</span> : null}
+                      <li key={c.id} className="flex items-center justify-between rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
+                        <span><span className="text-sand-dark">{c.code}</span> · {c.name}</span>
+                        {c.category ? <span className="text-xs text-sand-dark">{c.category}</span> : null}
                       </li>
                     ))}
                   </ul>

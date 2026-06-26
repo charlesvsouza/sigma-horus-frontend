@@ -20,10 +20,10 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
 
   if (!lodgeId) {
     return (
-      <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100">
+      <main className="min-h-screen px-6 py-12">
         <div className="mx-auto max-w-6xl">
-          <h1 className="text-3xl font-semibold">Relatórios</h1>
-          <p className="mt-3 text-slate-400">Faça login para ver o fluxo financeiro da lodge.</p>
+          <h1 className="text-2xl font-bold text-sand-light">Relatórios</h1>
+          <p className="mt-1 text-sm text-sand-dark">Faça login para ver o fluxo financeiro da lodge.</p>
         </div>
       </main>
     );
@@ -88,12 +88,12 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
     .slice(0, 6);
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100">
+    <main className="min-h-screen px-6 py-12">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold">Relatórios financeiros</h1>
-            <p className="mt-3 text-slate-400">Extrato resumido, contas abertas e fluxo de caixa do período.</p>
+            <h1 className="text-2xl font-bold text-sand-light">Relatórios financeiros</h1>
+            <p className="mt-1 text-sm text-sand-dark">Extrato resumido, contas abertas e fluxo de caixa do período.</p>
           </div>
           <BotaoExportar from={searchParams.from} to={searchParams.to} />
         </div>
@@ -101,63 +101,63 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
         <FiltrosRelatorios from={searchParams.from ?? ''} to={searchParams.to ?? ''} />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5">
-            <p className="text-sm text-slate-400">A receber</p>
+          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-5">
+            <p className="text-sm text-sand-dark">A receber</p>
             <p className="mt-3 text-2xl font-semibold text-emerald-300">R$ {totalReceivables.toFixed(2)}</p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5">
-            <p className="text-sm text-slate-400">A pagar</p>
+          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-5">
+            <p className="text-sm text-sand-dark">A pagar</p>
             <p className="mt-3 text-2xl font-semibold text-rose-300">R$ {totalPayables.toFixed(2)}</p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5">
-            <p className="text-sm text-slate-400">Pagamentos registrados</p>
-            <p className="mt-3 text-2xl font-semibold text-amber-300">R$ {totalPayments.toFixed(2)}</p>
+          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-5">
+            <p className="text-sm text-sand-dark">Pagamentos registrados</p>
+            <p className="mt-3 text-2xl font-semibold text-gold">R$ {totalPayments.toFixed(2)}</p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5">
-            <p className="text-sm text-slate-400">Fluxo líquido</p>
+          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-5">
+            <p className="text-sm text-sand-dark">Fluxo líquido</p>
             <p className={`mt-3 text-2xl font-semibold ${netFlow >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>R$ {netFlow.toFixed(2)}</p>
           </div>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Resumo de abertura</h2>
-              <Link href="/dashboard/contas" className="text-sm text-amber-300 hover:text-amber-200">Ver contas</Link>
+              <h2 className="text-base font-semibold text-sand-light">Resumo de abertura</h2>
+              <Link href="/dashboard/contas" className="text-sm text-gold hover:text-gold-light">Ver contas</Link>
             </div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                <p className="text-sm text-slate-400">Contas a receber abertas</p>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                <p className="text-sm text-sand-dark">Contas a receber abertas</p>
                 <p className="mt-2 text-2xl font-semibold text-emerald-300">{openReceivables.length}</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                <p className="text-sm text-slate-400">Contas a pagar abertas</p>
+              <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                <p className="text-sm text-sand-dark">Contas a pagar abertas</p>
                 <p className="mt-2 text-2xl font-semibold text-rose-300">{openPayables.length}</p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-            <h2 className="text-xl font-semibold">Próximos vencimentos</h2>
-            <div className="mt-6 space-y-3">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+            <h2 className="text-base font-semibold text-sand-light">Próximos vencimentos</h2>
+            <div className="mt-5 space-y-3">
               {upcoming.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-950/60 p-3 text-sm text-slate-300">
+                <div key={item.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-3 text-sm text-sand">
                   <div className="flex items-center justify-between gap-3">
                     <span>{item.title}</span>
                     <span className={item.type === 'RECEIVABLE' ? 'text-emerald-300' : 'text-rose-300'}>{item.type === 'RECEIVABLE' ? 'Receber' : 'Pagar'}</span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">Vence em {new Date(item.dueDate).toLocaleDateString('pt-BR')}</p>
+                  <p className="mt-1 text-xs text-sand-dark">Vence em {new Date(item.dueDate).toLocaleDateString('pt-BR')}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-          <h2 className="text-xl font-semibold">Últimos registros</h2>
-          <div className="mt-6 space-y-3">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <h2 className="text-base font-semibold text-sand-light">Últimos registros</h2>
+          <div className="mt-5 space-y-3">
             {payments.slice(0, 6).map((payment) => (
-              <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-300">
+              <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                 <span>Pagamento registrado</span>
                 <span>R$ {Number(payment.amount).toFixed(2)}</span>
                 <span>{new Date(payment.paidAt).toLocaleDateString('pt-BR')}</span>
@@ -165,7 +165,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
               </div>
             ))}
             {invoices.slice(0, 6).map((invoice) => (
-              <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-300">
+              <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                 <span>Cobrança {invoice.number}</span>
                 <span>R$ {Number(invoice.amount).toFixed(2)}</span>
                 <span>{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span>

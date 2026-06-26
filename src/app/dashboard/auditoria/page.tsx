@@ -51,46 +51,46 @@ export default function AuditoriaPage() {
     : entries;
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100">
+    <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
-          <h1 className="text-3xl font-semibold">Auditoria</h1>
-          <p className="mt-3 text-slate-400">Registro de todas as operações realizadas no sistema.</p>
+          <h1 className="text-2xl font-bold text-sand-light">Auditoria</h1>
+          <p className="mt-1 text-sm text-sand-dark">Registro de todas as operações realizadas no sistema.</p>
         </div>
 
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3"
+          className="w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
           placeholder="Filtrar por entidade, ação..."
         />
 
-        <div className="overflow-x-auto rounded-3xl border border-white/10">
+        <div className="overflow-x-auto rounded-xl border border-white/[6%]">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 bg-slate-900/70">
+            <thead className="border-b border-white/[6%] bg-sigma-blue-dark/80">
               <tr>
-                <th className="px-4 py-3 font-medium text-slate-400">Data</th>
-                <th className="px-4 py-3 font-medium text-slate-400">Ação</th>
-                <th className="px-4 py-3 font-medium text-slate-400">Entidade</th>
-                <th className="px-4 py-3 font-medium text-slate-400">Detalhes</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Data</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Ação</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Entidade</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Detalhes</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((e) => (
-                <tr key={e.id} className="border-b border-white/5">
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-400">{new Date(e.createdAt).toLocaleString('pt-BR')}</td>
+                <tr key={e.id} className="border-b border-white/[5%] transition-colors hover:bg-white/[3%]">
+                  <td className="whitespace-nowrap px-4 py-3 text-sand-dark">{new Date(e.createdAt).toLocaleString('pt-BR')}</td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${e.action === 'CREATE' ? 'bg-emerald-500/20 text-emerald-300' : e.action === 'DELETE' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${e.action === 'CREATE' ? 'bg-emerald-500/12 text-emerald-300 border border-emerald-500/20' : e.action === 'DELETE' ? 'bg-rose-500/12 text-rose-300 border border-rose-500/20' : 'bg-gold/12 text-gold border border-gold/15'}`}>
                       {actionLabels[e.action] ?? e.action}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-300">{entityLabels[e.entity] ?? e.entity}</td>
-                  <td className="max-w-xs truncate px-4 py-3 text-slate-500">{e.after ?? '—'}</td>
+                  <td className="px-4 py-3 text-sand">{entityLabels[e.entity] ?? e.entity}</td>
+                  <td className="max-w-xs truncate px-4 py-3 text-sand-dark">{e.after ?? '—'}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-12 text-center text-slate-500">
+                  <td colSpan={4} className="px-4 py-12 text-center text-sand-dark">
                     Nenhum registro encontrado.
                   </td>
                 </tr>

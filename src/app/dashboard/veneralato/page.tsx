@@ -70,53 +70,55 @@ export default function VeneralatoPage() {
     await loadTermDetail(termId);
   }
 
+  const INPUT = "w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100">
+    <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
-          <h1 className="text-3xl font-semibold">Veneralato</h1>
-          <p className="mt-3 text-slate-400">Gerencie períodos de gestão, cargos dos membros e fechamento de caixa.</p>
+          <h1 className="text-2xl font-bold text-sand-light">Veneralato</h1>
+          <p className="mt-1 text-sm text-sand-dark">Gerencie períodos de gestão, cargos dos membros e fechamento de caixa.</p>
         </div>
 
-        {message ? <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
+        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
 
-        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-          <h2 className="text-xl font-semibold">Novo período</h2>
-          <form onSubmit={create} className="mt-6 grid gap-4 md:grid-cols-2">
-            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Ex: Gestão 2025-2026" required />
-            <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" required />
-            <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" />
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 md:col-span-2" placeholder="Observações" rows={3} />
-            <button type="submit" className="rounded-full bg-amber-400 px-4 py-3 font-medium text-slate-950 md:col-span-2">Criar período</button>
+        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <h2 className="text-base font-semibold text-sand-light">Novo período</h2>
+          <form onSubmit={create} className="mt-5 grid gap-4 md:grid-cols-2">
+            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Ex: Gestão 2025-2026" required />
+            <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={INPUT} required />
+            <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={INPUT} />
+            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações" rows={3} />
+            <button type="submit" className="rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark md:col-span-2">Criar período</button>
           </form>
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
-          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-            <h2 className="text-xl font-semibold">Períodos</h2>
-            <div className="mt-6 space-y-3">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+            <h2 className="text-base font-semibold text-sand-light">Períodos</h2>
+            <div className="mt-5 space-y-3">
               {terms.map((t) => (
-                <button key={t.id} onClick={() => loadTermDetail(t.id)} className={`w-full rounded-2xl border px-4 py-4 text-left transition ${selectedTerm === t.id ? 'border-amber-500/40 bg-amber-500/10' : 'border-white/10 bg-slate-950/60'}`}>
-                  <p className="font-medium">{t.title}</p>
-                  <p className="text-sm text-slate-400">{new Date(t.startDate).toLocaleDateString('pt-BR')} - {t.endDate ? new Date(t.endDate).toLocaleDateString('pt-BR') : 'em aberto'} • {t._count.memberOffices} cargos</p>
+                <button key={t.id} onClick={() => loadTermDetail(t.id)} className={`w-full rounded-lg border px-4 py-4 text-left transition-colors ${selectedTerm === t.id ? 'border-gold/40 bg-gold/10' : 'border-white/[5%] bg-sigma-blue-deep/50 hover:border-white/[8%]'}`}>
+                  <p className="text-sm font-medium text-sand-light">{t.title}</p>
+                  <p className="mt-1 text-xs text-sand-dark">{new Date(t.startDate).toLocaleDateString('pt-BR')} - {t.endDate ? new Date(t.endDate).toLocaleDateString('pt-BR') : 'em aberto'} • {t._count.memberOffices} cargos</p>
                 </button>
               ))}
             </div>
           </section>
 
           {selectedTerm && termDetail && (
-            <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-              <h2 className="text-xl font-semibold">{termDetail.title}</h2>
+            <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+              <h2 className="text-base font-semibold text-sand-light">{termDetail.title}</h2>
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-5 space-y-4">
                 <div>
-                  <h3 className="text-sm font-medium text-slate-400">Vincular cargo</h3>
+                  <h3 className="text-sm font-medium text-sand-dark">Vincular cargo</h3>
                   <div className="mt-2 grid grid-cols-3 gap-2">
-                    <select id="mo-member" className="rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm">
+                    <select id="mo-member" className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
                       <option value="">Membro</option>
                       {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
-                    <select id="mo-office" className="rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm">
+                    <select id="mo-office" className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
                       <option value="">Cargo</option>
                       {offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                     </select>
@@ -124,35 +126,35 @@ export default function VeneralatoPage() {
                       const memberId = (document.getElementById('mo-member') as HTMLSelectElement)?.value;
                       const officeId = (document.getElementById('mo-office') as HTMLSelectElement)?.value;
                       if (memberId && officeId) assignOffice(selectedTerm, memberId, officeId);
-                    }} className="rounded-full bg-amber-400 px-3 py-2 text-sm font-medium text-slate-950">Vincular</button>
+                    }} className="rounded-full bg-gold px-3 py-2 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Vincular</button>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-slate-400">Cargos deste período</h3>
+                  <h3 className="text-sm font-medium text-sand-dark">Cargos deste período</h3>
                   <div className="mt-2 space-y-2">
                     {termDetail.memberOffices?.map((mo: any) => (
-                      <div key={mo.id} className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-2 text-sm">
-                        <span className="text-amber-300">{mo.office.name}</span>
-                        <span className="mx-2 text-slate-600">—</span>
+                      <div key={mo.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
+                        <span className="text-gold">{mo.office.name}</span>
+                        <span className="mx-2 text-sand-dark">—</span>
                         <span>{mo.member.name}</span>
                       </div>
                     ))}
                     {(!termDetail.memberOffices || termDetail.memberOffices.length === 0) && (
-                      <p className="text-sm text-slate-500">Nenhum cargo vinculado.</p>
+                      <p className="text-sm text-sand-dark">Nenhum cargo vinculado.</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-slate-400">Fechamento de caixa</h3>
+                  <h3 className="text-sm font-medium text-sand-dark">Fechamento de caixa</h3>
                   {termDetail.cashCloses?.length > 0 ? (
-                    <div className="mt-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+                    <div className="mt-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sand">
                       <p className="text-sm">Fechado em {new Date(termDetail.cashCloses[0].closedAt).toLocaleDateString('pt-BR')}</p>
                       <p className="text-sm">Saldo: R$ {termDetail.cashCloses[0].netBalance.toFixed(2)}</p>
                     </div>
                   ) : (
-                    <button onClick={() => closeCash(selectedTerm)} className="mt-2 rounded-full bg-amber-400 px-4 py-2 text-sm font-medium text-slate-950">
+                    <button onClick={() => closeCash(selectedTerm)} className="mt-2 rounded-full bg-gold px-4 py-2 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
                       Fechar caixa deste período
                     </button>
                   )}

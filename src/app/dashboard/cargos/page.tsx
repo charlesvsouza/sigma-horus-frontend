@@ -35,23 +35,23 @@ export default function CargosPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100">
+    <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-4xl space-y-8">
         <div>
-          <h1 className="text-3xl font-semibold">Cargos</h1>
-          <p className="mt-3 text-slate-400">Cadastre os cargos da loja (Venerável, Tesoureiro, Secretário...).</p>
+          <h1 className="text-2xl font-bold text-sand-light">Cargos</h1>
+          <p className="mt-1 text-sm text-sand-dark">Cadastre os cargos da loja (Venerável, Tesoureiro, Secretário...).</p>
         </div>
-        {message ? <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
-        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
+        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
+        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
           <form onSubmit={create} className="flex gap-3">
-            <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Nome do cargo" required />
-            <button type="submit" className="rounded-full bg-amber-400 px-5 py-3 font-medium text-slate-950">Adicionar</button>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20" placeholder="Nome do cargo" required />
+            <button type="submit" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Adicionar</button>
           </form>
           <div className="mt-6 space-y-2">
             {offices.map((o) => (
-              <div key={o.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3">
-                <span>{o.name}</span>
-                <button onClick={() => remove(o.id)} className="text-sm text-rose-400">Remover</button>
+              <div key={o.id} className="flex items-center justify-between rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-3 transition-colors hover:border-white/[8%]">
+                <span className="text-sm text-sand-light">{o.name}</span>
+                <button onClick={() => remove(o.id)} className="text-sm text-rose-300 hover:text-rose-200">Remover</button>
               </div>
             ))}
           </div>
