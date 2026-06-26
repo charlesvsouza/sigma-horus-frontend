@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
-import { requireAccess } from '@/lib/rbac';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -13,7 +13,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const access = requireAccess(role, 'accounts', 'write');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'accounts', 'write');
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }

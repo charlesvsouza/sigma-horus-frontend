@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { fetchCep, maskCEP, maskCNPJ, maskPhone } from '@/lib/masks';
 
@@ -76,9 +77,14 @@ export default function ConfiguracoesPage() {
   return (
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-4xl space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold text-sand-light">Configurações da loja</h1>
-          <p className="mt-1 text-sm text-sand-dark">Dados cadastrais, fiscais e bancários da loja (pessoa jurídica sem fins lucrativos). Usados em cobranças, recibos e relatórios.</p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-sand-light">Configurações da loja</h1>
+            <p className="mt-1 text-sm text-sand-dark">Dados cadastrais, fiscais e bancários da loja (pessoa jurídica sem fins lucrativos). Usados em cobranças, recibos e relatórios.</p>
+          </div>
+          <Link href="/dashboard/configuracoes/permissoes" className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold">
+            Permissões por cargo →
+          </Link>
         </div>
 
         {message ? (

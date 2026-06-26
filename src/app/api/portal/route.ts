@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireAccess } from '@/lib/rbac';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const access = requireAccess(role, 'portal', 'read');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'portal', 'read');
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }

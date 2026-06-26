@@ -3,7 +3,7 @@ import { createCustomer, createPayment } from '@/lib/asaas';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
-import { requireAccess } from '@/lib/rbac';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 type BillingType = 'BOLETO' | 'PIX' | 'CREDIT_CARD' | 'UNDEFINED';
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const role = session?.user?.role;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const access = requireAccess(role, 'accounts', 'write');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'accounts', 'write');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const body = await request.json();

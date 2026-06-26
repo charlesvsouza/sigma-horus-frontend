@@ -1,7 +1,7 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireAccess } from '@/lib/rbac';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { buildObjectKey, buildPublicUrl, getR2Client, getR2StorageSettings, normalizeStoragePayload } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const access = requireAccess(role, 'documents', 'write');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'documents', 'write');
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }

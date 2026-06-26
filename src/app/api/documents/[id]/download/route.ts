@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireAccess } from '@/lib/rbac';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { getPresignedDownloadUrl } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
@@ -14,7 +14,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const access = requireAccess(role, 'documents', 'read');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'documents', 'read');
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }

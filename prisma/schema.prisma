@@ -54,6 +54,7 @@ model Lodge {
   documents     Document[]
   messageLogs   MessageLog[]
   chartAccounts ChartAccount[]
+  rolePermissions RolePermission[]
 }
 
 model User {
@@ -389,4 +390,23 @@ model ChartAccount {
   lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
 
   @@unique([lodgeId, code])
+}
+
+// RBAC persistido por loja: matriz papel × recurso × ação.
+// Substitui o roleMap fixo em código — cada loja pode ajustar suas permissões.
+// Se uma loja não tiver linhas, o sistema usa os padrões de src/lib/rbac.ts (DEFAULT_POLICY).
+model RolePermission {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  role      String   // admin | venerable | treasurer | secretary | member
+  resource  String   // members | documents | messages | accounts | portal
+  action    String   // read | write
+  allowed   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+
+  @@unique([lodgeId, role, resource, action])
+  @@index([lodgeId])
 }

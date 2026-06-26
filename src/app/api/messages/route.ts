@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireAccess } from '@/lib/rbac';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json({ items: [] });
   }
 
-  const access = requireAccess(role, 'messages', 'read');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'messages', 'read');
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const access = requireAccess(role, 'messages', 'write');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'messages', 'write');
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
