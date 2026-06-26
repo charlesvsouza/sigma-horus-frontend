@@ -29,43 +29,69 @@ export function PlansSection() {
     }
   }
 
+  const plans = Object.values(PLANS);
+
   return (
-    <section id="planos" className="mx-auto max-w-7xl px-6 pb-24 lg:px-8">
-      <div className="mb-12 text-center">
-        <h2 className="text-3xl font-semibold text-white">Planos</h2>
-        <p className="mt-3 text-slate-400">Escolha o plano ideal para o tamanho da sua loja.</p>
+    <section id="planos" className="mx-auto max-w-7xl px-6 py-24 lg:px-10">
+      <div className="max-w-2xl">
+        <p className="font-display text-xs tracking-[0.4em] text-gold">PLANOS</p>
+        <h2 className="font-display mt-5 text-[clamp(1.8rem,3.5vw,2.6rem)] font-semibold leading-tight text-sand-light">
+          Do oriente pequeno à potência
+        </h2>
+        <p className="mt-4 text-base leading-7 text-sand">
+          Por faixa de obreiros ativos. Comece com avaliação gratuita; ajuste o plano conforme a loja cresce.
+        </p>
       </div>
-      <div className="grid gap-6 lg:grid-cols-3">
-        {Object.values(PLANS).map((plan) => (
-          <div
-            key={plan.id}
-            className="flex flex-col rounded-3xl border border-white/10 bg-slate-900/70 p-8 backdrop-blur"
-          >
-            <h3 className="text-xl font-semibold text-white">{plan.name}</h3>
-            <p className="mt-2 text-sm text-slate-400">{plan.description}</p>
-            <p className="mt-6">
-              <span className="text-4xl font-semibold text-amber-300">{formatPrice(plan.price)}</span>
-              <span className="ml-2 text-sm text-slate-400">/mês</span>
-            </p>
-            <ul className="mt-8 space-y-3">
-              {plan.features.map((feature) => (
-                <li key={feature} className="flex items-start gap-3 text-sm text-slate-300">
-                  <span className="mt-0.5 text-emerald-400">✓</span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-auto pt-8">
-              <button
-                onClick={() => handleSubscribe(plan.id)}
-                disabled={loading !== null}
-                className="w-full rounded-full bg-amber-400 px-6 py-3 font-medium text-slate-950 transition hover:bg-amber-300 disabled:opacity-50"
-              >
-                {loading === plan.id ? 'Redirecionando...' : 'Assinar agora'}
-              </button>
+
+      <div className="mt-14 grid gap-5 lg:grid-cols-3">
+        {plans.map((plan, i) => {
+          const featured = i === 1;
+          return (
+            <div
+              key={plan.id}
+              className={`flex flex-col rounded-2xl border p-8 transition-colors ${
+                featured
+                  ? 'border-gold/40 bg-sigma-blue-dark/80'
+                  : 'border-white/[0.08] bg-sigma-blue-dark/40 hover:border-white/15'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-display text-lg font-semibold tracking-wide text-sand-light">{plan.name}</h3>
+                {featured ? (
+                  <span className="rounded-full border border-gold/30 bg-gold/10 px-2.5 py-0.5 text-xs font-medium text-gold">
+                    Mais escolhido
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-2 text-sm text-sand-dark">{plan.description}</p>
+              <p className="mt-6 flex items-baseline gap-2">
+                <span className="text-4xl font-semibold tabular-nums text-sand-light">{formatPrice(plan.price)}</span>
+                <span className="text-sm text-sand-dark">/mês</span>
+              </p>
+              <ul className="mt-8 space-y-3">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3 text-sm text-sand">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-auto pt-8">
+                <button
+                  onClick={() => handleSubscribe(plan.id)}
+                  disabled={loading !== null}
+                  className={`w-full rounded-full px-6 py-3 text-sm font-medium transition-all duration-300 ease-out disabled:opacity-50 ${
+                    featured
+                      ? 'bg-gold text-sigma-blue-deep hover:bg-gold-light'
+                      : 'border border-gold/40 text-gold/90 hover:border-gold/60 hover:text-gold'
+                  }`}
+                >
+                  {loading === plan.id ? 'Redirecionando...' : 'Assinar agora'}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
