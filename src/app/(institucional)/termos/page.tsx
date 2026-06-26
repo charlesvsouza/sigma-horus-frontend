@@ -148,8 +148,9 @@ export default function TermosPage() {
 
       <Section n={14} title="Lei aplicável e foro">
         <p>
-          Aplica-se a legislação brasileira. Fica eleito o foro do domicílio da contratante do Sigma Horus para dirimir
-          controvérsias, salvo disposição legal em contrário.
+          Aplica-se a legislação brasileira. Fica eleito o <strong>foro da Comarca da Capital do Estado do Rio de
+          Janeiro</strong> para dirimir quaisquer controvérsias decorrentes destes Termos, com renúncia a qualquer outro,
+          por mais privilegiado que seja, salvo disposição legal em contrário.
         </p>
       </Section>
     </LegalDoc>
