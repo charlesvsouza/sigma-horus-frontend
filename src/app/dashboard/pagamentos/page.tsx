@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 
 interface MemberOption { id: string; name: string; }
@@ -21,6 +22,7 @@ export default function PagamentosPage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ accountId: '', memberId: '', amount: '', paidAt: '', method: 'manual', note: '' });
+  const [consent, setConsent] = useState(false);
 
   async function loadData() {
     setLoading(true);
@@ -46,6 +48,10 @@ export default function PagamentosPage() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (!consent) {
+      setMessage('Confirme a ciência sobre os lançamentos antes de registrar.');
+      return;
+    }
     const response = await fetch('/api/payments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -60,58 +66,69 @@ export default function PagamentosPage() {
     if (response.ok) {
       setMessage('Pagamento registrado com sucesso.');
       setForm({ accountId: '', memberId: '', amount: '', paidAt: '', method: 'manual', note: '' });
+      setConsent(false);
       await loadData();
     } else {
       setMessage(data.error ?? 'Erro ao registrar pagamento.');
     }
   }
 
+  const INPUT = "w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100">
+    <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
-          <h1 className="text-3xl font-semibold">Pagamentos</h1>
-          <p className="mt-3 text-slate-400">Registre entradas e saídas de caixa vinculadas às contas do MVP.</p>
+          <h1 className="text-2xl font-bold text-sand-light">Pagamentos</h1>
+          <p className="mt-1 text-sm text-sand-dark">Registre entradas e saídas de caixa vinculadas às contas do MVP.</p>
         </div>
 
-        {message ? <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
+        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
 
-        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-          <h2 className="text-xl font-semibold">Novo pagamento</h2>
-          <form onSubmit={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
-            <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" required>
+        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <h2 className="text-base font-semibold text-sand-light">Novo pagamento</h2>
+          <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
+            <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })} className={INPUT} required>
               <option value="">Selecione uma conta</option>
               {accounts.map((account) => <option key={account.id} value={account.id}>{account.title}</option>)}
             </select>
-            <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3">
+            <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={INPUT}>
               <option value="">Vincular a um membro</option>
               {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
             </select>
-            <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" placeholder="Valor" required />
-            <input type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3" required />
-            <select value={form.method} onChange={(event) => setForm({ ...form, method: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 md:col-span-2">
+            <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT} placeholder="Valor" required />
+            <input type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className={INPUT} required />
+            <select value={form.method} onChange={(event) => setForm({ ...form, method: event.target.value })} className={`${INPUT} md:col-span-2`}>
               <option value="manual">Manual</option>
               <option value="pix">PIX</option>
               <option value="cash">Dinheiro</option>
               <option value="card">Cartão</option>
             </select>
-            <textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 md:col-span-2" placeholder="Observação" rows={3} />
-            <button type="submit" className="rounded-full bg-amber-400 px-4 py-3 font-medium text-slate-950 md:col-span-2">Registrar pagamento</button>
+            <textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observação" rows={3} />
+            <label className="flex items-start gap-3 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-3 md:col-span-2">
+              <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 h-4 w-4 accent-gold" />
+              <span className="text-sm text-sand">
+                Declaro estar ciente e de acordo com o registro deste e de eventuais lançamentos recorrentes,
+                confirmo a veracidade dos dados informados e li os{' '}
+                <Link href="/termos" target="_blank" className="text-gold hover:text-gold-light">Termos de Uso</Link>.
+              </span>
+            </label>
+            <button type="submit" disabled={!consent} className="rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark disabled:cursor-not-allowed disabled:opacity-40 md:col-span-2">Registrar pagamento</button>
           </form>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-          <h2 className="text-xl font-semibold">Pagamentos recentes</h2>
-          <div className="mt-6 space-y-3">
-            {loading ? <p className="text-sm text-slate-500">Carregando...</p> : payments.length === 0 ? <p className="text-sm text-slate-500">Nenhum pagamento registrado.</p> : payments.map((payment) => (
-              <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <h2 className="text-base font-semibold text-sand-light">Pagamentos recentes</h2>
+          <div className="mt-5 space-y-3">
+            {loading ? <p className="text-sm text-sand-dark">Carregando...</p> : payments.length === 0 ? <p className="text-sm text-sand-dark">Nenhum pagamento registrado.</p> : payments.map((payment) => (
+              <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div>
-                  <p className="font-medium">{payment.account?.title ?? 'Conta removida'}</p>
-                  <p className="text-sm text-slate-400">{payment.member?.name ?? 'Sem vínculo'} • {payment.method}</p>
+                  <p className="text-sm font-medium text-sand-light">{payment.account?.title ?? 'Conta removida'}</p>
+                  <p className="mt-1 text-xs text-sand-dark">{payment.member?.name ?? 'Sem vínculo'} • {payment.method}</p>
                 </div>
-                <div className="text-sm text-slate-400">
-                  <p>Valor: R$ {payment.amount.toFixed(2)}</p>
-                  <p>Data: {new Date(payment.paidAt).toLocaleDateString('pt-BR')}</p>
+                <div className="text-right text-xs text-sand-dark">
+                  <p className="tabular-nums">Valor: R$ {payment.amount.toFixed(2)}</p>
+                  <p className="mt-0.5">Data: {new Date(payment.paidAt).toLocaleDateString('pt-BR')}</p>
                 </div>
               </div>
             ))}

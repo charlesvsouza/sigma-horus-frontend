@@ -117,6 +117,27 @@ export default function Home() {
           </a>
         </div>
       </section>
+
+      <footer className="border-t border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-12 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div>
+            <p className="text-lg font-semibold tracking-[0.2em] text-amber-300">SIGMA HORUS</p>
+            <p className="mt-2 max-w-md text-sm text-slate-400">
+              Gestão completa da loja maçônica: tesouraria, secretaria, chancelaria e hospitalaria.
+            </p>
+          </div>
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-300">
+            <a href="/sobre" className="transition hover:text-white">Sobre</a>
+            <a href="/termos" className="transition hover:text-white">Termos de Uso</a>
+            <a href="/privacidade" className="transition hover:text-white">Privacidade & LGPD</a>
+            <a href="/compliance" className="transition hover:text-white">Compliance & Transparência</a>
+            <a href="/login" className="transition hover:text-white">Entrar</a>
+          </nav>
+        </div>
+        <div className="border-t border-white/5 px-6 py-6 text-center text-xs text-slate-500 lg:px-8">
+          © {new Date().getFullYear()} Sigma Horus — a tesouraria da sua loja no prumo.
+        </div>
+      </footer>
     </main>
   );
 }
