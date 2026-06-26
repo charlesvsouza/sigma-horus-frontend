@@ -38,38 +38,31 @@ const pillars = [
 
 export default function Home() {
   return (
-    <main className="relative overflow-x-clip">
-      {/* ===================== HERO CINEMATOGRÁFICO ===================== */}
-      <section className="relative isolate flex min-h-[94svh] flex-col overflow-hidden">
-        {/* Cena egípcia — mesma atmosfera da tela de login, para coesão landing↔app */}
-        <div className="absolute inset-0 -z-10">
-          <Image
-            src="/backgraund_theme.png"
-            alt="Pirâmides de Gizé sob o deserto dourado ao entardecer"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-          {/* Véu azul-noite: legibilidade + gravidade institucional.
-              Esquerda densa (onde mora o texto), direita aberta (pirâmide visível). */}
-          <div className="absolute inset-0 bg-gradient-to-b from-sigma-blue-deep/75 via-sigma-blue-deep/45 to-sigma-blue-deep" />
-          <div className="absolute inset-0 bg-gradient-to-r from-sigma-blue-deep via-sigma-blue-deep/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-sigma-blue-deep/70 via-transparent to-transparent" />
-        </div>
+    <main className="relative">
+      {/* Fundo egípcio FIXO — sempre visível; o conteúdo rola por cima.
+          Véu mais leve para revelar as pirâmides e os camelos ao fundo. */}
+      <div aria-hidden="true" className="fixed inset-0 -z-10">
+        <Image
+          src="/backgraund_theme.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[50%_55%]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-sigma-blue-deep/58 via-sigma-blue-deep/42 to-sigma-blue-deep/72" />
+      </div>
 
-        {/* Navegação sobre a foto */}
-        <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-10">
-          <Link href="/" className="flex items-center" aria-label="Sigma Horus — início">
-            <Image
-              src="/sigmahorus_ouro.png"
-              alt="Sigma Horus"
-              width={1024}
-              height={1024}
-              priority
-              className="h-12 w-auto drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]"
-            />
-          </Link>
+      {/* ===================== HERO ===================== */}
+      <section className="relative flex min-h-[94svh] flex-col">
+        {/* Reforço de contraste só no herói (esquerda), sem escurecer o resto */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-sigma-blue-deep/72 via-sigma-blue-deep/15 to-transparent"
+        />
+
+        {/* Navegação — sem logo: o emblema do herói já é a marca */}
+        <nav className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-end px-6 py-6 lg:px-10">
           <div className="flex items-center gap-4 text-sm sm:gap-7">
             <a href="#modulos" className="hidden text-sand-light/80 transition-colors hover:text-sand-light sm:inline">
               Módulos
@@ -90,7 +83,7 @@ export default function Home() {
         </nav>
 
         {/* Conteúdo do herói — reveal cerimonial em stagger */}
-        <div className="mx-auto flex w-full max-w-7xl flex-1 items-center px-6 pb-20 pt-6 lg:px-10">
+        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-6 pb-20 pt-6 lg:px-10">
           <div className="max-w-2xl">
             <Image
               src="/sigmahorus_ouro.png"
@@ -138,7 +131,7 @@ export default function Home() {
       </section>
 
       {/* ===================== OS QUATRO OFÍCIOS ===================== */}
-      <section id="modulos" className="relative border-t border-white/[0.06] bg-sigma-blue-dark/40">
+      <section id="modulos" className="relative border-t border-white/[0.06]">
         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-28">
           <div className="max-w-2xl">
             <p className="font-display text-xs tracking-[0.4em] text-gold">OS QUATRO OFÍCIOS</p>
@@ -199,7 +192,7 @@ export default function Home() {
       </section>
 
       {/* ===================== CONCEITO DA MARCA ===================== */}
-      <section className="relative border-y border-white/[0.06] bg-sigma-blue-dark/40">
+      <section className="relative border-y border-white/[0.06]">
         <div className="mx-auto flex max-w-5xl flex-col items-center px-6 py-24 text-center lg:py-28">
           <Image
             src="/sigmahorus_ouro.png"
