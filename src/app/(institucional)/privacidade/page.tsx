@@ -11,7 +11,7 @@ export default function PrivacidadePage() {
     <LegalDoc
       eyebrow="Proteção de dados"
       title="Política de Privacidade e LGPD"
-      updatedAt="25 de junho de 2026"
+      updatedAt="26 de junho de 2026"
       draftNotice
       intro={
         <>
@@ -48,23 +48,45 @@ export default function PrivacidadePage() {
         </ul>
       </Section>
 
-      <Section n={4} title="Compartilhamento">
+      <Section n={4} title="Compartilhamento e suboperadores">
         <p>
-          Compartilhamos dados apenas com operadores necessários ao serviço — por exemplo, o Gateway de pagamentos
-          conectado pela loja (Asaas), provedores de infraestrutura e armazenamento (hospedagem, banco de dados,
-          storage de documentos) e o processador de assinaturas (Stripe). Não vendemos dados pessoais.
+          Compartilhamos dados apenas com suboperadores necessários à prestação do serviço, sob contrato e dever de
+          confidencialidade. Não vendemos dados pessoais nem os usamos para publicidade. Os principais suboperadores são:
+        </p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li><strong>Vercel</strong> — hospedagem da aplicação e execução das funções.</li>
+          <li><strong>Railway</strong> — banco de dados PostgreSQL gerenciado e jobs.</li>
+          <li><strong>Cloudflare R2</strong> — armazenamento privado de documentos.</li>
+          <li><strong>Stripe</strong> — processamento da assinatura da loja (dados de cobrança da plataforma).</li>
+          <li><strong>Asaas</strong> (ou gateway equivalente conectado pela loja) — cobranças que a loja faz aos seus membros; os valores são liquidados diretamente à loja.</li>
+        </ul>
+      </Section>
+
+      <Section n={5} title="Transferência internacional">
+        <p>
+          Alguns suboperadores podem processar dados em servidores fora do Brasil. Nesses casos, a transferência observa
+          a LGPD (art. 33), apoiando-se em garantias contratuais e em padrões de segurança adequados dos provedores.
         </p>
       </Section>
 
-      <Section n={5} title="Armazenamento e segurança">
+      <Section n={6} title="Armazenamento e segurança">
         <p>
           Adotamos isolamento por loja com <em>Row-Level Security</em> no banco, criptografia em trânsito (TLS),
-          senhas com hash forte, controle de acesso por papel (RBAC) e trilha de auditoria. Documentos ficam em
-          bucket privado, acessíveis apenas por links assinados de curta duração.
+          senhas com hash forte (bcrypt), chaves sensíveis cifradas (AES-256-GCM), controle de acesso por papel (RBAC) e
+          trilha de auditoria imutável. Documentos ficam em bucket privado, acessíveis apenas por links assinados de
+          curta duração. Mantemos backups periódicos do banco de dados.
         </p>
       </Section>
 
-      <Section n={6} title="Retenção e eliminação">
+      <Section n={7} title="Incidentes de segurança">
+        <p>
+          Em caso de incidente que possa acarretar risco relevante aos titulares, adotamos medidas de contenção e
+          comunicamos as lojas afetadas e, quando cabível, a ANPD, conforme a LGPD. Vulnerabilidades podem ser reportadas
+          a <a className="text-gold hover:text-gold-light" href="mailto:compliance@sigmahorus.com.br">compliance@sigmahorus.com.br</a>.
+        </p>
+      </Section>
+
+      <Section n={8} title="Retenção e eliminação">
         <p>
           Os dados são mantidos enquanto a loja utilizar o serviço e pelo prazo necessário ao cumprimento de obrigações
           legais (ex.: contábeis e fiscais). Encerrada a relação, os dados podem ser exportados pela loja e, em seguida,
@@ -72,7 +94,7 @@ export default function PrivacidadePage() {
         </p>
       </Section>
 
-      <Section n={7} title="Direitos do titular">
+      <Section n={9} title="Direitos do titular">
         <p>
           Nos termos da LGPD, o titular pode solicitar confirmação de tratamento, acesso, correção, anonimização,
           portabilidade, informação sobre compartilhamento e, quando cabível, eliminação dos dados. As solicitações de
@@ -80,14 +102,14 @@ export default function PrivacidadePage() {
         </p>
       </Section>
 
-      <Section n={8} title="Cookies">
+      <Section n={10} title="Cookies">
         <p>
           Utilizamos cookies estritamente necessários para autenticação e funcionamento (ex.: sessão de login). Não usamos
           cookies de publicidade. Você pode gerenciar cookies no navegador, ciente de que desabilitar os essenciais impede o login.
         </p>
       </Section>
 
-      <Section n={9} title="Encarregado (DPO) e contato">
+      <Section n={11} title="Encarregado (DPO) e contato">
         <p>
           Para exercer direitos ou esclarecer dúvidas sobre privacidade, contate o Encarregado de Dados em{' '}
           <a className="text-gold hover:text-gold-light" href="mailto:privacidade@sigmahorus.com.br">privacidade@sigmahorus.com.br</a>.

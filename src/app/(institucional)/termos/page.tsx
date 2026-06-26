@@ -11,7 +11,7 @@ export default function TermosPage() {
     <LegalDoc
       eyebrow="Jurídico"
       title="Termos de Uso"
-      updatedAt="25 de junho de 2026"
+      updatedAt="26 de junho de 2026"
       draftNotice
       intro={
         <>
@@ -37,23 +37,60 @@ export default function TermosPage() {
         </p>
       </Section>
 
-      <Section n={3} title="Cadastro, acesso e responsabilidade do usuário">
+      <Section n={3} title="Cadastro por convite, acesso e responsabilidade">
         <p>
+          O cadastro de novas lojas é feito <strong>por convite</strong>: é necessário um código válido para criar a conta.
           O acesso depende de credenciais individuais. A loja é responsável por manter a confidencialidade das
           senhas, por definir os papéis de acesso de cada usuário e por todas as atividades realizadas em sua conta.
           O usuário compromete-se a fornecer informações verdadeiras e a não utilizar a Plataforma para fins ilícitos.
         </p>
       </Section>
 
-      <Section n={4} title="Planos, assinatura e pagamento">
+      <Section n={4} title="Período de teste">
         <p>
-          A assinatura é contratada em planos por faixa de membros ativos, com cobrança recorrente. Os valores,
-          a periodicidade e eventual período de avaliação são informados no momento da contratação. O não pagamento
-          pode suspender o acesso após aviso. Tributos aplicáveis são de responsabilidade de cada parte conforme a lei.
+          Toda nova loja conta com um <strong>período de teste de 10 (dez) dias</strong>, gratuito, no plano Oficina, com
+          acesso às funcionalidades do plano. O teste <strong>não gera cobrança</strong>: nenhum valor é debitado durante
+          esse período. Ao seu término, a loja deve contratar um dos planos para continuar utilizando a Plataforma; sem
+          contratação, o acesso é pausado, preservando-se os dados conforme a política de retenção.
         </p>
       </Section>
 
-      <Section n={5} title="Cobranças aos membros e lançamentos recorrentes">
+      <Section n={5} title="Planos, assinatura e formas de pagamento">
+        <p>
+          A assinatura é contratada em planos por faixa de membros ativos (Oficina, Loja e Potência), com os valores
+          informados no momento da contratação. As formas disponíveis são:
+        </p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li><strong>Mensal no cartão:</strong> cobrança recorrente mensal, com renovação automática.</li>
+          <li><strong>Anual no cartão:</strong> cobrança anual, com renovação automática, sem desconto.</li>
+          <li><strong>Anual no boleto:</strong> pagamento único do período, com <strong>10% de desconto</strong>. Nesta
+            modalidade, o <strong>acesso é liberado apenas após a confirmação do pagamento</strong>, e não há renovação
+            automática (a recontratação é manual ao fim do período).</li>
+        </ul>
+        <p>
+          O não pagamento de cobrança recorrente pode suspender o acesso após aviso. Tributos aplicáveis são de
+          responsabilidade de cada parte conforme a lei.
+        </p>
+      </Section>
+
+      <Section n={6} title="Reembolso, upgrade e downgrade">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            <strong>Sem reembolso:</strong> contratado um plano, <strong>não há devolução</strong> de valores já pagos
+            referentes ao período vigente, seja em caso de cancelamento, downgrade ou inatividade.
+          </li>
+          <li>
+            <strong>Upgrade:</strong> a mudança para um plano superior tem <strong>efeito imediato</strong>, no ato da
+            contratação, com cobrança proporcional da diferença do período.
+          </li>
+          <li>
+            <strong>Downgrade:</strong> a mudança para um plano inferior passa a valer <strong>somente ao término do
+            período já contratado</strong>. Até lá, a loja mantém o plano atual, sem devolução de valores.
+          </li>
+        </ul>
+      </Section>
+
+      <Section n={7} title="Cobranças aos membros e lançamentos recorrentes">
         <p>
           A loja pode configurar cobranças recorrentes (ex.: mensalidades) e lançamentos automáticos. Ao habilitar a
           recorrência, a loja declara estar ciente de que novas cobranças serão geradas periodicamente conforme os
@@ -62,7 +99,7 @@ export default function TermosPage() {
         </p>
       </Section>
 
-      <Section n={6} title="Obrigações da loja">
+      <Section n={8} title="Obrigações da loja">
         <ul className="list-disc space-y-2 pl-5">
           <li>Usar os dados de membros conforme a LGPD, com base legal e finalidade legítima.</li>
           <li>Manter corretas as informações cadastrais, fiscais e bancárias.</li>
@@ -71,7 +108,7 @@ export default function TermosPage() {
         </ul>
       </Section>
 
-      <Section n={7} title="Disponibilidade e suporte">
+      <Section n={9} title="Disponibilidade e suporte">
         <p>
           Empregamos esforços razoáveis para manter a Plataforma disponível e segura, com backups periódicos.
           Podem ocorrer interrupções para manutenção ou por fatores externos. O serviço é prestado &ldquo;no estado em
@@ -79,7 +116,7 @@ export default function TermosPage() {
         </p>
       </Section>
 
-      <Section n={8} title="Limitação de responsabilidade">
+      <Section n={10} title="Limitação de responsabilidade">
         <p>
           Na máxima extensão permitida em lei, o Sigma Horus não responde por danos indiretos ou lucros cessantes,
           nem por atos do Gateway, de instituições bancárias ou de terceiros. A responsabilidade eventual fica limitada
@@ -87,14 +124,14 @@ export default function TermosPage() {
         </p>
       </Section>
 
-      <Section n={9} title="Propriedade intelectual">
+      <Section n={11} title="Propriedade intelectual">
         <p>
           A marca, o código e o design da Plataforma pertencem ao Sigma Horus. Os dados inseridos pela loja
           permanecem de titularidade da loja, que pode exportá-los conforme a seção de Privacidade.
         </p>
       </Section>
 
-      <Section n={10} title="Rescisão">
+      <Section n={12} title="Rescisão">
         <p>
           A loja pode cancelar a assinatura a qualquer tempo. Em caso de descumprimento destes Termos, o acesso pode
           ser suspenso ou encerrado. Após o encerramento, os dados são tratados conforme a política de retenção descrita
@@ -102,14 +139,14 @@ export default function TermosPage() {
         </p>
       </Section>
 
-      <Section n={11} title="Alterações dos Termos">
+      <Section n={13} title="Alterações dos Termos">
         <p>
           Estes Termos podem ser atualizados. Mudanças relevantes serão comunicadas; o uso continuado após a vigência
           implica concordância com a nova versão.
         </p>
       </Section>
 
-      <Section n={12} title="Lei aplicável e foro">
+      <Section n={14} title="Lei aplicável e foro">
         <p>
           Aplica-se a legislação brasileira. Fica eleito o foro do domicílio da contratante do Sigma Horus para dirimir
           controvérsias, salvo disposição legal em contrário.

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 export const INSTITUTIONAL_LINKS = [
   { href: '/sobre', label: 'Sobre' },
+  { href: '/manual', label: 'Manual' },
   { href: '/termos', label: 'Termos de Uso' },
   { href: '/privacidade', label: 'Privacidade & LGPD' },
   { href: '/compliance', label: 'Compliance & Transparência' },
