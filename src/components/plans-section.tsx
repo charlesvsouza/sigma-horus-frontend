@@ -2,11 +2,22 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { PLANS, formatPrice } from '@/lib/stripe';
+import {
+  PLANS,
+  priceFor,
+  formatPrice,
+  type BillingInterval,
+  type PaymentMethod,
+} from '@/lib/plans';
 
 export function PlansSection() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [interval, setInterval] = useState<BillingInterval>('month');
+  const [method, setMethod] = useState<Extract<PaymentMethod, 'card' | 'pix'>>('card');
+
+  const isAnnual = interval === 'year';
+  const effectiveMethod: PaymentMethod = isAnnual ? method : 'card';
 
   async function handleSubscribe(planId: string) {
     setLoading(planId);
@@ -14,7 +25,7 @@ export function PlansSection() {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planId }),
+        body: JSON.stringify({ plan: planId, interval, method: effectiveMethod }),
       });
       if (res.status === 401) {
         router.push('/login');
@@ -35,17 +46,65 @@ export function PlansSection() {
     <section id="planos" className="mx-auto max-w-7xl px-6 py-24 lg:px-10">
       <div className="max-w-2xl">
         <p className="font-display text-xs tracking-[0.4em] text-gold">PLANOS</p>
-        <h2 className="font-display mt-5 text-[clamp(1.8rem,3.5vw,2.6rem)] font-semibold leading-tight text-sand-light">
+        <h2 className="mt-5 font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-semibold leading-tight text-sand-light">
           Do oriente pequeno à potência
         </h2>
         <p className="mt-4 text-base leading-7 text-sand">
-          Por faixa de obreiros ativos. Comece com avaliação gratuita; ajuste o plano conforme a loja cresce.
+          Por faixa de obreiros ativos. Comece com 10 dias de teste; ao final, assine um dos planos.
+          No anual via PIX ou boleto você ganha 10% de desconto.
         </p>
       </div>
 
-      <div className="mt-14 grid gap-5 lg:grid-cols-3">
+      {/* Controles: intervalo e (no anual) método de pagamento */}
+      <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="inline-flex rounded-full border border-white/[0.1] bg-sigma-blue-dark/50 p-1">
+          <button
+            onClick={() => setInterval('month')}
+            className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+              !isAnnual ? 'bg-gold text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'
+            }`}
+          >
+            Mensal
+          </button>
+          <button
+            onClick={() => setInterval('year')}
+            className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+              isAnnual ? 'bg-gold text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'
+            }`}
+          >
+            Anual
+          </button>
+        </div>
+
+        {isAnnual ? (
+          <div className="inline-flex rounded-full border border-white/[0.1] bg-sigma-blue-dark/50 p-1">
+            <button
+              onClick={() => setMethod('card')}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                method === 'card' ? 'bg-white/10 text-sand-light' : 'text-sand-dark hover:text-sand-light'
+              }`}
+            >
+              Cartão (renova auto)
+            </button>
+            <button
+              onClick={() => setMethod('pix')}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                method === 'pix' ? 'bg-gold/90 text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'
+              }`}
+            >
+              PIX/boleto · 10% off
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-10 grid gap-5 lg:grid-cols-3">
         {plans.map((plan, i) => {
           const featured = i === 1;
+          const total = priceFor(plan.id, interval, effectiveMethod);
+          const perMonth = isAnnual ? Math.round(total / 12) : total;
+          const fullAnnual = plan.price * 12;
+          const showsDiscount = isAnnual && effectiveMethod !== 'card';
           return (
             <div
               key={plan.id}
@@ -64,10 +123,26 @@ export function PlansSection() {
                 ) : null}
               </div>
               <p className="mt-2 text-sm text-sand-dark">{plan.description}</p>
+
               <p className="mt-6 flex items-baseline gap-2">
-                <span className="text-4xl font-semibold tabular-nums text-sand-light">{formatPrice(plan.price)}</span>
+                <span className="text-4xl font-semibold tabular-nums text-sand-light">
+                  {formatPrice(perMonth)}
+                </span>
                 <span className="text-sm text-sand-dark">/mês</span>
               </p>
+              {isAnnual ? (
+                <p className="mt-1 text-xs text-sand-dark">
+                  {formatPrice(total)} por ano
+                  {showsDiscount ? (
+                    <span className="ml-2 text-gold">10% off (de {formatPrice(fullAnnual)})</span>
+                  ) : (
+                    <span className="ml-2">cobrança anual no cartão</span>
+                  )}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-sand-dark">cobrança mensal no cartão</p>
+              )}
+
               <ul className="mt-8 space-y-3">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-3 text-sm text-sand">
@@ -76,6 +151,7 @@ export function PlansSection() {
                   </li>
                 ))}
               </ul>
+
               <div className="mt-auto pt-8">
                 <button
                   onClick={() => handleSubscribe(plan.id)}
@@ -88,6 +164,11 @@ export function PlansSection() {
                 >
                   {loading === plan.id ? 'Redirecionando...' : 'Assinar agora'}
                 </button>
+                {showsDiscount ? (
+                  <p className="mt-3 text-center text-[0.7rem] text-sand-dark">
+                    Acesso liberado após a confirmação do pagamento.
+                  </p>
+                ) : null}
               </div>
             </div>
           );

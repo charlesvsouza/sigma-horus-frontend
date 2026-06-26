@@ -44,6 +44,7 @@ const NAV: NavGroupDef[] = [
     category: 'Administração',
     items: [
       { href: '/dashboard/configuracoes', label: 'Configurações da loja', roles: ['admin'] },
+      { href: '/dashboard/assinatura', label: 'Assinatura', roles: ['admin'] },
       { href: '/dashboard/integracoes', label: 'Integrações', roles: ['admin'] },
       { href: '/dashboard/auditoria', label: 'Auditoria', roles: ['admin'] },
     ],
@@ -56,18 +57,38 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const role = (session?.user?.role ?? 'member').toLowerCase();
 
   let lodgeName = 'Minha loja';
-  let subscriptionActive = true;
+  let sub: {
+    status: string;
+    plan: string;
+    trialEndsAt: Date | null;
+    pendingPlan: string | null;
+    pendingPlanEffectiveAt: Date | null;
+  } | null = null;
   if (lodgeId) {
     const data = await withTenant(String(lodgeId), async (db) => {
-      const [lodge, sub] = await Promise.all([
+      const [lodge, subscription] = await Promise.all([
         db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true } }),
-        db.subscription.findUnique({ where: { lodgeId: String(lodgeId) }, select: { status: true } }),
+        db.subscription.findUnique({
+          where: { lodgeId: String(lodgeId) },
+          select: { status: true, plan: true, trialEndsAt: true, pendingPlan: true, pendingPlanEffectiveAt: true },
+        }),
       ]);
-      return { lodge, sub };
+      return { lodge, subscription };
     });
     if (data.lodge?.name) lodgeName = data.lodge.name;
-    subscriptionActive = data.sub?.status === 'active';
+    sub = data.subscription;
   }
+
+  const now = Date.now();
+  const trialEnds = sub?.trialEndsAt ? sub.trialEndsAt.getTime() : null;
+  const trialDaysLeft = trialEnds ? Math.ceil((trialEnds - now) / (24 * 60 * 60 * 1000)) : 0;
+  const isTrialing = sub?.status === 'trialing' && trialEnds !== null && trialEnds > now;
+  const isActive = sub?.status === 'active';
+  const trialExpired = sub?.status === 'trialing' && trialEnds !== null && trialEnds <= now;
+  const blocked = !isActive && !isTrialing; // inativo, trial expirado, etc.
+
+  const fmtDate = (d: Date | null) =>
+    d ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d) : '';
 
   const groups = NAV
     .map((g) => ({ category: g.category, items: g.items.filter((i) => i.roles.includes(role)).map(({ href, label }) => ({ href, label })) }))
@@ -75,10 +96,21 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   return (
     <DashboardShell groups={groups} lodgeName={lodgeName} userName={session?.user?.name ?? 'Usuário'} role={role}>
-      {!subscriptionActive ? (
-        <div className="border-b border-amber-500/30 bg-amber-500/10 px-6 py-3 text-center text-sm text-amber-200">
-          Sua loja ainda não possui uma assinatura ativa.{' '}
-          <a href="/#planos" className="underline hover:text-amber-100">Escolher plano</a>
+      {blocked ? (
+        <div className="border-b border-rose-500/30 bg-rose-500/10 px-6 py-3 text-center text-sm text-rose-200">
+          {trialExpired
+            ? 'Seu período de teste terminou. Assine um plano para continuar usando o Sigma Horus.'
+            : 'Sua loja não possui uma assinatura ativa.'}{' '}
+          <a href="/dashboard/assinatura" className="font-medium underline hover:text-rose-100">Assinar agora</a>
+        </div>
+      ) : isTrialing ? (
+        <div className="border-b border-gold/30 bg-gold/10 px-6 py-3 text-center text-sm text-gold">
+          Período de teste: {trialDaysLeft} {trialDaysLeft === 1 ? 'dia restante' : 'dias restantes'}.{' '}
+          <a href="/dashboard/assinatura" className="font-medium underline hover:text-gold-light">Escolher plano</a>
+        </div>
+      ) : isActive && sub?.pendingPlan ? (
+        <div className="border-b border-sky-500/30 bg-sky-500/10 px-6 py-3 text-center text-sm text-sky-200">
+          Downgrade agendado para {fmtDate(sub.pendingPlanEffectiveAt)}. Você mantém o plano atual até lá.
         </div>
       ) : null}
       {children}

@@ -226,8 +226,16 @@ model Subscription {
   lodgeId         String   @unique
   stripeSubscriptionId String? @unique
   stripeCustomerId String?
+  stripeScheduleId String?  // schedule de downgrade agendado (Stripe)
   plan            String   @default("oficina")
+  // status: trialing | active | past_due | inactive | canceled
   status          String   @default("inactive")
+  billingInterval String   @default("month") // month | year
+  paymentMethod   String?  // card | pix | boleto
+  trialEndsAt     DateTime?
+  // Downgrade agendado para o fim do período vigente (sem reembolso)
+  pendingPlan     String?
+  pendingPlanEffectiveAt DateTime?
   memberCount     Int      @default(0)
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
@@ -235,6 +243,23 @@ model Subscription {
   updatedAt       DateTime @updatedAt
 
   lodge           Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+}
+
+// Convite de acesso (cadastro de teste somente por convite).
+model Invitation {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  email       String?  // opcional: convite direcionado a um e-mail
+  note        String?  // referência interna (ex.: nome da loja/contato)
+  // status: pending | used | revoked | expired
+  status      String   @default("pending")
+  lodgeId     String?  // preenchido quando o convite é consumido
+  usedAt      DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
 }
 
 model AuditLog {

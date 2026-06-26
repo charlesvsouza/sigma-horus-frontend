@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BRAZILIAN_RITES } from '@/lib/masonic-reference';
@@ -20,12 +20,25 @@ export default function OnboardingPage() {
     adminEmail: '',
     adminPassword: '',
     riteName: 'Rito Escocês Antigo e Aceito (REAA)',
+    invite: '',
   });
+  const [inviteFromUrl, setInviteFromUrl] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Convite via link (?invite=CODE). Lido do client para dispensar Suspense.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('invite');
+    if (code) {
+      setForm((f) => ({ ...f, invite: code.trim().toUpperCase() }));
+      setInviteFromUrl(true);
+    }
+  }, []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError('');
+    setLoading(true);
 
     const response = await fetch('/api/lodges', {
       method: 'POST',
@@ -34,6 +47,7 @@ export default function OnboardingPage() {
     });
 
     const data = await response.json();
+    setLoading(false);
     if (!response.ok) {
       setError(data.error ?? 'Não foi possível concluir o onboarding.');
       return;
@@ -59,11 +73,27 @@ export default function OnboardingPage() {
             Configure sua loja
           </h1>
           <p className="mt-2 text-sm text-sand-dark">
-            Cadastre a sua loja, escolha o rito, crie o primeiro administrador
-            e comece a organizar ritos, potências e membros.
+            O cadastro é por convite, com <strong className="text-sand">10 dias de teste</strong> no
+            plano Oficina. Cadastre a loja, escolha o rito e crie o primeiro administrador.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <div>
+              <Input
+                label="Código de convite"
+                value={form.invite}
+                onChange={(e) => setForm({ ...form, invite: e.target.value.toUpperCase() })}
+                placeholder="SH-XXXXXXXX"
+                readOnly={inviteFromUrl}
+                required
+              />
+              <p className="mt-1.5 text-xs text-sand-dark">
+                {inviteFromUrl
+                  ? 'Convite aplicado pelo link recebido.'
+                  : 'Informe o código de convite recebido para liberar o teste.'}
+              </p>
+            </div>
+
             <div className="grid gap-5 md:grid-cols-2">
               <div className="md:col-span-2">
                 <Input
@@ -141,8 +171,8 @@ export default function OnboardingPage() {
               </p>
             ) : null}
 
-            <Button type="submit" className="w-full">
-              Criar loja e entrar
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Criando sua loja…' : 'Criar loja e iniciar teste'}
             </Button>
           </form>
         </div>

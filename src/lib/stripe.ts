@@ -1,4 +1,19 @@
 import Stripe from 'stripe';
+import { PLANS, type PlanId, type BillingInterval } from '@/lib/plans';
+
+// Re-exporta os helpers/constantes puros (client-safe) para compatibilidade
+// com os imports server-side existentes.
+export {
+  PLANS,
+  ANNUAL_DISCOUNT,
+  TRIAL_DAYS,
+  TRIAL_PLAN,
+  isPlanId,
+  priceFor,
+  formatPrice,
+  comparePlans,
+} from '@/lib/plans';
+export type { PlanId, BillingInterval, PaymentMethod } from '@/lib/plans';
 
 let _stripe: Stripe | null = null;
 
@@ -13,54 +28,42 @@ export function getStripe(): Stripe {
   return _stripe;
 }
 
-export const PLANS = {
-  oficina: {
-    id: 'oficina',
-    name: 'Oficina',
-    price: 3900,
-    maxMembers: 30,
-    description: 'Para lojas com até 30 membros ativos.',
-    features: [
-      'Até 30 membros ativos',
-      'Gestão financeira completa',
-      'Cobranças e boletos',
-      'Relatórios financeiros',
-      'Presença em sessões',
-    ],
-  },
-  loja: {
-    id: 'loja',
-    name: 'Loja',
-    price: 6900,
-    maxMembers: 80,
-    description: 'Para lojas de 31 a 80 membros ativos.',
-    features: [
-      'Até 80 membros ativos',
-      'Tudo do plano Oficina',
-      'Exportação de relatórios',
-      'Múltiplos administradores',
-      'Suporte prioritário',
-    ],
-  },
-  potencia: {
-    id: 'potencia',
-    name: 'Potência',
-    price: 11900,
-    maxMembers: Infinity,
-    description: 'Para lojas com mais de 80 membros ou múltiplas lojas.',
-    features: [
-      'Membros ilimitados',
-      'Tudo do plano Loja',
-      'Multiloja',
-      'Integração WhatsApp',
-      'Onboarding dedicado',
-      'SLA de suporte',
-    ],
-  },
-} as const;
+/**
+ * Garante (idempotente) o Product do plano no Stripe, identificado por metadata.
+ */
+async function ensureProduct(plan: PlanId): Promise<string> {
+  const stripe = getStripe();
+  const key = `sigma_plan_${plan}`;
+  const found = await stripe.products
+    .search({ query: `metadata['key']:'${key}'`, limit: 1 })
+    .catch(() => null);
+  if (found?.data?.[0]) return found.data[0].id;
+  const product = await stripe.products.create({
+    name: `Sigma Horus — ${PLANS[plan].name}`,
+    metadata: { key },
+  });
+  return product.id;
+}
 
-export type PlanId = keyof typeof PLANS;
-
-export function formatPrice(cents: number) {
-  return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+/**
+ * Garante (idempotente) o Price recorrente (cartão) para plano+intervalo,
+ * usando lookup_key estável. Anual no cartão = 12× o mensal (sem desconto).
+ * Retorna o id do Price para uso em subscriptions e schedules.
+ */
+export async function ensurePrice(plan: PlanId, interval: BillingInterval): Promise<string> {
+  const stripe = getStripe();
+  const lookupKey = `sigma_${plan}_${interval}`;
+  const existing = await stripe.prices.list({ lookup_keys: [lookupKey], active: true, limit: 1 });
+  if (existing.data[0]) return existing.data[0].id;
+  const productId = await ensureProduct(plan);
+  const amount = interval === 'year' ? PLANS[plan].price * 12 : PLANS[plan].price;
+  const price = await stripe.prices.create({
+    product: productId,
+    currency: 'brl',
+    unit_amount: amount,
+    recurring: { interval },
+    lookup_key: lookupKey,
+    metadata: { plan, interval },
+  });
+  return price.id;
 }
