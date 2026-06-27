@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `322a453`)
+## Estado atual (`main`, HEAD `c1cf94e`)
 - Working tree limpo, tudo pushed (deploy automático na Vercel).
 - `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
 - Banco: **16/16 migrations** no Railway, RLS ativo. 22 modelos (inclui `Relative`).
@@ -20,10 +20,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - ✅ **Membros — Fase 1**: página reescrita lista-primeiro (busca nome/CPF/CIM, tabela compacta com expandir inline, "Novo membro" recolhível), **editar/excluir** (`/api/members/[id]` PUT/DELETE; DELETE com guarda 409 se houver histórico financeiro/documentos), marco **Instalação** (`installationDate`/`installationLodge`, migration `20260627120000`), **evolução maçônica concatenada**. Helper `src/lib/member-fields.ts`.
 - ✅ **Membros — Fase 2**: tabela relacional **`Relative`** (kind mother|father|spouse|son|daughter|child|other; name, birthDate, cpf, email, phone, order) com RLS + índices `(lodgeId,memberId)` e `(lodgeId,birthDate)`, migration `20260627140000`. UI **Família e dependentes** no MemberForm (slots fixos Mãe/Pai/Esposa + dependentes dinâmicos add/remove); create/update gravam relatives (PUT = replace-all transacional); GET inclui relatives ordenados; detalhe exibe a família. **Backfill** `POST /api/members/backfill-relatives` (idempotente; migra campos planos antigos) + botão "migrar família antiga". Campos planos antigos depreciados (fora do form; colunas mantidas).
 - ✅ **Membros — grau sem redundância**: removido "Grau de iniciação" (sempre 1º grau; `initiationDegree` depreciado). **Situação simbólica** (Aprendiz/Companheiro/Mestre/Mestre Instalado) **derivada** dos marcos de evolução via `src/lib/masonic-degree.ts` (puro, usado por Membros e Portal). "Grau atual" → **Grau Filosófico atual** (seletor REAA 4–33, em `currentDegree`; vazio = situação simbólica). **Bloco "Origem"**: Potência de origem (`originPowerId` FK→Power, migration `20260627160000`) + Loja de origem (texto). `gradeName`/`initiationDegree` fora do parser (preserva legado ao editar).
+- ✅ **Membros — Tempo de Ordem**: campo automático derivado da `initiationDate` (antiguidade maçônica), exibido no form e no detalhe. Helper `lib/masonic-degree.ts`: `yearsInOrder`, `timeInOrderLabel`, `TENURE_MILESTONES` (1,5,10,15,20,25,30,40,50,60), `tenureMilestoneForYear` — base p/ jubileus/aniversário de iniciação na Fase 7.
 - ✅ Docs consolidados em `../../sigmahorus_documentacao.md` (fonte única de escopo/história).
 
 ## ⏳ Próximos
-- **Aniversariantes do mês** (usa `member.birthDate` + `Relative.birthDate`, já indexados) → felicitações pela Secretária/Hospitalária. Faz parte da **Fase 7 (Comunicação real WhatsApp/E-mail)**.
+- **Aniversariantes do mês** (`member.birthDate` + `Relative.birthDate`, indexados) **e jubileus/aniversário de iniciação** (`initiationDate` + `TENURE_MILESTONES`) → felicitações pela Secretária/Hospitalária. Faz parte da **Fase 7 (Comunicação real WhatsApp/E-mail)**.
 - **E-mail profissional `@sigmahorus.com.br`** — contratar à parte; depois MX/SPF/DKIM na Hostinger.
 - (Melhoria) refinar **Saldo dos Associados** no relatório de fechamento (reconciliar Account×Payment por documento).
 
