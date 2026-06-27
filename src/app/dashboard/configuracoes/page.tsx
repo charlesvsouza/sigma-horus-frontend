@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { fetchCep, maskCEP, maskCNPJ, maskPhone } from '@/lib/masks';
+import { BRAZILIAN_RITES, BRAZILIAN_POWERS } from '@/lib/masonic-reference';
 
 type LodgeForm = Record<string, string>;
 
@@ -10,7 +11,17 @@ const EMPTY: LodgeForm = {
   name: '', legalName: '', tradeName: '', cnpj: '', email: '', phone: '',
   addressLine: '', addressNumber: '', neighborhood: '', city: '', state: '', zipCode: '',
   bankName: '', bankAgency: '', bankAccount: '', pixKey: '',
+  riteName: '', powerName: '', sessionWeekdays: '', sessionFrequency: 'weekly',
 };
+
+const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+const FREQUENCIES = [
+  { value: 'weekly', label: 'Semanal' },
+  { value: 'biweekly', label: 'Quinzenal' },
+  { value: 'monthly', label: 'Mensal' },
+];
+const INPUT_CLASS =
+  'mt-1.5 w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20';
 
 function Field({ label, value, onChange, ...rest }: { label: string; value: string; onChange: (v: string) => void } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'>) {
   return (
@@ -30,6 +41,7 @@ export default function ConfiguracoesPage() {
   const [form, setForm] = useState<LodgeForm>(EMPTY);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [cepStatus, setCepStatus] = useState('');
 
   async function load() {
@@ -47,6 +59,37 @@ export default function ConfiguracoesPage() {
 
   function set(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleWeekday(idx: number) {
+    const cur = new Set((form.sessionWeekdays || '').split(',').filter(Boolean));
+    const key = String(idx);
+    if (cur.has(key)) cur.delete(key);
+    else cur.add(key);
+    set('sessionWeekdays', [...cur].map(Number).sort((a, b) => a - b).join(','));
+  }
+
+  async function seedOffices() {
+    if (!form.riteName) {
+      setMessage({ kind: 'error', text: 'Escolha o rito antes de aplicar os cargos.' });
+      return;
+    }
+    setSeeding(true);
+    setMessage(null);
+    // Garante o rito salvo antes de semear os cargos.
+    await fetch('/api/lodge', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    const res = await fetch('/api/lodges/seed-offices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ riteName: form.riteName }),
+    });
+    const data = await res.json();
+    setSeeding(false);
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: `Cargos do rito aplicados: ${data.seeded.created} criados, ${data.seeded.skipped} já existiam.` });
+    } else {
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao aplicar os cargos.' });
+    }
   }
 
   async function lookupCep(value: string) {
@@ -101,6 +144,64 @@ export default function ConfiguracoesPage() {
               <Field label="CNPJ" value={form.cnpj} onChange={(v) => set('cnpj', maskCNPJ(v))} inputMode="numeric" placeholder="00.000.000/0000-00" />
               <Field label="E-mail" value={form.email} onChange={(v) => set('email', v)} type="email" />
               <Field label="Telefone" value={form.phone} onChange={(v) => set('phone', maskPhone(v))} inputMode="tel" />
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+            <h2 className="text-base font-semibold text-sand-light">Loja maçônica</h2>
+            <p className="mt-1 text-sm text-sand-dark">Rito praticado e potência (obediência). O rito define os cargos da loja.</p>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Rito</span>
+                <select value={form.riteName} onChange={(e) => set('riteName', e.target.value)} className={INPUT_CLASS}>
+                  <option value="">Selecione o rito</option>
+                  {BRAZILIAN_RITES.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Potência</span>
+                <select value={form.powerName} onChange={(e) => set('powerName', e.target.value)} className={INPUT_CLASS}>
+                  <option value="">Selecione a potência</option>
+                  {BRAZILIAN_POWERS.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button type="button" onClick={seedOffices} disabled={seeding || !form.riteName} className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40">
+                {seeding ? 'Aplicando…' : 'Aplicar cargos deste rito'}
+              </button>
+              <span className="text-xs text-sand-dark">Adiciona os cargos do rito que ainda não existem (não remove os atuais).</span>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+            <h2 className="text-base font-semibold text-sand-light">Sessões</h2>
+            <p className="mt-1 text-sm text-sand-dark">Dias da semana e periodicidade padrão das sessões da loja.</p>
+            <div className="mt-5 space-y-5">
+              <div>
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Dias da semana</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {WEEKDAYS.map((d, i) => {
+                    const active = (form.sessionWeekdays || '').split(',').filter(Boolean).includes(String(i));
+                    return (
+                      <button
+                        type="button"
+                        key={d}
+                        onClick={() => toggleWeekday(i)}
+                        className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${active ? 'border-gold/50 bg-gold/15 text-gold' : 'border-white/10 text-sand-dark hover:text-sand-light'}`}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <label className="block max-w-xs">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Periodicidade</span>
+                <select value={form.sessionFrequency} onChange={(e) => set('sessionFrequency', e.target.value)} className={INPUT_CLASS}>
+                  {FREQUENCIES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                </select>
+              </label>
             </div>
           </section>
 

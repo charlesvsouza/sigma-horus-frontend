@@ -58,3 +58,37 @@ export async function seedLodgeDefaults(
 
   return result;
 }
+
+/**
+ * Semeia (ou completa) os cargos de um rito específico para uma loja já
+ * existente. NÃO apaga cargos: apenas adiciona os que faltam (idempotente,
+ * dedupe por nome dentro da loja). Cria o registro do Rito se ele não existir.
+ *
+ * Usado quando o administrador define/troca o rito nas Configurações da loja.
+ */
+export async function seedOfficesForRite(
+  db: Prisma.TransactionClient,
+  lodgeId: string,
+  riteName: string,
+): Promise<{ created: number; skipped: number; rite: string }> {
+  const officesData = OFFICES_BY_RITE[riteName];
+  if (!officesData) return { created: 0, skipped: 0, rite: riteName };
+
+  let rite = await db.rite.findFirst({ where: { lodgeId, name: riteName } });
+  if (!rite) {
+    const order = BRAZILIAN_RITES.find((r) => r.name === riteName)?.order ?? 99;
+    rite = await db.rite.create({ data: { lodgeId, name: riteName, order } });
+  }
+
+  const existing = await db.office.findMany({ where: { lodgeId }, select: { name: true } });
+  const have = new Set(existing.map((o) => o.name.trim().toLowerCase()));
+  const toCreate = officesData.filter((o) => !have.has(o.name.trim().toLowerCase()));
+
+  if (toCreate.length > 0) {
+    await db.office.createMany({
+      data: toCreate.map((o) => ({ lodgeId, riteId: rite.id, name: o.name, order: o.order })),
+    });
+  }
+
+  return { created: toCreate.length, skipped: officesData.length - toCreate.length, rite: riteName };
+}

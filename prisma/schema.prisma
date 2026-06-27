@@ -29,6 +29,12 @@ model Lodge {
   bankAgency   String?
   bankAccount  String?
   pixKey       String?
+  // Identidade maçônica (escolhida no onboarding / editável nas configurações)
+  riteName     String?  // rito praticado (define os cargos da loja)
+  powerName    String?  // potência / obediência à qual a loja é filiada
+  // Agenda padrão de sessões
+  sessionWeekdays  String?  // dias da semana: índices 0=Dom..6=Sáb separados por vírgula (ex.: "2,4")
+  sessionFrequency String?  @default("weekly") // weekly | biweekly | monthly
   // Asaas (BYO-key): cada loja conecta a própria conta. Chave criptografada (AES-256-GCM).
   asaasApiKeyEnc    String?
   asaasEnv          String?  @default("sandbox") // sandbox | production

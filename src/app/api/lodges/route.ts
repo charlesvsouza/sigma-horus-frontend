@@ -58,6 +58,7 @@ export async function POST(request: Request) {
         name,
         slug,
         status: 'active',
+        riteName: riteName ?? null,
       },
     });
 

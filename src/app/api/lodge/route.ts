@@ -8,6 +8,7 @@ const FIELDS = [
   'name', 'legalName', 'tradeName', 'cnpj', 'email', 'phone',
   'addressLine', 'addressNumber', 'neighborhood', 'city', 'state', 'zipCode',
   'bankName', 'bankAgency', 'bankAccount', 'pixKey',
+  'riteName', 'powerName', 'sessionWeekdays', 'sessionFrequency',
 ] as const;
 
 export async function GET() {
@@ -22,6 +23,7 @@ export async function GET() {
         name: true, legalName: true, tradeName: true, cnpj: true, email: true, phone: true,
         addressLine: true, addressNumber: true, neighborhood: true, city: true, state: true, zipCode: true,
         bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
+        riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,
       },
     }),
   );
