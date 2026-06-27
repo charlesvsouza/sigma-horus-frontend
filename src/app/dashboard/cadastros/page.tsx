@@ -13,6 +13,7 @@ export default function CadastrosPage() {
   const [powerName, setPowerName] = useState('');
   const [message, setMessage] = useState('');
   const [seeding, setSeeding] = useState(false);
+  const [linking, setLinking] = useState(false);
 
   async function loadData() {
     const [ritesResponse, powersResponse, chartResponse] = await Promise.all([
@@ -41,6 +42,20 @@ export default function CadastrosPage() {
       await loadData();
     } else {
       setMessage(data.error ?? 'Erro ao popular dados padrão.');
+    }
+  }
+
+  async function backfillChart() {
+    setLinking(true);
+    setMessage('');
+    const res = await fetch('/api/accounts/backfill-chart', { method: 'POST' });
+    const data = await res.json();
+    setLinking(false);
+    if (res.ok) {
+      const s = data.stats ?? {};
+      setMessage(`Vínculo ao plano de contas: ${s.matched ?? 0} contas vinculadas, ${s.skipped ?? 0} sem correspondência (de ${s.processed ?? 0} sem vínculo).`);
+    } else {
+      setMessage(data.error ?? 'Erro ao vincular contas ao plano.');
     }
   }
 
@@ -156,8 +171,20 @@ export default function CadastrosPage() {
         </div>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
-          <h2 className="text-base font-semibold text-sand-light">Plano de contas</h2>
-          <p className="mt-1 text-sm text-sand-dark">Categorias de receita e despesa típicas de uma loja maçônica.</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-sand-light">Plano de contas</h2>
+              <p className="mt-1 text-sm text-sand-dark">Categorias de receita e despesa típicas de uma loja maçônica.</p>
+            </div>
+            <button
+              onClick={backfillChart}
+              disabled={linking || chartAccounts.length === 0}
+              title="Vincula contas antigas (sem plano de contas) à categoria correspondente, para o balancete/balanço sair completo. Não altera contas já vinculadas."
+              className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40"
+            >
+              {linking ? 'Vinculando…' : 'Vincular contas ao plano'}
+            </button>
+          </div>
           {chartAccounts.length === 0 ? (
             <p className="mt-6 text-sm text-sand-dark">Nenhuma conta no plano. Use “Popular dados padrão (Brasil)” acima.</p>
           ) : (
