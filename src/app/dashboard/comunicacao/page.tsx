@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Button, EmptyState, inputClass } from '@/components/ui';
 
 interface MessageItem {
   id: string;
@@ -55,7 +56,7 @@ export default function ComunicacaoPage() {
     }
   }
 
-  const INPUT = "w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+  const INPUT = inputClass; // fonte única do design system
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -81,14 +82,16 @@ export default function ComunicacaoPage() {
               {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
             </select>
             <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Texto da comunicação" rows={4} />
-            <button type="submit" className="rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark md:col-span-2">Enviar</button>
+            <Button type="submit" className="md:col-span-2">Enviar</Button>
           </form>
         </section>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
           <h2 className="text-base font-semibold text-sand-light">Histórico</h2>
           <div className="mt-5 space-y-3">
-            {items.length === 0 ? <p className="text-sm text-sand-dark">Nenhuma comunicação registrada.</p> : items.map((item) => (
+            {items.length === 0 ? (
+              <EmptyState title="Nenhuma comunicação registrada" description="As mensagens enviadas aos membros aparecem aqui. O envio externo (WhatsApp/e-mail) chega na Fase 7." />
+            ) : items.map((item) => (
               <div key={item.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>

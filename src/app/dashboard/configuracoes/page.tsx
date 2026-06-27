@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { Button, inputClass } from '@/components/ui';
 import { fetchCep, maskCEP, maskCNPJ, maskPhone } from '@/lib/masks';
 import { BRAZILIAN_RITES, BRAZILIAN_POWERS } from '@/lib/masonic-reference';
 
@@ -20,8 +21,7 @@ const FREQUENCIES = [
   { value: 'biweekly', label: 'Quinzenal' },
   { value: 'monthly', label: 'Mensal' },
 ];
-const INPUT_CLASS =
-  'mt-1.5 w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20';
+const INPUT_CLASS = `mt-1.5 ${inputClass}`; // fonte única do design system
 
 function Field({ label, value, onChange, ...rest }: { label: string; value: string; onChange: (v: string) => void } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'>) {
   return (
@@ -230,9 +230,9 @@ export default function ConfiguracoesPage() {
             </div>
           </section>
 
-          <button type="submit" disabled={saving} className="rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark disabled:opacity-40">
+          <Button type="submit" disabled={saving}>
             {saving ? 'Salvando…' : 'Salvar dados da loja'}
-          </button>
+          </Button>
         </form>
       </div>
     </main>

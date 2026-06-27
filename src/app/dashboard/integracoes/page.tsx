@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Button, inputClass } from '@/components/ui';
 
 interface AsaasStatus {
   configured: boolean;
@@ -66,7 +67,7 @@ export default function IntegracoesPage() {
   }
 
   const webhookFullUrl = typeof window !== 'undefined' && status ? `${window.location.origin}${status.webhookUrl}` : status?.webhookUrl;
-  const INPUT = "w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+  const INPUT = inputClass; // fonte única do design system
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -126,9 +127,9 @@ export default function IntegracoesPage() {
               />
             </div>
             <div className="flex flex-wrap gap-3">
-              <button type="submit" disabled={saving} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark disabled:opacity-40">
+              <Button type="submit" disabled={saving}>
                 {saving ? 'Validando…' : status?.configured ? 'Atualizar chave' : 'Conectar Asaas'}
-              </button>
+              </Button>
               {status?.configured && (
                 <button type="button" onClick={disconnect} className="rounded-full border border-rose-500/40 px-5 py-2.5 text-sm font-medium text-rose-200 transition-all duration-200 ease-out hover:bg-rose-500/10 active:bg-rose-500/20">
                   Desconectar

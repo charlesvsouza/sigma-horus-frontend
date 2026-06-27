@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
+import { Button, EmptyState, Skeleton, inputClass } from '@/components/ui';
 
 interface SessionItem { id: string; title: string; date: string; type: string; grade?: string | null; notes?: string | null; _count: { attendances: number }; }
 
@@ -45,7 +46,7 @@ export default function SessoesPage() {
 
   const typeLabel: Record<string, string> = { ordinary: 'Ordinária', magnificent: 'Magnífica', emergency: 'Extraordinária', other: 'Outra' };
 
-  const INPUT = "w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+  const INPUT = inputClass; // fonte única do design system
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -70,14 +71,23 @@ export default function SessoesPage() {
             </select>
             <input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} className={INPUT} placeholder="Grau (opcional)" />
             <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações" rows={3} />
-            <button type="submit" className="rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark md:col-span-2">Criar sessão</button>
+            <Button type="submit" className="md:col-span-2">Criar sessão</Button>
           </form>
         </section>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
           <h2 className="text-base font-semibold text-sand-light">Sessões cadastradas</h2>
           <div className="mt-5 space-y-3">
-            {loading ? <p className="text-sm text-sand-dark">Carregando...</p> : sessions.length === 0 ? <p className="text-sm text-sand-dark">Nenhuma sessão cadastrada.</p> : sessions.map((s) => (
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
+                  <Skeleton variant="text" className="w-1/3" />
+                  <Skeleton variant="text" className="w-24" />
+                </div>
+              ))
+            ) : sessions.length === 0 ? (
+              <EmptyState title="Nenhuma sessão cadastrada" description="Cadastre as sessões da loja para registrar presença e acompanhar a frequência dos obreiros." />
+            ) : sessions.map((s) => (
               <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{s.title}</p>
