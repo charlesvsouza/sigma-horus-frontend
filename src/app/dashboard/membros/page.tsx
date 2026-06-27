@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel } from '@/lib/masonic-degree';
+import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -98,8 +99,14 @@ function memberToForm(m: Member): FormState {
   return f;
 }
 
-const STATUS_LABEL: Record<string, string> = { active: 'Ativo', inactive: 'Inativo', suspended: 'Suspenso' };
 const fmtDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '—');
+
+const TONE_BADGE: Record<string, string> = {
+  active: 'bg-emerald-500/15 text-emerald-300',
+  leave: 'bg-gold/15 text-gold',
+  suspended: 'bg-rose-500/15 text-rose-300',
+  inactive: 'bg-white/5 text-sand-dark',
+};
 
 // Evolução maçônica concatenada: (Iniciação; Data; Loja) (Elevação; …) (Exaltação; …) (Instalação; …)
 function formatEvolution(m: Member): string {
@@ -117,6 +124,23 @@ function formatEvolution(m: Member): string {
 
 const KIND_LABEL: Record<RelativeKind, string> = { mother: 'Mãe', father: 'Pai', spouse: 'Esposa', son: 'Filho', daughter: 'Filha', child: 'Filho(a)', other: 'Dependente' };
 
+// Relatório de membros: visível apenas na impressão (Salvar como PDF).
+const REPORT_PRINT_CSS = `
+.members-report { display: none; }
+@media print {
+  @page { size: A4 portrait; margin: 16mm 14mm; }
+  body * { visibility: hidden !important; }
+  .members-report { display: block !important; position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; }
+  .members-report, .members-report * { visibility: visible !important; }
+  .members-report h1 { font-size: 15pt; margin: 0 0 2mm; }
+  .members-report .sub { color: #444 !important; font-size: 9pt; margin: 0 0 5mm; }
+  .members-report table { width: 100%; border-collapse: collapse; }
+  .members-report th { border-bottom: 1.5px solid #333; text-transform: uppercase; font-size: 8pt; text-align: left; padding: 3px 6px; }
+  .members-report td { border-bottom: 1px solid #ccc; font-size: 9pt; text-align: left; padding: 3px 6px; }
+  .members-report tr { break-inside: avoid; page-break-inside: avoid; }
+}
+`;
+
 export default function MembrosPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [rites, setRites] = useState<Option[]>([]);
@@ -124,6 +148,8 @@ export default function MembrosPage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [lodgeName, setLodgeName] = useState('');
   const [creating, setCreating] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -131,17 +157,20 @@ export default function MembrosPage() {
 
   async function loadData() {
     setLoading(true);
-    const [membersResponse, ritesResponse, powersResponse] = await Promise.all([
+    const [membersResponse, ritesResponse, powersResponse, lodgeResponse] = await Promise.all([
       fetch('/api/members'),
       fetch('/api/rites'),
       fetch('/api/powers'),
+      fetch('/api/lodge'),
     ]);
     const membersData = await membersResponse.json();
     const ritesData = await ritesResponse.json();
     const powersData = await powersResponse.json();
+    const lodgeData = await lodgeResponse.json().catch(() => ({}));
     setMembers(membersData.items ?? []);
     setRites(ritesData.items ?? []);
     setPowers(powersData.items ?? []);
+    setLodgeName(lodgeData?.lodge?.name ?? '');
     setLoading(false);
   }
 
@@ -149,15 +178,16 @@ export default function MembrosPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return members;
     const digits = q.replace(/\D/g, '');
     return members.filter((m) => {
+      if (statusFilter !== 'all' && m.status !== statusFilter) return false;
+      if (!q) return true;
       const byName = m.name.toLowerCase().includes(q);
       const byCpf = digits.length > 0 && (m.cpf ?? '').replace(/\D/g, '').includes(digits);
       const byCim = (m.masonicNumber ?? '').toLowerCase().includes(q);
       return byName || byCpf || byCim;
     });
-  }, [members, query]);
+  }, [members, query, statusFilter]);
 
   async function createMember(form: FormState, relatives: RelativeData[]) {
     setSaving(true);
@@ -255,18 +285,23 @@ export default function MembrosPage() {
               <h2 className="text-base font-semibold text-sand-light">Listagem</h2>
               <button onClick={backfillRelatives} title="Migra os campos antigos de família para a nova ficha de dependentes (idempotente)" className="text-xs text-sand-dark underline-offset-2 transition-colors hover:text-gold hover:underline">migrar família antiga</button>
             </div>
-            <div className="relative w-full max-w-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${INPUT} w-auto`} aria-label="Filtrar por situação">
+                <option value="all">Todas as situações</option>
+                {MEMBER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.short}</option>)}
+              </select>
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className={INPUT}
+                className={`${INPUT} w-auto min-w-[16rem]`}
                 placeholder="Buscar por nome, CPF ou CIM…"
                 aria-label="Buscar membros"
               />
+              <button onClick={() => window.print()} disabled={filtered.length === 0} title="Gera um PDF dos membros conforme o filtro atual de situação/busca" className="rounded-full border border-gold/40 px-4 py-2.5 text-sm font-medium text-gold/80 transition-all hover:border-gold/60 hover:text-gold disabled:opacity-40">Relatório PDF</button>
             </div>
           </div>
 
-          <p className="mt-3 text-xs text-sand-dark">{loading ? 'Carregando…' : `${filtered.length} de ${members.length} membro(s)`}</p>
+          <p className="mt-3 text-xs text-sand-dark">{loading ? 'Carregando…' : `${filtered.length} de ${members.length} membro(s)${statusFilter !== 'all' ? ` · situação: ${memberStatusLabel(statusFilter)}` : ''}`}</p>
 
           <div className="mt-4 overflow-hidden rounded-lg border border-white/[6%]">
             {/* Cabeçalho */}
@@ -293,7 +328,7 @@ export default function MembrosPage() {
                         {m.name}
                       </span>
                       <span className="text-xs text-sand-dark md:text-sm md:text-sand">{degreeShort(m)}</span>
-                      <span className="text-xs"><span className={`rounded-full px-2 py-0.5 ${m.status === 'active' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/5 text-sand-dark'}`}>{STATUS_LABEL[m.status] ?? m.status}</span></span>
+                      <span className="text-xs"><span className={`rounded-full px-2 py-0.5 ${TONE_BADGE[memberStatusTone(m.status)]}`}>{memberStatusLabel(m.status)}</span></span>
                       <span className="text-xs text-sand-dark md:text-sm">{m.rite?.name ?? '—'}</span>
                       <span className="text-xs text-sand-dark md:text-sm">{m.phone || '—'}</span>
                       <span className="hidden text-right text-xs text-gold/70 md:block">{open ? 'fechar' : 'detalhes'}</span>
@@ -350,6 +385,34 @@ export default function MembrosPage() {
             )}
           </div>
         </section>
+      </div>
+
+      {/* Relatório imprimível (Salvar como PDF) — reflete o filtro atual */}
+      <style>{REPORT_PRINT_CSS}</style>
+      <div className="members-report">
+        <h1>{lodgeName || 'Relatório de Membros'}</h1>
+        <p className="sub">
+          Relatório de Membros — {statusFilter === 'all' ? 'Todas as situações' : memberStatusFull(statusFilter)}
+          {query.trim() ? ` · busca: “${query.trim()}”` : ''} · {filtered.length} membro(s) · Emitido em {new Date().toLocaleDateString('pt-BR')}
+        </p>
+        <table>
+          <thead>
+            <tr><th>Nome</th><th>Situação</th><th>Grau</th><th>CIM</th><th>Tempo de Ordem</th><th>Telefone</th><th>E-mail</th></tr>
+          </thead>
+          <tbody>
+            {filtered.map((m) => (
+              <tr key={m.id}>
+                <td>{m.name}</td>
+                <td>{memberStatusLabel(m.status)}</td>
+                <td>{degreeShort(m)}</td>
+                <td>{m.masonicNumber || '—'}</td>
+                <td>{timeInOrderLabel(m.initiationDate) || '—'}</td>
+                <td>{m.phone || '—'}</td>
+                <td>{m.email || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </main>
   );
@@ -438,9 +501,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
         <input value={form.email} onChange={(e) => set('email', e.target.value)} className={INPUT} placeholder="E-mail" />
         <input value={form.phone} onChange={(e) => set('phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
         <select value={form.status} onChange={(e) => set('status', e.target.value)} className={INPUT}>
-          <option value="active">Ativo</option>
-          <option value="inactive">Inativo</option>
-          <option value="suspended">Suspenso</option>
+          {MEMBER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
         <select value={form.riteId} onChange={(e) => set('riteId', e.target.value)} className={INPUT}>
           <option value="">Selecione um rito</option>
