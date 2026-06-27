@@ -351,12 +351,17 @@ export function ManualBook() {
               <p>O Administrador prepara a loja para operar: dados, integrações, usuários, permissões e assinatura.</p>
 
               <Sub id="admin-loja" title="6.1 Configurações da loja">
-                <p>Acesse <UI>Administração → Configurações da loja</UI> e preencha os dados cadastrais e bancários:</p>
+                <p>Acesse <UI>Administração → Configurações da loja</UI> e preencha:</p>
                 <Bullets>
-                  <li>Identificação: nome, razão social, nome fantasia, CNPJ.</li>
-                  <li>Dados bancários e <strong>chave PIX</strong> (úteis para conferência e para a cobrança aos membros).</li>
-                  <li>Contato e endereço da loja.</li>
+                  <li><strong>Identificação:</strong> nome, razão social, nome fantasia, CNPJ, contato e endereço (o CEP preenche o endereço).</li>
+                  <li><strong>Dados bancários</strong> e <strong>chave PIX</strong> (úteis para conferência e conciliação).</li>
+                  <li><strong>Loja maçônica:</strong> o <UI>Rito</UI> praticado e a <UI>Potência</UI> (obediência). O rito define os cargos da loja.</li>
+                  <li><strong>Sessões:</strong> marque os <UI>dias da semana</UI> e a <UI>periodicidade</UI> (semanal, quinzenal ou mensal) das sessões.</li>
                 </Bullets>
+                <p>
+                  Se trocar o rito, clique em <UI>Aplicar cargos deste rito</UI> para incluir os cargos correspondentes
+                  (a ação só adiciona o que falta — não remove os cargos existentes).
+                </p>
                 <Note>Mantenha o CNPJ e os dados bancários corretos: eles aparecem em relatórios e ajudam na conciliação financeira.</Note>
               </Sub>
 
@@ -425,12 +430,17 @@ export function ManualBook() {
                 uso: organizar o plano de contas, lançar contas, cobrar os membros, dar baixas e prestar contas.
               </p>
 
-              <Sub id="tes-plano" title="7.1 Plano de contas">
+              <Sub id="tes-plano" title="7.1 Plano de contas (livro caixa)">
                 <p>
-                  O plano de contas classifica receitas e despesas (mensalidades, taxas, aluguel do templo, contribuição
-                  à Potência etc.). Sua loja já nasce com um plano padrão; você o consulta e ajusta em
-                  <UI>Cadastros mestre → Plano de contas</UI>. Cada conta tem um <strong>código</strong>, um <strong>nome</strong>
-                  e um <strong>tipo</strong> (receita ou despesa).
+                  O plano de contas classifica receitas e despesas no formato de <strong>livro caixa</strong>, com
+                  codificação hierárquica (grupo.subgrupo.conta) — por exemplo <code>1.1.01 Mensalidades</code>,
+                  <code>2.1.05 Concessão/Aluguel</code>, <code>8.9.03 Ação Social e Caridade</code>. O código serve de
+                  base para a totalização por grupo no balancete e no fechamento.
+                </p>
+                <p>
+                  Consulte e ajuste em <UI>Cadastros mestre → Plano de contas</UI>. Para completar com o modelo padrão,
+                  use <UI>Popular dados padrão (Brasil)</UI> (adiciona apenas os códigos que faltam, sem duplicar). Para
+                  retirar uma conta que não usa, clique em <UI>Remover</UI> ao lado dela.
                 </p>
               </Sub>
 

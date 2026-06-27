@@ -92,6 +92,12 @@ export default function CadastrosPage() {
     await loadData();
   }
 
+  async function removeChartAccount(id: string) {
+    if (!window.confirm('Remover esta conta do plano de contas?')) return;
+    await fetch(`/api/chart-accounts/${id}`, { method: 'DELETE' });
+    await loadData();
+  }
+
   const INPUT = "flex-1 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
   const ADD_BTN = "rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark";
 
@@ -163,9 +169,12 @@ export default function CadastrosPage() {
                   </h3>
                   <ul className="mt-3 space-y-2">
                     {chartAccounts.filter((c) => c.type === type).map((c) => (
-                      <li key={c.id} className="flex items-center justify-between rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
+                      <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
                         <span><span className="text-sand-dark">{c.code}</span> · {c.name}</span>
-                        {c.category ? <span className="text-xs text-sand-dark">{c.category}</span> : null}
+                        <span className="flex items-center gap-3">
+                          {c.category ? <span className="text-xs text-sand-dark">{c.category}</span> : null}
+                          <button onClick={() => removeChartAccount(c.id)} className="text-xs text-rose-300/70 hover:text-rose-300">Remover</button>
+                        </span>
                       </li>
                     ))}
                   </ul>

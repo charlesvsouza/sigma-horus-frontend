@@ -16,11 +16,11 @@ export async function seedLodgeDefaults(
   lodgeId: string,
   riteName?: string,
 ) {
-  const [rites, powers, chart, offices] = await Promise.all([
+  const [rites, powers, offices, existingChart] = await Promise.all([
     db.rite.count({ where: { lodgeId } }),
     db.power.count({ where: { lodgeId } }),
-    db.chartAccount.count({ where: { lodgeId } }),
     db.office.count({ where: { lodgeId } }),
+    db.chartAccount.findMany({ where: { lodgeId }, select: { code: true } }),
   ]);
 
   const result = { rites: 0, powers: 0, chartAccounts: 0, offices: 0 };
@@ -35,11 +35,15 @@ export async function seedLodgeDefaults(
     result.powers = BRAZILIAN_POWERS.length;
   }
 
-  if (chart === 0) {
+  // Plano de contas: top-up não-destrutivo — adiciona apenas os códigos que
+  // ainda não existem (não duplica nem remove contas já cadastradas).
+  const haveChartCodes = new Set(existingChart.map((c) => c.code));
+  const missingChart = MASONIC_CHART_OF_ACCOUNTS.filter((c) => !haveChartCodes.has(c.code));
+  if (missingChart.length > 0) {
     await db.chartAccount.createMany({
-      data: MASONIC_CHART_OF_ACCOUNTS.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category })),
+      data: missingChart.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category })),
     });
-    result.chartAccounts = MASONIC_CHART_OF_ACCOUNTS.length;
+    result.chartAccounts = missingChart.length;
   }
 
   // Semeia cargos do rito escolhido (apenas se não houver cargos ainda).

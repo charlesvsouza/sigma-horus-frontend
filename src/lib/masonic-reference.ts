@@ -211,32 +211,56 @@ export const BRAZILIAN_POWERS: PowerSeed[] = [
 
 // Plano de contas típico de uma loja maçônica (receitas e despesas correntes).
 // Estrutura: 1.x = receitas, 2.x = despesas. Código no padrão hierárquico simples.
+// Plano de contas no formato livro-caixa, com codificação hierárquica
+// (grupo.subgrupo.conta) alinhada à prática de lojas/associações maçônicas.
+// A `category` carrega o grupo, usado para totalização no balancete e no
+// relatório de fechamento do veneralato.
 export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
-  // Receitas
-  { code: '1.01', name: 'Mensalidades / Captações', type: 'REVENUE', category: 'captacao' },
-  { code: '1.02', name: 'Taxa de Iniciação', type: 'REVENUE', category: 'grau' },
-  { code: '1.03', name: 'Taxa de Elevação', type: 'REVENUE', category: 'grau' },
-  { code: '1.04', name: 'Taxa de Exaltação', type: 'REVENUE', category: 'grau' },
-  { code: '1.05', name: 'Taxa de Filiação / Regularização', type: 'REVENUE', category: 'taxa' },
-  { code: '1.06', name: 'Tronco de Beneficência', type: 'REVENUE', category: 'beneficencia' },
-  { code: '1.07', name: 'Doações e Contribuições', type: 'REVENUE', category: 'doacao' },
-  { code: '1.08', name: 'Eventos e Confraternizações', type: 'REVENUE', category: 'evento' },
-  { code: '1.09', name: 'Cessão / Aluguel do Templo', type: 'REVENUE', category: 'patrimonio' },
-  { code: '1.10', name: 'Venda de Materiais e Paramentos', type: 'REVENUE', category: 'patrimonio' },
-  { code: '1.11', name: 'Rendimentos Financeiros', type: 'REVENUE', category: 'financeiro' },
-  // Despesas
-  { code: '2.01', name: 'Aluguel do Templo / Sede', type: 'EXPENSE', category: 'ocupacao' },
-  { code: '2.02', name: 'Energia Elétrica', type: 'EXPENSE', category: 'utilidades' },
-  { code: '2.03', name: 'Água e Esgoto', type: 'EXPENSE', category: 'utilidades' },
-  { code: '2.04', name: 'Telefone e Internet', type: 'EXPENSE', category: 'utilidades' },
-  { code: '2.05', name: 'Material de Expediente', type: 'EXPENSE', category: 'administrativo' },
-  { code: '2.06', name: 'Material Ritualístico e Paramentos', type: 'EXPENSE', category: 'ritualistico' },
-  { code: '2.07', name: 'Manutenção e Conservação', type: 'EXPENSE', category: 'ocupacao' },
-  { code: '2.08', name: 'Contribuição à Potência / Grande Loja', type: 'EXPENSE', category: 'obrigacao' },
-  { code: '2.09', name: 'Beneficência e Filantropia', type: 'EXPENSE', category: 'beneficencia' },
-  { code: '2.10', name: 'Eventos e Confraternizações', type: 'EXPENSE', category: 'evento' },
-  { code: '2.11', name: 'Taxas Bancárias', type: 'EXPENSE', category: 'financeiro' },
-  { code: '2.12', name: 'Tributos e Contribuições', type: 'EXPENSE', category: 'obrigacao' },
-  { code: '2.13', name: 'Limpeza e Copa', type: 'EXPENSE', category: 'administrativo' },
-  { code: '2.14', name: 'Seguros', type: 'EXPENSE', category: 'administrativo' },
+  // ===== RECEITAS =====
+  // 1.1 Receitas Próprias
+  { code: '1.1.01', name: 'Mensalidades', type: 'REVENUE', category: 'Receitas Próprias' },
+  { code: '1.1.02', name: 'Taxas (Iniciação, Elevação, Exaltação)', type: 'REVENUE', category: 'Receitas Próprias' },
+  { code: '1.1.03', name: 'Taxa de Filiação / Regularização', type: 'REVENUE', category: 'Receitas Próprias' },
+  { code: '1.1.04', name: 'Doações e Contribuições', type: 'REVENUE', category: 'Receitas Próprias' },
+  { code: '1.1.05', name: 'Tronco de Beneficência', type: 'REVENUE', category: 'Receitas Próprias' },
+  { code: '1.1.06', name: 'Jantar Ritualístico', type: 'REVENUE', category: 'Receitas Próprias' },
+  { code: '1.1.07', name: 'Taxa Paramaçônica', type: 'REVENUE', category: 'Receitas Próprias' },
+  // 1.2 Outras Receitas
+  { code: '1.2.01', name: 'Rendimentos de Aplicação Financeira', type: 'REVENUE', category: 'Outras Receitas' },
+  { code: '1.2.02', name: 'Empréstimos Captados', type: 'REVENUE', category: 'Outras Receitas' },
+  { code: '1.2.03', name: 'Cessão / Aluguel do Templo', type: 'REVENUE', category: 'Outras Receitas' },
+  { code: '1.2.04', name: 'Venda de Materiais e Paramentos', type: 'REVENUE', category: 'Outras Receitas' },
+  { code: '1.2.05', name: 'Estorno de Despesa', type: 'REVENUE', category: 'Outras Receitas' },
+  // 1.5 Abertura / Eventos
+  { code: '1.5.04', name: 'Saldo para Abertura de Escrituração', type: 'REVENUE', category: 'Abertura' },
+  { code: '1.5.05', name: 'Receitas de Eventos', type: 'REVENUE', category: 'Outras Receitas' },
+
+  // ===== DESPESAS =====
+  // 2.1 Despesas Administrativas
+  { code: '2.1.01', name: 'Energia Elétrica', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.02', name: 'Telefone', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.03', name: 'Impostos e Taxas', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.04', name: 'Material de Expediente', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.05', name: 'Concessão / Aluguel da Sede', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.06', name: 'Despesas Bancárias', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.07', name: 'Serviços de Terceiros', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.08', name: 'Pagamento de Parcela de Empréstimo', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.09', name: 'Internet', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.10', name: 'Salários e Encargos', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.11', name: 'Despesas com Eventos', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.12', name: 'Jantar Ritualístico', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.13', name: 'Água e Esgoto', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.14', name: 'Limpeza e Copa', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.15', name: 'Contribuição à Potência / Grande Loja', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  // 2.2 Investimentos
+  { code: '2.2.02', name: 'Móveis e Utensílios', type: 'EXPENSE', category: 'Investimentos' },
+  { code: '2.2.03', name: 'Equipamentos', type: 'EXPENSE', category: 'Investimentos' },
+  { code: '2.2.04', name: 'Manutenção de Equipamentos', type: 'EXPENSE', category: 'Investimentos' },
+  { code: '2.2.05', name: 'Seguros', type: 'EXPENSE', category: 'Investimentos' },
+  { code: '2.2.06', name: 'Obras e Benfeitorias', type: 'EXPENSE', category: 'Investimentos' },
+  // 8.9 Assistência e Manutenção
+  { code: '8.9.03', name: 'Ação Social e Caridade', type: 'EXPENSE', category: 'Assistência e Manutenção' },
+  { code: '8.9.04', name: 'Manutenção Preventiva/Corretiva', type: 'EXPENSE', category: 'Assistência e Manutenção' },
+  { code: '8.9.05', name: 'Estorno de Receita', type: 'EXPENSE', category: 'Assistência e Manutenção' },
+  { code: '8.9.06', name: 'Material Ritualístico e Paramentos', type: 'EXPENSE', category: 'Assistência e Manutenção' },
 ];
