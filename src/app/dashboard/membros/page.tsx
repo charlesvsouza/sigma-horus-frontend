@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel } from '@/lib/masonic-degree';
 import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
-import { Button, inputClass } from '@/components/ui';
+import { Button, EmptyState, Input, Skeleton, inputClass } from '@/components/ui';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -311,9 +311,24 @@ export default function MembrosPage() {
             </div>
 
             {loading ? (
-              <p className="px-4 py-6 text-sm text-sand-dark">Carregando…</p>
+              <div className="divide-y divide-white/[5%]">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                    <Skeleton variant="text" className="w-1/3" />
+                    <Skeleton variant="text" className="hidden w-20 md:block" />
+                    <Skeleton variant="badge" className="hidden md:block" />
+                    <Skeleton variant="text" className="ml-auto w-24" />
+                  </div>
+                ))}
+              </div>
+            ) : members.length === 0 ? (
+              <EmptyState
+                title="Nenhum membro cadastrado"
+                description="Cadastre o primeiro obreiro para gerir contribuições, presença e evolução maçônica."
+                action={<Button onClick={() => { setCreating(true); setEditingId(null); }}>+ Novo membro</Button>}
+              />
             ) : filtered.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-sand-dark">{members.length === 0 ? 'Nenhum membro cadastrado.' : 'Nenhum membro encontrado para a busca.'}</p>
+              <p className="px-4 py-6 text-sm text-sand-dark">Nenhum membro encontrado para “{query}”.</p>
             ) : (
               filtered.map((m) => {
                 const open = expandedId === m.id;
@@ -459,6 +474,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
 }) {
   const [form, setForm] = useState<FormState>(initial);
   const [cepStatus, setCepStatus] = useState('');
+  const [nameError, setNameError] = useState('');
   const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
 
   // Situação simbólica derivada dos marcos preenchidos no próprio formulário.
@@ -510,6 +526,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.name.trim()) {
+      setNameError('Informe o nome completo do obreiro.');
+      return;
+    }
     const relatives = [mother, father, spouse, ...dependents].filter((r) => r.name.trim().length > 0);
     onSubmit(form, relatives);
   }
@@ -524,7 +544,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
   return (
     <form onSubmit={submit} className="mt-5 space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
-        <input value={form.name} onChange={(e) => set('name', e.target.value)} className={INPUT} placeholder="Nome completo *" required />
+        <Input value={form.name} onChange={(e) => { set('name', e.target.value); if (nameError) setNameError(''); }} placeholder="Nome completo *" error={nameError || undefined} aria-label="Nome completo" />
         <input value={form.email} onChange={(e) => set('email', e.target.value)} className={INPUT} placeholder="E-mail" />
         <input value={form.phone} onChange={(e) => set('phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
         <select value={form.status} onChange={(e) => set('status', e.target.value)} className={INPUT}>
