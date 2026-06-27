@@ -427,6 +427,25 @@ function Detail({ label, value }: { label: string; value?: string | null }) {
 const emptyRel = (kind: RelativeKind): RelativeData => ({ kind, name: '', birthDate: '', cpf: '', email: '', phone: '' });
 const dateVal = (iso?: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
 
+// Seção colapsável do formulário (disclosure progressivo): núcleo fica aberto,
+// o resto recolhe para reduzir a parede de campos.
+function Collapsible({ title, defaultOpen = false, badge, children }: { title: string; defaultOpen?: boolean; badge?: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="overflow-hidden rounded-lg border border-white/[6%] bg-sigma-blue-deep/50">
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors hover:bg-white/[3%]">
+        <span className="flex items-center gap-2">
+          <span className={`text-gold transition-transform duration-200 ${open ? 'rotate-90' : ''}`}>▸</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">{title}</span>
+          {badge ? <span className="rounded-full bg-gold/[12%] px-2 py-0.5 text-[10px] font-medium text-gold">{badge}</span> : null}
+        </span>
+        <span className="text-[11px] text-sand-dark/60">{open ? 'recolher' : 'expandir'}</span>
+      </button>
+      {open ? <div className="border-t border-white/[6%] px-5 pb-5 pt-4">{children}</div> : null}
+    </div>
+  );
+}
+
 function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLabel, onSubmit, onCancel }: {
   initial: FormState;
   initialRelatives: RelativeData[];
@@ -494,10 +513,17 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
     onSubmit(form, relatives);
   }
 
+  // Abre por padrão só as seções que já têm dados (na edição); no cadastro novo
+  // tudo recolhe, deixando o núcleo essencial em foco.
+  const hasPersonal = !!(initial.birthDate || initial.cpf || initial.rg || initial.maritalStatus || initial.occupation || initial.nationality);
+  const hasAddress = !!(initial.zipCode || initial.addressLine || initial.city || initial.neighborhood || initial.state || initial.country || initial.documents);
+  const hasEvolution = !!(initial.initiationDate || initial.elevationDate || initial.exaltationDate || initial.installationDate || initial.currentDegree || initial.masonicNumber || initial.notes);
+  const hasOrigin = !!(initial.originPowerId || initial.originLodge);
+
   return (
     <form onSubmit={submit} className="mt-5 space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
-        <input value={form.name} onChange={(e) => set('name', e.target.value)} className={INPUT} placeholder="Nome completo" required />
+        <input value={form.name} onChange={(e) => set('name', e.target.value)} className={INPUT} placeholder="Nome completo *" required />
         <input value={form.email} onChange={(e) => set('email', e.target.value)} className={INPUT} placeholder="E-mail" />
         <input value={form.phone} onChange={(e) => set('phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
         <select value={form.status} onChange={(e) => set('status', e.target.value)} className={INPUT}>
@@ -513,9 +539,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
         </select>
       </div>
 
-      <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-5">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Dados pessoais</h3>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <p className="-mt-2 text-xs text-sand-dark/70">Preencha o essencial acima (só o nome é obrigatório). Os blocos abaixo são opcionais — expanda conforme a necessidade.</p>
+
+      <Collapsible title="Dados pessoais" defaultOpen={hasPersonal}>
+        <div className="grid gap-4 md:grid-cols-2">
           <label className="block"><span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Nascimento</span>
             <input type="date" value={form.birthDate} onChange={(e) => set('birthDate', e.target.value)} className={INPUT} /></label>
           <input value={form.cpf} onChange={(e) => set('cpf', maskCPF(e.target.value))} inputMode="numeric" className={INPUT} placeholder="CPF" />
@@ -530,11 +557,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
           <input value={form.occupation} onChange={(e) => set('occupation', e.target.value)} className={INPUT} placeholder="Profissão" />
           <input value={form.nationality} onChange={(e) => set('nationality', e.target.value)} className={INPUT} placeholder="Nacionalidade" />
         </div>
-      </div>
+      </Collapsible>
 
-      <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-5">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Família e dependentes</h3>
-        <p className="mt-1 text-xs text-sand-dark/70">Contatos próprios (e-mail e telefone) para felicitações de aniversário pela Secretária/Hospitalária.</p>
+      <Collapsible title="Família e dependentes" defaultOpen={initialRelatives.length > 0} badge={initialRelatives.length ? `${initialRelatives.length} cadastrado(s)` : undefined}>
+        <p className="text-xs text-sand-dark/70">Contatos próprios (e-mail e telefone) para felicitações de aniversário pela Secretária/Hospitalária.</p>
         <div className="mt-4 space-y-3">
           {([['Mãe', mother, setMother], ['Pai', father, setFather], ['Esposa', spouse, setSpouse]] as const).map(([label, rel, setter]) => (
             <div key={label} className="grid gap-2 md:grid-cols-[90px_1.6fr_1fr_1.4fr_1.2fr] md:items-center">
@@ -574,11 +600,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
             </div>
           )}
         </div>
-      </div>
+      </Collapsible>
 
-      <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-5">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Endereço e documentos</h3>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <Collapsible title="Endereço e documentos" defaultOpen={hasAddress}>
+        <div className="grid gap-4 md:grid-cols-2">
           <input value={form.addressLine} onChange={(e) => set('addressLine', e.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Endereço" />
           <input value={form.addressNumber} onChange={(e) => set('addressNumber', e.target.value)} className={INPUT} placeholder="Número" />
           <input value={form.complement} onChange={(e) => set('complement', e.target.value)} className={INPUT} placeholder="Complemento" />
@@ -592,11 +617,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
           <input value={form.country} onChange={(e) => set('country', e.target.value)} className={INPUT} placeholder="País" />
           <textarea value={form.documents} onChange={(e) => set('documents', e.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Documentos e observações relevantes" rows={3} />
         </div>
-      </div>
+      </Collapsible>
 
-      <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-5">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Evolução maçônica</h3>
-        <div className="mt-4 space-y-3">
+      <Collapsible title="Evolução maçônica" defaultOpen={hasEvolution}>
+        <div className="space-y-3">
           {([
             ['Iniciação', 'initiationDate', 'initiationLodge'],
             ['Elevação', 'elevationDate', 'elevationLodge'],
@@ -629,11 +653,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
             <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Observações maçônicas e administrativas" rows={3} />
           </div>
         </div>
-      </div>
+      </Collapsible>
 
-      <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-5">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Origem</h3>
-        <p className="mt-1 text-xs text-sand-dark/70">Potência e loja de onde o irmão é originário (se diferente da loja atual).</p>
+      <Collapsible title="Origem" defaultOpen={hasOrigin}>
+        <p className="text-xs text-sand-dark/70">Potência e loja de onde o irmão é originário (se diferente da loja atual).</p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <select value={form.originPowerId} onChange={(e) => set('originPowerId', e.target.value)} className={INPUT}>
             <option value="">Potência de origem</option>
@@ -641,7 +664,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
           </select>
           <input value={form.originLodge} onChange={(e) => set('originLodge', e.target.value)} className={INPUT} placeholder="Loja de origem" />
         </div>
-      </div>
+      </Collapsible>
 
       <div className="flex flex-wrap gap-3">
         <button type="submit" disabled={saving} className="rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark disabled:opacity-50">{saving ? 'Salvando…' : submitLabel}</button>
