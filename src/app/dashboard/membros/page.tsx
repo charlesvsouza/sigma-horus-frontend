@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel } from '@/lib/masonic-degree';
 import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
+import { Button, inputClass } from '@/components/ui';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -67,7 +68,7 @@ interface Member {
 
 type FormState = Record<string, string>;
 
-const INPUT = "w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+const INPUT = inputClass; // fonte única do design system (src/components/ui/field-styles)
 
 const emptyForm: FormState = {
   name: '', email: '', phone: '', status: 'active', riteId: '', powerId: '', originPowerId: '',
@@ -667,8 +668,8 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
       </Collapsible>
 
       <div className="flex flex-wrap gap-3">
-        <button type="submit" disabled={saving} className="rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark disabled:opacity-50">{saving ? 'Salvando…' : submitLabel}</button>
-        <button type="button" onClick={onCancel} className="rounded-full border border-white/15 px-6 py-2.5 text-sm font-medium text-sand-dark transition-all hover:text-sand-light">Cancelar</button>
+        <Button type="submit" disabled={saving}>{saving ? 'Salvando…' : submitLabel}</Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
       </div>
     </form>
   );
