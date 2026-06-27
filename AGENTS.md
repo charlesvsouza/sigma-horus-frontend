@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `5882d61`)
+## Estado atual (`main`, HEAD `4b206d9`)
 - Working tree limpo, tudo pushed (deploy automático na Vercel).
 - `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
 - Banco: **16/16 migrations** no Railway, RLS ativo. 22 modelos (inclui `Relative`).
@@ -22,7 +22,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - ✅ **Membros — grau sem redundância**: removido "Grau de iniciação" (sempre 1º grau; `initiationDegree` depreciado). **Situação simbólica** (Aprendiz/Companheiro/Mestre/Mestre Instalado) **derivada** dos marcos de evolução via `src/lib/masonic-degree.ts` (puro, usado por Membros e Portal). "Grau atual" → **Grau Filosófico atual** (seletor REAA 4–33, em `currentDegree`; vazio = situação simbólica). **Bloco "Origem"**: Potência de origem (`originPowerId` FK→Power, migration `20260627160000`) + Loja de origem (texto). `gradeName`/`initiationDegree` fora do parser (preserva legado ao editar).
 - ✅ **Membros — Tempo de Ordem**: campo automático derivado da `initiationDate` (antiguidade maçônica), exibido no form e no detalhe. Helper `lib/masonic-degree.ts`: `yearsInOrder`, `timeInOrderLabel`, `TENURE_MILESTONES` (1,5,10,15,20,25,30,40,50,60), `tenureMilestoneForYear` — base p/ jubileus/aniversário de iniciação na Fase 7.
 - ✅ **Membros — situações de afastamento + relatório**: novos status **Quit Placet** / **Placet Ex Officio** / **Art. 002** (+ Ativo/Suspenso/Inativo) em `lib/member-status.ts` (label + badge por tom; sem migration, status é texto livre; cobrança em massa de ativos segue `status=active`). **Filtro por situação** na listagem + **botão "Relatório PDF"** (imprime a lista filtrada por situação/busca em A4, cabeçalho da loja; reusa o padrão de print do fechamento).
+- ✅ **Rodada UI/UX (skill impeccable, crítica 30/40)** — 5 commits: (P1) **disclosure progressivo** no form de membro (núcleo aberto + acordeões `Collapsible`); (P1) **dashboard** sem template métrica-herói (âncora de posição financeira + rail "Precisa de atenção" com empty state); (P2) **fonte única de campo** `components/ui/field-styles.ts` (`inputClass`) adotada por `<Input>` e Membros + `<Button>` nas ações; (P3) **skeleton/EmptyState/validação inline** na lista e no form; polish: timbre ouro no relatório PDF.
 - ✅ Docs consolidados em `../../sigmahorus_documentacao.md` (fonte única de escopo/história).
+
+## Pendente (decidido, não implementado): self-service de assinatura
+Fluxo Stripe-first com trial+cartão e auto-cobrança foi **desenhado e decidido** (Checkout público `subscription_data.trial_period_days=10` + `payment_method_collection:'always'` → `/comecar/concluir?session_id=...` cria a loja ligada ao customer/subscription real; cron de segurança cancela trials abandonados em ~48h; entrega na volta do Checkout, sem depender de e-mail/Fase 7). **Ainda não implementado** — retomar aqui se for a próxima frente.
 
 ## ⏳ Próximos
 - **Aniversariantes do mês** (`member.birthDate` + `Relative.birthDate`, indexados) **e jubileus/aniversário de iniciação** (`initiationDate` + `TENURE_MILESTONES`) → felicitações pela Secretária/Hospitalária. Faz parte da **Fase 7 (Comunicação real WhatsApp/E-mail)**.
