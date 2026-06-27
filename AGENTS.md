@@ -9,11 +9,22 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `09bc20b`)
+## Estado atual (`main`, HEAD `a34ec76`)
 - Working tree limpo, tudo pushed (deploy automático na Vercel).
 - `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
-- Banco: **13/13 migrations** no Railway, RLS ativo. 21 modelos.
+- Banco: **14/14 migrations** no Railway, RLS ativo. 21 modelos.
 - Next.js 16.2.9, next-auth v5 beta.31. Deploy automático Vercel. Domínio `sigmahorus.com.br` no ar (SSL ok).
+
+## Concluído nesta sessão (2026-06-27)
+- ✅ **Backfill de `Account.chartAccountId`**: `POST /api/accounts/backfill-chart` (tenant/RLS, `accounts:write`) + botão "Vincular contas ao plano" em Cadastros. Resolve o balde "Sem classificação" no balancete.
+- ✅ **Membros — Fase 1**: página reescrita lista-primeiro (busca nome/CPF/CIM, tabela compacta com expandir inline, "Novo membro" recolhível), **editar/excluir** (`/api/members/[id]` PUT/DELETE; DELETE com guarda 409 se houver histórico financeiro/documentos), marco **Instalação** (`installationDate`/`installationLodge`, migration `20260627120000`), **evolução maçônica concatenada**. Helper `src/lib/member-fields.ts` (paridade create/update).
+- ✅ Docs consolidados em `../../sigmahorus_documentacao.md` (fonte única de escopo/história).
+
+## ⏳ Membros — Fase 2 (pendente, decidida com o dono)
+- Tabela relacional **`Relative`** (kind: mother|father|spouse|child|other; name, birthDate, cpf?, email?, phone?, order) com RLS por `lodgeId`.
+- UI de **Família & Dependentes** no MemberForm: slots fixos Mãe→Pai→Esposa (nome, nascimento, email, telefone) + lista dinâmica de dependentes com "Adicionar novo".
+- Base para **aniversariantes do mês** (member.birthDate + relative.birthDate) → felicitações pela Secretária/Hospitalária (liga à Fase 7).
+- Deprecar/backfill dos campos antigos `childrenNames`/`motherName`/`fatherName`/`spouseName`/`spouseBirthDate`.
 
 ## Concluído nesta sessão (NÃO refazer)
 - ✅ **Desconto anual: cartão 10% / boleto 5%** (regra real de cobrança): `priceFor` + `annualDiscountFor` ([src/lib/plans.ts](src/lib/plans.ts)); `ensurePrice` ([src/lib/stripe.ts](src/lib/stripe.ts)) aplica 10% no anual do cartão com `lookup_key` versionada `_v2`. Textos: landing, painel, termos, compliance, manual.
