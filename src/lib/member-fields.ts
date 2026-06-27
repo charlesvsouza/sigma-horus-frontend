@@ -101,4 +101,45 @@ export function parseMemberFields(body: Body): MemberFields {
 export const MEMBER_LIST_INCLUDE = {
   rite: { select: { id: true, name: true } },
   power: { select: { id: true, name: true } },
+  relatives: { orderBy: { order: 'asc' as const } },
 } as const;
+
+export type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
+
+export interface RelativeInput {
+  kind: RelativeKind;
+  name: string;
+  birthDate: Date | null;
+  cpf: string | null;
+  email: string | null;
+  phone: string | null;
+  order: number;
+}
+
+const KIND_ORDER: Record<string, number> = { mother: 0, father: 1, spouse: 2 };
+
+// Normaliza a lista de familiares/dependentes vinda do form. Descarta entradas
+// sem nome. A ordem fixa (mãe→pai→esposa) vem de KIND_ORDER; dependentes
+// (child/other) entram depois, preservando a ordem de inserção.
+export function parseRelatives(body: Body): RelativeInput[] {
+  const raw = Array.isArray(body?.relatives) ? (body.relatives as Body[]) : [];
+  const valid: RelativeKind[] = ['mother', 'father', 'spouse', 'son', 'daughter', 'child', 'other'];
+  let dependentSeq = 0;
+  return raw
+    .map((r) => {
+      const kind = (valid.includes(r?.kind as RelativeKind) ? r.kind : 'other') as RelativeKind;
+      const name = String(r?.name ?? '').trim();
+      const baseOrder = KIND_ORDER[kind];
+      const order = baseOrder != null ? baseOrder : 10 + dependentSeq++;
+      return {
+        kind,
+        name,
+        birthDate: r?.birthDate ? new Date(String(r.birthDate)) : null,
+        cpf: str(r?.cpf),
+        email: str(r?.email),
+        phone: str(r?.phone),
+        order,
+      };
+    })
+    .filter((r) => r.name.length > 0);
+}

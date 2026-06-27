@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-import { MEMBER_LIST_INCLUDE, parseMemberFields } from '@/lib/member-fields';
+import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives } from '@/lib/member-fields';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -19,6 +19,7 @@ export async function PUT(request: Request, { params }: Ctx) {
 
   const body = await request.json();
   const fields = parseMemberFields(body);
+  const relatives = parseRelatives(body);
   if (!fields.name) {
     return NextResponse.json({ error: 'Nome do membro é obrigatório.' }, { status: 400 });
   }
@@ -27,9 +28,16 @@ export async function PUT(request: Request, { params }: Ctx) {
     const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true } });
     if (!existing) return null;
 
+    // Replace-all dos familiares: apaga os atuais e recria a partir do form.
     const updated = await db.member.update({
       where: { id },
-      data: fields,
+      data: {
+        ...fields,
+        relatives: {
+          deleteMany: {},
+          create: relatives.map((r) => ({ lodgeId: String(lodgeId), ...r })),
+        },
+      },
       include: MEMBER_LIST_INCLUDE,
     });
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { name: fields.name } });

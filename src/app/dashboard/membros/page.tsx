@@ -4,6 +4,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 
 interface Option { id: string; name: string; }
+type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
+interface RelativeData {
+  id?: string;
+  kind: RelativeKind;
+  name: string;
+  birthDate?: string | null;
+  cpf?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}
 interface Member {
   id: string;
   name: string;
@@ -48,6 +58,7 @@ interface Member {
   notes?: string | null;
   rite?: Option | null;
   power?: Option | null;
+  relatives?: RelativeData[];
 }
 
 type FormState = Record<string, string>;
@@ -101,6 +112,8 @@ function formatEvolution(m: Member): string {
   return parts.length ? parts.join(' ') : 'Sem marcos registrados';
 }
 
+const KIND_LABEL: Record<RelativeKind, string> = { mother: 'Mãe', father: 'Pai', spouse: 'Esposa', son: 'Filho', daughter: 'Filha', child: 'Filho(a)', other: 'Dependente' };
+
 export default function MembrosPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [rites, setRites] = useState<Option[]>([]);
@@ -143,13 +156,13 @@ export default function MembrosPage() {
     });
   }, [members, query]);
 
-  async function createMember(form: FormState) {
+  async function createMember(form: FormState, relatives: RelativeData[]) {
     setSaving(true);
     setMessage('');
     const res = await fetch('/api/members', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, relatives }),
     });
     const data = await res.json();
     setSaving(false);
@@ -162,13 +175,13 @@ export default function MembrosPage() {
     }
   }
 
-  async function updateMember(id: string, form: FormState) {
+  async function updateMember(id: string, form: FormState, relatives: RelativeData[]) {
     setSaving(true);
     setMessage('');
     const res = await fetch(`/api/members/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, relatives }),
     });
     const data = await res.json();
     setSaving(false);
@@ -178,6 +191,20 @@ export default function MembrosPage() {
       await loadData();
     } else {
       setMessage(data.error ?? 'Erro ao atualizar membro.');
+    }
+  }
+
+  async function backfillRelatives() {
+    if (!window.confirm('Migrar os campos antigos de família (mãe/pai/esposa/filhos) para a nova ficha de dependentes? Só afeta membros que ainda não têm familiares cadastrados.')) return;
+    setMessage('');
+    const res = await fetch('/api/members/backfill-relatives', { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      const s = data.stats ?? {};
+      setMessage(`Família migrada: ${s.migrated ?? 0} membro(s), ${s.relativesCreated ?? 0} familiar(es) criado(s).`);
+      await loadData();
+    } else {
+      setMessage(data.error ?? 'Erro ao migrar família.');
     }
   }
 
@@ -215,13 +242,16 @@ export default function MembrosPage() {
         {creating ? (
           <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
             <h2 className="text-base font-semibold text-sand-light">Novo membro</h2>
-            <MemberForm initial={emptyForm} rites={rites} powers={powers} saving={saving} submitLabel="Salvar membro" onSubmit={createMember} onCancel={() => setCreating(false)} />
+            <MemberForm initial={emptyForm} initialRelatives={[]} rites={rites} powers={powers} saving={saving} submitLabel="Salvar membro" onSubmit={createMember} onCancel={() => setCreating(false)} />
           </section>
         ) : null}
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-sand-light">Listagem</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-base font-semibold text-sand-light">Listagem</h2>
+              <button onClick={backfillRelatives} title="Migra os campos antigos de família para a nova ficha de dependentes (idempotente)" className="text-xs text-sand-dark underline-offset-2 transition-colors hover:text-gold hover:underline">migrar família antiga</button>
+            </div>
             <div className="relative w-full max-w-sm">
               <input
                 value={query}
@@ -270,7 +300,7 @@ export default function MembrosPage() {
                     {open ? (
                       <div className="border-t border-white/[5%] bg-sigma-blue-deep/30 px-4 py-5">
                         {editingId === m.id ? (
-                          <MemberForm initial={memberToForm(m)} rites={rites} powers={powers} saving={saving} submitLabel="Salvar alterações" onSubmit={(form) => updateMember(m.id, form)} onCancel={() => setEditingId(null)} />
+                          <MemberForm initial={memberToForm(m)} initialRelatives={m.relatives ?? []} rites={rites} powers={powers} saving={saving} submitLabel="Salvar alterações" onSubmit={(form, rels) => updateMember(m.id, form, rels)} onCancel={() => setEditingId(null)} />
                         ) : (
                           <div className="space-y-4 text-sm">
                             <div className="grid gap-3 md:grid-cols-2">
@@ -285,6 +315,20 @@ export default function MembrosPage() {
                               <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Evolução maçônica</p>
                               <p className="mt-1 text-sand">{formatEvolution(m)}</p>
                             </div>
+                            {m.relatives && m.relatives.length > 0 ? (
+                              <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Família e dependentes</p>
+                                <ul className="mt-1 space-y-0.5 text-sand">
+                                  {m.relatives.map((r, i) => (
+                                    <li key={r.id ?? i}>
+                                      <span className="text-sand-dark">{KIND_LABEL[r.kind]}:</span> {r.name}
+                                      {r.birthDate ? ` · ${fmtDate(r.birthDate)}` : ''}
+                                      {r.phone ? ` · ${r.phone}` : ''}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : null}
                             <div className="flex flex-wrap gap-3 pt-1">
                               <button onClick={() => setEditingId(m.id)} className="rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 transition-all hover:border-gold/60 hover:text-gold">Editar</button>
                               <button onClick={() => deleteMember(m)} className="rounded-full border border-rose-500/40 px-4 py-2 text-xs font-medium text-rose-300 transition-all hover:border-rose-500/60 hover:text-rose-200">Excluir cadastro</button>
@@ -310,18 +354,43 @@ function Detail({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function MemberForm({ initial, rites, powers, saving, submitLabel, onSubmit, onCancel }: {
+const emptyRel = (kind: RelativeKind): RelativeData => ({ kind, name: '', birthDate: '', cpf: '', email: '', phone: '' });
+const dateVal = (iso?: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
+
+function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLabel, onSubmit, onCancel }: {
   initial: FormState;
+  initialRelatives: RelativeData[];
   rites: Option[];
   powers: Option[];
   saving: boolean;
   submitLabel: string;
-  onSubmit: (form: FormState) => void;
+  onSubmit: (form: FormState, relatives: RelativeData[]) => void;
   onCancel: () => void;
 }) {
   const [form, setForm] = useState<FormState>(initial);
   const [cepStatus, setCepStatus] = useState('');
   const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+
+  // Família: slots fixos (mãe/pai/esposa) + dependentes dinâmicos.
+  const pick = (kind: RelativeKind): RelativeData => {
+    const found = initialRelatives.find((r) => r.kind === kind);
+    return found ? { ...found, birthDate: dateVal(found.birthDate) } : emptyRel(kind);
+  };
+  const [mother, setMother] = useState<RelativeData>(() => pick('mother'));
+  const [father, setFather] = useState<RelativeData>(() => pick('father'));
+  const [spouse, setSpouse] = useState<RelativeData>(() => pick('spouse'));
+  const [dependents, setDependents] = useState<RelativeData[]>(() =>
+    initialRelatives
+      .filter((r) => !['mother', 'father', 'spouse'].includes(r.kind))
+      .map((r) => ({ ...r, birthDate: dateVal(r.birthDate) })),
+  );
+
+  const setRel = (setter: React.Dispatch<React.SetStateAction<RelativeData>>) => (field: keyof RelativeData, value: string) =>
+    setter((p) => ({ ...p, [field]: value }));
+  const setDep = (idx: number, field: keyof RelativeData, value: string) =>
+    setDependents((list) => list.map((d, i) => (i === idx ? { ...d, [field]: value } : d)));
+  const addDependent = () => setDependents((list) => [...list, emptyRel('son')]);
+  const removeDependent = (idx: number) => setDependents((list) => list.filter((_, i) => i !== idx));
 
   async function lookupCep(value: string) {
     setCepStatus('');
@@ -343,7 +412,8 @@ function MemberForm({ initial, rites, powers, saving, submitLabel, onSubmit, onC
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    onSubmit(form);
+    const relatives = [mother, father, spouse, ...dependents].filter((r) => r.name.trim().length > 0);
+    onSubmit(form, relatives);
   }
 
   return (
@@ -385,7 +455,50 @@ function MemberForm({ initial, rites, powers, saving, submitLabel, onSubmit, onC
           <input value={form.occupation} onChange={(e) => set('occupation', e.target.value)} className={INPUT} placeholder="Profissão" />
           <input value={form.nationality} onChange={(e) => set('nationality', e.target.value)} className={INPUT} placeholder="Nacionalidade" />
         </div>
-        <p className="mt-3 text-xs text-sand-dark/70">Família e dependentes (mãe, pai, esposa e filhos com contatos para felicitações) chegam na próxima atualização desta tela.</p>
+      </div>
+
+      <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-5">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Família e dependentes</h3>
+        <p className="mt-1 text-xs text-sand-dark/70">Contatos próprios (e-mail e telefone) para felicitações de aniversário pela Secretária/Hospitalária.</p>
+        <div className="mt-4 space-y-3">
+          {([['Mãe', mother, setMother], ['Pai', father, setFather], ['Esposa', spouse, setSpouse]] as const).map(([label, rel, setter]) => (
+            <div key={label} className="grid gap-2 md:grid-cols-[90px_1.6fr_1fr_1.4fr_1.2fr] md:items-center">
+              <span className="text-xs font-medium text-sand">{label}</span>
+              <input value={rel.name ?? ''} onChange={(e) => setRel(setter)('name', e.target.value)} className={INPUT} placeholder="Nome" />
+              <input type="date" value={rel.birthDate ?? ''} onChange={(e) => setRel(setter)('birthDate', e.target.value)} className={INPUT} />
+              <input value={rel.email ?? ''} onChange={(e) => setRel(setter)('email', e.target.value)} className={INPUT} placeholder="E-mail" />
+              <input value={rel.phone ?? ''} onChange={(e) => setRel(setter)('phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 border-t border-white/[6%] pt-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-sand-dark">Dependentes</p>
+            <button type="button" onClick={addDependent} className="rounded-full border border-gold/40 px-3 py-1.5 text-xs font-medium text-gold/80 transition-all hover:border-gold/60 hover:text-gold">+ Adicionar dependente</button>
+          </div>
+          {dependents.length === 0 ? (
+            <p className="mt-3 text-xs text-sand-dark/70">Nenhum dependente cadastrado.</p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {dependents.map((d, i) => (
+                <div key={i} className="grid gap-2 md:grid-cols-[110px_1.4fr_1fr_1fr_1.2fr_1.2fr_auto] md:items-center">
+                  <select value={d.kind} onChange={(e) => setDep(i, 'kind', e.target.value)} className={INPUT}>
+                    <option value="son">Filho</option>
+                    <option value="daughter">Filha</option>
+                    <option value="other">Outro</option>
+                  </select>
+                  <input value={d.name ?? ''} onChange={(e) => setDep(i, 'name', e.target.value)} className={INPUT} placeholder="Nome" />
+                  <input type="date" value={d.birthDate ?? ''} onChange={(e) => setDep(i, 'birthDate', e.target.value)} className={INPUT} />
+                  <input value={d.cpf ?? ''} onChange={(e) => setDep(i, 'cpf', maskCPF(e.target.value))} inputMode="numeric" className={INPUT} placeholder="CPF" />
+                  <input value={d.email ?? ''} onChange={(e) => setDep(i, 'email', e.target.value)} className={INPUT} placeholder="E-mail" />
+                  <input value={d.phone ?? ''} onChange={(e) => setDep(i, 'phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
+                  <button type="button" onClick={() => removeDependent(i)} aria-label="Remover dependente" className="justify-self-start rounded-full border border-rose-500/40 px-3 py-1.5 text-xs text-rose-300 transition-all hover:border-rose-500/60 hover:text-rose-200 md:justify-self-center">✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-5">

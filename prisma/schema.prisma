@@ -61,6 +61,7 @@ model Lodge {
   messageLogs   MessageLog[]
   chartAccounts ChartAccount[]
   rolePermissions RolePermission[]
+  relatives     Relative[]
 }
 
 model User {
@@ -135,6 +136,31 @@ model Member {
   memberOffices      MemberOffice[]
   documentsList      Document[]
   messageLogs        MessageLog[]
+  relatives          Relative[]
+}
+
+// Família e dependentes do membro (mãe, pai, esposa, filhos, outros dependentes).
+// Cada um com contatos próprios para envio de felicitações de aniversário.
+// Substitui os campos planos (childrenNames/motherName/fatherName/spouse*) — depreciados.
+model Relative {
+  id        String    @id @default(cuid())
+  lodgeId   String
+  memberId  String
+  kind      String    // mother | father | spouse | child | other
+  name      String
+  birthDate DateTime?
+  cpf       String?
+  email     String?
+  phone     String?
+  order     Int       @default(0) // ordem de exibição (mãe→pai→esposa→dependentes)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  lodge     Lodge     @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member    Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([lodgeId, memberId])
+  @@index([lodgeId, birthDate])
 }
 
 model Document {

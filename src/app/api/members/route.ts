@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-import { MEMBER_LIST_INCLUDE, parseMemberFields } from '@/lib/member-fields';
+import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives } from '@/lib/member-fields';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -46,6 +46,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const fields = parseMemberFields(body);
+  const relatives = parseRelatives(body);
 
   if (!fields.name) {
     return NextResponse.json({ error: 'Nome do membro é obrigatório.' }, { status: 400 });
@@ -53,7 +54,11 @@ export async function POST(request: Request) {
 
   const item = await withTenant(String(lodgeId), async (db) => {
     const created = await db.member.create({
-      data: { lodgeId: String(lodgeId), ...fields },
+      data: {
+        lodgeId: String(lodgeId),
+        ...fields,
+        relatives: { create: relatives.map((r) => ({ lodgeId: String(lodgeId), ...r })) },
+      },
       include: MEMBER_LIST_INCLUDE,
     });
 
