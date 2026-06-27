@@ -7,16 +7,27 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- BEGIN:handoff -->
 # Handoff — Sessão 2026-06-26
 
-## Estado atual (`main`)
-- `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`, por importarem com extensão `.ts` — config, não bug).
-- Banco: **11/11 migrations** no Railway, RLS ativo. 21 modelos (incl. `RolePermission`, `Invitation`).
+## Estado atual (`main`, HEAD `976ec8b`)
+- `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
+- Banco: **12/12 migrations** no Railway, RLS ativo. 21 modelos.
 - Next.js 16.2.9, next-auth v5 beta.31. Deploy automático Vercel. Domínio `sigmahorus.com.br` no ar (SSL ok).
+- ⚠️ **Há commits locais não enviados** — confira `git status`/`git log origin/main..main` e faça push (deploy) com autorização do dono.
 
-## Concluído nesta sessão (correção de preço + manual)
-- ✅ **Desconto anual movido do boleto para o CARTÃO** (regra de cobrança, não só texto): `priceFor` ([src/lib/plans.ts](src/lib/plans.ts)) desconta só `card`; `ensurePrice` ([src/lib/stripe.ts](src/lib/stripe.ts)) aplica 10% no anual e **versiona a lookup_key do anual (`_v2`)** — Prices no Stripe são imutáveis, os antigos (cheios) ficam órfãos/inativos. UI/textos: `plans-section.tsx`, `SubscriptionManager.tsx`, `termos`, `compliance`, `manual`.
-  - ⚠️ **Decisão pendente do dono:** o boleto anual ficou pelo valor cheio e sem auto-renovação (vira o pior negócio). Avaliar remover boleto anual ou dar desconto menor.
-- ✅ **Manual reescrito** em [src/components/manual-book.tsx](src/components/manual-book.tsx) (página = server wrapper com metadata): **índice lateral + frame central + botão "Salvar como PDF"** (print CSS formato livro acadêmico: capa, serifada, quebra por capítulo). Passo a passo por perfil — Admin (incl. conectar Asaas: gerar API key + webhook/token), Tesoureiro (7 sub-seções), Secretário, Venerável, Membro (portal), assinatura, regras, LGPD, FAQ.
-- Validação: `tsc --noEmit` limpo (exceto `.test.ts`); `eslint` 0 erros nos arquivos tocados.
+## Concluído nesta sessão (NÃO refazer)
+- ✅ **Desconto anual: cartão 10% / boleto 5%** (regra real de cobrança): `priceFor` + `annualDiscountFor` ([src/lib/plans.ts](src/lib/plans.ts)); `ensurePrice` ([src/lib/stripe.ts](src/lib/stripe.ts)) aplica 10% no anual do cartão com `lookup_key` versionada `_v2`. Textos: landing, painel, termos, compliance, manual.
+- ✅ **Stripe LIVE**: 6 preços criados (3 planos × mês/ano) via script que replica `ensureProduct`/`ensurePrice`; produtos duplicados (lag do índice) **consolidados** — 1 produto ativo por plano (mês+ano), 3 arquivados. Checkout resolve por `lookup_key`.
+- ✅ **Asaas E2E (sandbox) VALIDADO** pelo dono: emissão de boleto/PIX funcionando (cobrança recebida/visualizada). A Fase 3 deixa de ser pendência.
+- ✅ **Número de referência automático** das cobranças (`COB-AAAAMM-NNNN`, sequencial por loja); campo opcional. Em `/api/invoices`.
+- ✅ **Cobrança em massa**: `POST /api/invoices/bulk` (uma cobrança por membro, ativos/todos, recorrência opcional) + bloco na UI de Cobranças.
+- ✅ **Configurações da loja**: `Lodge.riteName/powerName/sessionWeekdays/sessionFrequency` (migration `20260626130000`); seções "Loja maçônica" e "Sessões"; botão **"Aplicar cargos deste rito"** (`POST /api/lodges/seed-offices`, `seedOfficesForRite` não-destrutivo).
+- ✅ **Plano de contas livro-caixa**: `MASONIC_CHART_OF_ACCOUNTS` recodificado hierárquico (1.1.xx, 2.1.xx, 8.9.xx…); `seedLodgeDefaults` faz **top-up por código** (não duplica); `DELETE /api/chart-accounts/[id]` + botão Remover.
+- ✅ **Manual reescrito** ([src/components/manual-book.tsx](src/components/manual-book.tsx)): índice lateral + frame central + "Salvar como PDF" (print CSS livro acadêmico). Cobre todos os perfis e as funções novas.
+
+## ⚠️ Próxima grande entrega proposta (confirmar escopo com o dono)
+**Suíte de relatórios para fechamento do veneralato**, no formato do PDF "RELATÓRIO FINANCEIRO AMORIO": Balanço Financeiro (receitas×despesas com %, saldo anterior/atual), Balancete de Verificação por plano de contas (saldo ant., débitos, créditos, saldo atual), Receitas×Despesas mensal, Livro Caixa / Extrato, Cobranças em geral, Saldo dos Associados. Base de dados já existe (Account/Payment/Invoice + plano de contas codificado).
+
+## Decisão pendente do dono
+- Boleto anual a 5% **mantido** (decidido). Reavaliar só se quiser descontinuar.
 
 ## Concluído em sessões anteriores (NÃO refazer)
 - ✅ **RBAC persistido por loja** (`RolePermission`): matriz papel × recurso × ação editável em `/dashboard/configuracoes/permissoes` (`/api/permissions`), fallback default em código.
@@ -26,8 +37,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - ✅ **R2** com as 4 vars completas na Vercel (`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET`).
 - ✅ Testes unitários em `src/lib/{asaas,crypto,masks,rbac,storage}.test.ts`.
 
-## ⏳ Pendências REAIS restantes (só estas 3, confirmadas com o dono)
-1. **Teste E2E do Asaas com sandbox** — conectar → emitir → pagar no sandbox → baixa via webhook (código pronto, nunca exercido contra API real).
+## ⏳ Pendências REAIS restantes
+1. **Suíte de relatórios de fechamento do veneralato** (ver acima) — escopo a confirmar.
 2. **Comunicação real WhatsApp/E-mail (Fase 7)** — `MessageLog` pronto; falta canal externo (Cloud API + e-mail).
 3. **E-mail profissional `@sigmahorus.com.br`** — contratar à parte; depois MX/SPF/DKIM na zona DNS da Hostinger.
 
