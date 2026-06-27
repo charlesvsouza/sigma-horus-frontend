@@ -29,6 +29,8 @@ export default function CobrancasPage() {
   const [emittingId, setEmittingId] = useState('');
   const [asaasLinks, setAsaasLinks] = useState<Record<string, string>>({});
   const [form, setForm] = useState({ accountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
+  const [bulk, setBulk] = useState({ accountId: '', amount: '', dueDate: '', description: '', scope: 'active', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
   async function loadData() {
     setLoading(true);
@@ -70,6 +72,28 @@ export default function CobrancasPage() {
       await loadData();
     } else {
       setMessage(data.error ?? 'Erro ao criar cobrança.');
+    }
+  }
+
+  async function handleBulk(event: FormEvent) {
+    event.preventDefault();
+    const alvo = bulk.scope === 'all' ? 'todos os membros' : 'todos os membros ativos';
+    if (!window.confirm(`Gerar uma cobrança para ${alvo}?`)) return;
+    setBulkProcessing(true);
+    setMessage('');
+    const res = await fetch('/api/invoices/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...bulk, amount: Number(bulk.amount) }),
+    });
+    const data = await res.json();
+    setBulkProcessing(false);
+    if (res.ok) {
+      setMessage(`Cobranças geradas: ${data.created} (de ${data.members} membros).`);
+      setBulk({ accountId: '', amount: '', dueDate: '', description: '', scope: 'active', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
+      await loadData();
+    } else {
+      setMessage(data.error ?? 'Erro ao gerar cobranças em massa.');
     }
   }
 
@@ -127,6 +151,37 @@ export default function CobrancasPage() {
         </section>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <h2 className="text-base font-semibold text-sand-light">Cobrança em massa</h2>
+          <p className="mt-1 text-sm text-sand-dark">Gera uma cobrança para todos os irmãos de uma vez (ex.: mensalidade). O número de cada cobrança é gerado automaticamente.</p>
+          <form onSubmit={handleBulk} className="mt-5 grid gap-4 md:grid-cols-2">
+            <select value={bulk.accountId} onChange={(event) => setBulk({ ...bulk, accountId: event.target.value })} className={INPUT} required>
+              <option value="">Selecione uma conta</option>
+              {accounts.map((account) => <option key={account.id} value={account.id}>{account.title}</option>)}
+            </select>
+            <select value={bulk.scope} onChange={(event) => setBulk({ ...bulk, scope: event.target.value })} className={INPUT}>
+              <option value="active">Somente membros ativos</option>
+              <option value="all">Todos os membros</option>
+            </select>
+            <input type="number" step="0.01" value={bulk.amount} onChange={(event) => setBulk({ ...bulk, amount: event.target.value })} className={INPUT} placeholder="Valor por membro" required />
+            <input type="date" value={bulk.dueDate} onChange={(event) => setBulk({ ...bulk, dueDate: event.target.value })} className={INPUT} required />
+            <textarea value={bulk.description} onChange={(event) => setBulk({ ...bulk, description: event.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Descrição (ex.: Mensalidade de julho/2026)" rows={2} />
+            <label className="flex items-center gap-3 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 md:col-span-2">
+              <input type="checkbox" checked={bulk.isRecurring} onChange={(event) => setBulk({ ...bulk, isRecurring: event.target.checked })} className="accent-gold" />
+              <span className="text-sm text-sand">Criar como cobrança recorrente para cada membro</span>
+            </label>
+            <select value={bulk.recurringInterval} onChange={(event) => setBulk({ ...bulk, recurringInterval: event.target.value })} className={INPUT} disabled={!bulk.isRecurring}>
+              <option value="monthly">Mensal</option>
+              <option value="quarterly">Trimestral</option>
+              <option value="yearly">Anual</option>
+            </select>
+            <input type="number" min="1" value={bulk.recurringCount} onChange={(event) => setBulk({ ...bulk, recurringCount: event.target.value })} className={INPUT} placeholder="Qtde. de ocorrências" disabled={!bulk.isRecurring} />
+            <button type="submit" disabled={bulkProcessing} className="rounded-full border border-gold/40 px-6 py-2.5 text-sm font-medium text-gold/90 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40 md:col-span-2">
+              {bulkProcessing ? 'Gerando…' : 'Gerar para todos os membros'}
+            </button>
+          </form>
+        </section>
+
+        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
           <h2 className="text-base font-semibold text-sand-light">Nova cobrança</h2>
           <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
             <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })} className={INPUT} required>
@@ -137,7 +192,7 @@ export default function CobrancasPage() {
               <option value="">Vincular a um membro</option>
               {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
             </select>
-            <input value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} className={INPUT} placeholder="Número / referência" required />
+            <input value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} className={INPUT} placeholder="Número / referência (gerado automaticamente se vazio)" />
             <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT} placeholder="Valor" required />
             <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT} required />
             <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={INPUT} placeholder="Descrição" rows={3} />

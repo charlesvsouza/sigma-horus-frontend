@@ -3,6 +3,23 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
+/**
+ * Gera um número de referência coerente e único por loja, no formato
+ * COB-AAAAMM-NNNN (sequencial dentro do mês corrente). O `offset` permite
+ * numerar um lote (cobrança em massa) sem colisão dentro da mesma transação.
+ */
+async function nextInvoiceNumber(
+  db: { invoice: { count: (args: { where: Record<string, unknown> }) => Promise<number> } },
+  lodgeId: string,
+  offset = 0,
+): Promise<string> {
+  const now = new Date();
+  const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const prefix = `COB-${ym}-`;
+  const count = await db.invoice.count({ where: { lodgeId, number: { startsWith: prefix } } });
+  return `${prefix}${String(count + 1 + offset).padStart(4, '0')}`;
+}
+
 function addInterval(date: Date, interval: string) {
   const nextDate = new Date(date);
 
@@ -64,17 +81,18 @@ export async function POST(request: Request) {
   const recurringInterval = typeof body?.recurringInterval === 'string' ? body.recurringInterval : 'monthly';
   const recurringCount = body?.recurringCount != null && body.recurringCount !== '' ? Number(body.recurringCount) : null;
 
-  if (!accountId || !number || Number.isNaN(amount)) {
+  if (!accountId || Number.isNaN(amount)) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
   }
 
   const item = await withTenant(String(lodgeId), async (db) => {
+    const finalNumber = number || (await nextInvoiceNumber(db, String(lodgeId)));
     const created = await db.invoice.create({
       data: {
         lodgeId: String(lodgeId),
         accountId,
         memberId,
-        number,
+        number: finalNumber,
         amount,
         dueDate,
         description: description || null,
@@ -89,7 +107,7 @@ export async function POST(request: Request) {
       },
     });
 
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'invoice', entityId: created.id, metadata: { number, amount, accountId } });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'invoice', entityId: created.id, metadata: { number: finalNumber, amount, accountId } });
     return created;
   });
 

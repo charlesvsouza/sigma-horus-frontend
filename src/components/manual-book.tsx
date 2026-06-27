@@ -454,7 +454,7 @@ export function ManualBook() {
                 <Steps>
                   <li>Selecione a <UI>conta</UI> (a receber) à qual a cobrança se refere.</li>
                   <li><UI>Vincular a um membro</UI> — necessário se você for emitir boleto/PIX depois (ver 7.4).</li>
-                  <li>Informe <UI>Número / referência</UI>, <UI>Valor</UI> e a <UI>Data</UI> de vencimento.</li>
+                  <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> de vencimento. O <UI>Número / referência</UI> é <strong>gerado automaticamente</strong> (formato <code>COB-AAAAMM-NNNN</code>) se você deixar o campo em branco.</li>
                   <li>Opcional: <UI>Descrição</UI>.</li>
                   <li>Para mensalidades, marque <UI>Criar como cobrança recorrente</UI> e defina o intervalo (<strong>Mensal</strong>, <strong>Trimestral</strong> ou <strong>Anual</strong>) e a <UI>quantidade de ocorrências</UI>.</li>
                   <li>Clique em <UI>Criar cobrança</UI>.</li>
@@ -462,6 +462,12 @@ export function ManualBook() {
                 <p>
                   Para gerar as parcelas recorrentes que já venceram/estão previstas, use o botão <UI>Processar
                   recorrentes</UI> no bloco <UI>Recorrência</UI> — ele cria as cobranças do período automaticamente.
+                </p>
+                <p>
+                  <strong>Cobrança em massa:</strong> para cobrar todos os irmãos de uma vez (ex.: mensalidade), use o
+                  bloco <UI>Cobrança em massa</UI> — escolha a conta, o público (membros ativos ou todos), o valor por
+                  membro e o vencimento, e clique em <UI>Gerar para todos os membros</UI>. Cria uma cobrança numerada
+                  automaticamente para cada membro (e, se marcado, recorrente).
                 </p>
                 <p>
                   Na lista <UI>Cobranças cadastradas</UI>, cada item mostra um status: <strong>Pendente</strong>,
