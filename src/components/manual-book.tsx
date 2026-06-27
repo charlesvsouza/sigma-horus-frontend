@@ -413,7 +413,7 @@ export function ManualBook() {
                 <p>
                   Em <UI>Administração → Assinatura</UI> você escolhe e gerencia o plano que a loja paga ao Sigma Horus.
                   Veja os detalhes de planos e regras no capítulo 11. Resumo: <strong>teste de 10 dias</strong>, depois
-                  Oficina, Loja ou Potência; no <strong>anual no cartão há 10% de desconto</strong>.
+                  Oficina, Loja ou Potência; no <strong>anual há desconto (10% no cartão, 5% no boleto)</strong>.
                 </p>
               </Sub>
             </Chapter>
@@ -598,7 +598,7 @@ export function ManualBook() {
               <Bullets>
                 <li><strong>Mensal no cartão:</strong> cobrança recorrente todo mês.</li>
                 <li><strong>Anual no cartão:</strong> 12 meses com <strong>10% de desconto</strong> e renovação automática.</li>
-                <li><strong>Anual no boleto:</strong> pago de uma vez, pelo <strong>valor cheio (sem desconto)</strong> e sem renovação automática. O acesso é liberado <strong>após a confirmação</strong> do pagamento.</li>
+                <li><strong>Anual no boleto:</strong> pago de uma vez, com <strong>5% de desconto</strong> e sem renovação automática. O acesso é liberado <strong>após a confirmação</strong> do pagamento.</li>
               </Bullets>
               <Note>O <strong>período de teste de 10 dias</strong> é gratuito: nada é debitado até você contratar um plano.</Note>
             </Chapter>

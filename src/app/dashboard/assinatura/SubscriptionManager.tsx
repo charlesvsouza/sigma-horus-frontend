@@ -97,7 +97,7 @@ export function SubscriptionManager({ currentPlan, isActiveCard, pendingPlan }: 
               onClick={() => setMethod('boleto')}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${method === 'boleto' ? 'bg-white/10 text-sand-light' : 'text-sand-dark hover:text-sand-light'}`}
             >
-              Boleto · pré-pago 1 ano
+              Boleto · 5% off
             </button>
           </div>
         ) : null}

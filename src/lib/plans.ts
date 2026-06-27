@@ -1,7 +1,8 @@
 // Constantes e helpers de planos SEM dependência do SDK do Stripe (Node).
 // Seguro para importar em Client Components.
 
-export const ANNUAL_DISCOUNT = 0.1;
+export const ANNUAL_DISCOUNT = 0.1; // anual no cartão (recompensa a auto-renovação)
+export const ANNUAL_DISCOUNT_BOLETO = 0.05; // anual no boleto (pré-pago, sem renovação)
 export const TRIAL_DAYS = 10;
 
 export const PLANS = {
@@ -63,18 +64,22 @@ export function isPlanId(v: unknown): v is PlanId {
   return typeof v === 'string' && v in PLANS;
 }
 
+/** Percentual de desconto do plano anual conforme o método de pagamento. */
+export function annualDiscountFor(method: PaymentMethod): number {
+  return method === 'card' ? ANNUAL_DISCOUNT : ANNUAL_DISCOUNT_BOLETO;
+}
+
 /**
  * Valor total a cobrar, em centavos, para um plano + intervalo + método.
  * - Mensal: preço base (recorrente mensal, sem desconto).
  * - Anual no cartão: 12× com 10% de desconto e renovação automática.
- * - Anual no boleto: 12× cheio, pré-pago (1 ano, sem renovação automática).
+ * - Anual no boleto: 12× com 5% de desconto, pré-pago (1 ano, sem renovação).
  */
 export function priceFor(plan: PlanId, interval: BillingInterval, method: PaymentMethod): number {
   const base = PLANS[plan].price;
   if (interval === 'month') return base;
   const annual = base * 12;
-  const discounted = method === 'card'; // o desconto anual vale apenas no cartão
-  return discounted ? Math.round(annual * (1 - ANNUAL_DISCOUNT)) : annual;
+  return Math.round(annual * (1 - annualDiscountFor(method)));
 }
 
 export function formatPrice(cents: number) {

@@ -51,7 +51,7 @@ export default function CompliancePage() {
           <li><strong>Teste de 10 dias gratuito</strong> no plano Oficina — nada é debitado durante o período.</li>
           <li><strong>Planos por faixa de membros:</strong> Oficina R$ 60/mês, Loja R$ 90/mês, Potência R$ 180/mês.</li>
           <li><strong>Anual no cartão:</strong> 10% de desconto, com renovação automática. <strong>Mensal no cartão:</strong> recorrente.</li>
-          <li><strong>Anual no boleto:</strong> valor cheio (sem desconto), pago de uma vez, com acesso liberado após a confirmação do pagamento e sem renovação automática.</li>
+          <li><strong>Anual no boleto:</strong> 5% de desconto, pago de uma vez, com acesso liberado após a confirmação do pagamento e sem renovação automática.</li>
           <li><strong>Upgrade:</strong> imediato, com cobrança proporcional. <strong>Downgrade:</strong> só no fim do período já contratado.</li>
           <li><strong>Sem reembolso</strong> de valores já pagos do período vigente após a contratação.</li>
         </ul>
