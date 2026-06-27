@@ -65,15 +65,15 @@ export function isPlanId(v: unknown): v is PlanId {
 
 /**
  * Valor total a cobrar, em centavos, para um plano + intervalo + método.
- * - Mensal: preço base (recorrente mensal).
- * - Anual cartão: 12× (sem desconto, renova automaticamente).
- * - Anual PIX/boleto: 12× com 10% de desconto (pré-pago, 1 ano).
+ * - Mensal: preço base (recorrente mensal, sem desconto).
+ * - Anual no cartão: 12× com 10% de desconto e renovação automática.
+ * - Anual no boleto: 12× cheio, pré-pago (1 ano, sem renovação automática).
  */
 export function priceFor(plan: PlanId, interval: BillingInterval, method: PaymentMethod): number {
   const base = PLANS[plan].price;
   if (interval === 'month') return base;
   const annual = base * 12;
-  const discounted = method === 'pix' || method === 'boleto';
+  const discounted = method === 'card'; // o desconto anual vale apenas no cartão
   return discounted ? Math.round(annual * (1 - ANNUAL_DISCOUNT)) : annual;
 }
 

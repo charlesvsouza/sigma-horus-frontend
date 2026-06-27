@@ -89,15 +89,15 @@ export function SubscriptionManager({ currentPlan, isActiveCard, pendingPlan }: 
           <div className="inline-flex rounded-full border border-white/[0.1] bg-sigma-blue-dark/50 p-1">
             <button
               onClick={() => setMethod('card')}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${method === 'card' ? 'bg-white/10 text-sand-light' : 'text-sand-dark hover:text-sand-light'}`}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${method === 'card' ? 'bg-gold/90 text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'}`}
             >
-              Cartão (renova auto)
+              Cartão · 10% off (renova auto)
             </button>
             <button
               onClick={() => setMethod('boleto')}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${method === 'boleto' ? 'bg-gold/90 text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'}`}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${method === 'boleto' ? 'bg-white/10 text-sand-light' : 'text-sand-dark hover:text-sand-light'}`}
             >
-              Boleto · 10% off
+              Boleto · pré-pago 1 ano
             </button>
           </div>
         ) : null}

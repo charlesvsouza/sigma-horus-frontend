@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { PLANS, type PlanId, type BillingInterval } from '@/lib/plans';
+import { PLANS, priceFor, type PlanId, type BillingInterval } from '@/lib/plans';
 
 // Re-exporta os helpers/constantes puros (client-safe) para compatibilidade
 // com os imports server-side existentes.
@@ -47,16 +47,18 @@ async function ensureProduct(plan: PlanId): Promise<string> {
 
 /**
  * Garante (idempotente) o Price recorrente (cartão) para plano+intervalo,
- * usando lookup_key estável. Anual no cartão = 12× o mensal (sem desconto).
+ * usando lookup_key estável. Anual no cartão = 12× o mensal com 10% de desconto
+ * (ver priceFor). A lookup_key do anual é versionada (_v2) para invalidar
+ * os Prices antigos sem desconto — Prices no Stripe são imutáveis.
  * Retorna o id do Price para uso em subscriptions e schedules.
  */
 export async function ensurePrice(plan: PlanId, interval: BillingInterval): Promise<string> {
   const stripe = getStripe();
-  const lookupKey = `sigma_${plan}_${interval}`;
+  const lookupKey = interval === 'year' ? `sigma_${plan}_year_v2` : `sigma_${plan}_month`;
   const existing = await stripe.prices.list({ lookup_keys: [lookupKey], active: true, limit: 1 });
   if (existing.data[0]) return existing.data[0].id;
   const productId = await ensureProduct(plan);
-  const amount = interval === 'year' ? PLANS[plan].price * 12 : PLANS[plan].price;
+  const amount = priceFor(plan, interval, 'card');
   const price = await stripe.prices.create({
     product: productId,
     currency: 'brl',

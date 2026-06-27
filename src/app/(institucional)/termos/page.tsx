@@ -62,8 +62,8 @@ export default function TermosPage() {
         </p>
         <ul className="list-disc space-y-2 pl-5">
           <li><strong>Mensal no cartão:</strong> cobrança recorrente mensal, com renovação automática.</li>
-          <li><strong>Anual no cartão:</strong> cobrança anual, com renovação automática, sem desconto.</li>
-          <li><strong>Anual no boleto:</strong> pagamento único do período, com <strong>10% de desconto</strong>. Nesta
+          <li><strong>Anual no cartão:</strong> cobrança anual com renovação automática e <strong>10% de desconto</strong>.</li>
+          <li><strong>Anual no boleto:</strong> pagamento único do período, pelo valor cheio (sem desconto). Nesta
             modalidade, o <strong>acesso é liberado apenas após a confirmação do pagamento</strong>, e não há renovação
             automática (a recontratação é manual ao fim do período).</li>
         </ul>

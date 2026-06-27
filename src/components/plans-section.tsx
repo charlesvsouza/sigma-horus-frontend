@@ -51,7 +51,7 @@ export function PlansSection() {
         </h2>
         <p className="mt-4 text-base leading-7 text-sand">
           Por faixa de obreiros ativos. Comece com 10 dias de teste; ao final, assine um dos planos.
-          No anual via boleto você ganha 10% de desconto.
+          No plano anual no cartão você ganha 10% de desconto.
         </p>
       </div>
 
@@ -81,18 +81,18 @@ export function PlansSection() {
             <button
               onClick={() => setMethod('card')}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                method === 'card' ? 'bg-white/10 text-sand-light' : 'text-sand-dark hover:text-sand-light'
+                method === 'card' ? 'bg-gold/90 text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'
               }`}
             >
-              Cartão (renova auto)
+              Cartão · 10% off (renova auto)
             </button>
             <button
               onClick={() => setMethod('boleto')}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                method === 'boleto' ? 'bg-gold/90 text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'
+                method === 'boleto' ? 'bg-white/10 text-sand-light' : 'text-sand-dark hover:text-sand-light'
               }`}
             >
-              Boleto · 10% off
+              Boleto · pré-pago 1 ano
             </button>
           </div>
         ) : null}
@@ -104,7 +104,7 @@ export function PlansSection() {
           const total = priceFor(plan.id, interval, effectiveMethod);
           const perMonth = isAnnual ? Math.round(total / 12) : total;
           const fullAnnual = plan.price * 12;
-          const showsDiscount = isAnnual && effectiveMethod !== 'card';
+          const showsDiscount = isAnnual && effectiveMethod === 'card';
           return (
             <div
               key={plan.id}
@@ -134,9 +134,9 @@ export function PlansSection() {
                 <p className="mt-1 text-xs text-sand-dark">
                   {formatPrice(total)} por ano
                   {showsDiscount ? (
-                    <span className="ml-2 text-gold">10% off (de {formatPrice(fullAnnual)})</span>
+                    <span className="ml-2 text-gold">10% off (de {formatPrice(fullAnnual)}) · renova auto</span>
                   ) : (
-                    <span className="ml-2">cobrança anual no cartão</span>
+                    <span className="ml-2">boleto pré-pago, sem renovação automática</span>
                   )}
                 </p>
               ) : (
@@ -164,7 +164,7 @@ export function PlansSection() {
                 >
                   {loading === plan.id ? 'Redirecionando...' : 'Assinar agora'}
                 </button>
-                {showsDiscount ? (
+                {isAnnual && effectiveMethod !== 'card' ? (
                   <p className="mt-3 text-center text-[0.7rem] text-sand-dark">
                     Acesso liberado após a confirmação do pagamento.
                   </p>
