@@ -110,9 +110,11 @@ model Member {
   initiationDate     DateTime?
   elevationDate      DateTime?
   exaltationDate     DateTime?
+  installationDate   DateTime?
   initiationLodge    String?
   elevationLodge     String?
   exaltationLodge    String?
+  installationLodge  String?
   initiationDegree   String?
   currentDegree      String?
   originLodge        String?
