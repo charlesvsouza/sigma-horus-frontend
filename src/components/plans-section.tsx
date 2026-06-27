@@ -22,6 +22,20 @@ export function PlansSection() {
   async function handleSubscribe(planId: string) {
     setLoading(planId);
     try {
+      // Cartão: self-service público com teste grátis de 10 dias (visitante sem
+      // conta entra direto no Stripe). Boleto anual pré-pago segue o fluxo
+      // autenticado (exige conta) — cai em /login se não houver sessão.
+      if (effectiveMethod === 'card') {
+        const res = await fetch('/api/signup/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: planId, interval }),
+        });
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+        return;
+      }
+
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -32,9 +46,7 @@ export function PlansSection() {
         return;
       }
       const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      if (data.url) window.location.href = data.url;
     } finally {
       setLoading(null);
     }

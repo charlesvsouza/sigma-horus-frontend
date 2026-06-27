@@ -116,7 +116,10 @@ export async function POST(request: Request) {
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted': {
       const customerId = obj.customer;
-      const isActive = obj.status === 'active' || obj.status === 'trialing';
+      // Preserva o trial: Stripe trialing → nosso 'trialing' (com trialEndsAt),
+      // para o painel mostrar a contagem regressiva. active → 'active'.
+      const stripeStatus = obj.status;
+      const mappedStatus = stripeStatus === 'active' ? 'active' : stripeStatus === 'trialing' ? 'trialing' : 'inactive';
       const priceMeta = obj.items?.data?.[0]?.price?.metadata;
       const newPlan = priceMeta?.plan;
       const newInterval = priceMeta?.interval === 'year' ? 'year' : priceMeta?.interval === 'month' ? 'month' : undefined;
@@ -124,7 +127,8 @@ export async function POST(request: Request) {
       if (customerId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data: any = {
-          status: isActive ? 'active' : 'inactive',
+          status: mappedStatus,
+          trialEndsAt: stripeStatus === 'trialing' ? tsToDate(obj.trial_end) ?? null : null,
           currentPeriodStart: tsToDate(obj.current_period_start),
           currentPeriodEnd: tsToDate(obj.current_period_end),
         };
