@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `4b206d9`)
+## Estado atual (`main`, HEAD `c4d9b21`)
 - Working tree limpo, tudo pushed (deploy automático na Vercel).
 - `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
 - Banco: **16/16 migrations** no Railway, RLS ativo. 22 modelos (inclui `Relative`).
@@ -23,10 +23,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - ✅ **Membros — Tempo de Ordem**: campo automático derivado da `initiationDate` (antiguidade maçônica), exibido no form e no detalhe. Helper `lib/masonic-degree.ts`: `yearsInOrder`, `timeInOrderLabel`, `TENURE_MILESTONES` (1,5,10,15,20,25,30,40,50,60), `tenureMilestoneForYear` — base p/ jubileus/aniversário de iniciação na Fase 7.
 - ✅ **Membros — situações de afastamento + relatório**: novos status **Quit Placet** / **Placet Ex Officio** / **Art. 002** (+ Ativo/Suspenso/Inativo) em `lib/member-status.ts` (label + badge por tom; sem migration, status é texto livre; cobrança em massa de ativos segue `status=active`). **Filtro por situação** na listagem + **botão "Relatório PDF"** (imprime a lista filtrada por situação/busca em A4, cabeçalho da loja; reusa o padrão de print do fechamento).
 - ✅ **Rodada UI/UX (skill impeccable, crítica 30/40)** — 5 commits: (P1) **disclosure progressivo** no form de membro (núcleo aberto + acordeões `Collapsible`); (P1) **dashboard** sem template métrica-herói (âncora de posição financeira + rail "Precisa de atenção" com empty state); (P2) **fonte única de campo** `components/ui/field-styles.ts` (`inputClass`) adotada por `<Input>` e Membros + `<Button>` nas ações; (P3) **skeleton/EmptyState/validação inline** na lista e no form; polish: timbre ouro no relatório PDF.
+- ✅ **Polish UI demais telas**: design system (inputClass + `<Button>`) + skeleton/EmptyState em contas, cobranças, pagamentos, sessões, documentos, integrações, comunicação, veneralato, configurações. (cargos/auditoria não migrados — baixo valor.)
+- ✅ **Fix plano de contas (AMORIO)**: lojas antigas ficavam com a codificação flat (1.01..1.11); `syncChartAccounts` + `POST /api/chart-accounts/sync` + botão "Atualizar plano (AMORIO)" em Cadastros migram para o canônico (1.1.xx…). **Dono deve clicar o botão** na sua loja (test) para aplicar.
+- ✅ **Self-service de assinatura (Stripe-first + trial 10d)**: `POST /api/signup/checkout` (público, trial+cartão) → `/comecar/concluir` + `GET/POST /api/signup/complete` (cria loja ligada ao Stripe real) → auto-cobrança ao fim do trial. Landing usa o checkout self-service no cartão. Webhook preserva `trialing`. `POST /api/cron/cancel-abandoned-trials` (token `PLATFORM_OWNER_TOKEN`) cancela trials abandonados >48h. **Stripe LIVE verificado: 6 preços existem — nada a criar.**
 - ✅ Docs consolidados em `../../sigmahorus_documentacao.md` (fonte única de escopo/história).
 
-## Pendente (decidido, não implementado): self-service de assinatura
-Fluxo Stripe-first com trial+cartão e auto-cobrança foi **desenhado e decidido** (Checkout público `subscription_data.trial_period_days=10` + `payment_method_collection:'always'` → `/comecar/concluir?session_id=...` cria a loja ligada ao customer/subscription real; cron de segurança cancela trials abandonados em ~48h; entrega na volta do Checkout, sem depender de e-mail/Fase 7). **Ainda não implementado** — retomar aqui se for a próxima frente.
+## ⏳ Operacional pendente do self-service
+- **Agendar o cron** `POST /api/cron/cancel-abandoned-trials` (header `Authorization: Bearer $PLATFORM_OWNER_TOKEN`) ~1×/dia (Vercel Cron ou Railway) — sem ele, trials abandonados cobram ao fim de 10 dias.
+- (Opcional) `customer.subscription.trial_will_end` → lembrete por e-mail (Fase 7).
+- E2E real: clicar "Assinar" na landing → cartão de teste → concluir cadastro → confirmar acesso `trialing` no painel.
 
 ## ⏳ Próximos
 - **Aniversariantes do mês** (`member.birthDate` + `Relative.birthDate`, indexados) **e jubileus/aniversário de iniciação** (`initiationDate` + `TENURE_MILESTONES`) → felicitações pela Secretária/Hospitalária. Faz parte da **Fase 7 (Comunicação real WhatsApp/E-mail)**.
