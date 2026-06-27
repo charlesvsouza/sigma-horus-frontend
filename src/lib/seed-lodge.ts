@@ -64,6 +64,44 @@ export async function seedLodgeDefaults(
 }
 
 /**
+ * Sincroniza o plano de contas da loja com o padrão canônico (AMORIO):
+ * - adiciona as contas canônicas que faltam (por código);
+ * - remove contas DEFAULT antigas (código fora do canônico) que NÃO estejam
+ *   vinculadas a nenhuma conta a pagar/receber — limpa resíduos de versões
+ *   anteriores da codificação (ex.: 1.01..1.11) sem perder histórico.
+ * Contas customizadas/vinculadas são preservadas.
+ */
+export async function syncChartAccounts(
+  db: Prisma.TransactionClient,
+  lodgeId: string,
+): Promise<{ added: number; removed: number; kept: number }> {
+  const canonicalCodes = new Set(MASONIC_CHART_OF_ACCOUNTS.map((c) => c.code));
+  const current = await db.chartAccount.findMany({ where: { lodgeId }, select: { id: true, code: true } });
+
+  // Contas do plano que estão em uso (vinculadas a algum Account) — não remover.
+  const refs = await db.account.findMany({
+    where: { lodgeId, chartAccountId: { not: null } },
+    select: { chartAccountId: true },
+  });
+  const referenced = new Set(refs.map((r) => r.chartAccountId));
+
+  const toRemove = current.filter((c) => !canonicalCodes.has(c.code) && !referenced.has(c.id));
+  if (toRemove.length > 0) {
+    await db.chartAccount.deleteMany({ where: { id: { in: toRemove.map((c) => c.id) } } });
+  }
+
+  const haveCodes = new Set(current.map((c) => c.code));
+  const toAdd = MASONIC_CHART_OF_ACCOUNTS.filter((c) => !haveCodes.has(c.code));
+  if (toAdd.length > 0) {
+    await db.chartAccount.createMany({
+      data: toAdd.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category })),
+    });
+  }
+
+  return { added: toAdd.length, removed: toRemove.length, kept: current.length - toRemove.length };
+}
+
+/**
  * Semeia (ou completa) os cargos de um rito específico para uma loja já
  * existente. NÃO apaga cargos: apenas adiciona os que faltam (idempotente,
  * dedupe por nome dentro da loja). Cria o registro do Rito se ele não existir.

@@ -45,6 +45,22 @@ export default function CadastrosPage() {
     }
   }
 
+  async function syncChart() {
+    if (!window.confirm('Atualizar o plano de contas para o padrão AMORIO? Adiciona as contas que faltam e remove as contas padrão antigas que não estão em uso.')) return;
+    setLinking(true);
+    setMessage('');
+    const res = await fetch('/api/chart-accounts/sync', { method: 'POST' });
+    const data = await res.json();
+    setLinking(false);
+    if (res.ok) {
+      const s = data.stats ?? {};
+      setMessage(`Plano de contas atualizado (AMORIO): ${s.added ?? 0} adicionadas, ${s.removed ?? 0} antigas removidas, ${s.kept ?? 0} mantidas.`);
+      await loadData();
+    } else {
+      setMessage(data.error ?? 'Erro ao atualizar o plano de contas.');
+    }
+  }
+
   async function backfillChart() {
     setLinking(true);
     setMessage('');
@@ -176,14 +192,24 @@ export default function CadastrosPage() {
               <h2 className="text-base font-semibold text-sand-light">Plano de contas</h2>
               <p className="mt-1 text-sm text-sand-dark">Categorias de receita e despesa típicas de uma loja maçônica.</p>
             </div>
-            <button
-              onClick={backfillChart}
-              disabled={linking || chartAccounts.length === 0}
-              title="Vincula contas antigas (sem plano de contas) à categoria correspondente, para o balancete/balanço sair completo. Não altera contas já vinculadas."
-              className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40"
-            >
-              {linking ? 'Vinculando…' : 'Vincular contas ao plano'}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={syncChart}
+                disabled={linking}
+                title="Atualiza o plano de contas para o padrão AMORIO (adiciona as que faltam, remove as antigas não utilizadas)."
+                className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40"
+              >
+                {linking ? 'Atualizando…' : 'Atualizar plano (AMORIO)'}
+              </button>
+              <button
+                onClick={backfillChart}
+                disabled={linking || chartAccounts.length === 0}
+                title="Vincula contas antigas (sem plano de contas) à categoria correspondente, para o balancete/balanço sair completo. Não altera contas já vinculadas."
+                className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-sand-dark transition-all duration-200 ease-out hover:text-sand-light disabled:opacity-40"
+              >
+                {linking ? 'Vinculando…' : 'Vincular contas ao plano'}
+              </button>
+            </div>
           </div>
           {chartAccounts.length === 0 ? (
             <p className="mt-6 text-sm text-sand-dark">Nenhuma conta no plano. Use “Popular dados padrão (Brasil)” acima.</p>
