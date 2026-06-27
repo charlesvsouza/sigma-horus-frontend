@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
-import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation } from '@/lib/masonic-degree';
+import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel } from '@/lib/masonic-degree';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -313,6 +313,7 @@ export default function MembrosPage() {
                               <Detail label="CIM (nº maçônico)" value={m.masonicNumber} />
                               <Detail label="Situação" value={symbolicSituation(m)} />
                               <Detail label="Grau filosófico" value={philosophicalDegree(m) ? `Grau ${philosophicalDegree(m)}` : null} />
+                              <Detail label="Tempo de Ordem" value={timeInOrderLabel(m.initiationDate)} />
                               <Detail label="Potência" value={m.power?.name} />
                               <Detail label="Potência de origem" value={m.originPower?.name} />
                               <Detail label="Loja de origem" value={m.originLodge} />
@@ -558,6 +559,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
                 <option value="">— (segue a situação simbólica)</option>
                 {PHILOSOPHICAL_DEGREES.map((g) => <option key={g} value={String(g)}>Grau {g}</option>)}
               </select>
+            </label>
+            <label className="block">
+              <span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Tempo de Ordem (automático)</span>
+              <div className={`${INPUT} flex items-center text-sand`}>{timeInOrderLabel(form.initiationDate) ?? 'Defina a data de iniciação'}</div>
             </label>
             <input value={form.masonicNumber} onChange={(e) => set('masonicNumber', e.target.value)} className={INPUT} placeholder="Número maçônico (CIM)" />
             <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Observações maçônicas e administrativas" rows={3} />

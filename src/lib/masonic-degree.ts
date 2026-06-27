@@ -46,3 +46,51 @@ export function degreeShort(m: DegreeSource): string {
   // Fallback p/ dados legados (currentDegree textual ou gradeName).
   return (m.currentDegree && !/^\d+$/.test(m.currentDegree) ? m.currentDegree : null) || m.gradeName || '—';
 }
+
+// ---------- Tempo de Ordem (antiguidade maçônica) ----------
+// Tempo desde a iniciação. Base para mensagens automáticas de aniversário de
+// iniciação e jubileus (5, 10, 25 anos…) — ver Fase 7 (Comunicação).
+
+const toDate = (d?: string | Date | null): Date | null => {
+  if (!d) return null;
+  const dt = d instanceof Date ? d : new Date(d);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+};
+
+// Anos completos desde a iniciação até a data de referência (default: hoje).
+export function yearsInOrder(initiationDate?: string | Date | null, ref: Date = new Date()): number | null {
+  const start = toDate(initiationDate);
+  if (!start || start > ref) return null;
+  let years = ref.getFullYear() - start.getFullYear();
+  const m = ref.getMonth() - start.getMonth();
+  if (m < 0 || (m === 0 && ref.getDate() < start.getDate())) years--;
+  return years < 0 ? null : years;
+}
+
+// Rótulo legível do Tempo de Ordem, ex.: "12 anos e 3 meses".
+export function timeInOrderLabel(initiationDate?: string | Date | null, ref: Date = new Date()): string | null {
+  const start = toDate(initiationDate);
+  if (!start || start > ref) return null;
+  let months = (ref.getFullYear() - start.getFullYear()) * 12 + (ref.getMonth() - start.getMonth());
+  if (ref.getDate() < start.getDate()) months--;
+  if (months < 0) return null;
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (years === 0 && rem === 0) return 'menos de 1 mês';
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} ${years === 1 ? 'ano' : 'anos'}`);
+  if (rem > 0) parts.push(`${rem} ${rem === 1 ? 'mês' : 'meses'}`);
+  return parts.join(' e ');
+}
+
+// Marcos comemorativos de tempo de Ordem (anos). Base para os disparos da Fase 7.
+export const TENURE_MILESTONES = [1, 5, 10, 15, 20, 25, 30, 40, 50, 60];
+
+// Se a próxima efeméride de iniciação (no ano de `ref`) cair num marco, retorna
+// o nº de anos do marco; senão null. Usado pelas mensagens automáticas.
+export function tenureMilestoneForYear(initiationDate?: string | Date | null, ref: Date = new Date()): number | null {
+  const start = toDate(initiationDate);
+  if (!start) return null;
+  const years = ref.getFullYear() - start.getFullYear();
+  return TENURE_MILESTONES.includes(years) ? years : null;
+}
