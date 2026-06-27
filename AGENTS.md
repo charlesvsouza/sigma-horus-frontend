@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Estado atual (`main`, HEAD `976ec8b`)
 - `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
-- Banco: **12/12 migrations** no Railway, RLS ativo. 21 modelos.
+- Banco: **13/13 migrations** no Railway, RLS ativo. 21 modelos.
 - Next.js 16.2.9, next-auth v5 beta.31. Deploy automático Vercel. Domínio `sigmahorus.com.br` no ar (SSL ok).
 - ⚠️ **Há commits locais não enviados** — confira `git status`/`git log origin/main..main` e faça push (deploy) com autorização do dono.
 
@@ -23,8 +23,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - ✅ **Plano de contas livro-caixa**: `MASONIC_CHART_OF_ACCOUNTS` recodificado hierárquico (1.1.xx, 2.1.xx, 8.9.xx…); `seedLodgeDefaults` faz **top-up por código** (não duplica); `DELETE /api/chart-accounts/[id]` + botão Remover.
 - ✅ **Manual reescrito** ([src/components/manual-book.tsx](src/components/manual-book.tsx)): índice lateral + frame central + "Salvar como PDF" (print CSS livro acadêmico). Cobre todos os perfis e as funções novas.
 
-## ⚠️ Próxima grande entrega proposta (confirmar escopo com o dono)
-**Suíte de relatórios para fechamento do veneralato**, no formato do PDF "RELATÓRIO FINANCEIRO AMORIO": Balanço Financeiro (receitas×despesas com %, saldo anterior/atual), Balancete de Verificação por plano de contas (saldo ant., débitos, créditos, saldo atual), Receitas×Despesas mensal, Livro Caixa / Extrato, Cobranças em geral, Saldo dos Associados. Base de dados já existe (Account/Payment/Invoice + plano de contas codificado).
+- ✅ **Suíte de relatórios de fechamento do veneralato** (formato AMORIO): `GET /api/reports/closing?from&to` agrega Balanço Financeiro, Balancete por plano de contas, Receitas×Despesas mensal, Livro Caixa, Cobranças e Saldo dos Associados; página `/dashboard/relatorios/fechamento` com seletor de período + "Salvar como PDF" (print livro). Vínculo `Account.chartAccountId` (migration `20260626140000`) — agrupamento por plano de contas depende de vincular cada conta a uma categoria.
 
 ## Decisão pendente do dono
 - Boleto anual a 5% **mantido** (decidido). Reavaliar só se quiser descontinuar.
@@ -38,9 +37,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - ✅ Testes unitários em `src/lib/{asaas,crypto,masks,rbac,storage}.test.ts`.
 
 ## ⏳ Pendências REAIS restantes
-1. **Suíte de relatórios de fechamento do veneralato** (ver acima) — escopo a confirmar.
-2. **Comunicação real WhatsApp/E-mail (Fase 7)** — `MessageLog` pronto; falta canal externo (Cloud API + e-mail).
-3. **E-mail profissional `@sigmahorus.com.br`** — contratar à parte; depois MX/SPF/DKIM na zona DNS da Hostinger.
+1. **Comunicação real WhatsApp/E-mail (Fase 7)** — `MessageLog` pronto; falta canal externo (Cloud API + e-mail).
+2. **E-mail profissional `@sigmahorus.com.br`** — contratar à parte; depois MX/SPF/DKIM na zona DNS da Hostinger.
+3. (Melhoria) vincular contas antigas ao plano de contas para o balancete sair completo; refinar Saldo dos Associados.
 
 ## Notas importantes
 - ⚠️ Há uma env var de usuário do Windows `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sigmahorus` que sobrescreve o `.env`. Para Prisma local, sobrescreva na sessão:
