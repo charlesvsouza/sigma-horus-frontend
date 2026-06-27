@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { degreeShort } from '@/lib/masonic-degree';
 
 interface MemberSummary {
   id: string;
@@ -11,6 +12,9 @@ interface MemberSummary {
   currentDegree?: string | null;
   originLodge?: string | null;
   initiationDate?: string | null;
+  elevationDate?: string | null;
+  exaltationDate?: string | null;
+  installationDate?: string | null;
   gradeName?: string | null;
 }
 
@@ -75,7 +79,7 @@ export default function PortalPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
                     <p className="text-xs uppercase tracking-[0.25em] text-gold">Grau atual</p>
-                    <p className="mt-2 font-medium text-sand-light">{member.currentDegree ?? member.gradeName ?? 'Não informado'}</p>
+                    <p className="mt-2 font-medium text-sand-light">{degreeShort(member)}</p>
                   </div>
                   <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
                     <p className="text-xs uppercase tracking-[0.25em] text-gold">Loja de origem</p>

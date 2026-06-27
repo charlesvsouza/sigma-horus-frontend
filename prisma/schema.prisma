@@ -88,7 +88,8 @@ model Member {
   status             String   @default("active")
   riteId             String?
   powerId            String?
-  gradeName          String?
+  originPowerId      String?  // potência de origem (bloco "Origem"), distinta da potência atual
+  gradeName          String?  // DEPRECADO: situação simbólica é derivada da evolução (ver lib/masonic-degree)
   birthDate          DateTime?
   cpf                String?
   rg                 String?
@@ -116,9 +117,9 @@ model Member {
   elevationLodge     String?
   exaltationLodge    String?
   installationLodge  String?
-  initiationDegree   String?
-  currentDegree      String?
-  originLodge        String?
+  initiationDegree   String?  // DEPRECADO: iniciação é sempre o 1º grau
+  currentDegree      String?  // Grau Filosófico atual (REAA 4–33), opcional; vazio = situação simbólica
+  originLodge        String?  // Loja de origem (texto) — bloco "Origem"
   masonicNumber      String?
   documents          String?
   notes              String?
@@ -128,7 +129,8 @@ model Member {
 
   lodge              Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   rite               Rite?    @relation(fields: [riteId], references: [id], onDelete: SetNull)
-  power              Power?   @relation(fields: [powerId], references: [id], onDelete: SetNull)
+  power              Power?   @relation("MemberPower", fields: [powerId], references: [id], onDelete: SetNull)
+  originPower        Power?   @relation("MemberOriginPower", fields: [originPowerId], references: [id], onDelete: SetNull)
   accounts           Account[]
   payments           Payment[]
   invoices           Invoice[]
@@ -432,7 +434,8 @@ model Power {
   updatedAt DateTime @updatedAt
 
   lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
-  members   Member[]
+  members       Member[] @relation("MemberPower")
+  originMembers Member[] @relation("MemberOriginPower")
 }
 
 // Plano de contas da loja (categorias de receita/despesa). Semeado por padrão

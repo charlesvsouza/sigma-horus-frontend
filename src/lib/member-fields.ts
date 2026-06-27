@@ -16,7 +16,7 @@ export interface MemberFields {
   status: string;
   riteId: string | null;
   powerId: string | null;
-  gradeName: string | null;
+  originPowerId: string | null;
   birthDate: Date | null;
   cpf: string | null;
   rg: string | null;
@@ -44,7 +44,6 @@ export interface MemberFields {
   elevationLodge: string | null;
   exaltationLodge: string | null;
   installationLodge: string | null;
-  initiationDegree: string | null;
   currentDegree: string | null;
   originLodge: string | null;
   masonicNumber: string | null;
@@ -60,7 +59,7 @@ export function parseMemberFields(body: Body): MemberFields {
     status: String(body?.status ?? 'active'),
     riteId: str(body?.riteId),
     powerId: str(body?.powerId),
-    gradeName: str(body?.gradeName),
+    originPowerId: str(body?.originPowerId),
     birthDate: date(body?.birthDate),
     cpf: str(body?.cpf),
     rg: str(body?.rg),
@@ -88,7 +87,6 @@ export function parseMemberFields(body: Body): MemberFields {
     elevationLodge: str(body?.elevationLodge),
     exaltationLodge: str(body?.exaltationLodge),
     installationLodge: str(body?.installationLodge),
-    initiationDegree: str(body?.initiationDegree),
     currentDegree: str(body?.currentDegree),
     originLodge: str(body?.originLodge),
     masonicNumber: str(body?.masonicNumber),
@@ -101,6 +99,7 @@ export function parseMemberFields(body: Body): MemberFields {
 export const MEMBER_LIST_INCLUDE = {
   rite: { select: { id: true, name: true } },
   power: { select: { id: true, name: true } },
+  originPower: { select: { id: true, name: true } },
   relatives: { orderBy: { order: 'asc' as const } },
 } as const;
 

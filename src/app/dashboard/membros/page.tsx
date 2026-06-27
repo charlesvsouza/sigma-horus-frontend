@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
+import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation } from '@/lib/masonic-degree';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -23,6 +24,7 @@ interface Member {
   gradeName?: string | null;
   riteId?: string | null;
   powerId?: string | null;
+  originPowerId?: string | null;
   birthDate?: string | null;
   cpf?: string | null;
   rg?: string | null;
@@ -58,6 +60,7 @@ interface Member {
   notes?: string | null;
   rite?: Option | null;
   power?: Option | null;
+  originPower?: Option | null;
   relatives?: RelativeData[];
 }
 
@@ -66,13 +69,12 @@ type FormState = Record<string, string>;
 const INPUT = "w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
 
 const emptyForm: FormState = {
-  name: '', email: '', phone: '', status: 'active', gradeName: '', riteId: '', powerId: '',
-  birthDate: '', cpf: '', rg: '', maritalStatus: '', spouseName: '', spouseBirthDate: '',
-  childrenNames: '', fatherName: '', motherName: '', occupation: '', nationality: '',
+  name: '', email: '', phone: '', status: 'active', riteId: '', powerId: '', originPowerId: '',
+  birthDate: '', cpf: '', rg: '', maritalStatus: '', occupation: '', nationality: '',
   addressLine: '', addressNumber: '', complement: '', neighborhood: '', city: '', state: '',
   zipCode: '', country: '', initiationDate: '', elevationDate: '', exaltationDate: '',
   installationDate: '', initiationLodge: '', elevationLodge: '', exaltationLodge: '',
-  installationLodge: '', initiationDegree: '', currentDegree: '', originLodge: '',
+  installationLodge: '', currentDegree: '', originLodge: '',
   masonicNumber: '', documents: '', notes: '',
 };
 
@@ -86,6 +88,7 @@ function memberToForm(m: Member): FormState {
   }
   f.riteId = m.rite?.id ?? m.riteId ?? '';
   f.powerId = m.power?.id ?? m.powerId ?? '';
+  f.originPowerId = m.originPower?.id ?? m.originPowerId ?? '';
   f.birthDate = dateInput(m.birthDate);
   f.spouseBirthDate = dateInput(m.spouseBirthDate);
   f.initiationDate = dateInput(m.initiationDate);
@@ -289,7 +292,7 @@ export default function MembrosPage() {
                         <span className={`text-gold transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
                         {m.name}
                       </span>
-                      <span className="text-xs text-sand-dark md:text-sm md:text-sand">{m.currentDegree || m.gradeName || '—'}</span>
+                      <span className="text-xs text-sand-dark md:text-sm md:text-sand">{degreeShort(m)}</span>
                       <span className="text-xs"><span className={`rounded-full px-2 py-0.5 ${m.status === 'active' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/5 text-sand-dark'}`}>{STATUS_LABEL[m.status] ?? m.status}</span></span>
                       <span className="text-xs text-sand-dark md:text-sm">{m.rite?.name ?? '—'}</span>
                       <span className="text-xs text-sand-dark md:text-sm">{m.phone || '—'}</span>
@@ -308,7 +311,10 @@ export default function MembrosPage() {
                               <Detail label="Telefone" value={m.phone} />
                               <Detail label="CPF" value={m.cpf} />
                               <Detail label="CIM (nº maçônico)" value={m.masonicNumber} />
+                              <Detail label="Situação" value={symbolicSituation(m)} />
+                              <Detail label="Grau filosófico" value={philosophicalDegree(m) ? `Grau ${philosophicalDegree(m)}` : null} />
                               <Detail label="Potência" value={m.power?.name} />
+                              <Detail label="Potência de origem" value={m.originPower?.name} />
                               <Detail label="Loja de origem" value={m.originLodge} />
                             </div>
                             <div>
@@ -371,6 +377,14 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
   const [cepStatus, setCepStatus] = useState('');
   const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
 
+  // Situação simbólica derivada dos marcos preenchidos no próprio formulário.
+  const formSituation = symbolicSituation({
+    initiationDate: form.initiationDate || null,
+    elevationDate: form.elevationDate || null,
+    exaltationDate: form.exaltationDate || null,
+    installationDate: form.installationDate || null,
+  });
+
   // Família: slots fixos (mãe/pai/esposa) + dependentes dinâmicos.
   const pick = (kind: RelativeKind): RelativeData => {
     const found = initialRelatives.find((r) => r.kind === kind);
@@ -422,19 +436,18 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
         <input value={form.name} onChange={(e) => set('name', e.target.value)} className={INPUT} placeholder="Nome completo" required />
         <input value={form.email} onChange={(e) => set('email', e.target.value)} className={INPUT} placeholder="E-mail" />
         <input value={form.phone} onChange={(e) => set('phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
-        <input value={form.gradeName} onChange={(e) => set('gradeName', e.target.value)} className={INPUT} placeholder="Grau atual" />
+        <select value={form.status} onChange={(e) => set('status', e.target.value)} className={INPUT}>
+          <option value="active">Ativo</option>
+          <option value="inactive">Inativo</option>
+          <option value="suspended">Suspenso</option>
+        </select>
         <select value={form.riteId} onChange={(e) => set('riteId', e.target.value)} className={INPUT}>
           <option value="">Selecione um rito</option>
           {rites.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
         <select value={form.powerId} onChange={(e) => set('powerId', e.target.value)} className={INPUT}>
-          <option value="">Selecione uma potência</option>
+          <option value="">Potência atual</option>
           {powers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <select value={form.status} onChange={(e) => set('status', e.target.value)} className={`${INPUT} md:col-span-2`}>
-          <option value="active">Ativo</option>
-          <option value="inactive">Inativo</option>
-          <option value="suspended">Suspenso</option>
         </select>
       </div>
 
@@ -534,13 +547,33 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
               <input value={form[lodgeKey]} onChange={(e) => set(lodgeKey, e.target.value)} className={INPUT} placeholder={`Loja de ${label.toLowerCase()}`} />
             </div>
           ))}
-          <div className="grid gap-4 pt-2 md:grid-cols-2">
-            <input value={form.initiationDegree} onChange={(e) => set('initiationDegree', e.target.value)} className={INPUT} placeholder="Grau de iniciação" />
-            <input value={form.currentDegree} onChange={(e) => set('currentDegree', e.target.value)} className={INPUT} placeholder="Grau atual" />
+          <div className="mt-3 grid gap-4 border-t border-white/[6%] pt-4 md:grid-cols-2">
+            <label className="block">
+              <span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Situação simbólica (automática)</span>
+              <div className={`${INPUT} flex items-center text-sand`}>{formSituation ?? 'Defina os marcos acima'}</div>
+            </label>
+            <label className="block">
+              <span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Grau Filosófico atual (REAA)</span>
+              <select value={form.currentDegree} onChange={(e) => set('currentDegree', e.target.value)} className={INPUT}>
+                <option value="">— (segue a situação simbólica)</option>
+                {PHILOSOPHICAL_DEGREES.map((g) => <option key={g} value={String(g)}>Grau {g}</option>)}
+              </select>
+            </label>
             <input value={form.masonicNumber} onChange={(e) => set('masonicNumber', e.target.value)} className={INPUT} placeholder="Número maçônico (CIM)" />
-            <input value={form.originLodge} onChange={(e) => set('originLodge', e.target.value)} className={INPUT} placeholder="Potência / loja de origem" />
             <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Observações maçônicas e administrativas" rows={3} />
           </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-5">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Origem</h3>
+        <p className="mt-1 text-xs text-sand-dark/70">Potência e loja de onde o irmão é originário (se diferente da loja atual).</p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <select value={form.originPowerId} onChange={(e) => set('originPowerId', e.target.value)} className={INPUT}>
+            <option value="">Potência de origem</option>
+            {powers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <input value={form.originLodge} onChange={(e) => set('originLodge', e.target.value)} className={INPUT} placeholder="Loja de origem" />
         </div>
       </div>
 
