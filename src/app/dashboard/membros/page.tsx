@@ -133,8 +133,8 @@ const REPORT_PRINT_CSS = `
   body * { visibility: hidden !important; }
   .members-report { display: block !important; position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; }
   .members-report, .members-report * { visibility: visible !important; }
-  .members-report h1 { font-size: 15pt; margin: 0 0 2mm; }
-  .members-report .sub { color: #444 !important; font-size: 9pt; margin: 0 0 5mm; }
+  .members-report h1 { font-size: 15pt; margin: 0 0 2mm; letter-spacing: 0.02em; border-bottom: 2px solid #C9A227; padding-bottom: 2.5mm; }
+  .members-report .sub { color: #444 !important; font-size: 9pt; margin: 2mm 0 5mm; }
   .members-report table { width: 100%; border-collapse: collapse; }
   .members-report th { border-bottom: 1.5px solid #333; text-transform: uppercase; font-size: 8pt; text-align: left; padding: 3px 6px; }
   .members-report td { border-bottom: 1px solid #ccc; font-size: 9pt; text-align: left; padding: 3px 6px; }
