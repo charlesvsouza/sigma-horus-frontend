@@ -171,20 +171,22 @@ model MessageLog {
 }
 
 model Account {
-  id           String   @id @default(cuid())
-  lodgeId      String
-  memberId     String?
-  type         String   // RECEIVABLE | PAYABLE
-  title        String
-  amount       Float
-  dueDate      DateTime
-  status       String   @default("pending")
-  description  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  lodgeId        String
+  memberId       String?
+  chartAccountId String?  // vínculo ao plano de contas (livro caixa / balancete)
+  type           String   // RECEIVABLE | PAYABLE
+  title          String
+  amount         Float
+  dueDate        DateTime
+  status         String   @default("pending")
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
-  member       Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  lodge        Lodge        @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  chartAccount ChartAccount? @relation(fields: [chartAccountId], references: [id], onDelete: SetNull)
   payments     Payment[]
   invoices     Invoice[]
 }
@@ -419,6 +421,7 @@ model ChartAccount {
   updatedAt DateTime @updatedAt
 
   lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  accounts  Account[]
 
   @@unique([lodgeId, code])
 }

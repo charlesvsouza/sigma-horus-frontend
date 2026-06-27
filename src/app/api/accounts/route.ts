@@ -23,6 +23,7 @@ export async function GET() {
       where: { lodgeId: String(lodgeId) },
       include: {
         member: { select: { id: true, name: true } },
+        chartAccount: { select: { id: true, code: true, name: true, category: true } },
       },
       orderBy: { dueDate: 'asc' },
     }),
@@ -53,12 +54,19 @@ export async function POST(request: Request) {
   const status = String(body?.status ?? 'pending').trim();
   const description = String(body?.description ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
+  const chartAccountId = body?.chartAccountId ? String(body.chartAccountId) : null;
 
   if (!title || !['RECEIVABLE', 'PAYABLE'].includes(type) || Number.isNaN(amount)) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
   }
 
   const item = await withTenant(String(lodgeId), async (db) => {
+    // Garante que o plano de contas informado pertence à loja.
+    let validChartId: string | null = null;
+    if (chartAccountId) {
+      const chart = await db.chartAccount.findFirst({ where: { id: chartAccountId, lodgeId: String(lodgeId) }, select: { id: true } });
+      validChartId = chart?.id ?? null;
+    }
     const created = await db.account.create({
       data: {
         lodgeId: String(lodgeId),
@@ -69,9 +77,11 @@ export async function POST(request: Request) {
         status,
         description: description || null,
         memberId,
+        chartAccountId: validChartId,
       },
       include: {
         member: { select: { id: true, name: true } },
+        chartAccount: { select: { id: true, code: true, name: true, category: true } },
       },
     });
 

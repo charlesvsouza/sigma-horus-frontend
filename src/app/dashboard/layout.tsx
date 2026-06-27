@@ -31,6 +31,7 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/cobrancas', label: 'Cobranças', roles: ['admin', 'treasurer'] },
       { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
       { href: '/dashboard/relatorios', label: 'Relatórios', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+      { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
     ],
   },
   {

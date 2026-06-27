@@ -511,11 +511,18 @@ export function ManualBook() {
                 </Steps>
               </Sub>
 
-              <Sub id="tes-relatorios" title="7.6 Relatórios">
+              <Sub id="tes-relatorios" title="7.6 Relatórios e fechamento">
                 <p>
                   Em <UI>Financeiro → Relatórios</UI> você acompanha <UI>Resumo de abertura</UI>, <UI>Próximos
-                  vencimentos</UI> e <UI>Últimos registros</UI>. É possível <strong>filtrar por período</strong> e
-                  <UI>Exportar</UI> os dados (CSV) para a conferência e a prestação de contas.
+                  vencimentos</UI> e <UI>Últimos registros</UI>, com <strong>filtro por período</strong> e <UI>Exportar</UI> (CSV).
+                </p>
+                <p>
+                  Em <UI>Financeiro → Fechamento</UI> está o <strong>relatório financeiro completo</strong> no formato livro
+                  caixa, para o fechamento do veneralato: <strong>Balanço Financeiro</strong>, <strong>Balancete por plano
+                  de contas</strong>, <strong>Receitas × Despesas</strong> mensal, <strong>Livro Caixa</strong>,
+                  <strong> Cobranças</strong> e <strong>Saldo dos Associados</strong>. Escolha o período e use
+                  <UI>Salvar como PDF</UI> para gerar o documento. As contas são agrupadas pelo plano de contas (código),
+                  então vincule cada lançamento a uma <strong>categoria do plano de contas</strong> para o relatório sair correto.
                 </p>
               </Sub>
 
