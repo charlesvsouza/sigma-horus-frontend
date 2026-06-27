@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from 'react';
+import { Button, EmptyState, Skeleton, inputClass } from '@/components/ui';
 
 interface ChartAccountOption {
   id: string;
@@ -25,7 +26,7 @@ interface AccountItem {
   member?: MemberOption | null;
 }
 
-const INPUT_CLASS = "w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+const INPUT_CLASS = inputClass; // fonte única do design system
 
 export default function ContasPage() {
   const [accounts, setAccounts] = useState<AccountItem[]>([]);
@@ -143,7 +144,7 @@ export default function ContasPage() {
               ))}
             </select>
             <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Descrição" rows={3} />
-            <button type="submit" className="rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark md:col-span-2">Salvar conta</button>
+            <Button type="submit" className="md:col-span-2">Salvar conta</Button>
           </form>
         </section>
 
@@ -151,9 +152,14 @@ export default function ContasPage() {
           <h2 className="text-base font-semibold text-sand-light">Contas cadastradas</h2>
           <div className="mt-5 space-y-3">
             {loading ? (
-              <p className="text-sm text-sand-dark">Carregando...</p>
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
+                  <Skeleton variant="text" className="w-1/3" />
+                  <Skeleton variant="text" className="w-20" />
+                </div>
+              ))
             ) : accounts.length === 0 ? (
-              <p className="text-sm text-sand-dark">Nenhuma conta cadastrada.</p>
+              <EmptyState title="Nenhuma conta cadastrada" description="Lance a primeira conta a receber ou a pagar para acompanhar vencimentos e o fluxo de caixa." />
             ) : accounts.map((account) => (
               <div key={account.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div>

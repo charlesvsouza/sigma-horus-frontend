@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
+import { Button, EmptyState, Skeleton, inputClass } from '@/components/ui';
 
 interface MemberOption { id: string; name: string; }
 interface AccountOption { id: string; title: string; type: string; amount: number; }
@@ -73,7 +74,7 @@ export default function PagamentosPage() {
     }
   }
 
-  const INPUT = "w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+  const INPUT = inputClass; // fonte única do design system
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -113,14 +114,23 @@ export default function PagamentosPage() {
                 <Link href="/termos" target="_blank" className="text-gold hover:text-gold-light">Termos de Uso</Link>.
               </span>
             </label>
-            <button type="submit" disabled={!consent} className="rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark disabled:cursor-not-allowed disabled:opacity-40 md:col-span-2">Registrar pagamento</button>
+            <Button type="submit" disabled={!consent} className="md:col-span-2">Registrar pagamento</Button>
           </form>
         </section>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
           <h2 className="text-base font-semibold text-sand-light">Pagamentos recentes</h2>
           <div className="mt-5 space-y-3">
-            {loading ? <p className="text-sm text-sand-dark">Carregando...</p> : payments.length === 0 ? <p className="text-sm text-sand-dark">Nenhum pagamento registrado.</p> : payments.map((payment) => (
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
+                  <Skeleton variant="text" className="w-1/3" />
+                  <Skeleton variant="text" className="w-20" />
+                </div>
+              ))
+            ) : payments.length === 0 ? (
+              <EmptyState title="Nenhum pagamento registrado" description="Registre baixas manuais aqui; as baixas automáticas do Asaas aparecem assim que o webhook confirma o pagamento." />
+            ) : payments.map((payment) => (
               <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{payment.account?.title ?? 'Conta removida'}</p>
