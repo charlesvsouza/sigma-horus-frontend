@@ -5,13 +5,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- END:nextjs-agent-rules -->
 
 <!-- BEGIN:handoff -->
-# Handoff — Sessão 2026-06-26
+# Handoff — Sessão 2026-06-27
 
-## Estado atual (`main`, HEAD `976ec8b`)
+> 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
+
+## Estado atual (`main`, HEAD `09bc20b`)
+- Working tree limpo, tudo pushed (deploy automático na Vercel).
 - `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
 - Banco: **13/13 migrations** no Railway, RLS ativo. 21 modelos.
 - Next.js 16.2.9, next-auth v5 beta.31. Deploy automático Vercel. Domínio `sigmahorus.com.br` no ar (SSL ok).
-- ⚠️ **Há commits locais não enviados** — confira `git status`/`git log origin/main..main` e faça push (deploy) com autorização do dono.
 
 ## Concluído nesta sessão (NÃO refazer)
 - ✅ **Desconto anual: cartão 10% / boleto 5%** (regra real de cobrança): `priceFor` + `annualDiscountFor` ([src/lib/plans.ts](src/lib/plans.ts)); `ensurePrice` ([src/lib/stripe.ts](src/lib/stripe.ts)) aplica 10% no anual do cartão com `lookup_key` versionada `_v2`. Textos: landing, painel, termos, compliance, manual.
@@ -47,5 +49,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
   $env:DATABASE_URL = "<APP_DATABASE_URL do Railway>"
   ```
 - `.env` local sem credenciais R2 → preencher para testar upload em dev.
-- (Opcional) Stripe modo produção (live keys); pooling Railway; finalizar páginas com `bg-slate-950` antigo.
+- (Opcional/backlog técnico) confirmar pooling do Railway sob carga; lint `react-hooks/set-state-in-effect`; cobertura de testes além de `src/lib/*.test.ts`. (Migração de `bg-slate-950` para design tokens **já concluída** — 0 ocorrências.)
 <!-- END:handoff -->
