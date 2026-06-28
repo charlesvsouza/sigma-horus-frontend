@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `9b1aef3`)
+## Estado atual (`main`, HEAD `b23b029`)
 - Working tree limpo, tudo pushed (deploy automático na Vercel).
 - `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
 - Banco: **17/17 migrations** no Railway, RLS ativo. 24 modelos (inclui `Relative`, `Campaign`, `CampaignDonation`).
@@ -30,9 +30,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - ✅ **Hospitalaria — Fase 1**: papel `hospitaller` + recurso `campaigns` no RBAC (admin/venerável também acessam). Seção "Hospitalaria": **Irmãos (consulta)** read-only com contatos do obreiro + família; **Campanhas** de benemerência (criar com modelos, beneficiário pessoa/empresa/instituição, meta, fonte; doações voluntárias que lançam no financeiro no Tronco com doador ocultável; custear pelo Tronco validando saldo). **Tronco de Solidariedade**: `ChartAccount.isSolidarity` (migration `20260627180000`), saldo = entradas − gastos (helper `lib/hospitalaria.ts`); seed/sync marcam Tronco de Beneficência (1.1.05) e Ação Social (8.9.03). Modelos `Campaign`/`CampaignDonation` com RLS.
 - ✅ Docs consolidados em `../../sigmahorus_documentacao.md` (fonte única de escopo/história).
 
-## ⏳ Pendências da Hospitalaria
+- ✅ **Hospitalaria — Fase 2 (convocação)**: `lib/messaging.ts` (providers via fetch, ativados por env — **Resend** `RESEND_API_KEY`/`RESEND_FROM`, **Meta WhatsApp** `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_ID`, **Twilio SMS** `TWILIO_*`); sem credenciais, fica `queued` no `MessageLog`. `POST /api/campaigns/[id]/convocar` envia a campanha por canal a cada irmão (ativos/todos). UI "Convocar os irmãos" no detalhe. **Reaproveitável pela Fase 7** (aniversários/jubileus/cobrança).
+- ✅ **Manual v1.1** (`manual-book.tsx`): autocadastro/trial, papel Hospitaleiro, menu Hospitalaria, nova área de Membros, "Atualizar plano de contas", novo cap. 11 "Guia do Hospitaleiro".
+
+## ⏳ Pendências
+- **Canais de comunicação reais (Fase 7)**: configurar credenciais (Resend/Meta/Twilio) nas envs da Vercel para o envio externo sair de verdade (convocação, e futuramente aniversários/jubileus/cobrança). Sem isso, tudo fica `queued`.
 - **Atribuição de papel a usuário**: não há UI para definir `User.role` (ex.: tornar alguém `hospitaller`). Hoje admin/venerável já acessam a Hospitalaria; para um Hospitaleiro dedicado, falta uma tela de gestão de usuários/papéis (ou setar `role` direto no banco).
-- **Fase 2 — convocação**: disparar a campanha aos irmãos por e-mail/WhatsApp/SMS (depende da Fase 7). Hoje só `MessageLog` interno.
 
 ## ⏳ Operacional pendente do self-service
 - **Agendar o cron** `POST /api/cron/cancel-abandoned-trials` (header `Authorization: Bearer $PLATFORM_OWNER_TOKEN`) ~1×/dia (Vercel Cron ou Railway) — sem ele, trials abandonados cobram ao fim de 10 dias.
