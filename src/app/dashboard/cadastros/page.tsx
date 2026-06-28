@@ -46,7 +46,7 @@ export default function CadastrosPage() {
   }
 
   async function syncChart() {
-    if (!window.confirm('Atualizar o plano de contas para o padrão AMORIO? Adiciona as contas que faltam e remove as contas padrão antigas que não estão em uso.')) return;
+    if (!window.confirm('Atualizar o plano de contas para o padrão atual? Adiciona as contas que faltam e remove as contas padrão antigas que não estão em uso.')) return;
     setLinking(true);
     setMessage('');
     const res = await fetch('/api/chart-accounts/sync', { method: 'POST' });
@@ -54,7 +54,7 @@ export default function CadastrosPage() {
     setLinking(false);
     if (res.ok) {
       const s = data.stats ?? {};
-      setMessage(`Plano de contas atualizado (AMORIO): ${s.added ?? 0} adicionadas, ${s.removed ?? 0} antigas removidas, ${s.kept ?? 0} mantidas.`);
+      setMessage(`Plano de contas atualizado: ${s.added ?? 0} adicionadas, ${s.removed ?? 0} antigas removidas, ${s.kept ?? 0} mantidas.`);
       await loadData();
     } else {
       setMessage(data.error ?? 'Erro ao atualizar o plano de contas.');
@@ -196,10 +196,10 @@ export default function CadastrosPage() {
               <button
                 onClick={syncChart}
                 disabled={linking}
-                title="Atualiza o plano de contas para o padrão AMORIO (adiciona as que faltam, remove as antigas não utilizadas)."
+                title="Atualiza o plano de contas para o padrão atual (adiciona as que faltam, remove as antigas não utilizadas)."
                 className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40"
               >
-                {linking ? 'Atualizando…' : 'Atualizar plano (AMORIO)'}
+                {linking ? 'Atualizando…' : 'Atualizar plano de contas'}
               </button>
               <button
                 onClick={backfillChart}
