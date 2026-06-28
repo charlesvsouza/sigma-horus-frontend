@@ -10,9 +10,9 @@ const NAV: NavGroupDef[] = [
   {
     category: 'Visão geral',
     items: [
-      { href: '/dashboard', label: 'Visão geral', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member'] },
-      { href: '/dashboard/portal', label: 'Meu portal', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member'] },
-      { href: '/manual', label: 'Manual & ajuda', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member'] },
+      { href: '/dashboard', label: 'Visão geral', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
+      { href: '/dashboard/portal', label: 'Meu portal', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
+      { href: '/manual', label: 'Manual & ajuda', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
     ],
   },
   {
@@ -40,6 +40,13 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/sessoes', label: 'Sessões', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/documentos', label: 'Documentos', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
       { href: '/dashboard/comunicacao', label: 'Comunicação', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
+    ],
+  },
+  {
+    category: 'Hospitalaria',
+    items: [
+      { href: '/dashboard/hospitalaria/irmaos', label: 'Irmãos (consulta)', roles: ['admin', 'venerable', 'hospitaller'] },
+      { href: '/dashboard/hospitalaria/campanhas', label: 'Campanhas', roles: ['admin', 'venerable', 'hospitaller', 'treasurer'] },
     ],
   },
   {

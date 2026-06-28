@@ -5,7 +5,7 @@
 
 export interface RiteSeed { name: string; order: number; }
 export interface PowerSeed { name: string; order: number; }
-export interface ChartAccountSeed { code: string; name: string; type: 'REVENUE' | 'EXPENSE'; category: string; }
+export interface ChartAccountSeed { code: string; name: string; type: 'REVENUE' | 'EXPENSE'; category: string; solidarity?: boolean; }
 export interface OfficeSeed { name: string; order: number; }
 
 // Dicionário de cargos maçônicos por rito.
@@ -222,7 +222,7 @@ export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   { code: '1.1.02', name: 'Taxas (Iniciação, Elevação, Exaltação)', type: 'REVENUE', category: 'Receitas Próprias' },
   { code: '1.1.03', name: 'Taxa de Filiação / Regularização', type: 'REVENUE', category: 'Receitas Próprias' },
   { code: '1.1.04', name: 'Doações e Contribuições', type: 'REVENUE', category: 'Receitas Próprias' },
-  { code: '1.1.05', name: 'Tronco de Beneficência', type: 'REVENUE', category: 'Receitas Próprias' },
+  { code: '1.1.05', name: 'Tronco de Beneficência', type: 'REVENUE', category: 'Receitas Próprias', solidarity: true },
   { code: '1.1.06', name: 'Jantar Ritualístico', type: 'REVENUE', category: 'Receitas Próprias' },
   { code: '1.1.07', name: 'Taxa Paramaçônica', type: 'REVENUE', category: 'Receitas Próprias' },
   // 1.2 Outras Receitas
@@ -259,7 +259,7 @@ export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   { code: '2.2.05', name: 'Seguros', type: 'EXPENSE', category: 'Investimentos' },
   { code: '2.2.06', name: 'Obras e Benfeitorias', type: 'EXPENSE', category: 'Investimentos' },
   // 8.9 Assistência e Manutenção
-  { code: '8.9.03', name: 'Ação Social e Caridade', type: 'EXPENSE', category: 'Assistência e Manutenção' },
+  { code: '8.9.03', name: 'Ação Social e Caridade', type: 'EXPENSE', category: 'Assistência e Manutenção', solidarity: true },
   { code: '8.9.04', name: 'Manutenção Preventiva/Corretiva', type: 'EXPENSE', category: 'Assistência e Manutenção' },
   { code: '8.9.05', name: 'Estorno de Receita', type: 'EXPENSE', category: 'Assistência e Manutenção' },
   { code: '8.9.06', name: 'Material Ritualístico e Paramentos', type: 'EXPENSE', category: 'Assistência e Manutenção' },

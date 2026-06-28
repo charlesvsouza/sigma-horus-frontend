@@ -1,35 +1,41 @@
 import { prismaAdmin } from '@/lib/prisma';
 
-export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal';
+export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns';
 export type Action = 'read' | 'write';
 
-export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal'];
+export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'];
 export const ACTIONS: Action[] = ['read', 'write'];
-export const ROLES = ['admin', 'venerable', 'treasurer', 'secretary', 'member'] as const;
+export const ROLES = ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] as const;
 export type Role = (typeof ROLES)[number];
 
 // Política padrão (fallback). Lojas sem linhas em RolePermission usam isto.
 // É a fonte de verdade para semear o RBAC persistido de cada loja.
 const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = {
   admin: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal'],
-    write: ['members', 'documents', 'messages', 'accounts', 'portal'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
+    write: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
   },
   venerable: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal'],
-    write: ['documents', 'messages', 'portal'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
+    write: ['documents', 'messages', 'portal', 'campaigns'],
   },
   treasurer: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
     write: ['messages', 'accounts', 'portal'],
   },
   secretary: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
     write: ['members', 'documents', 'messages', 'portal'],
   },
   member: {
     read: ['portal'],
     write: ['portal'],
+  },
+  // Hospitaleiro: contato com irmãos (somente leitura), gestão de campanhas de
+  // benemerência, leitura do Tronco (accounts) e envio de convocações (messages).
+  hospitaller: {
+    read: ['members', 'accounts', 'portal', 'campaigns', 'messages'],
+    write: ['campaigns', 'messages', 'portal'],
   },
 };
 

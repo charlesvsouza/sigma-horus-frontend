@@ -41,7 +41,7 @@ export async function seedLodgeDefaults(
   const missingChart = MASONIC_CHART_OF_ACCOUNTS.filter((c) => !haveChartCodes.has(c.code));
   if (missingChart.length > 0) {
     await db.chartAccount.createMany({
-      data: missingChart.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category })),
+      data: missingChart.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false })),
     });
     result.chartAccounts = missingChart.length;
   }
@@ -94,7 +94,7 @@ export async function syncChartAccounts(
   const toAdd = MASONIC_CHART_OF_ACCOUNTS.filter((c) => !haveCodes.has(c.code));
   if (toAdd.length > 0) {
     await db.chartAccount.createMany({
-      data: toAdd.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category })),
+      data: toAdd.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false })),
     });
   }
 

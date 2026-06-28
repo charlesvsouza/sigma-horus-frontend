@@ -62,6 +62,8 @@ model Lodge {
   chartAccounts ChartAccount[]
   rolePermissions RolePermission[]
   relatives     Relative[]
+  campaigns     Campaign[]
+  campaignDonations CampaignDonation[]
 }
 
 model User {
@@ -448,6 +450,7 @@ model ChartAccount {
   type      String   // REVENUE | EXPENSE
   category  String?
   active    Boolean  @default(true)
+  isSolidarity Boolean @default(false) // conta do Tronco de Solidariedade (benemerência)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -455,6 +458,47 @@ model ChartAccount {
   accounts  Account[]
 
   @@unique([lodgeId, code])
+}
+
+// Campanha de benemerência da Hospitalaria (ex.: cadeira de rodas, cesta básica).
+model Campaign {
+  id              String   @id @default(cuid())
+  lodgeId         String
+  title           String
+  description     String?
+  beneficiaryType String   // person | company | institution
+  beneficiaryName String?
+  goalAmount      Float?
+  fundingSource   String   @default("donations") // fund | donations | mixed
+  fundAllocated   Float    @default(0) // valor custeado pelo Tronco
+  status          String   @default("active") // active | completed | canceled
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  lodge     Lodge              @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  donations CampaignDonation[]
+
+  @@index([lodgeId])
+}
+
+// Doação voluntária captada para uma campanha. O nome do doador pode ser ocultado.
+model CampaignDonation {
+  id         String   @id @default(cuid())
+  lodgeId    String
+  campaignId String
+  donorName  String?
+  anonymous  Boolean  @default(false)
+  amount     Float
+  receivedAt DateTime @default(now())
+  note       String?
+  paymentId  String?  // lançamento financeiro vinculado (Tronco)
+  createdAt  DateTime @default(now())
+
+  lodge    Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([lodgeId, campaignId])
 }
 
 // RBAC persistido por loja: matriz papel × recurso × ação.
