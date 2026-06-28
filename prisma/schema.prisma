@@ -39,6 +39,15 @@ model Lodge {
   asaasApiKeyEnc    String?
   asaasEnv          String?  @default("sandbox") // sandbox | production
   asaasWebhookToken String?  // token p/ validar o webhook do Asaas desta loja
+  // Mensageria BYO por loja (WhatsApp/SMS): credenciais próprias da loja, custo direto dela.
+  // E-mail é provido pela plataforma (Resend). Tokens criptografados (AES-256-GCM).
+  whatsappPhoneId      String?
+  whatsappTokenEnc     String?
+  whatsappTemplate     String?  // nome do template aprovado (envio proativo)
+  whatsappTemplateLang String?  @default("pt_BR")
+  smsAccountSid        String?  // Twilio Account SID
+  smsAuthTokenEnc      String?
+  smsFrom              String?  // número/remetente Twilio
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

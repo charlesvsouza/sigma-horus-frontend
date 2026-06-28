@@ -1,16 +1,20 @@
-// Camada de envio externo (e-mail / WhatsApp / SMS). Cada canal é ativado por
-// variáveis de ambiente; sem elas, o envio fica "queued" (registrado, não
-// enviado) — pronto para ativar quando as credenciais forem configuradas.
+// Camada de envio externo. E-MAIL é provido pela PLATAFORMA (Resend, via env).
+// WhatsApp e SMS são BYO por loja: cada loja conecta a própria conta (credenciais
+// criptografadas por tenant — ver lib/lodge-channels), e o custo é direto dela.
 //
-// Providers (sem SDK, via fetch):
-//   - E-mail:    Resend     → RESEND_API_KEY, RESEND_FROM
-//   - WhatsApp:  Meta Cloud → WHATSAPP_TOKEN, WHATSAPP_PHONE_ID (mensagem
-//                proativa exige template aprovado pela Meta; ver Fase 7)
-//   - SMS:       Twilio     → TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM
+//   - E-mail:    Resend     → RESEND_API_KEY, RESEND_FROM (plataforma)
+//   - WhatsApp:  Meta Cloud → token/phoneId da loja (proativo exige template aprovado)
+//   - SMS:       Twilio     → sid/token/from da loja
 
 export type Channel = 'email' | 'whatsapp' | 'sms';
 export type SendStatus = 'sent' | 'queued' | 'failed';
 export interface SendResult { status: SendStatus; detail?: string }
+
+export interface WhatsAppCfg { token: string; phoneId: string; template?: string | null; lang?: string | null }
+export interface SmsCfg { sid: string; token: string; from: string }
+export interface LodgeChannels { whatsapp: WhatsAppCfg | null; sms: SmsCfg | null }
+
+export const EMPTY_CHANNELS: LodgeChannels = { whatsapp: null, sms: null };
 
 const onlyDigits = (s: string) => s.replace(/\D/g, '');
 
@@ -23,10 +27,14 @@ function toE164(phone: string): string | null {
   return `+${d}`;
 }
 
+function emailConfigured() {
+  return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM);
+}
+
 async function sendEmail(to: string, subject: string, body: string): Promise<SendResult> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
-  if (!key || !from) return { status: 'queued', detail: 'E-mail não configurado (RESEND_API_KEY/RESEND_FROM).' };
+  if (!key || !from) return { status: 'queued', detail: 'E-mail não configurado na plataforma.' };
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -40,37 +48,28 @@ async function sendEmail(to: string, subject: string, body: string): Promise<Sen
   }
 }
 
-async function sendWhatsApp(to: string, body: string): Promise<SendResult> {
-  const token = process.env.WHATSAPP_TOKEN;
-  const phoneId = process.env.WHATSAPP_PHONE_ID;
-  if (!token || !phoneId) return { status: 'queued', detail: 'WhatsApp não configurado (WHATSAPP_TOKEN/WHATSAPP_PHONE_ID).' };
+async function sendWhatsApp(to: string, body: string, cfg: WhatsAppCfg): Promise<SendResult> {
   const e164 = toE164(to);
   if (!e164) return { status: 'failed', detail: 'Telefone inválido.' };
-
-  // Mensagens proativas (fora da janela de 24h) exigem TEMPLATE aprovado. Se um
-  // template de corpo com 1 variável estiver configurado (WHATSAPP_TEMPLATE),
-  // envia por ele com o texto como parâmetro; senão envia texto livre (só
-  // funciona dentro da janela de 24h).
-  const template = process.env.WHATSAPP_TEMPLATE;
-  const lang = process.env.WHATSAPP_TEMPLATE_LANG || 'pt_BR';
-  const payload = template
+  const lang = cfg.lang || 'pt_BR';
+  // Proativo (fora da janela de 24h) exige template aprovado de corpo com 1 variável.
+  const payload = cfg.template
     ? {
         messaging_product: 'whatsapp',
         to: e164.replace('+', ''),
         type: 'template',
-        template: { name: template, language: { code: lang }, components: [{ type: 'body', parameters: [{ type: 'text', text: body }] }] },
+        template: { name: cfg.template, language: { code: lang }, components: [{ type: 'body', parameters: [{ type: 'text', text: body }] }] },
       }
     : { messaging_product: 'whatsapp', to: e164.replace('+', ''), type: 'text', text: { body } };
-
   try {
-    const res = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+    const res = await fetch(`https://graph.facebook.com/v21.0/${cfg.phoneId}/messages`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
-      return { status: 'failed', detail: `WhatsApp ${res.status}${template ? '' : ' (proativo exige template — defina WHATSAPP_TEMPLATE)'} ${detail.slice(0, 200)}` };
+      return { status: 'failed', detail: `WhatsApp ${res.status}${cfg.template ? '' : ' (proativo exige template)'} ${detail.slice(0, 200)}` };
     }
     return { status: 'sent' };
   } catch (e) {
@@ -78,18 +77,14 @@ async function sendWhatsApp(to: string, body: string): Promise<SendResult> {
   }
 }
 
-async function sendSms(to: string, body: string): Promise<SendResult> {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_FROM;
-  if (!sid || !token || !from) return { status: 'queued', detail: 'SMS não configurado (TWILIO_*).' };
+async function sendSms(to: string, body: string, cfg: SmsCfg): Promise<SendResult> {
   const e164 = toE164(to);
   if (!e164) return { status: 'failed', detail: 'Telefone inválido.' };
   try {
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${cfg.sid}/Messages.json`, {
       method: 'POST',
-      headers: { Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString('base64')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ To: e164, From: from, Body: body }),
+      headers: { Authorization: `Basic ${Buffer.from(`${cfg.sid}:${cfg.token}`).toString('base64')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ To: e164, From: cfg.from, Body: body }),
     });
     if (!res.ok) return { status: 'failed', detail: `Twilio ${res.status}` };
     return { status: 'sent' };
@@ -98,19 +93,15 @@ async function sendSms(to: string, body: string): Promise<SendResult> {
   }
 }
 
-/** Envia por um canal. `to` = e-mail (email) ou telefone (whatsapp/sms). */
-export async function dispatch(channel: Channel, to: string, subject: string, body: string): Promise<SendResult> {
+/** Envia por um canal. `to` = e-mail (email) ou telefone (whatsapp/sms). WhatsApp/SMS usam as credenciais da loja. */
+export async function dispatch(channel: Channel, to: string, subject: string, body: string, ch: LodgeChannels): Promise<SendResult> {
   if (!to) return { status: 'failed', detail: 'Destinatário sem contato.' };
   if (channel === 'email') return sendEmail(to, subject, body);
-  if (channel === 'whatsapp') return sendWhatsApp(to, body);
-  return sendSms(to, body);
+  if (channel === 'whatsapp') return ch.whatsapp ? sendWhatsApp(to, body, ch.whatsapp) : { status: 'queued', detail: 'WhatsApp não conectado nesta loja.' };
+  return ch.sms ? sendSms(to, body, ch.sms) : { status: 'queued', detail: 'SMS não conectado nesta loja.' };
 }
 
-/** Canais com provider configurado (para a UI sinalizar o que sai de verdade). */
-export function configuredChannels(): Record<Channel, boolean> {
-  return {
-    email: Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM),
-    whatsapp: Boolean(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_ID),
-    sms: Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM),
-  };
+/** Canais disponíveis: e-mail pela plataforma; WhatsApp/SMS conforme a loja conectou. */
+export function channelsAvailable(ch: LodgeChannels): Record<Channel, boolean> {
+  return { email: emailConfigured(), whatsapp: Boolean(ch.whatsapp), sms: Boolean(ch.sms) };
 }

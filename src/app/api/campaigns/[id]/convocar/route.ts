@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
+import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
 import { dispatch, type Channel } from '@/lib/messaging';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -33,6 +34,9 @@ export async function POST(request: Request, { params }: Ctx) {
     const campaign = await db.campaign.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, title: true, description: true, beneficiaryName: true, goalAmount: true } });
     if (!campaign) return { error: 'not_found' as const };
 
+    const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: LODGE_MESSAGING_SELECT });
+    const lodgeChannels = buildLodgeChannels(lodge);
+
     const members = await db.member.findMany({
       where: { lodgeId: String(lodgeId), ...(scope === 'active' ? { status: 'active' } : {}) },
       select: { id: true, name: true, email: true, phone: true },
@@ -46,7 +50,7 @@ export async function POST(request: Request, { params }: Ctx) {
       for (const channel of channels) {
         const to = channel === 'email' ? (m.email ?? '') : (m.phone ?? '');
         if (!to) { stats.skipped++; continue; }
-        const r = await dispatch(channel, to, subject, text);
+        const r = await dispatch(channel, to, subject, text, lodgeChannels);
         stats[r.status]++;
         await db.messageLog.create({
           data: { lodgeId: String(lodgeId), memberId: m.id, channel, title: subject, content: text, status: r.status },

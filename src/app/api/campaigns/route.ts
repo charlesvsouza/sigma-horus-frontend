@@ -1,7 +1,8 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { getTroncoBalance } from '@/lib/hospitalaria';
-import { configuredChannels } from '@/lib/messaging';
+import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
+import { channelsAvailable } from '@/lib/messaging';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -20,22 +21,23 @@ export async function GET() {
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const data = await withTenant(String(lodgeId), async (db) => {
-    const [campaigns, tronco] = await Promise.all([
+    const [campaigns, tronco, lodge] = await Promise.all([
       db.campaign.findMany({
         where: { lodgeId: String(lodgeId) },
         include: { donations: { select: { amount: true } } },
         orderBy: { createdAt: 'desc' },
       }),
       getTroncoBalance(db, String(lodgeId)),
+      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: LODGE_MESSAGING_SELECT }),
     ]);
     const items = campaigns.map((c) => {
       const raised = c.donations.reduce((s, d) => s + Number(d.amount), 0);
       return { ...c, donations: undefined, raised, totalApplied: raised + Number(c.fundAllocated) };
     });
-    return { items, tronco };
+    return { items, tronco, channels: channelsAvailable(buildLodgeChannels(lodge)) };
   });
 
-  return NextResponse.json({ ...data, channels: configuredChannels() });
+  return NextResponse.json(data);
 }
 
 export async function POST(request: Request) {

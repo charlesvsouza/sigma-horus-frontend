@@ -146,6 +146,8 @@ export default function IntegracoesPage() {
           </div>
         </section>
 
+        <MessagingIntegration />
+
         <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
           <h2 className="text-base font-semibold text-sand-light">Stripe</h2>
           <p className="mt-2 text-sm text-sand-dark">Assinatura da plataforma (a loja paga o SaaS). Gerenciado pela plataforma.</p>
@@ -155,5 +157,101 @@ export default function IntegracoesPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+interface MsgStatus {
+  emailPlatform: boolean;
+  whatsapp: { configured: boolean; phoneId: string | null; template: string | null; lang: string };
+  sms: { configured: boolean; sid: string | null; from: string | null };
+}
+
+function MessagingIntegration() {
+  const [st, setSt] = useState<MsgStatus | null>(null);
+  const [wa, setWa] = useState({ phoneId: '', token: '', template: '', lang: 'pt_BR' });
+  const [sms, setSms] = useState({ sid: '', token: '', from: '' });
+  const [msg, setMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    const res = await fetch('/api/integrations/messaging');
+    if (res.ok) {
+      const data = (await res.json()) as MsgStatus;
+      setSt(data);
+      setWa((w) => ({ ...w, phoneId: data.whatsapp.phoneId ?? '', template: data.whatsapp.template ?? '', lang: data.whatsapp.lang ?? 'pt_BR' }));
+      setSms((s) => ({ ...s, sid: data.sms.sid ?? '', from: data.sms.from ?? '' }));
+    }
+  }
+  useEffect(() => { load(); }, []);
+
+  async function saveChannel(channel: 'whatsapp' | 'sms', payload: Record<string, string>) {
+    setBusy(true);
+    setMsg(null);
+    const res = await fetch('/api/integrations/messaging', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, ...payload }) });
+    const data = await res.json();
+    setBusy(false);
+    if (res.ok) { setMsg({ kind: 'ok', text: `${channel === 'whatsapp' ? 'WhatsApp' : 'SMS'} conectado.` }); await load(); }
+    else setMsg({ kind: 'error', text: data.error ?? 'Erro ao salvar.' });
+  }
+  async function disconnect(channel: 'whatsapp' | 'sms') {
+    if (!confirm(`Desconectar ${channel === 'whatsapp' ? 'o WhatsApp' : 'o SMS'} desta loja?`)) return;
+    const res = await fetch(`/api/integrations/messaging?channel=${channel}`, { method: 'DELETE' });
+    if (res.ok) { setMsg({ kind: 'ok', text: 'Canal desconectado.' }); await load(); }
+  }
+
+  const badge = (on: boolean, label: string) => (
+    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${on ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300' : 'border-white/[10%] bg-white/[8%] text-sand-dark'}`}>{label}</span>
+  );
+
+  return (
+    <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold text-sand-light">Comunicação (WhatsApp / SMS)</h2>
+          <p className="mt-2 text-sm text-sand-dark">Cada loja conecta a própria conta — o custo das mensagens é direto da loja. O e-mail é provido pela plataforma.</p>
+        </div>
+        {badge(Boolean(st?.emailPlatform), st?.emailPlatform ? 'E-mail ativo' : 'E-mail off')}
+      </div>
+
+      {msg && (
+        <div className={`mt-4 rounded-lg border px-4 py-3 text-sm ${msg.kind === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/30 bg-rose-500/10 text-rose-200'}`}>{msg.text}</div>
+      )}
+
+      {/* WhatsApp */}
+      <div className="mt-5 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-sand-light">WhatsApp (Meta Cloud API)</p>
+          {badge(Boolean(st?.whatsapp.configured), st?.whatsapp.configured ? 'Conectado' : 'Não conectado')}
+        </div>
+        <p className="mt-1 text-xs text-sand-dark">Mensagens proativas exigem um <strong>template aprovado</strong> pela Meta (corpo com 1 variável).</p>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <input value={wa.phoneId} onChange={(e) => setWa({ ...wa, phoneId: e.target.value })} className={inputClass} placeholder="Phone Number ID" />
+          <input type="password" value={wa.token} onChange={(e) => setWa({ ...wa, token: e.target.value })} className={inputClass} placeholder={st?.whatsapp.configured ? 'Novo token (substitui)' : 'Token (System User)'} />
+          <input value={wa.template} onChange={(e) => setWa({ ...wa, template: e.target.value })} className={inputClass} placeholder="Nome do template (ex.: aviso_loja)" />
+          <input value={wa.lang} onChange={(e) => setWa({ ...wa, lang: e.target.value })} className={inputClass} placeholder="Idioma do template (pt_BR)" />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <Button type="button" size="sm" disabled={busy} onClick={() => saveChannel('whatsapp', wa)}>{st?.whatsapp.configured ? 'Atualizar' : 'Conectar WhatsApp'}</Button>
+          {st?.whatsapp.configured && <button type="button" onClick={() => disconnect('whatsapp')} className="rounded-full border border-rose-500/40 px-4 py-1.5 text-xs font-medium text-rose-200 transition-all hover:bg-rose-500/10">Desconectar</button>}
+        </div>
+      </div>
+
+      {/* SMS */}
+      <div className="mt-4 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-sand-light">SMS (Twilio)</p>
+          {badge(Boolean(st?.sms.configured), st?.sms.configured ? 'Conectado' : 'Não conectado')}
+        </div>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <input value={sms.sid} onChange={(e) => setSms({ ...sms, sid: e.target.value })} className={inputClass} placeholder="Account SID" />
+          <input type="password" value={sms.token} onChange={(e) => setSms({ ...sms, token: e.target.value })} className={inputClass} placeholder={st?.sms.configured ? 'Novo Auth Token (substitui)' : 'Auth Token'} />
+          <input value={sms.from} onChange={(e) => setSms({ ...sms, from: e.target.value })} className={`${inputClass} md:col-span-2`} placeholder="Número remetente (ex.: +5521...)" />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <Button type="button" size="sm" disabled={busy} onClick={() => saveChannel('sms', sms)}>{st?.sms.configured ? 'Atualizar' : 'Conectar SMS'}</Button>
+          {st?.sms.configured && <button type="button" onClick={() => disconnect('sms')} className="rounded-full border border-rose-500/40 px-4 py-1.5 text-xs font-medium text-rose-200 transition-all hover:bg-rose-500/10">Desconectar</button>}
+        </div>
+      </div>
+    </section>
   );
 }
