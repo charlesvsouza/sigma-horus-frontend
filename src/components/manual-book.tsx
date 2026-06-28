@@ -49,10 +49,11 @@ const INDEX: IndexEntry[] = [
   { id: 'secretario', num: '8', label: 'Guia do Secretário' },
   { id: 'veneravel', num: '9', label: 'Guia do Venerável' },
   { id: 'membro', num: '10', label: 'Guia do Membro (obreiro)' },
-  { id: 'assinatura', num: '11', label: 'Assinatura e cobrança' },
-  { id: 'regras', num: '12', label: 'Reembolso, upgrade e downgrade' },
-  { id: 'seguranca', num: '13', label: 'Privacidade, segurança e LGPD' },
-  { id: 'duvidas', num: '14', label: 'Dúvidas frequentes' },
+  { id: 'hospitaleiro', num: '11', label: 'Guia do Hospitaleiro' },
+  { id: 'assinatura', num: '12', label: 'Assinatura e cobrança' },
+  { id: 'regras', num: '13', label: 'Reembolso, upgrade e downgrade' },
+  { id: 'seguranca', num: '14', label: 'Privacidade, segurança e LGPD' },
+  { id: 'duvidas', num: '15', label: 'Dúvidas frequentes' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -182,7 +183,7 @@ export function ManualBook() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 26 de junho de 2026 · versão 1.0</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de junho de 2026 · versão 1.1</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -244,7 +245,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <h1 style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm' }}>Manual do Usuário</h1>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.0 — 26 de junho de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.1 — 27 de junho de 2026</p>
               </div>
             </div>
 
@@ -269,21 +270,28 @@ export function ManualBook() {
 
             {/* ============== 2. PRIMEIROS PASSOS ============== */}
             <Chapter id="primeiros-passos" num="2" title="Primeiros passos">
-              <p>
-                O cadastro da loja é <strong>por convite</strong>. O administrador recebe um código (ou link) e cria a
-                loja e o primeiro usuário administrador.
-              </p>
+              <p>Há <strong>duas formas</strong> de a loja entrar no Sigma Horus:</p>
+              <p><strong>A) Autocadastro pelo site (recomendado):</strong></p>
               <Steps>
-                <li>Abra o link do convite (<code>/onboarding?invite=SEU-CÓDIGO</code>) ou informe o código manualmente na tela de criação de loja.</li>
+                <li>Na página inicial (<code>sigmahorus.com.br</code>), escolha um plano e clique em <UI>Assinar agora</UI>.</li>
+                <li>Você é levado ao <strong>checkout seguro</strong>, informa o cartão e ganha <strong>10 dias de teste grátis</strong> — nada é cobrado agora.</li>
+                <li>De volta ao site, na tela <UI>Quase lá</UI>, crie a loja: nome, endereço (slug), seu nome, e-mail, senha e o <strong>rito praticado</strong>.</li>
+                <li>Pronto: a loja já nasce no período de teste, ligada ao seu plano. Ao fim dos 10 dias, a cobrança ocorre automaticamente <strong>se você não cancelar</strong>.</li>
+              </Steps>
+              <p><strong>B) Por convite</strong> (quando a loja recebe um código da equipe):</p>
+              <Steps>
+                <li>Abra o link do convite (<code>/onboarding?invite=SEU-CÓDIGO</code>) ou informe o código na tela de criação de loja.</li>
                 <li>Informe o <strong>nome da loja</strong>, escolha o <strong>rito praticado</strong> e crie o administrador (nome, e-mail e senha).</li>
-                <li>A loja já nasce semeada com ritos, potências, os <strong>cargos do rito escolhido</strong> e um <strong>plano de contas</strong> padrão.</li>
-                <li>Começa então o <strong>período de teste de 10 dias</strong>, com acesso completo. Um aviso no topo do painel mostra os dias restantes.</li>
-                <li>Antes de o teste terminar, escolha um plano em <UI>Assinatura</UI> para continuar usando o sistema.</li>
               </Steps>
               <p>
-                Ao fim dos 10 dias sem assinatura, o acesso é pausado até a contratação de um plano — <strong>seus dados
-                permanecem guardados</strong>.
+                Em qualquer caminho, a loja já nasce semeada com ritos, potências, os <strong>cargos do rito escolhido</strong>
+                e um <strong>plano de contas</strong> padrão, e começa o <strong>período de teste de 10 dias</strong> com
+                acesso completo (um aviso no topo do painel mostra os dias restantes).
               </p>
+              <Note>
+                No autocadastro, a cobrança é automática ao fim do teste; gerencie ou cancele em <UI>Administração →
+                Assinatura</UI>. Sem assinatura ativa, o acesso é pausado, mas <strong>seus dados permanecem guardados</strong>.
+              </Note>
             </Chapter>
 
             {/* ============== 3. PAPÉIS ============== */}
@@ -298,6 +306,7 @@ export function ManualBook() {
                 <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações; não lança baixas financeiras.</li>
                 <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, fecha o caixa e vê relatórios financeiros.</li>
                 <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença; relatórios não financeiros.</li>
+                <li><strong>Hospitaleiro:</strong> consulta os irmãos (somente leitura, para contato), gerencia campanhas de benemerência e acompanha o Tronco de Solidariedade.</li>
                 <li><strong>Membro (obreiro):</strong> o próprio portal — extrato, débitos, histórico e documentos pertinentes.</li>
               </Bullets>
               <p className="text-sm text-sand-dark">
@@ -318,6 +327,7 @@ export function ManualBook() {
                 <li><strong>Loja &amp; cadastros:</strong> <UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Cargos</UI>, <UI>Veneralato</UI>.</li>
                 <li><strong>Financeiro:</strong> <UI>Contas</UI>, <UI>Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Relatórios</UI>.</li>
                 <li><strong>Atividades:</strong> <UI>Sessões</UI>, <UI>Documentos</UI>, <UI>Comunicação</UI>.</li>
+                <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI> e <UI>Campanhas</UI> de benemerência.</li>
                 <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
               </Bullets>
               <p>O topo mostra o nome da loja, o usuário logado e o status da assinatura (teste, ativa ou pendente).</p>
@@ -338,7 +348,7 @@ export function ManualBook() {
                 <Office name="Secretário" tradition="A administração viva da loja: convocações, atas, correspondência e o quadro de obreiros." system="Recebe o papel Secretário: cadastra membros, cargos, períodos e sessões; registra presença; organiza o Centro de Documentos." />
                 <Office name="Tesoureiro" tradition="O coração financeiro: arrecada mensalidades, paga despesas e presta contas do caixa." system="Recebe o papel Tesoureiro: emite cobranças (boleto/PIX), dá baixas, lança contas e fecha o caixa do veneralato." />
                 <Office name="Chanceler" tradition="Cuida das relações externas, diplomas, certificados e correspondência com a Potência." system="Papel Secretário ou Membro; usa o Centro de Documentos e os cadastros de membros." />
-                <Office name="Hospitaleiro" tradition="O cuidado fraterno: assistência a obreiros e famílias, tronco de beneficência, visitas e aniversários." system="Papel Membro (ou ampliado); acompanha o tronco pela tesouraria e usa a Comunicação para lembretes." />
+                <Office name="Hospitaleiro" tradition="O cuidado fraterno: assistência a obreiros e famílias, tronco de beneficência, visitas e aniversários." system="Recebe o papel Hospitaleiro: consulta os irmãos e a família para contato, gerencia campanhas de benemerência e acompanha o saldo do Tronco de Solidariedade (ver capítulo 11)." />
               </div>
               <p className="text-sm text-sand-dark">
                 A nomenclatura varia conforme o rito; sua loja já nasce com os cargos corretos e pode editá-los em
@@ -417,7 +427,7 @@ export function ManualBook() {
               <Sub id="admin-assinatura" title="6.5 Assinatura da plataforma">
                 <p>
                   Em <UI>Administração → Assinatura</UI> você escolhe e gerencia o plano que a loja paga ao Sigma Horus.
-                  Veja os detalhes de planos e regras no capítulo 11. Resumo: <strong>teste de 10 dias</strong>, depois
+                  Veja os detalhes de planos e regras no capítulo 12. Resumo: <strong>teste de 10 dias</strong>, depois
                   Oficina, Loja ou Potência; no <strong>anual há desconto (10% no cartão, 5% no boleto)</strong>.
                 </p>
               </Sub>
@@ -441,6 +451,13 @@ export function ManualBook() {
                   Consulte e ajuste em <UI>Cadastros mestre → Plano de contas</UI>. Para completar com o modelo padrão,
                   use <UI>Popular dados padrão (Brasil)</UI> (adiciona apenas os códigos que faltam, sem duplicar). Para
                   retirar uma conta que não usa, clique em <UI>Remover</UI> ao lado dela.
+                </p>
+                <p>
+                  Se a sua loja foi criada com uma versão antiga do plano (códigos como <code>1.01</code> em vez de
+                  <code> 1.1.01</code>), clique em <UI>Atualizar plano de contas</UI> para migrar ao padrão atual: ele
+                  adiciona as contas que faltam e remove as contas padrão antigas <strong>que não estão em uso</strong>
+                  (as contas vinculadas a lançamentos são preservadas). Isso também habilita o <strong>Tronco de
+                  Solidariedade</strong> usado pela Hospitalaria (capítulo 11).
                 </p>
               </Sub>
 
@@ -538,14 +555,41 @@ export function ManualBook() {
             {/* ============== 8. SECRETÁRIO ============== */}
             <Chapter id="secretario" num="8" title="Guia do Secretário">
               <p>O Secretário mantém o quadro de obreiros, a estrutura de cargos, as sessões e os documentos.</p>
-              <Sub title="Membros">
+              <Sub title="Membros — buscar, cadastrar, editar e excluir">
                 <p>
-                  Em <UI>Loja &amp; cadastros → Membros</UI>, use <UI>Novo membro</UI> para cadastrar: nome completo,
-                  e-mail, telefone, <strong>CPF</strong> e RG, grau atual e de iniciação, dados familiares (cônjuge,
-                  filhos, pais), profissão, nacionalidade e endereço completo (o <UI>CEP</UI> preenche o endereço
-                  automaticamente).
+                  Em <UI>Loja &amp; cadastros → Membros</UI>, a tela abre com a <strong>lista de obreiros</strong> em formato
+                  de tabela compacta. Use a <UI>busca</UI> (por <strong>nome, CPF ou CIM</strong>) e o filtro de
+                  <UI> situação</UI> para encontrar rapidamente. Clique numa linha para <strong>expandir</strong> os detalhes,
+                  onde ficam os botões <UI>Editar</UI> e <UI>Excluir cadastro</UI>.
                 </p>
-                <Note>Preencha o <strong>CPF</strong> de quem terá cobrança via Asaas — ele é obrigatório para emitir boleto/PIX (ver 7.4).</Note>
+                <Steps>
+                  <li>Clique em <UI>+ Novo membro</UI>. Só o <strong>nome</strong> é obrigatório; os demais blocos abrem conforme a necessidade.</li>
+                  <li><strong>Essencial:</strong> nome, e-mail, telefone, situação, rito e potência atual.</li>
+                  <li><strong>Dados pessoais:</strong> nascimento, <strong>CPF</strong>, RG, estado civil, profissão e nacionalidade.</li>
+                  <li><strong>Família e dependentes:</strong> Mãe, Pai e Esposa (com nascimento, e-mail e telefone) e a lista de dependentes (Filho/Filha/Outro, com CPF e contatos). Esses contatos servem às felicitações da Hospitalaria.</li>
+                  <li><strong>Endereço:</strong> o <UI>CEP</UI> preenche o endereço automaticamente.</li>
+                  <li><strong>Evolução maçônica:</strong> os marcos <strong>Iniciação, Elevação, Exaltação e Instalação</strong> (data + loja de cada um).</li>
+                  <li>Clique em <UI>Salvar membro</UI>.</li>
+                </Steps>
+                <Bullets>
+                  <li><strong>Situação simbólica automática:</strong> o sistema deduz Aprendiz, Companheiro, Mestre ou Mestre Instalado a partir dos marcos preenchidos — não se digita.</li>
+                  <li><strong>Grau Filosófico atual:</strong> opcional, selecione de 4 a 33 (REAA); se vazio, vale a situação simbólica.</li>
+                  <li><strong>Tempo de Ordem:</strong> calculado da data de iniciação (ex.: &quot;12 anos e 3 meses&quot;).</li>
+                  <li><strong>Origem:</strong> potência e loja de origem do irmão (se diferente da atual).</li>
+                </Bullets>
+                <p>
+                  <strong>Situações (afastamentos):</strong> além de Ativo, Suspenso e Inativo, há os afastamentos maçônicos —
+                  <UI>Quit Placet</UI> (a pedido do membro), <UI>Placet Ex Officio</UI> (por determinação da Loja) e
+                  <UI>Art. 002</UI> (com cobertura de direitos). Apenas membros <strong>Ativos</strong> entram na cobrança em massa.
+                </p>
+                <p>
+                  <strong>Relatório em PDF:</strong> use o filtro de situação (ex.: Ativos) e clique em <UI>Relatório PDF</UI>
+                  para gerar a lista dos membros conforme o filtro, com cabeçalho da loja.
+                </p>
+                <Note>
+                  Preencha o <strong>CPF</strong> de quem terá cobrança via Asaas — é obrigatório para emitir boleto/PIX (ver 7.4).
+                  A exclusão é bloqueada para quem já tem histórico financeiro ou documentos; nesse caso, <strong>inative</strong> em vez de excluir.
+                </Note>
               </Sub>
               <Sub title="Cadastros mestre e cargos">
                 <p>
@@ -605,8 +649,83 @@ export function ManualBook() {
               </p>
             </Chapter>
 
-            {/* ============== 11. ASSINATURA ============== */}
-            <Chapter id="assinatura" num="11" title="Assinatura e cobrança">
+            {/* ============== 11. HOSPITALEIRO ============== */}
+            <Chapter id="hospitaleiro" num="11" title="Guia do Hospitaleiro">
+              <p>
+                O Hospitaleiro cuida do bem-estar dos irmãos e da benemerência da loja. No Sigma Horus, ele consulta os
+                irmãos para manter contato, gerencia <strong>campanhas de doação</strong> e acompanha o <strong>Tronco de
+                Solidariedade</strong>. O menu fica em <UI>Hospitalaria</UI> (o Administrador e o Venerável também acessam).
+              </p>
+
+              <Sub id="hosp-irmaos" title="11.1 Irmãos (consulta)">
+                <p>
+                  Em <UI>Hospitalaria → Irmãos (consulta)</UI> você vê a lista de obreiros em <strong>somente leitura</strong>,
+                  com <UI>busca</UI> por nome, telefone ou e-mail. Clique numa linha para ver os contatos do irmão e os da
+                  <strong> família</strong> (mãe, pai, esposa, filhos) — úteis para visitas, acompanhamento e felicitações.
+                </p>
+                <Note>Esta tela não permite editar nem excluir cadastros: o cadastro dos membros é feito pela Secretaria (capítulo 8).</Note>
+              </Sub>
+
+              <Sub id="hosp-tronco" title="11.2 O Tronco de Solidariedade">
+                <p>
+                  O Tronco de Solidariedade é o dinheiro reservado à benemerência: <strong>faz parte do caixa total da loja,
+                  mas fica em conta separada</strong>, com finalidade específica. O Hospitaleiro acompanha o seu
+                  <strong> saldo disponível</strong> no topo da tela de Campanhas.
+                </p>
+                <p>
+                  O saldo é calculado pela contabilidade: <strong>entradas do Tronco</strong> (conta &quot;Tronco de
+                  Beneficência&quot;) menos os <strong>gastos de benemerência</strong> (conta &quot;Ação Social e Caridade&quot;).
+                  Se o saldo aparecer indisponível, peça ao Tesoureiro/Administrador para clicar em <UI>Atualizar plano de
+                  contas</UI> em Cadastros (capítulo 7.1) — isso habilita as contas do Tronco.
+                </p>
+              </Sub>
+
+              <Sub id="hosp-campanha" title="11.3 Criar uma campanha">
+                <p>Em <UI>Hospitalaria → Campanhas</UI>, clique em <UI>+ Nova campanha</UI>:</p>
+                <Steps>
+                  <li>(Opcional) Escolha um <UI>Modelo</UI> entre os exemplos (cadeira de rodas, cesta básica, auxílio funeral, material escolar, medicamentos, doação a instituição) — ele preenche título e descrição.</li>
+                  <li>Ajuste o <UI>Título</UI> e a <UI>Meta</UI> (valor estimado, opcional).</li>
+                  <li>Em <strong>Para quem?</strong>, escolha o beneficiário: <UI>Pessoa física</UI>, <UI>Empresa</UI> ou <UI>Instituição</UI>, e informe o nome.</li>
+                  <li>Defina a <UI>Fonte</UI>: <strong>Tronco de Solidariedade</strong> (se houver fundo), <strong>Doação voluntária dos irmãos</strong> ou <strong>Tronco + doações</strong>.</li>
+                  <li>Escreva a <UI>Descrição</UI> e clique em <UI>Criar campanha</UI>.</li>
+                </Steps>
+                <p>
+                  Cada campanha mostra o <strong>progresso</strong> (arrecadado em relação à meta). Clique nela para abrir o
+                  detalhe e registrar doações, custear pelo Tronco, convocar os irmãos e, ao final, <UI>Concluir</UI> ou
+                  <UI> Cancelar</UI>.
+                </p>
+              </Sub>
+
+              <Sub id="hosp-doacoes" title="11.4 Registrar doações e custear pelo Tronco">
+                <p><strong>Doação voluntária dos irmãos</strong> (no detalhe da campanha, bloco <UI>Registrar doação</UI>):</p>
+                <Steps>
+                  <li>Informe o <UI>Valor</UI> e o <UI>Nome do doador</UI>. Marque <UI>Doador anônimo</UI> se ele preferir não ser identificado (o nome é guardado, mas exibido como &quot;Doador anônimo&quot;).</li>
+                  <li>Clique em <UI>Registrar</UI>. Cada doação <strong>entra no financeiro automaticamente</strong>, como receita na conta do Tronco — sem lançamento manual do Tesoureiro.</li>
+                </Steps>
+                <p><strong>Custear pela própria loja</strong> (bloco <UI>Custear pelo Tronco</UI>):</p>
+                <Steps>
+                  <li>Veja o <strong>saldo disponível</strong> do Tronco e quanto a campanha já consumiu.</li>
+                  <li>Informe o valor e clique em <UI>Custear</UI>. O sistema lança a despesa de benemerência e reduz o saldo do Tronco — o valor não pode ultrapassar o saldo disponível.</li>
+                </Steps>
+              </Sub>
+
+              <Sub id="hosp-convocar" title="11.5 Convocar os irmãos">
+                <p>
+                  No detalhe da campanha, o bloco <UI>Convocar os irmãos</UI> dispara um chamado à participação. Escolha os
+                  <strong> canais</strong> (<UI>E-mail</UI>, <UI>WhatsApp</UI>, <UI>SMS</UI>), o <strong>público</strong>
+                  (irmãos ativos ou todos) e, se quiser, escreva uma mensagem própria (em branco, o sistema usa um texto
+                  padrão com o resumo da campanha). Clique em <UI>Convocar</UI>.
+                </p>
+                <Note>
+                  Todo envio fica registrado no histórico de <UI>Comunicação</UI>. O <strong>envio externo real</strong>
+                  (e-mail/WhatsApp/SMS) é ativado quando os canais oficiais estiverem configurados; até lá, as convocações
+                  ficam <strong>enfileiradas</strong> e prontas para sair.
+                </Note>
+              </Sub>
+            </Chapter>
+
+            {/* ============== 12. ASSINATURA ============== */}
+            <Chapter id="assinatura" num="12" title="Assinatura e cobrança">
               <p>
                 A loja paga ao Sigma Horus pela plataforma (assinatura) — isso é diferente das cobranças que a loja faz
                 aos seus membros (essas caem direto na conta da loja, pelo Asaas). Os planos são por faixa de obreiros
@@ -623,11 +742,17 @@ export function ManualBook() {
                 <li><strong>Anual no cartão:</strong> 12 meses com <strong>10% de desconto</strong> e renovação automática.</li>
                 <li><strong>Anual no boleto:</strong> pago de uma vez, com <strong>5% de desconto</strong> e sem renovação automática. O acesso é liberado <strong>após a confirmação</strong> do pagamento.</li>
               </Bullets>
-              <Note>O <strong>período de teste de 10 dias</strong> é gratuito: nada é debitado até você contratar um plano.</Note>
+              <p>
+                <strong>Teste grátis com cartão (autocadastro):</strong> ao assinar pelo site no cartão, você ganha
+                <strong> 10 dias de teste</strong> sem nenhuma cobrança. Ao fim do período, a cobrança ocorre
+                automaticamente <strong>se você não cancelar</strong> em <UI>Administração → Assinatura</UI>. É possível
+                cancelar a qualquer momento durante o teste, sem custo.
+              </p>
+              <Note>O <strong>período de teste de 10 dias</strong> é gratuito: nada é debitado durante o teste.</Note>
             </Chapter>
 
-            {/* ============== 12. REGRAS ============== */}
-            <Chapter id="regras" num="12" title="Reembolso, upgrade e downgrade">
+            {/* ============== 13. REGRAS ============== */}
+            <Chapter id="regras" num="13" title="Reembolso, upgrade e downgrade">
               <Bullets>
                 <li><strong>Sem reembolso:</strong> após a contratação não há devolução de valores já pagos do período vigente.</li>
                 <li><strong>Upgrade (subir de plano):</strong> vale <strong>imediatamente</strong>, com cobrança proporcional da diferença.</li>
@@ -636,8 +761,8 @@ export function ManualBook() {
               <p>Você gerencia tudo em <UI>Administração → Assinatura</UI>.</p>
             </Chapter>
 
-            {/* ============== 13. SEGURANÇA ============== */}
-            <Chapter id="seguranca" num="13" title="Privacidade, segurança e LGPD">
+            {/* ============== 14. SEGURANÇA ============== */}
+            <Chapter id="seguranca" num="14" title="Privacidade, segurança e LGPD">
               <p>
                 O Sigma Horus é <strong>software</strong> de gestão; não é instituição financeira nem custodia valores.
                 Os dados de cada loja são isolados (Row-Level Security), trafegam cifrados (TLS) e o acesso é por papel.
@@ -656,13 +781,15 @@ export function ManualBook() {
               </p>
             </Chapter>
 
-            {/* ============== 14. DÚVIDAS ============== */}
-            <Chapter id="duvidas" num="14" title="Dúvidas frequentes">
+            {/* ============== 15. DÚVIDAS ============== */}
+            <Chapter id="duvidas" num="15" title="Dúvidas frequentes">
               <Bullets>
                 <li><strong>Não consigo emitir boleto.</strong> Verifique se o Asaas está conectado (6.2) e se o membro tem CPF (7.4).</li>
                 <li><strong>O pagamento não baixou sozinho.</strong> Confirme o webhook e o token no painel do Asaas (6.2-C).</li>
                 <li><strong>Meu acesso foi pausado.</strong> O teste de 10 dias terminou — contrate um plano em <UI>Assinatura</UI>; seus dados continuam guardados.</li>
                 <li><strong>Não vejo um item do menu.</strong> Ele não está liberado para o seu papel; fale com o Administrador (6.3 / 6.4).</li>
+                <li><strong>O saldo do Tronco aparece indisponível.</strong> Em Cadastros, clique em <UI>Atualizar plano de contas</UI> (7.1) para habilitar as contas do Tronco de Solidariedade.</li>
+                <li><strong>A convocação não chegou aos irmãos.</strong> O envio externo (e-mail/WhatsApp/SMS) é ativado quando os canais oficiais estiverem configurados; até lá, as convocações ficam registradas e enfileiradas (11.5).</li>
                 <li><strong>Quero o manual em PDF.</strong> Use o botão <strong>Salvar como PDF</strong> no topo desta página.</li>
               </Bullets>
             </Chapter>
