@@ -9,10 +9,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `c4d9b21`)
+## Estado atual (`main`, HEAD `9b1aef3`)
 - Working tree limpo, tudo pushed (deploy automático na Vercel).
 - `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
-- Banco: **16/16 migrations** no Railway, RLS ativo. 22 modelos (inclui `Relative`).
+- Banco: **17/17 migrations** no Railway, RLS ativo. 24 modelos (inclui `Relative`, `Campaign`, `CampaignDonation`).
 - Next.js 16.2.9, next-auth v5 beta.31. Deploy automático Vercel. Domínio `sigmahorus.com.br` no ar (SSL ok).
 
 ## Concluído nesta sessão (2026-06-27)
@@ -26,7 +26,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - ✅ **Polish UI demais telas**: design system (inputClass + `<Button>`) + skeleton/EmptyState em contas, cobranças, pagamentos, sessões, documentos, integrações, comunicação, veneralato, configurações. (cargos/auditoria não migrados — baixo valor.)
 - ✅ **Fix plano de contas (AMORIO)**: lojas antigas ficavam com a codificação flat (1.01..1.11); `syncChartAccounts` + `POST /api/chart-accounts/sync` + botão "Atualizar plano (AMORIO)" em Cadastros migram para o canônico (1.1.xx…). **Dono deve clicar o botão** na sua loja (test) para aplicar.
 - ✅ **Self-service de assinatura (Stripe-first + trial 10d)**: `POST /api/signup/checkout` (público, trial+cartão) → `/comecar/concluir` + `GET/POST /api/signup/complete` (cria loja ligada ao Stripe real) → auto-cobrança ao fim do trial. Landing usa o checkout self-service no cartão. Webhook preserva `trialing`. `POST /api/cron/cancel-abandoned-trials` (token `PLATFORM_OWNER_TOKEN`) cancela trials abandonados >48h. **Stripe LIVE verificado: 6 preços existem — nada a criar.**
+- ✅ **Vercel Cron** do `cancel-abandoned-trials` (vercel.json, diário 04:00; rota aceita GET + `CRON_SECRET`, já configurado na Vercel). Botão do plano renomeado para "Atualizar plano de contas" (sem AMORIO).
+- ✅ **Hospitalaria — Fase 1**: papel `hospitaller` + recurso `campaigns` no RBAC (admin/venerável também acessam). Seção "Hospitalaria": **Irmãos (consulta)** read-only com contatos do obreiro + família; **Campanhas** de benemerência (criar com modelos, beneficiário pessoa/empresa/instituição, meta, fonte; doações voluntárias que lançam no financeiro no Tronco com doador ocultável; custear pelo Tronco validando saldo). **Tronco de Solidariedade**: `ChartAccount.isSolidarity` (migration `20260627180000`), saldo = entradas − gastos (helper `lib/hospitalaria.ts`); seed/sync marcam Tronco de Beneficência (1.1.05) e Ação Social (8.9.03). Modelos `Campaign`/`CampaignDonation` com RLS.
 - ✅ Docs consolidados em `../../sigmahorus_documentacao.md` (fonte única de escopo/história).
+
+## ⏳ Pendências da Hospitalaria
+- **Atribuição de papel a usuário**: não há UI para definir `User.role` (ex.: tornar alguém `hospitaller`). Hoje admin/venerável já acessam a Hospitalaria; para um Hospitaleiro dedicado, falta uma tela de gestão de usuários/papéis (ou setar `role` direto no banco).
+- **Fase 2 — convocação**: disparar a campanha aos irmãos por e-mail/WhatsApp/SMS (depende da Fase 7). Hoje só `MessageLog` interno.
 
 ## ⏳ Operacional pendente do self-service
 - **Agendar o cron** `POST /api/cron/cancel-abandoned-trials` (header `Authorization: Bearer $PLATFORM_OWNER_TOKEN`) ~1×/dia (Vercel Cron ou Railway) — sem ele, trials abandonados cobram ao fim de 10 dias.
