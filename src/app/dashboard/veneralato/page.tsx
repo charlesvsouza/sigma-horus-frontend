@@ -1,20 +1,41 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, inputClass } from '@/components/ui';
-import { useRouter } from 'next/navigation';
 
 interface TermItem { id: string; title: string; startDate: string; endDate?: string | null; status: string; _count: { memberOffices: number }; }
+interface MemberOfficeItem { id: string; office: { id: string; name: string }; member: { id: string; name: string }; }
+interface CashCloseItem {
+  id: string;
+  closedAt: string;
+  openingBalance: number;
+  totalPayments: number;
+  totalPayables: number;
+  closingBalance: number;
+  netBalance: number;
+  approved: boolean;
+  approvedAt?: string | null;
+}
+interface TermDetail {
+  id: string;
+  title: string;
+  status: string;
+  startDate: string;
+  endDate?: string | null;
+  openingBalance: number;
+  closedAt?: string | null;
+  memberOffices?: MemberOfficeItem[];
+  cashCloses?: CashCloseItem[];
+}
 
 export default function VeneralatoPage() {
-  const router = useRouter();
   const [terms, setTerms] = useState<TermItem[]>([]);
   const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
   const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState({ title: '', startDate: '', endDate: '', notes: '' });
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
-  const [termDetail, setTermDetail] = useState<any>(null);
+  const [termDetail, setTermDetail] = useState<TermDetail | null>(null);
   const [role, setRole] = useState('');
 
   useEffect(() => {
@@ -36,7 +57,12 @@ export default function VeneralatoPage() {
     setMembers((await memRes.json()).items ?? []);
   }
 
-  useEffect(() => { loadTerms(); loadRefs(); }, []);
+  useEffect(() => {
+    void (async () => {
+      await loadTerms();
+      await loadRefs();
+    })();
+  }, []);
 
   async function loadTermDetail(id: string) {
     setSelectedTerm(id);
@@ -169,7 +195,7 @@ export default function VeneralatoPage() {
                 <div>
                   <h3 className="text-sm font-medium text-sand-dark">Cargos deste período</h3>
                   <div className="mt-2 space-y-2">
-                    {termDetail.memberOffices?.map((mo: any) => (
+                    {termDetail.memberOffices?.map((mo) => (
                       <div key={mo.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
                         <span className="text-gold">{mo.office.name}</span>
                         <span className="mx-2 text-sand-dark">—</span>
