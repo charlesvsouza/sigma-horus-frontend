@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { getTroncoBalance } from '@/lib/hospitalaria';
+import { configuredChannels } from '@/lib/messaging';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -34,7 +35,7 @@ export async function GET() {
     return { items, tronco };
   });
 
-  return NextResponse.json(data);
+  return NextResponse.json({ ...data, channels: configuredChannels() });
 }
 
 export async function POST(request: Request) {

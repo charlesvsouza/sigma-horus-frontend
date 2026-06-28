@@ -27,6 +27,7 @@ const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', curren
 export default function CampanhasPage() {
   const [items, setItems] = useState<Campaign[]>([]);
   const [tronco, setTronco] = useState<Tronco | null>(null);
+  const [channels, setChannels] = useState<Record<string, boolean>>({ email: false, whatsapp: false, sms: false });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [creating, setCreating] = useState(false);
@@ -41,6 +42,7 @@ export default function CampanhasPage() {
     const data = await res.json();
     setItems(data.items ?? []);
     setTronco(data.tronco ?? null);
+    setChannels(data.channels ?? { email: false, whatsapp: false, sms: false });
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -139,7 +141,7 @@ export default function CampanhasPage() {
                       <span className={`text-gold transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
                     </button>
                     {pct != null ? <div className="mx-4 mb-3 h-1.5 overflow-hidden rounded-full bg-white/5"><div className="h-full rounded-full bg-gold" style={{ width: `${pct}%` }} /></div> : null}
-                    {open ? <CampaignDetail campaign={detail} tronco={tronco} onChange={load} /> : null}
+                    {open ? <CampaignDetail campaign={detail} tronco={tronco} channels={channels} onChange={load} /> : null}
                   </div>
                 );
               })
@@ -151,10 +153,29 @@ export default function CampanhasPage() {
   );
 }
 
-function CampaignDetail({ campaign, tronco, onChange }: { campaign: Campaign | null; tronco: Tronco | null; onChange: () => void }) {
+const CHAN_LABEL: Record<string, string> = { email: 'E-mail', whatsapp: 'WhatsApp', sms: 'SMS' };
+
+function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Campaign | null; tronco: Tronco | null; channels: Record<string, boolean>; onChange: () => void }) {
   const [donation, setDonation] = useState({ amount: '', donorName: '', anonymous: false });
   const [fund, setFund] = useState('');
   const [msg, setMsg] = useState('');
+  const [conv, setConv] = useState({ email: true, whatsapp: false, sms: false, scope: 'active', message: '' });
+  const [convResult, setConvResult] = useState('');
+  const [convBusy, setConvBusy] = useState(false);
+
+  async function convocar() {
+    setConvResult('');
+    const selected = (['email', 'whatsapp', 'sms'] as const).filter((c) => conv[c]);
+    if (selected.length === 0) { setConvResult('Selecione ao menos um canal.'); return; }
+    setConvBusy(true);
+    const res = await fetch(`/api/campaigns/${campaign!.id}/convocar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channels: selected, scope: conv.scope, message: conv.message }) });
+    const data = await res.json();
+    setConvBusy(false);
+    if (res.ok) {
+      const s = data.stats ?? {};
+      setConvResult(`Convocação: ${s.sent ?? 0} enviadas, ${s.queued ?? 0} enfileiradas, ${s.failed ?? 0} falhas, ${s.skipped ?? 0} sem contato.`);
+    } else setConvResult(data.error ?? 'Erro ao convocar.');
+  }
 
   if (!campaign) return <div className="border-t border-white/[5%] px-4 py-4"><Skeleton variant="text" className="w-1/2" /></div>;
 
@@ -217,6 +238,31 @@ function CampaignDetail({ campaign, tronco, onChange }: { campaign: Campaign | n
           </ul>
         </div>
       ) : null}
+
+      {/* Convocação dos irmãos */}
+      <div className="rounded-lg border border-white/[6%] p-4">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Convocar os irmãos</p>
+        <div className="mt-2 flex flex-wrap items-center gap-4">
+          {(['email', 'whatsapp', 'sms'] as const).map((c) => (
+            <label key={c} className="flex items-center gap-2 text-xs text-sand">
+              <input type="checkbox" checked={conv[c]} onChange={(e) => setConv({ ...conv, [c]: e.target.checked })} className="accent-gold" />
+              {CHAN_LABEL[c]}{!channels[c] ? <span className="text-sand-dark/60"> (registra; envio na Fase 7)</span> : null}
+            </label>
+          ))}
+          <label className="ml-auto flex items-center gap-2 text-xs text-sand-dark">
+            Para:
+            <select value={conv.scope} onChange={(e) => setConv({ ...conv, scope: e.target.value })} className={`${inputClass} w-auto py-1.5`}>
+              <option value="active">Irmãos ativos</option>
+              <option value="all">Todos os irmãos</option>
+            </select>
+          </label>
+        </div>
+        <textarea value={conv.message} onChange={(e) => setConv({ ...conv, message: e.target.value })} className={`${inputClass} mt-2`} placeholder="Mensagem (opcional — em branco, usa um texto padrão com o resumo da campanha)" rows={2} />
+        <div className="mt-2 flex items-center gap-3">
+          <Button size="sm" onClick={convocar} disabled={convBusy}>{convBusy ? 'Enviando…' : 'Convocar'}</Button>
+          {convResult ? <span className="text-xs text-sand-dark">{convResult}</span> : null}
+        </div>
+      </div>
 
       {campaign.status === 'active' ? (
         <div className="flex flex-wrap gap-3 pt-1">
