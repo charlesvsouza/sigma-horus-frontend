@@ -9,11 +9,20 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `3da44d6`)
-- Working tree limpo, tudo pushed (deploy automático na Vercel).
-- `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
-- Banco: **18/18 migrations** no Railway, RLS ativo. 24 modelos (inclui `Relative`, `Campaign`, `CampaignDonation`).
+## Estado atual (`main`, HEAD `cbe6c28` + alterações locais não commitadas)
+- ⚠️ **Há trabalho não commitado** (sessão 2026-06-28): acesso do obreiro, encerramento de veneralato e tema claro. `npx next build` ✅ passou; `npx tsc --noEmit` ✅ limpo no app (erros só em `.test.ts`).
+- Banco: **20/20 migrations** no Railway, RLS ativo (`prisma migrate deploy` aplicado). 24 modelos; `User` agora liga a `Member` (`memberId`).
 - Next.js 16.2.9, next-auth v5 beta.31. Deploy automático Vercel. Domínio `sigmahorus.com.br` no ar (SSL ok).
+
+## Concluído nesta sessão (2026-06-28) — NÃO refazer
+- ✅ **Acesso do obreiro (Membro→Usuário):** `User.memberId` (1-1) + `mustChangePassword` (migration `20260628140000_add_user_member_link`). `POST /api/members/[id]/grant-access` (Admin) cria/renova login com senha provisória **enviada por e-mail (Resend)** (`lib/password.ts`). Gate de 1º acesso no `dashboard/layout.tsx` → `/trocar-senha` (revalida via `signIn`; `jwt` trata `trigger==='update'`). Página **Usuários & acessos** `/dashboard/configuracoes/usuarios` (`GET /api/users`, `PATCH /api/users/[id]` papel/status/reset; trava o último admin). `POST /api/account/password` (troca própria). **Self-edit**: `members/[id]` PUT libera quando `session.memberId === id`. Auth expõe `memberId`/`mustChangePassword`. Botão "Conceder acesso" no detalhe de Membros (role via `/api/auth/session`).
+- ✅ **Encerramento de veneralato (3 passos):** migration `20260628160000_add_term_closing_flow` (`Term.openingBalance/closedAt/closedById`, `CashClose.openingBalance/closingBalance/approved/approvedAt/approvedById`). **1)** `POST /api/cash-close` (Tesoureiro, `accounts:write`) calcula closingBalance = openingBalance + pagamentos − contas a pagar. **2)** `POST /api/cash-close/approve` (Venerável/Admin). **3)** `POST /api/terms/[id]/close` (Admin; exige CashClose aprovado, seta status=closed e endDate). **Trava** `lib/term-lock.ts` (`findClosedTermForDate`) integrada em `accounts` e `payments` POST (409 se data em período fechado). **Herança**: `POST /api/terms` abre novo período com openingBalance = closingBalance do último fechamento aprovado. UI veneralato reescrita em 3 cartões por papel.
+- ✅ **Tema claro:** `[data-theme="light"]` em `globals.css` remapeia os tokens `--sigma-*` (Tailwind v4 `@theme inline`). `components/theme-toggle.tsx` (localStorage `sigma-theme` + `html[data-theme]`), seção **Aparência** em Configurações, script anti-flash no `app/layout.tsx` (`suppressHydrationWarning`). ⚠️ Limitação v1: utilitários `border-white/[x%]`/`bg-white/x` ficam sutis no claro (foram desenhados p/ o escuro).
+- ✅ **Docs/manual:** `sigmahorus_documentacao.md` + este AGENTS atualizados; manual (`manual-book.tsx`) 6.1 (Aparência), 6.3 (acesso do obreiro), 7.7 (encerramento 3 passos), cap. 10 (acesso/senha do membro).
+- ⏳ **Falta (pós-sessão):** **commitar e push** (deploy Vercel); **conexão Meta do WhatsApp** (ação do dono — cap. 6.6); validar E2E o fluxo de acesso e o encerramento em produção.
+
+## Sessão anterior (2026-06-27, HEAD `cbe6c28`)
+- Últimos commits: `cbe6c28` docs/handoff + manual (6.6 Comunicação WhatsApp/SMS BYO) · `3da44d6` WhatsApp/SMS BYO por loja · `da0f6b7` WhatsApp via template.
 
 ## Concluído nesta sessão (2026-06-27)
 - ✅ **Backfill de `Account.chartAccountId`**: `POST /api/accounts/backfill-chart` (tenant/RLS, `accounts:write`) + botão "Vincular contas ao plano" em Cadastros. Resolve o balde "Sem classificação" no balancete.

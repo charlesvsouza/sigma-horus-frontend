@@ -64,6 +64,7 @@ interface Member {
   power?: Option | null;
   originPower?: Option | null;
   relatives?: RelativeData[];
+  user?: { id: string; status: string; mustChangePassword: boolean } | null;
 }
 
 type FormState = Record<string, string>;
@@ -155,6 +156,39 @@ export default function MembrosPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [grantingId, setGrantingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then((r) => r.json())
+      .then((s) => setIsAdmin(String(s?.user?.role ?? '').toLowerCase() === 'admin'))
+      .catch(() => {});
+  }, []);
+
+  async function grantAccess(m: Member) {
+    if (!m.email) {
+      setMessage('Cadastre um e-mail no membro antes de conceder acesso.');
+      return;
+    }
+    const verb = m.user ? 'reenviar a senha de acesso para' : 'conceder acesso a';
+    if (!confirm(`Deseja ${verb} ${m.name}? Uma senha provisória será enviada para ${m.email}.`)) return;
+    setGrantingId(m.id);
+    setMessage('');
+    const res = await fetch(`/api/members/${m.id}/grant-access`, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    setGrantingId(null);
+    if (!res.ok) {
+      setMessage(data.error ?? 'Não foi possível conceder acesso.');
+      return;
+    }
+    setMessage(
+      data.emailStatus === 'sent'
+        ? `Acesso liberado. Senha provisória enviada para ${m.email}.`
+        : `Acesso liberado. E-mail não enviado — senha provisória: ${data.tempPassword} (repasse manualmente).`,
+    );
+    loadData();
+  }
 
   async function loadData() {
     setLoading(true);
@@ -387,8 +421,19 @@ export default function MembrosPage() {
                                 </ul>
                               </div>
                             ) : null}
-                            <div className="flex flex-wrap gap-3 pt-1">
+                            <div className="flex flex-wrap items-center gap-3 pt-1">
                               <button onClick={() => setEditingId(m.id)} className="rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 transition-all hover:border-gold/60 hover:text-gold">Editar</button>
+                              {isAdmin ? (
+                                <button
+                                  onClick={() => grantAccess(m)}
+                                  disabled={grantingId === m.id}
+                                  title={m.email ? 'Cria/renova o login do obreiro e envia a senha por e-mail' : 'Cadastre um e-mail no membro para conceder acesso'}
+                                  className="rounded-full border border-sky-500/40 px-4 py-2 text-xs font-medium text-sky-300 transition-all hover:border-sky-500/60 hover:text-sky-200 disabled:opacity-40"
+                                >
+                                  {grantingId === m.id ? 'Enviando…' : m.user ? 'Reenviar acesso' : 'Conceder acesso'}
+                                </button>
+                              ) : null}
+                              {m.user ? <span className="text-[11px] text-emerald-300/80">✓ acesso ativo{m.user.mustChangePassword ? ' (senha provisória)' : ''}</span> : null}
                               <button onClick={() => deleteMember(m)} className="rounded-full border border-rose-500/40 px-4 py-2 text-xs font-medium text-rose-300 transition-all hover:border-rose-500/60 hover:text-rose-200">Excluir cadastro</button>
                             </div>
                           </div>

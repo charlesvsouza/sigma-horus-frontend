@@ -374,6 +374,11 @@ export function ManualBook() {
                   (a ação só adiciona o que falta — não remove os cargos existentes).
                 </p>
                 <Note>Mantenha o CNPJ e os dados bancários corretos: eles aparecem em relatórios e ajudam na conciliação financeira.</Note>
+                <p>
+                  <strong>Aparência:</strong> na própria página de Configurações há a seção <UI>Aparência</UI>, onde você
+                  alterna entre o tema <strong>Escuro</strong> (padrão) e <strong>Claro</strong>. A preferência fica salva
+                  neste navegador e vale para todas as telas.
+                </p>
               </Sub>
 
               <Sub id="admin-asaas" title="6.2 Conectar o Asaas (cobrança aos membros)">
@@ -409,12 +414,28 @@ export function ManualBook() {
                 </Note>
               </Sub>
 
-              <Sub id="admin-usuarios" title="6.3 Convidar e gerenciar usuários">
+              <Sub id="admin-usuarios" title="6.3 Acesso dos obreiros e gestão de usuários">
                 <p>
-                  Cada oficial que vai operar o sistema precisa de um usuário com um papel. O Administrador convida as
-                  pessoas e define o papel de cada uma (ver papéis no capítulo 3).
+                  Todo obreiro pode ter acesso ao sistema a partir do <strong>próprio cadastro de membro</strong>. O
+                  login é o <strong>e-mail cadastrado</strong> e a senha inicial é <strong>gerada pelo sistema</strong>.
                 </p>
-                <Note>O papel define o que a pessoa pode ver e fazer. Conceda o <strong>menor privilégio necessário</strong>: por exemplo, dê o papel Tesoureiro apenas a quem cuida do caixa.</Note>
+                <Steps>
+                  <li>Em <UI>Loja &amp; cadastros → Membros</UI>, confirme que o membro tem <strong>e-mail</strong> e abra o cadastro.</li>
+                  <li>Clique em <UI>Conceder acesso</UI>. O sistema cria o login e <strong>envia a senha provisória por e-mail</strong> ao obreiro.</li>
+                  <li>No primeiro acesso, o obreiro é obrigado a <strong>definir uma nova senha</strong>.</li>
+                  <li>Se precisar, use <UI>Reenviar acesso</UI> para gerar outra senha provisória.</li>
+                </Steps>
+                <p>
+                  Em <UI>Administração → Usuários &amp; acessos</UI> o Administrador define o <strong>papel (cargo de
+                  permissão)</strong> de cada usuário — Administrador, Venerável, Tesoureiro, Secretário, Hospitaleiro ou
+                  Membro —, reenvia senha e ativa/desativa logins.
+                </p>
+                <Note>
+                  Quem faz o quê: <strong>só o Administrador</strong> define papéis e concede acesso. O <strong>obreiro</strong>
+                  edita o próprio cadastro (contato, endereço, família) e troca a própria senha, mas <strong>nunca</strong> o
+                  próprio papel. Conceda sempre o <strong>menor privilégio necessário</strong>. A loja precisa de ao menos um
+                  Administrador (o sistema impede remover o último).
+                </Note>
               </Sub>
 
               <Sub id="admin-permissoes" title="6.4 Permissões (matriz por papel)">
@@ -565,12 +586,21 @@ export function ManualBook() {
                 </p>
               </Sub>
 
-              <Sub id="tes-fechamento" title="7.7 Fechamento do veneralato">
+              <Sub id="tes-fechamento" title="7.7 Encerramento do veneralato (3 passos)">
                 <p>
-                  Ao fim da gestão, em <UI>Loja &amp; cadastros → Veneralato</UI> você apura o período. Abra o período,
-                  confira o <strong>Saldo</strong> e use o <UI>Fechamento de caixa</UI> → <UI>Fechar caixa</UI> para
-                  travar os lançamentos e transferir o saldo à próxima gestão.
+                  Ao fim da gestão, em <UI>Loja &amp; cadastros → Veneralato</UI> o encerramento segue <strong>três passos
+                  encadeados</strong>, cada um com um responsável — não se pula etapa:
                 </p>
+                <Steps>
+                  <li><strong>1. Fechamento de caixa (Tesoureiro):</strong> abra o período e clique em <UI>Fechar caixa deste período</UI>. O sistema registra o snapshot — saldo de abertura (herdado), entradas, saídas e <strong>saldo final</strong>.</li>
+                  <li><strong>2. Prestação de contas (Venerável):</strong> o Venerável revisa e clica em <UI>Aprovar prestação de contas</UI>.</li>
+                  <li><strong>3. Encerrar veneralato (Administrador):</strong> só fica disponível <em>após</em> a aprovação. Ao encerrar, os lançamentos do período ficam <strong>travados</strong> e o saldo final é <strong>herdado pela próxima gestão</strong> como saldo de abertura.</li>
+                </Steps>
+                <Note>
+                  Depois de encerrado, nenhum lançamento (conta ou pagamento) pode ter data dentro do período fechado — o
+                  sistema bloqueia para preservar a prestação de contas aprovada. Ao criar o <strong>novo veneralato</strong>, o
+                  livro caixa já abre com o saldo herdado do período anterior.
+                </Note>
               </Sub>
             </Chapter>
 
@@ -669,6 +699,14 @@ export function ManualBook() {
                 Assim você confere, a qualquer momento, <strong>o que pagou, o que está em aberto e o que vence</strong> —
                 sem precisar pedir à tesouraria.
               </p>
+              <Sub title="Seu acesso e seus dados">
+                <Bullets>
+                  <li><strong>Primeiro acesso:</strong> entre com o e-mail e a senha provisória recebida por e-mail; o sistema pede para você <strong>definir uma nova senha</strong>.</li>
+                  <li><strong>Editar meus dados:</strong> você pode atualizar o próprio cadastro (contato, endereço, família). O seu <strong>papel/cargo</strong> só é definido pelo Administrador.</li>
+                  <li><strong>Trocar senha:</strong> a qualquer momento, em <UI>/trocar-senha</UI>, informando a senha atual.</li>
+                  <li><strong>Tema claro:</strong> prefere a interface clara? Veja a seção Aparência (capítulo 6.1) — a escolha vale para o seu navegador.</li>
+                </Bullets>
+              </Sub>
             </Chapter>
 
             {/* ============== 11. HOSPITALEIRO ============== */}

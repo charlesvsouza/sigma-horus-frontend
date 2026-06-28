@@ -12,6 +12,21 @@
   --sigma-sand-dark: #C4B49A;
 }
 
+/* Tema claro (leitura clara) — remapeia os MESMOS tokens, invertendo superfícies
+   (azul→claro) e textos (areia→escuro). Como o Tailwind v4 mapeia as classes
+   para estes tokens, toda a UI alterna junto ao trocar data-theme no <html>. */
+[data-theme="light"] {
+  --sigma-blue-deep: #F3EFE6;  /* fundo da página (pergaminho quente) */
+  --sigma-blue-dark: #FBF8F1;  /* cards / superfícies */
+  --sigma-blue-mid:  #EAE3D4;  /* superfícies elevadas */
+  --sigma-gold:       #8A6D12; /* ouro mais escuro p/ contraste em fundo claro */
+  --sigma-gold-light: #A8861E;
+  --sigma-gold-dark:  #6E5710;
+  --sigma-sand:       #4A4636; /* texto secundário (escuro) */
+  --sigma-sand-light: #1C1A14; /* texto principal (quase preto) */
+  --sigma-sand-dark:  #6E6650; /* texto desabilitado / leve */
+}
+
 @theme inline {
   --color-background: var(--sigma-blue-deep);
   --color-foreground: var(--sigma-sand);

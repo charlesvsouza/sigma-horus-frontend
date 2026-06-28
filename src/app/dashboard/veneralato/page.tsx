@@ -15,6 +15,14 @@ export default function VeneralatoPage() {
   const [form, setForm] = useState({ title: '', startDate: '', endDate: '', notes: '' });
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [termDetail, setTermDetail] = useState<any>(null);
+  const [role, setRole] = useState('');
+
+  useEffect(() => {
+    fetch('/api/auth/session').then((r) => r.json()).then((s) => setRole(String(s?.user?.role ?? '').toLowerCase())).catch(() => {});
+  }, []);
+  const isAdmin = role === 'admin';
+  const isVenerable = role === 'venerable';
+  const canClose = isAdmin || role === 'treasurer';
 
   async function loadTerms() {
     const res = await fetch('/api/terms');
@@ -67,9 +75,30 @@ export default function VeneralatoPage() {
       body: JSON.stringify({ termId }),
     });
     const data = await res.json();
-    setMessage(data.item ? 'Fechamento realizado.' : data.error ?? 'Erro.');
+    setMessage(data.item ? 'Caixa fechado. Aguarda aprovação da prestação de contas.' : data.error ?? 'Erro.');
     await loadTermDetail(termId);
   }
+
+  async function approveAccounts(termId: string) {
+    if (!confirm('Aprovar a prestação de contas deste período? Após aprovada, o Admin poderá encerrar o veneralato.')) return;
+    const res = await fetch('/api/cash-close/approve', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ termId }),
+    });
+    const data = await res.json();
+    setMessage(res.ok ? 'Prestação de contas aprovada.' : data.error ?? 'Erro.');
+    await loadTermDetail(termId);
+  }
+
+  async function closeTerm(termId: string) {
+    if (!confirm('Encerrar o veneralato? Esta ação trava todos os lançamentos do período e o saldo final será herdado pela próxima gestão. Não pode ser desfeita.')) return;
+    const res = await fetch(`/api/terms/${termId}/close`, { method: 'POST' });
+    const data = await res.json();
+    setMessage(res.ok ? `Veneralato encerrado. Saldo final R$ ${Number(data.closingBalance ?? 0).toFixed(2)} será herdado pela próxima gestão.` : data.error ?? 'Erro.');
+    await loadTermDetail(termId);
+    await loadTerms();
+  }
+
+  const brl = (n: number) => `R$ ${Number(n ?? 0).toFixed(2)}`;
 
   const INPUT = inputClass; // fonte única do design system
 
@@ -109,7 +138,13 @@ export default function VeneralatoPage() {
 
           {selectedTerm && termDetail && (
             <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
-              <h2 className="text-base font-semibold text-sand-light">{termDetail.title}</h2>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-base font-semibold text-sand-light">{termDetail.title}</h2>
+                {termDetail.status === 'closed'
+                  ? <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-sand-dark">encerrado</span>
+                  : <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300">em exercício</span>}
+              </div>
+              <p className="mt-1 text-xs text-sand-dark">Saldo herdado da gestão anterior: <span className="text-sand-light">{brl(termDetail.openingBalance ?? 0)}</span></p>
 
               <div className="mt-5 space-y-4">
                 <div>
@@ -148,17 +183,57 @@ export default function VeneralatoPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-sand-dark">Fechamento de caixa</h3>
-                  {termDetail.cashCloses?.length > 0 ? (
-                    <div className="mt-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sand">
-                      <p className="text-sm">Fechado em {new Date(termDetail.cashCloses[0].closedAt).toLocaleDateString('pt-BR')}</p>
-                      <p className="text-sm">Saldo: R$ {termDetail.cashCloses[0].netBalance.toFixed(2)}</p>
-                    </div>
-                  ) : (
-                    <button onClick={() => closeCash(selectedTerm)} className="mt-2 rounded-full bg-gold px-4 py-2 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
-                      Fechar caixa deste período
-                    </button>
-                  )}
+                  <h3 className="text-sm font-medium text-sand-dark">Encerramento do veneralato</h3>
+                  {(() => {
+                    const close = termDetail.cashCloses?.[0] ?? null;
+                    const closed = termDetail.status === 'closed';
+                    return (
+                      <div className="mt-2 space-y-3">
+                        {/* Passo 1 — Tesoureiro fecha o caixa */}
+                        <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 px-4 py-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-sand">1. Fechamento de caixa <span className="text-xs text-sand-dark">(Tesoureiro)</span></span>
+                            {close ? <span className="text-xs text-emerald-300">✓ feito</span> : null}
+                          </div>
+                          {close ? (
+                            <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-sand-dark">
+                              <span>Abertura: <span className="text-sand-light">{brl(close.openingBalance)}</span></span>
+                              <span>Entradas: <span className="text-sand-light">{brl(close.totalPayments)}</span></span>
+                              <span>Saídas: <span className="text-sand-light">{brl(close.totalPayables)}</span></span>
+                              <span>Saldo final: <span className="text-gold">{brl(close.closingBalance)}</span></span>
+                            </div>
+                          ) : canClose && !closed ? (
+                            <button onClick={() => closeCash(selectedTerm)} className="mt-2 rounded-full bg-gold px-4 py-2 text-sm font-medium text-sigma-blue-deep transition-all hover:bg-gold-light active:bg-gold-dark">Fechar caixa deste período</button>
+                          ) : <p className="mt-1 text-xs text-sand-dark">Aguardando o Tesoureiro fechar o caixa.</p>}
+                        </div>
+
+                        {/* Passo 2 — Venerável aprova a prestação de contas */}
+                        <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 px-4 py-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-sand">2. Prestação de contas <span className="text-xs text-sand-dark">(Venerável)</span></span>
+                            {close?.approved ? <span className="text-xs text-emerald-300">✓ aprovada</span> : null}
+                          </div>
+                          {close && !close.approved && (isVenerable || isAdmin) ? (
+                            <button onClick={() => approveAccounts(selectedTerm)} className="mt-2 rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all hover:border-gold/60 hover:text-gold">Aprovar prestação de contas</button>
+                          ) : !close ? <p className="mt-1 text-xs text-sand-dark">Disponível após o fechamento de caixa.</p>
+                          : !close.approved ? <p className="mt-1 text-xs text-sand-dark">Aguardando aprovação do Venerável.</p> : null}
+                        </div>
+
+                        {/* Passo 3 — Admin encerra o veneralato */}
+                        <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 px-4 py-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-sand">3. Encerrar veneralato <span className="text-xs text-sand-dark">(Admin)</span></span>
+                            {closed ? <span className="text-xs text-emerald-300">✓ encerrado</span> : null}
+                          </div>
+                          {closed ? (
+                            <p className="mt-1 text-xs text-sand-dark">Encerrado em {termDetail.closedAt ? new Date(termDetail.closedAt).toLocaleDateString('pt-BR') : '—'}. Lançamentos do período travados; saldo herdado pela próxima gestão.</p>
+                          ) : close?.approved && isAdmin ? (
+                            <button onClick={() => closeTerm(selectedTerm)} className="mt-2 rounded-full border border-rose-500/40 px-4 py-2 text-sm font-medium text-rose-300 transition-all hover:border-rose-500/60 hover:text-rose-200">Encerrar veneralato</button>
+                          ) : <p className="mt-1 text-xs text-sand-dark">Disponível após a aprovação da prestação de contas.</p>}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </section>

@@ -101,6 +101,7 @@ export const MEMBER_LIST_INCLUDE = {
   power: { select: { id: true, name: true } },
   originPower: { select: { id: true, name: true } },
   relatives: { orderBy: { order: 'asc' as const } },
+  user: { select: { id: true, status: true, mustChangePassword: true } },
 } as const;
 
 export type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';

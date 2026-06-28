@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button, inputClass } from '@/components/ui';
+import ThemeToggle from '@/components/theme-toggle';
 import { fetchCep, maskCEP, maskCNPJ, maskPhone } from '@/lib/masks';
 import { BRAZILIAN_RITES, BRAZILIAN_POWERS } from '@/lib/masonic-reference';
 
@@ -234,6 +235,14 @@ export default function ConfiguracoesPage() {
             {saving ? 'Salvando…' : 'Salvar dados da loja'}
           </Button>
         </form>
+
+        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <h2 className="text-base font-semibold text-sand-light">Aparência</h2>
+          <p className="mt-1 text-sm text-sand-dark">Escolha o tema da interface. A preferência fica salva neste navegador e vale para todas as telas.</p>
+          <div className="mt-5">
+            <ThemeToggle />
+          </div>
+        </section>
       </div>
     </main>
   );

@@ -83,10 +83,13 @@ model User {
   role          String   @default("admin")
   lodgeId       String
   status        String   @default("active")
+  memberId      String?  @unique // vínculo 1-1 com o cadastro de membro (acesso do obreiro)
+  mustChangePassword Boolean @default(false) // força troca da senha provisória no 1º acesso
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   lodge         Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member        Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
   auditLogs     AuditLog[]
 }
 
@@ -150,6 +153,7 @@ model Member {
   documentsList      Document[]
   messageLogs        MessageLog[]
   relatives          Relative[]
+  user               User?
 }
 
 // Família e dependentes do membro (mãe, pai, esposa, filhos, outros dependentes).
@@ -391,8 +395,11 @@ model Term {
   title     String
   startDate DateTime
   endDate   DateTime?
-  status    String   @default("active")
+  status    String   @default("active") // active | closed
   notes     String?
+  openingBalance Float    @default(0)  // saldo de caixa herdado da gestão anterior
+  closedAt       DateTime?             // encerramento do veneralato (após prestação aprovada)
+  closedById     String?               // usuário (Admin) que encerrou
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -427,6 +434,11 @@ model CashClose {
   totalPayables    Float  @default(0)
   totalPayments    Float  @default(0)
   netBalance       Float  @default(0)
+  openingBalance   Float  @default(0)  // saldo herdado no início do período
+  closingBalance   Float  @default(0)  // saldo final = abertura + entradas − saídas
+  approved         Boolean  @default(false) // prestação de contas aprovada (Venerável)
+  approvedAt       DateTime?
+  approvedById     String?
   notes       String?
   createdAt   DateTime @default(now())
 

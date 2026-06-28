@@ -14,8 +14,14 @@ export async function PUT(request: Request, { params }: Ctx) {
   const role = session?.user?.role;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'write');
-  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
+  // Self-edit: o obreiro pode editar o PRÓPRIO cadastro (dados/contato/família),
+  // mesmo sem permissão geral de members:write. O papel (cargo de permissão) e o
+  // cargo maçônico não são campos do cadastro de membro, então ficam intocados.
+  const isSelf = session?.user?.memberId === id;
+  if (!isSelf) {
+    const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'write');
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
+  }
 
   const body = await request.json();
   const fields = parseMemberFields(body);

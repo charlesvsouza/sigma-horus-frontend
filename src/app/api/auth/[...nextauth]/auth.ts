@@ -10,6 +10,8 @@ declare module 'next-auth' {
       id: string;
       role?: string;
       lodgeId?: string;
+      memberId?: string | null;
+      mustChangePassword?: boolean;
     };
   }
 }
@@ -43,17 +45,25 @@ export const authOptions = {
           email: user.email,
           role: user.role,
           lodgeId: user.lodgeId,
+          memberId: user.memberId,
+          mustChangePassword: user.mustChangePassword,
         };
       },
     }),
   ],
   pages: { signIn: '/login' },
   callbacks: {
-    async jwt({ token, user }: { token: any; user?: any }) {
+    async jwt({ token, user, trigger }: { token: any; user?: any; trigger?: string }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.lodgeId = user.lodgeId;
+        token.memberId = user.memberId ?? null;
+        token.mustChangePassword = Boolean(user.mustChangePassword);
+      }
+      // Após o usuário trocar a senha, o cliente chama update() para limpar a flag.
+      if (trigger === 'update') {
+        token.mustChangePassword = false;
       }
       return token;
     },
@@ -62,6 +72,8 @@ export const authOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.lodgeId = token.lodgeId as string;
+        session.user.memberId = (token.memberId as string | null) ?? null;
+        session.user.mustChangePassword = Boolean(token.mustChangePassword);
       }
       return session;
     },

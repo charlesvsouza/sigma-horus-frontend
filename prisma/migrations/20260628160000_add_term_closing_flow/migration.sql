@@ -1,0 +1,10 @@
+-- Encerramento de veneralato em 2 passos + herança de saldo.
+ALTER TABLE "Term" ADD COLUMN "openingBalance" DOUBLE PRECISION NOT NULL DEFAULT 0;
+ALTER TABLE "Term" ADD COLUMN "closedAt" TIMESTAMP(3);
+ALTER TABLE "Term" ADD COLUMN "closedById" TEXT;
+
+ALTER TABLE "CashClose" ADD COLUMN "openingBalance" DOUBLE PRECISION NOT NULL DEFAULT 0;
+ALTER TABLE "CashClose" ADD COLUMN "closingBalance" DOUBLE PRECISION NOT NULL DEFAULT 0;
+ALTER TABLE "CashClose" ADD COLUMN "approved" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "CashClose" ADD COLUMN "approvedAt" TIMESTAMP(3);
+ALTER TABLE "CashClose" ADD COLUMN "approvedById" TEXT;

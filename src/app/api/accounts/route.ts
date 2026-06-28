@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { findClosedTermForDate } from '@/lib/term-lock';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -60,7 +61,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
   }
 
-  const item = await withTenant(String(lodgeId), async (db) => {
+  const result = await withTenant(String(lodgeId), async (db) => {
+    // Trava de período: não permite lançar em veneralato já encerrado.
+    const locked = await findClosedTermForDate(db, String(lodgeId), dueDate);
+    if (locked) return { locked } as const;
+
     // Garante que o plano de contas informado pertence à loja.
     let validChartId: string | null = null;
     if (chartAccountId) {
@@ -86,8 +91,15 @@ export async function POST(request: Request) {
     });
 
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'account', entityId: created.id, metadata: { title, type, amount } });
-    return created;
+    return { created } as const;
   });
 
-  return NextResponse.json({ item });
+  if ('locked' in result && result.locked) {
+    return NextResponse.json(
+      { error: `Período encerrado (${result.locked.title}). Não é possível lançar com vencimento dentro de um veneralato já fechado.` },
+      { status: 409 },
+    );
+  }
+
+  return NextResponse.json({ item: result.created });
 }

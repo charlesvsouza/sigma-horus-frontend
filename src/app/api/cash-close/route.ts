@@ -1,12 +1,22 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
+// PASSO 1 do encerramento: o Tesoureiro gera o fechamento de caixa (snapshot)
+// do período. Calcula o saldo final (closingBalance) a partir do saldo herdado
+// (openingBalance do Term) + entradas (pagamentos) − saídas (contas a pagar).
+// Ainda NÃO encerra o veneralato — depende da aprovação (Venerável) e do
+// encerramento (Admin).
 export async function POST(request: Request) {
   const s = await auth();
   const lodgeId = s?.user?.lodgeId;
+  const role = s?.user?.role;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const access = await requireLodgeAccess(String(lodgeId), role, 'accounts', 'write');
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const body = await request.json();
   const termId = String(body?.termId ?? '');
@@ -29,12 +39,14 @@ export async function POST(request: Request) {
     const totalPayables = accounts.filter((a) => a.type === 'PAYABLE').reduce((sum, a) => sum + Number(a.amount ?? 0), 0);
     const totalPayments = payments.reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
     const netBalance = totalPayments - totalPayables;
+    const openingBalance = Number(term.openingBalance ?? 0);
+    const closingBalance = openingBalance + netBalance;
 
     const close = await db.cashClose.create({
-      data: { lodgeId: String(lodgeId), termId, totalReceivables, totalPayables, totalPayments, netBalance, notes },
+      data: { lodgeId: String(lodgeId), termId, totalReceivables, totalPayables, totalPayments, netBalance, openingBalance, closingBalance, notes },
     });
 
-    await logAudit(db, { lodgeId: String(lodgeId), userId: s.user.id, action: 'CREATE', entity: 'cashClose', entityId: close.id, metadata: { termId, netBalance } });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: s.user.id, action: 'CREATE', entity: 'cashClose', entityId: close.id, metadata: { termId, openingBalance, closingBalance } });
     return { close };
   });
 

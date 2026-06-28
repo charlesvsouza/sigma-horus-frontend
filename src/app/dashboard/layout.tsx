@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import DashboardShell from './DashboardShell';
@@ -53,6 +54,7 @@ const NAV: NavGroupDef[] = [
     category: 'Administração',
     items: [
       { href: '/dashboard/configuracoes', label: 'Configurações da loja', roles: ['admin'] },
+      { href: '/dashboard/configuracoes/usuarios', label: 'Usuários & acessos', roles: ['admin'] },
       { href: '/dashboard/assinatura', label: 'Assinatura', roles: ['admin'] },
       { href: '/dashboard/integracoes', label: 'Integrações', roles: ['admin'] },
       { href: '/dashboard/auditoria', label: 'Auditoria', roles: ['admin'] },
@@ -62,6 +64,10 @@ const NAV: NavGroupDef[] = [
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session = await auth();
+  // 1º acesso com senha provisória: força a troca antes de entrar no painel.
+  if (session?.user?.mustChangePassword) {
+    redirect('/trocar-senha');
+  }
   const lodgeId = session?.user?.lodgeId;
   const role = (session?.user?.role ?? 'member').toLowerCase();
 

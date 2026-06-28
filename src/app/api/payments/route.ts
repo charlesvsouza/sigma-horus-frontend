@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { findClosedTermForDate } from '@/lib/term-lock';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -59,6 +60,10 @@ export async function POST(request: Request) {
   }
 
   const result = await withTenant(String(lodgeId), async (db) => {
+    // Trava de período: não permite baixar com data dentro de veneralato encerrado.
+    const locked = await findClosedTermForDate(db, String(lodgeId), paidAt);
+    if (locked) return { locked } as const;
+
     const account = await db.account.findFirst({
       where: { id: accountId, lodgeId: String(lodgeId) },
     });
@@ -99,6 +104,13 @@ export async function POST(request: Request) {
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method } });
     return { payment: created };
   });
+
+  if ('locked' in result && result.locked) {
+    return NextResponse.json(
+      { error: `Período encerrado (${result.locked.title}). Não é possível baixar pagamento dentro de um veneralato já fechado.` },
+      { status: 409 },
+    );
+  }
 
   if ('notFound' in result) {
     return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });
