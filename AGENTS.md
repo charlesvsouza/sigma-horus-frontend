@@ -9,10 +9,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `8727b42`)
+## Estado atual (`main`, HEAD `3da44d6`)
 - Working tree limpo, tudo pushed (deploy automático na Vercel).
 - `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
-- Banco: **17/17 migrations** no Railway, RLS ativo. 24 modelos (inclui `Relative`, `Campaign`, `CampaignDonation`).
+- Banco: **18/18 migrations** no Railway, RLS ativo. 24 modelos (inclui `Relative`, `Campaign`, `CampaignDonation`).
 - Next.js 16.2.9, next-auth v5 beta.31. Deploy automático Vercel. Domínio `sigmahorus.com.br` no ar (SSL ok).
 
 ## Concluído nesta sessão (2026-06-27)
@@ -36,7 +36,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Fase 7 — Comunicação real
 - ✅ **E-mail (Resend) ATIVO**: domínio `sigmahorus.com.br` verificado (DKIM/SPF/MX/DMARC na Hostinger), `RESEND_API_KEY`/`RESEND_FROM` na Vercel (produção, redeployado). Envio de teste confirmado. `from` = `no-reply@sigmahorus.com.br`.
 - ✅ **Gatilhos automáticos diários** (`lib/notifications.ts` + cron `/api/cron/daily-notifications`, Vercel Cron 11:00 UTC): aniversário do obreiro e de familiares, jubileu/aniversário de iniciação (`TENURE_MILESTONES`), cobranças a vencer (3 dias) e vencidas. Dedup por dia via `MessageLog`, fuso America/Sao_Paulo, envia pelos canais configurados.
-- ⏳ **WhatsApp (Meta Cloud API)**: env `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_ID` (proativo exige **template aprovado**). **SMS (Twilio)**: `TWILIO_*`. Enquanto não configurados, esses canais ficam `queued`.
+- ✅ **WhatsApp/SMS — BYO por loja** (decisão de produto: e-mail incluso na plataforma; WhatsApp/SMS com custo direto da loja). Cada loja conecta a própria conta em **Integrações** (cartão "Comunicação"): WhatsApp (Meta — Phone Number ID + token + template) e/ou SMS (Twilio — SID/token/from). Credenciais criptografadas por tenant (`Lodge.whatsapp*`/`sms*`, migration `20260628120000`). `lib/messaging.ts` agora recebe `lodgeChannels`; `lib/lodge-channels.ts` descriptografa. Convocação, gatilhos diários e GET de campanhas usam os canais da loja. **Sem envs globais de WhatsApp/SMS.** WhatsApp proativo exige **template aprovado** (corpo com 1 variável → `WHATSAPP_TEMPLATE` por loja).
 
 ## ⏳ Outras pendências
 - **Atribuição de papel a usuário**: não há UI para definir `User.role` (ex.: tornar alguém `hospitaller`). Hoje admin/venerável já acessam a Hospitalaria; para um Hospitaleiro dedicado, falta uma tela de gestão de usuários/papéis (ou setar `role` direto no banco).

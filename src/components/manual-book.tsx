@@ -30,6 +30,7 @@ const INDEX: IndexEntry[] = [
       { id: 'admin-usuarios', label: '6.3 Convidar usuários' },
       { id: 'admin-permissoes', label: '6.4 Permissões' },
       { id: 'admin-assinatura', label: '6.5 Assinatura' },
+      { id: 'admin-comunicacao', label: '6.6 Comunicação (WhatsApp/SMS)' },
     ],
   },
   {
@@ -431,6 +432,27 @@ export function ManualBook() {
                   Oficina, Loja ou Potência; no <strong>anual há desconto (10% no cartão, 5% no boleto)</strong>.
                 </p>
               </Sub>
+
+              <Sub id="admin-comunicacao" title="6.6 Comunicação (WhatsApp, SMS e e-mail)">
+                <p>
+                  O Sigma Horus envia avisos aos irmãos (felicitações de aniversário, jubileus, lembretes de cobrança e
+                  convocações de campanha). O <strong>e-mail é provido pela plataforma</strong> — já funciona, sem
+                  configuração. Já <strong>WhatsApp e SMS são conectados pela própria loja</strong> (o custo das mensagens
+                  é direto da loja), em <UI>Administração → Integrações</UI>, no cartão <UI>Comunicação (WhatsApp / SMS)</UI>.
+                </p>
+                <p><strong>WhatsApp (Meta Cloud API):</strong></p>
+                <Steps>
+                  <li>Crie um app no <strong>Meta for Developers</strong> com o produto WhatsApp e obtenha o <strong>Phone Number ID</strong> e um <strong>token</strong> (de preferência permanente, via Usuário do Sistema).</li>
+                  <li>Crie e aprove um <strong>template</strong> de mensagem (categoria Utilidade, idioma pt_BR, corpo com 1 variável, ex.: <code>Loja Maçônica: {'{{1}}'}</code>) — mensagens proativas exigem template aprovado.</li>
+                  <li>Em Integrações, preencha <UI>Phone Number ID</UI>, <UI>Token</UI>, <UI>Nome do template</UI> e o idioma, e clique em <UI>Conectar WhatsApp</UI>.</li>
+                </Steps>
+                <p><strong>SMS (Twilio):</strong> informe <UI>Account SID</UI>, <UI>Auth Token</UI> e o <UI>número remetente</UI>, e clique em <UI>Conectar SMS</UI>.</p>
+                <Note>
+                  Enquanto um canal não estiver conectado, as mensagens daquele canal ficam <strong>registradas e
+                  enfileiradas</strong> (aparecem no histórico de Comunicação) e saem assim que a loja conectar a conta.
+                  As credenciais são guardadas <strong>criptografadas</strong> e isoladas por loja.
+                </Note>
+              </Sub>
             </Chapter>
 
             {/* ============== 7. TESOUREIRO ============== */}
@@ -718,8 +740,9 @@ export function ManualBook() {
                 </p>
                 <Note>
                   Todo envio fica registrado no histórico de <UI>Comunicação</UI>. O <strong>envio externo real</strong>
-                  (e-mail/WhatsApp/SMS) é ativado quando os canais oficiais estiverem configurados; até lá, as convocações
-                  ficam <strong>enfileiradas</strong> e prontas para sair.
+                  por e-mail já sai de imediato (provido pela plataforma); WhatsApp/SMS saem quando a loja conectar a
+                  própria conta em <UI>Integrações</UI> (ver 6.6). Até lá, esses ficam <strong>enfileirados</strong> e
+                  prontos para sair, no histórico de Comunicação.
                 </Note>
               </Sub>
             </Chapter>
@@ -789,7 +812,7 @@ export function ManualBook() {
                 <li><strong>Meu acesso foi pausado.</strong> O teste de 10 dias terminou — contrate um plano em <UI>Assinatura</UI>; seus dados continuam guardados.</li>
                 <li><strong>Não vejo um item do menu.</strong> Ele não está liberado para o seu papel; fale com o Administrador (6.3 / 6.4).</li>
                 <li><strong>O saldo do Tronco aparece indisponível.</strong> Em Cadastros, clique em <UI>Atualizar plano de contas</UI> (7.1) para habilitar as contas do Tronco de Solidariedade.</li>
-                <li><strong>A convocação não chegou aos irmãos.</strong> O envio externo (e-mail/WhatsApp/SMS) é ativado quando os canais oficiais estiverem configurados; até lá, as convocações ficam registradas e enfileiradas (11.5).</li>
+                <li><strong>A convocação não chegou aos irmãos.</strong> O e-mail sai pela plataforma; WhatsApp/SMS exigem a loja conectar a própria conta em <UI>Integrações</UI> (6.6). Até lá, ficam registrados e enfileirados.</li>
                 <li><strong>Quero o manual em PDF.</strong> Use o botão <strong>Salvar como PDF</strong> no topo desta página.</li>
               </Bullets>
             </Chapter>
