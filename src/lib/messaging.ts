@@ -46,13 +46,32 @@ async function sendWhatsApp(to: string, body: string): Promise<SendResult> {
   if (!token || !phoneId) return { status: 'queued', detail: 'WhatsApp não configurado (WHATSAPP_TOKEN/WHATSAPP_PHONE_ID).' };
   const e164 = toE164(to);
   if (!e164) return { status: 'failed', detail: 'Telefone inválido.' };
+
+  // Mensagens proativas (fora da janela de 24h) exigem TEMPLATE aprovado. Se um
+  // template de corpo com 1 variável estiver configurado (WHATSAPP_TEMPLATE),
+  // envia por ele com o texto como parâmetro; senão envia texto livre (só
+  // funciona dentro da janela de 24h).
+  const template = process.env.WHATSAPP_TEMPLATE;
+  const lang = process.env.WHATSAPP_TEMPLATE_LANG || 'pt_BR';
+  const payload = template
+    ? {
+        messaging_product: 'whatsapp',
+        to: e164.replace('+', ''),
+        type: 'template',
+        template: { name: template, language: { code: lang }, components: [{ type: 'body', parameters: [{ type: 'text', text: body }] }] },
+      }
+    : { messaging_product: 'whatsapp', to: e164.replace('+', ''), type: 'text', text: { body } };
+
   try {
     const res = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messaging_product: 'whatsapp', to: e164.replace('+', ''), type: 'text', text: { body } }),
+      body: JSON.stringify(payload),
     });
-    if (!res.ok) return { status: 'failed', detail: `WhatsApp ${res.status} (mensagem proativa pode exigir template aprovado)` };
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      return { status: 'failed', detail: `WhatsApp ${res.status}${template ? '' : ' (proativo exige template — defina WHATSAPP_TEMPLATE)'} ${detail.slice(0, 200)}` };
+    }
     return { status: 'sent' };
   } catch (e) {
     return { status: 'failed', detail: String(e) };
