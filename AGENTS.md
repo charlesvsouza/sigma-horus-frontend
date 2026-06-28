@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `b23b029`)
+## Estado atual (`main`, HEAD `8727b42`)
 - Working tree limpo, tudo pushed (deploy automático na Vercel).
 - `npx tsc --noEmit`: ✅ limpo no código de app (erros só nos `.test.ts`; o "erro" `react-hooks/set-state-in-effect` existe em TODAS as páginas do dashboard e NÃO bloqueia o build da Vercel).
 - Banco: **17/17 migrations** no Railway, RLS ativo. 24 modelos (inclui `Relative`, `Campaign`, `CampaignDonation`).
@@ -33,8 +33,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - ✅ **Hospitalaria — Fase 2 (convocação)**: `lib/messaging.ts` (providers via fetch, ativados por env — **Resend** `RESEND_API_KEY`/`RESEND_FROM`, **Meta WhatsApp** `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_ID`, **Twilio SMS** `TWILIO_*`); sem credenciais, fica `queued` no `MessageLog`. `POST /api/campaigns/[id]/convocar` envia a campanha por canal a cada irmão (ativos/todos). UI "Convocar os irmãos" no detalhe. **Reaproveitável pela Fase 7** (aniversários/jubileus/cobrança).
 - ✅ **Manual v1.1** (`manual-book.tsx`): autocadastro/trial, papel Hospitaleiro, menu Hospitalaria, nova área de Membros, "Atualizar plano de contas", novo cap. 11 "Guia do Hospitaleiro".
 
-## ⏳ Pendências
-- **Canais de comunicação reais (Fase 7)**: configurar credenciais (Resend/Meta/Twilio) nas envs da Vercel para o envio externo sair de verdade (convocação, e futuramente aniversários/jubileus/cobrança). Sem isso, tudo fica `queued`.
+## Fase 7 — Comunicação real
+- ✅ **E-mail (Resend) ATIVO**: domínio `sigmahorus.com.br` verificado (DKIM/SPF/MX/DMARC na Hostinger), `RESEND_API_KEY`/`RESEND_FROM` na Vercel (produção, redeployado). Envio de teste confirmado. `from` = `no-reply@sigmahorus.com.br`.
+- ✅ **Gatilhos automáticos diários** (`lib/notifications.ts` + cron `/api/cron/daily-notifications`, Vercel Cron 11:00 UTC): aniversário do obreiro e de familiares, jubileu/aniversário de iniciação (`TENURE_MILESTONES`), cobranças a vencer (3 dias) e vencidas. Dedup por dia via `MessageLog`, fuso America/Sao_Paulo, envia pelos canais configurados.
+- ⏳ **WhatsApp (Meta Cloud API)**: env `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_ID` (proativo exige **template aprovado**). **SMS (Twilio)**: `TWILIO_*`. Enquanto não configurados, esses canais ficam `queued`.
+
+## ⏳ Outras pendências
 - **Atribuição de papel a usuário**: não há UI para definir `User.role` (ex.: tornar alguém `hospitaller`). Hoje admin/venerável já acessam a Hospitalaria; para um Hospitaleiro dedicado, falta uma tela de gestão de usuários/papéis (ou setar `role` direto no banco).
 
 ## ⏳ Operacional pendente do self-service
