@@ -14,17 +14,35 @@
 
 /* Tema claro (leitura clara) — remapeia os MESMOS tokens, invertendo superfícies
    (azul→claro) e textos (areia→escuro). Como o Tailwind v4 mapeia as classes
-   para estes tokens, toda a UI alterna junto ao trocar data-theme no <html>. */
+   para estes tokens, toda a UI alterna junto ao trocar data-theme no <html>.
+   Paleta "pergaminho" suavizada (menos branco → menos cansaço visual). */
 [data-theme="light"] {
-  --sigma-blue-deep: #F3EFE6;  /* fundo da página (pergaminho quente) */
-  --sigma-blue-dark: #FBF8F1;  /* cards / superfícies */
-  --sigma-blue-mid:  #EAE3D4;  /* superfícies elevadas */
+  --sigma-blue-deep: #E7E1D2;  /* fundo da página (pergaminho quente, baixa glare) */
+  --sigma-blue-dark: #F1ECDE;  /* cards / superfícies (mais claro = elevação) */
+  --sigma-blue-mid:  #DAD2C0;  /* superfícies elevadas / chips */
   --sigma-gold:       #8A6D12; /* ouro mais escuro p/ contraste em fundo claro */
   --sigma-gold-light: #A8861E;
   --sigma-gold-dark:  #6E5710;
   --sigma-sand:       #4A4636; /* texto secundário (escuro) */
-  --sigma-sand-light: #1C1A14; /* texto principal (quase preto) */
+  --sigma-sand-light: #2A261D; /* texto principal (marrom escuro, não preto puro) */
   --sigma-sand-dark:  #6E6650; /* texto desabilitado / leve */
+}
+
+/* Tema "Sistema": segue a preferência clara/escura do SO. Quando o SO está em
+   modo claro, aplica os mesmos tokens do tema claro; caso contrário, mantém o
+   escuro (:root). Resolvido em CSS (sem flash e atualiza sozinho com o SO). */
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    --sigma-blue-deep: #E7E1D2;
+    --sigma-blue-dark: #F1ECDE;
+    --sigma-blue-mid:  #DAD2C0;
+    --sigma-gold:       #8A6D12;
+    --sigma-gold-light: #A8861E;
+    --sigma-gold-dark:  #6E5710;
+    --sigma-sand:       #4A4636;
+    --sigma-sand-light: #2A261D;
+    --sigma-sand-dark:  #6E6650;
+  }
 }
 
 @theme inline {

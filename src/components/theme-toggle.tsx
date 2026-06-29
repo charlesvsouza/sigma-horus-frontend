@@ -2,22 +2,30 @@
 
 import { useEffect, useState } from 'react';
 
-type Theme = 'dark' | 'light';
+type Theme = 'dark' | 'light' | 'system';
 
+// Aplica a escolha no <html>. 'dark' = sem atributo (padrão :root); 'light' e
+// 'system' usam data-theme — o CSS resolve o 'system' via prefers-color-scheme.
 function apply(theme: Theme) {
   const el = document.documentElement;
-  if (theme === 'light') el.setAttribute('data-theme', 'light');
-  else el.removeAttribute('data-theme');
+  if (theme === 'dark') el.removeAttribute('data-theme');
+  else el.setAttribute('data-theme', theme);
 }
 
-// Alterna o tema da interface (escuro padrão ↔ claro). Persiste em localStorage
-// e aplica no <html> — vale para todo o sistema (ver globals.css [data-theme]).
+const OPTIONS: { value: Theme; label: string }[] = [
+  { value: 'dark', label: 'Escuro' },
+  { value: 'light', label: 'Claro' },
+  { value: 'system', label: 'Sistema' },
+];
+
+// Alterna o tema da interface. Persiste em localStorage e aplica no <html> —
+// vale para todo o sistema (ver globals.css [data-theme]).
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>('dark');
 
   useEffect(() => {
     const saved = (typeof localStorage !== 'undefined' && localStorage.getItem('sigma-theme')) as Theme | null;
-    setTheme(saved === 'light' ? 'light' : 'dark');
+    setTheme(saved === 'light' || saved === 'system' ? saved : 'dark');
   }, []);
 
   function choose(next: Theme) {
@@ -28,20 +36,16 @@ export default function ThemeToggle() {
 
   return (
     <div className="inline-flex rounded-full border border-white/10 bg-sigma-blue-deep/60 p-1">
-      <button
-        type="button"
-        onClick={() => choose('dark')}
-        className={`rounded-full px-4 py-1.5 text-sm transition-colors ${theme === 'dark' ? 'bg-gold/15 text-gold' : 'text-sand-dark hover:text-sand-light'}`}
-      >
-        Escuro
-      </button>
-      <button
-        type="button"
-        onClick={() => choose('light')}
-        className={`rounded-full px-4 py-1.5 text-sm transition-colors ${theme === 'light' ? 'bg-gold/15 text-gold' : 'text-sand-dark hover:text-sand-light'}`}
-      >
-        Claro
-      </button>
+      {OPTIONS.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => choose(o.value)}
+          className={`rounded-full px-4 py-1.5 text-sm transition-colors ${theme === o.value ? 'bg-gold/15 text-gold' : 'text-sand-dark hover:text-sand-light'}`}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }

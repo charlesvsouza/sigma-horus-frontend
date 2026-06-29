@@ -66,7 +66,7 @@ export default function RootLayout({
         {/* Aplica o tema salvo antes da pintura (evita flash). */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('sigma-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}`,
+            __html: `try{var t=localStorage.getItem('sigma-theme');if(t==='light'||t==='system')document.documentElement.setAttribute('data-theme',t);}catch(e){}`,
           }}
         />
       </head>

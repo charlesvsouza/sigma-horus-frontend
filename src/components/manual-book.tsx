@@ -376,8 +376,9 @@ export function ManualBook() {
                 <Note>Mantenha o CNPJ e os dados bancários corretos: eles aparecem em relatórios e ajudam na conciliação financeira.</Note>
                 <p>
                   <strong>Aparência:</strong> na própria página de Configurações há a seção <UI>Aparência</UI>, onde você
-                  alterna entre o tema <strong>Escuro</strong> (padrão) e <strong>Claro</strong>. A preferência fica salva
-                  neste navegador e vale para todas as telas.
+                  escolhe o tema <strong>Escuro</strong> (padrão), <strong>Claro</strong> (pergaminho suave) ou
+                  <strong> Sistema</strong> (segue o modo claro/escuro do seu computador). A preferência fica salva neste
+                  navegador e vale para todas as telas.
                 </p>
               </Sub>
 
