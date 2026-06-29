@@ -64,8 +64,13 @@ const NAV: NavGroupDef[] = [
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session = await auth();
+  // Guarda de sessão: sem login (ex.: após "Sair" + voltar do navegador), volta
+  // sempre para a tela de login em vez de mostrar conteúdo autenticado.
+  if (!session?.user) {
+    redirect('/login');
+  }
   // 1º acesso com senha provisória: força a troca antes de entrar no painel.
-  if (session?.user?.mustChangePassword) {
+  if (session.user.mustChangePassword) {
     redirect('/trocar-senha');
   }
   const lodgeId = session?.user?.lodgeId;

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 
 interface NavItem { href: string; label: string; }
 interface NavGroup { category: string; items: NavItem[]; }
@@ -25,6 +25,13 @@ const ROLE_LABEL: Record<string, string> = {
   member: 'Obreiro',
 };
 
+// Rótulos de segmentos de rota para a trilha (breadcrumb) que não vêm do menu.
+const SEGMENT_LABELS: Record<string, string> = {
+  configuracoes: 'Configurações da loja', relatorios: 'Relatórios', hospitalaria: 'Hospitalaria',
+  sessoes: 'Sessões', usuarios: 'Usuários & acessos', permissoes: 'Permissões',
+  fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', portal: 'Meu portal',
+};
+
 export default function DashboardShell({ groups, lodgeName, userName, role, children }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -37,6 +44,17 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
     } catch {}
   }, []);
 
+  // Anti-bfcache: ao voltar pelo navegador, se a página vier do cache de
+  // back/forward, recarrega para revalidar a sessão (após "Sair", o guard do
+  // layout redireciona para /login).
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) window.location.reload();
+    };
+    window.addEventListener('pageshow', onShow);
+    return () => window.removeEventListener('pageshow', onShow);
+  }, []);
+
   function toggleCategory(name: string) {
     setCollapsed((prev) => {
       const next = { ...prev, [name]: !prev[name] };
@@ -46,6 +64,27 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
   }
 
   const initials = userName.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('') || 'SH';
+
+  // Trilha (breadcrumb) derivada da rota: navegação na própria tela, sem depender
+  // das setas do navegador. Cada nível é clicável quando corresponde a uma página.
+  const hrefLabel = useMemo(() => {
+    const map: Record<string, string> = { '/dashboard': 'Painel' };
+    for (const g of groups) for (const it of g.items) map[it.href] = it.label;
+    return map;
+  }, [groups]);
+
+  const crumbs = useMemo(() => {
+    if (!pathname?.startsWith('/dashboard')) return [];
+    const segs = pathname.split('/').filter(Boolean);
+    let acc = '';
+    return segs.map((seg, i) => {
+      acc += `/${seg}`;
+      const navigable = acc === '/dashboard' || hrefLabel[acc] !== undefined;
+      let label = hrefLabel[acc] ?? SEGMENT_LABELS[seg];
+      if (!label) label = /^[0-9a-z]{8,}$/i.test(seg) ? 'Detalhe' : seg.charAt(0).toUpperCase() + seg.slice(1);
+      return { href: acc, label, navigable, last: i === segs.length - 1 };
+    });
+  }, [pathname, hrefLabel]);
 
   return (
     <div className="min-h-screen bg-sigma-blue-deep text-sand">
@@ -165,6 +204,23 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
               </button>
             </div>
           </header>
+
+          {crumbs.length > 1 ? (
+            <nav aria-label="Trilha de navegação" className="border-b border-white/[6%] bg-sigma-blue-deep/60 px-5 py-2.5 lg:px-8">
+              <ol className="flex flex-wrap items-center gap-1.5 text-xs">
+                {crumbs.map((c, i) => (
+                  <li key={c.href} className="flex items-center gap-1.5">
+                    {i > 0 ? <span className="text-sand-dark/40" aria-hidden="true">/</span> : null}
+                    {c.last || !c.navigable ? (
+                      <span className={c.last ? 'font-medium text-sand-light' : 'text-sand-dark'} aria-current={c.last ? 'page' : undefined}>{c.label}</span>
+                    ) : (
+                      <Link href={c.href} className="text-sand-dark transition-colors hover:text-gold">{c.label}</Link>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          ) : null}
 
           <div className="flex-1">{children}</div>
         </div>
