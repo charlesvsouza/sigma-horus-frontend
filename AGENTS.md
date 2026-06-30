@@ -9,6 +9,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
+## 🎨 UPLIFT DE DESIGN (crítica impeccable, 2026-06-30)
+Crítica registrada em `design_refinado.md` (saúde ~28/40 → estimado ~33-34 após estas mudanças). **Onda 1 + paleta entregues:**
+- ✅ **`ui/alert.tsx`** (intents info/ok/warn/danger; variantes card/banner). Migrados o banner de assinatura (`layout.tsx`) e **11 banners** de mensagem das telas (script). Mata a dívida de alertas com classes soltas.
+- ✅ **Tema claro — bordas/tabelas:** `border-white/x` → tinta escura (`sand-light`) no claro/system (cards e linhas de tabela legíveis no pergaminho); reforço de borda; `divide`.
+- ✅ **DESIGN alignment:** removidas as sombras do `Card` (elevação por tom); removido glassmorphism decorativo de `onboarding`/`trocar-senha` (mantido só no `login`).
+- ✅ **Command palette `Ctrl/Cmd+K`** (`components/command-palette.tsx` + botão "Buscar" no header do `DashboardShell`): navega/busca telas por teclado. `DESIGN.md` atualizado (Alert, no-shadow, tema claro, paleta).
+- ⏳ **Adiados (com motivo, em `design_refinado.md`):** sidebar collapse (requer set de ícones antes), confirm dialog (refactor assíncrono em ações destrutivas é arriscado às cegas), `useTransition`/validação inline (backlog; precisa iteração visual).
+
 ## 🔧 REPARAÇÕES (status)
 1. ✅ **Tema claro — legibilidade dos avisos/alertas (RESOLVIDO 2026-06-29).** `globals.css` (fora de `@layer`): **(a)** sobrescreve as VARIÁVEIS de cor do Tailwind (`--color-{rose,amber,emerald,sky}-100/200/300` → 700/800) no `[data-theme="light"]` e no `system` claro — escurece texto base **e** variantes de opacidade (`/60 /70 /80`) de uma vez, pois as utilities usam `var(--color-*)`; **(b)** reforça os fundos de alerta (`bg-*-500/10–12` → 15–18%). Cobre banner "sem assinatura" (rosa), downgrade (azul), banners de mensagem e botões "Remover". Tema escuro intacto. Verificado no CSS de produção. *(Acabamento completo — sem pendência.)*
 2. **Tema "Sistema" herdar o SO — validar (não é bug de código).** Implementação correta em padrão web (`data-theme="system"` + `@media (prefers-color-scheme)`), cobre **Windows 11 e macOS** (segue o *modo do aplicativo* do SO). Validar no ambiente do dono (modo de aplicativo do Windows em Escuro, ou override do navegador). **Não** precisa de código Mac-específico.

@@ -156,14 +156,31 @@ o restante. A paleta inteira evoca deserto ao entardecer + céu noturno.
 - Hover row: white/3% overlay
 - Border entre linhas: white/5%
 - Padding cell: `px-4 py-3`
+- No tema claro, `border-white/x` vira tinta escura (sand-light) via override em
+  `globals.css`, senão a linha some no pergaminho.
+
+### Alertas / avisos (`ui/alert.tsx`)
+
+- Sempre via `<Alert intent>`, nunca classes Tailwind soltas (evita regressão de
+  contraste). Intents: `info` (sky), `ok` (emerald), `warn` (amber), `danger` (rose).
+- Variantes: `card` (arredondado, mensagens de tela) e `banner` (faixa de topo, ex.:
+  aviso de assinatura no layout).
+- `role="alert"` para warn/danger, `role="status"` para info/ok.
+- No tema claro, o texto dos tons de alerta é escurecido (700/800) por override das
+  variáveis de cor do Tailwind em `globals.css` (cobre base e opacidade).
 
 ### Cards
 
-- Fundo: blue-dark a 70-80%
-- Borda: white/6%
-- Padding: `p-5`
-- Shape: `rounded-xl` (12px)
-- Título: heading2 ou body semibold + cor sand-light
+- Fundo: degradê `bg-sigma-card` (blue-mid→blue-dark) / `bg-sigma-card-elevated`.
+- Borda: white/6% (escuro); tinta escura ~12% no claro.
+- Padding: `p-5`; Shape: `rounded-xl` (12px).
+- Sem sombra: a elevação vem do tom (degradê + borda), não de box-shadow.
+- Disciplina: nem toda seção é card. Reservar para agrupamento real; nunca aninhar.
+
+### Navegação rápida
+
+- Paleta de comandos `Ctrl/Cmd+K` (`command-palette.tsx`): busca e navega telas por
+  teclado (setas/enter/esc). Botão "Buscar ⌘K" no cabeçalho do dashboard.
 
 ## Estados
 

@@ -169,16 +169,25 @@ Onda 2+ (opcional, refinamento):
 7. Checklist de implementação
 -----------------------------
 
-[ ] `ui/alert.tsx` com 4 intents + substituir banners inline (layout, mensagens das páginas).
-[ ] `globals.css` tema claro: borda de card 12%, separadores de tabela, cabeçalho de tabela.
-[ ] `useTransition` nos client components que fazem fetch + `router.refresh()`.
-[ ] Remover `backdrop-blur` de onboarding/trocar-senha; revisar `shadow` do Card.
-[ ] Toggle de colapso da sidebar (persistente, acessível) + ícones dos itens.
-[ ] Auditoria de cards: remover containers redundantes; zero cards aninhados.
-[ ] (Futuro) atalhos de teclado + paleta de comandos (Ctrl/Cmd+K).
-[ ] Atualizar DESIGN.md ao consolidar cada mudança (fonte da verdade).
+[x] `ui/alert.tsx` com 4 intents + substituir banners inline (layout + 11 telas).
+[x] `globals.css` tema claro: borda de card/tabela em tinta escura (legível no pergaminho).
+[x] Remover `backdrop-blur` de onboarding/trocar-senha; remover `shadow` do Card.
+[x] Paleta de comandos (Ctrl/Cmd+K) para navegar e buscar telas (eficiência diária).
+[ ] (Adiado) Toggle de colapso da sidebar + ícones dos itens. Requer um set de ícones
+    coerente com a marca antes de qualquer estado só-ícone. Não fazer sem isso.
+[ ] (Adiado, risco) Confirm dialog substituindo `window.confirm`. O refactor assíncrono
+    em ações destrutivas (excluir membro, encerrar veneralato) é perigoso às cegas: um
+    `await` esquecido remove a confirmação silenciosamente. Fazer só com iteração visual.
+[ ] (Backlog) `useTransition` para indicador de "atualizando" no `router.refresh()`.
+    Hoje os estados de botão ("Salvando…") + a paleta já dão feedback; ganho marginal.
+[ ] (Backlog) Auditoria de cards: remover containers redundantes; zero cards aninhados.
+    Subjetivo, precisa de iteração visual no navegador.
+[ ] (Backlog) Validação inline nos formulários (maior alavanca de prevenção de erro).
 
-Observação: este documento substitui a versão anterior, que tratava o hover-expand da
-sidebar como decisão central. A crítica de produto recomenda priorizar o componente de
-alerta e o acabamento do tema claro (baixo risco, alto valor) e trocar o hover-expand
-por um toggle de colapso previsível e acessível.
+Histórico: a versão anterior tratava o hover-expand da sidebar como decisão central; a
+crítica de produto recomendou priorizar o componente de alerta e o acabamento do tema
+claro (baixo risco, alto valor) e trocar o hover-expand por toggle de colapso. A Onda 1
+e a paleta de comandos foram implementadas (2026-06-30); a sidebar collapse e o confirm
+dialog ficaram adiados pelos motivos acima (dependência de ícones e risco em ações
+destrutivas). Estimativa de saúde após estas mudanças: ~33-34/40. Chegar a 38-40 exige
+o set de ícones, validação inline e iteração visual real (testes de usabilidade).
