@@ -221,34 +221,44 @@
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Legibilidade dos avisos/alertas no TEMA CLARO.
+/* ===========================================================================
+   TEMA CLARO — legibilidade dos avisos/alertas (fundo pergaminho).
    Os banners de status (assinatura, mensagens, erros) usam tons 200–300 do
-   Tailwind, desenhados para fundo escuro. No pergaminho do tema claro eles
-   somem. Aqui escurecemos só o TEXTO dos alertas (rose/amber/emerald/sky) para
-   contraste AA, sem mexer no tema escuro. Regras fora de @layer para vencerem as
-   utilities do Tailwind. Replicado no "system" quando o SO está em modo claro.
-   --------------------------------------------------------------------------- */
-[data-theme="light"] .text-rose-200,
-[data-theme="light"] .text-rose-300 { color: #be123c; }       /* rose-700 */
-[data-theme="light"] .hover\:text-rose-100:hover,
-[data-theme="light"] .hover\:text-rose-200:hover { color: #9f1239; } /* rose-800 */
-[data-theme="light"] .text-amber-200,
-[data-theme="light"] .text-amber-300 { color: #b45309; }      /* amber-700 */
-[data-theme="light"] .text-emerald-200,
-[data-theme="light"] .text-emerald-300 { color: #047857; }    /* emerald-700 */
-[data-theme="light"] .text-sky-200,
-[data-theme="light"] .text-sky-300 { color: #0369a1; }        /* sky-700 */
+   Tailwind, desenhados para fundo escuro — somem no claro.
+   (1) TEXTO: sobrescrevemos as VARIÁVEIS de cor do Tailwind (rose/amber/emerald/
+       sky 100–300) → escurece o tom base E as variantes de opacidade (/60 /70
+       /80) de uma vez, pois as utilities usam var(--color-*).
+   (2) FUNDOS: reforça os tons de alerta (-500 a 10–12%) para lerem como
+       superfície distinta no pergaminho.
+   Aplicado no [data-theme="light"] e no "system" quando o SO está claro.
+   Regras fora de @layer p/ vencerem as utilities. Tema escuro (:root) intacto.
+   =========================================================================== */
+[data-theme="light"] {
+  --color-rose-100: #9f1239; --color-rose-200: #be123c; --color-rose-300: #be123c;
+  --color-amber-100: #92400e; --color-amber-200: #b45309; --color-amber-300: #b45309;
+  --color-emerald-100: #065f46; --color-emerald-200: #047857; --color-emerald-300: #047857;
+  --color-sky-100: #075985; --color-sky-200: #0369a1; --color-sky-300: #0369a1;
+}
+[data-theme="light"] .bg-rose-500\/10,
+[data-theme="light"] .bg-rose-500\/12 { background-color: color-mix(in oklab, var(--color-rose-500) 15%, transparent); }
+[data-theme="light"] .bg-amber-500\/10 { background-color: color-mix(in oklab, var(--color-amber-500) 18%, transparent); }
+[data-theme="light"] .bg-emerald-500\/10,
+[data-theme="light"] .bg-emerald-500\/12 { background-color: color-mix(in oklab, var(--color-emerald-500) 15%, transparent); }
+[data-theme="light"] .bg-sky-500\/10,
+[data-theme="light"] .bg-sky-500\/12 { background-color: color-mix(in oklab, var(--color-sky-500) 15%, transparent); }
 
 @media (prefers-color-scheme: light) {
-  [data-theme="system"] .text-rose-200,
-  [data-theme="system"] .text-rose-300 { color: #be123c; }
-  [data-theme="system"] .hover\:text-rose-100:hover,
-  [data-theme="system"] .hover\:text-rose-200:hover { color: #9f1239; }
-  [data-theme="system"] .text-amber-200,
-  [data-theme="system"] .text-amber-300 { color: #b45309; }
-  [data-theme="system"] .text-emerald-200,
-  [data-theme="system"] .text-emerald-300 { color: #047857; }
-  [data-theme="system"] .text-sky-200,
-  [data-theme="system"] .text-sky-300 { color: #0369a1; }
+  [data-theme="system"] {
+    --color-rose-100: #9f1239; --color-rose-200: #be123c; --color-rose-300: #be123c;
+    --color-amber-100: #92400e; --color-amber-200: #b45309; --color-amber-300: #b45309;
+    --color-emerald-100: #065f46; --color-emerald-200: #047857; --color-emerald-300: #047857;
+    --color-sky-100: #075985; --color-sky-200: #0369a1; --color-sky-300: #0369a1;
+  }
+  [data-theme="system"] .bg-rose-500\/10,
+  [data-theme="system"] .bg-rose-500\/12 { background-color: color-mix(in oklab, var(--color-rose-500) 15%, transparent); }
+  [data-theme="system"] .bg-amber-500\/10 { background-color: color-mix(in oklab, var(--color-amber-500) 18%, transparent); }
+  [data-theme="system"] .bg-emerald-500\/10,
+  [data-theme="system"] .bg-emerald-500\/12 { background-color: color-mix(in oklab, var(--color-emerald-500) 15%, transparent); }
+  [data-theme="system"] .bg-sky-500\/10,
+  [data-theme="system"] .bg-sky-500\/12 { background-color: color-mix(in oklab, var(--color-sky-500) 15%, transparent); }
 }
