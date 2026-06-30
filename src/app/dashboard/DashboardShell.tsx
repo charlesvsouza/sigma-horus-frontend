@@ -6,9 +6,42 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import CommandPalette, { type Command } from '@/components/command-palette';
+import {
+  LayoutDashboard, CircleUser, BookOpen, Users, Database, Briefcase, Crown, Wallet,
+  ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
+  MessageSquare, Contact, HeartHandshake, Settings, KeyRound, Gem, Plug, ScrollText,
+  PanelLeft, PanelLeftClose, Circle, type LucideIcon,
+} from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
 interface NavGroup { category: string; items: NavItem[]; }
+
+// Um ícone (Lucide) por destino do menu. Mantido no cliente porque componentes
+// não atravessam a fronteira RSC; o servidor passa só href/label.
+const NAV_ICONS: Record<string, LucideIcon> = {
+  '/dashboard': LayoutDashboard,
+  '/dashboard/portal': CircleUser,
+  '/manual': BookOpen,
+  '/dashboard/membros': Users,
+  '/dashboard/cadastros': Database,
+  '/dashboard/cargos': Briefcase,
+  '/dashboard/veneralato': Crown,
+  '/dashboard/contas': Wallet,
+  '/dashboard/cobrancas': ReceiptText,
+  '/dashboard/pagamentos': CreditCard,
+  '/dashboard/relatorios': ChartColumn,
+  '/dashboard/relatorios/fechamento': BookCheck,
+  '/dashboard/sessoes': CalendarDays,
+  '/dashboard/documentos': FolderClosed,
+  '/dashboard/comunicacao': MessageSquare,
+  '/dashboard/hospitalaria/irmaos': Contact,
+  '/dashboard/hospitalaria/campanhas': HeartHandshake,
+  '/dashboard/configuracoes': Settings,
+  '/dashboard/configuracoes/usuarios': KeyRound,
+  '/dashboard/assinatura': Gem,
+  '/dashboard/integracoes': Plug,
+  '/dashboard/auditoria': ScrollText,
+};
 
 interface Props {
   groups: NavGroup[];
@@ -37,16 +70,27 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [rail, setRail] = useState(false); // sidebar só-ícone no desktop
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem('sh.nav.collapsed');
+      const railSaved = localStorage.getItem('sigma.sidebar.rail') === '1';
       // Init hidratação-safe a partir do localStorage (só existe no cliente);
       // não é o fetch-on-mount que a regra mira.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved) setCollapsed(JSON.parse(saved));
+      if (railSaved) setRail(true);
     } catch {}
   }, []);
+
+  function toggleRail() {
+    setRail((r) => {
+      const next = !r;
+      try { localStorage.setItem('sigma.sidebar.rail', next ? '1' : '0'); } catch {}
+      return next;
+    });
+  }
 
   // Anti-bfcache: ao voltar pelo navegador, se a página vier do cache de
   // back/forward, recarrega para revalidar a sessão (após "Sair", o guard do
@@ -108,10 +152,10 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
         ) : null}
 
         <aside
-          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/[6%] bg-sigma-blue-dark/95 transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/[6%] bg-sigma-blue-dark/95 transition-[transform,width] duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${rail ? 'lg:w-16' : ''} ${open ? 'translate-x-0' : '-translate-x-full'}`}
         >
-          <div className="flex items-center justify-between border-b border-white/[5%] px-6 py-5">
-            <Link href="/dashboard" className="flex items-center gap-3">
+          <div className={`flex items-center justify-between border-b border-white/[5%] py-5 ${rail ? 'lg:justify-center lg:px-0' : 'px-6'}`}>
+            <Link href="/dashboard" className={`flex items-center gap-3 ${rail ? 'lg:gap-0' : ''}`}>
               <Image
                 src="/icon.png"
                 alt=""
@@ -120,7 +164,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                 height={512}
                 className="h-9 w-auto"
               />
-              <span className="block">
+              <span className={`block ${rail ? 'lg:hidden' : ''}`}>
                 <span className="block font-display text-sm font-semibold tracking-[0.18em] text-sand-light">SIGMA HORUS</span>
                 <span className="mt-0.5 block text-xs text-sand-dark">A tesouraria no prumo</span>
               </span>
@@ -136,14 +180,14 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
             </button>
           </div>
 
-          <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-6">
+          <nav className={`flex-1 space-y-5 overflow-y-auto py-6 ${rail ? 'px-4 lg:px-2' : 'px-4'}`}>
             {groups.map((group) => {
               const isCollapsed = collapsed[group.category];
               return (
                 <div key={group.category}>
                   <button
                     onClick={() => toggleCategory(group.category)}
-                    className="flex w-full items-center justify-between px-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-sand-dark/70 transition hover:text-sand"
+                    className={`flex w-full items-center justify-between px-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-sand-dark/70 transition hover:text-sand ${rail ? 'lg:hidden' : ''}`}
                   >
                     {group.category}
                     <svg
@@ -153,32 +197,47 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                  {!isCollapsed ? (
-                    <div className="mt-2 space-y-0.5">
+                  <div className={`mt-2 space-y-0.5 ${isCollapsed ? 'hidden' : ''} ${rail ? 'lg:block! lg:mt-0' : ''}`}>
                       {group.items.map((item) => {
                         const active = pathname === item.href;
+                        const Icon = NAV_ICONS[item.href] ?? Circle;
                         return (
                           <Link
                             key={item.href}
                             href={item.href}
                             onClick={() => setOpen(false)}
-                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${
+                            title={rail ? item.label : undefined}
+                            aria-label={item.label}
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${rail ? 'lg:justify-center lg:px-0' : ''} ${
                               active
                                 ? 'bg-gold/10 font-medium text-gold'
                                 : 'text-sand/70 hover:bg-white/[3%] hover:text-sand'
                             }`}
                           >
-                            <span className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-150 ${active ? 'bg-gold' : 'bg-white/[8%]'}`} />
-                            {item.label}
+                            <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-gold' : 'text-sand-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                            <span className={rail ? 'lg:hidden' : ''}>{item.label}</span>
                           </Link>
                         );
                       })}
-                    </div>
-                  ) : null}
+                  </div>
                 </div>
               );
             })}
           </nav>
+
+          <div className="hidden border-t border-white/[5%] p-3 lg:block">
+            <button
+              onClick={toggleRail}
+              title={rail ? 'Expandir menu' : 'Recolher menu'}
+              aria-label={rail ? 'Expandir menu' : 'Recolher menu'}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sand-dark transition-colors hover:bg-white/[3%] hover:text-sand ${rail ? 'justify-center px-0' : ''}`}
+            >
+              {rail
+                ? <PanelLeft className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                : <PanelLeftClose className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden="true" />}
+              <span className={rail ? 'hidden' : ''}>Recolher menu</span>
+            </button>
+          </div>
         </aside>
 
         <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-0">
