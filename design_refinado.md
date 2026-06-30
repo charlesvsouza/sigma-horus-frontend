@@ -113,19 +113,19 @@ crítica de produto contraindica isso como decisão padrão:
 - Falta um set de ícones distintos por item (hoje usamos bolinhas), coerente com a
   marca dourada. Projeto de design à parte, não orçado.
 
-Direção recomendada (substitui o hover-expand):
+Implementado (2026-06-30), substituindo o hover-expand:
 
-- Toggle persistente de colapso. Um botão fixa o estado expandido (260px) ou recolhido
-  (60px), salvo em `localStorage` (a infra `sh.nav.collapsed` já existe para os grupos).
-  Previsível, acessível, sem jank. Transição de largura 200-250ms ease-out.
-- No estado recolhido, só-ícone com tooltip e o item ativo destacado em ouro.
-- Submenus continuam como grupos-categoria colapsáveis na própria barra (modelo atual),
-  não como flyout sobreposto.
-- Hover-expand pode entrar depois como refinamento opcional, mas via overlay (a barra
-  cresce por cima do conteúdo, sem empurrar), respeitando `prefers-reduced-motion`.
-- Mobile permanece como está: drawer full com overlay no botão hambúrguer.
-- Pré-requisito real: definir a família de ícones e mapear os ~18 itens antes de
-  qualquer colapso só-ícone.
+- Ícones: família **Lucide** (`lucide-react`), 1 por destino (mapa `NAV_ICONS` por href),
+  18px / stroke 1.75, item ativo em ouro. Substituiu as bolinhas.
+- Sidebar **fixa** no desktop (`lg:sticky lg:top-0 lg:h-screen`): só o conteúdo rola.
+- **Rail colapsável** por toggle persistente (`sigma.sidebar.rail`): expandido (w-72) ou
+  recolhido só-ícone (`lg:w-16`) com tooltip; botão "Recolher menu" no rodapé. Sem jank.
+- **Acordeão single-open**: abrir uma categoria fecha a anterior; a categoria da rota
+  atual abre por padrão (`activeCategory`). Trocou o modelo multi-aberto (que poluía).
+- Mobile: drawer full com overlay (rail/acordeão não afetam o mobile).
+- Atalho de busca: paleta de comandos `Ctrl/Cmd+K` (`command-palette.tsx`) cobre o acesso
+  rápido a qualquer tela, então o acordeão não precisa manter várias categorias abertas.
+- Hover-expand fica como refinamento opcional futuro (via overlay, sem push).
 
 
 5. Cards, tabelas e tipografia
@@ -175,6 +175,11 @@ Onda 2+ (opcional, refinamento):
 [x] Paleta de comandos (Ctrl/Cmd+K) para navegar e buscar telas (eficiência diária).
 [x] Sidebar: ícones Lucide por item + fixa no desktop (sticky) + rail colapsável
     (só-ícone, toggle persistente, tooltips). Mobile drawer inalterado. (2026-06-30)
+[x] Menu acordeão single-open (abrir uma fecha a anterior; abre a categoria da rota
+    atual por padrão). Trocou o multi-aberto. (2026-06-30)
+[x] Seta "Voltar" (`router.back`) no manual, que usa o layout institucional. (2026-06-30)
+[x] Manual do usuário (v1.2): cap. 4 documenta ícones, menu fixo/recolhível, acordeão,
+    busca `Ctrl/Cmd+K` e tema (Escuro/Claro/Sistema). (2026-06-30)
 [ ] (Adiado, risco) Confirm dialog substituindo `window.confirm`. O refactor assíncrono
     em ações destrutivas (excluir membro, encerrar veneralato) é perigoso às cegas: um
     `await` esquecido remove a confirmação silenciosamente. Fazer só com iteração visual.
@@ -186,8 +191,10 @@ Onda 2+ (opcional, refinamento):
 
 Histórico: a versão anterior tratava o hover-expand da sidebar como decisão central; a
 crítica de produto recomendou priorizar o componente de alerta e o acabamento do tema
-claro (baixo risco, alto valor) e trocar o hover-expand por toggle de colapso. A Onda 1
-e a paleta de comandos foram implementadas (2026-06-30); a sidebar collapse e o confirm
-dialog ficaram adiados pelos motivos acima (dependência de ícones e risco em ações
-destrutivas). Estimativa de saúde após estas mudanças: ~33-34/40. Chegar a 38-40 exige
-o set de ícones, validação inline e iteração visual real (testes de usabilidade).
+claro e trocar o hover-expand por toggle de colapso. Entregue em 2026-06-30: Onda 1
+(alerta, tema claro, glass/sombra), paleta de comandos, **sidebar completa** (ícones
+Lucide + fixa + rail colapsável + acordeão single-open), seta de voltar no manual e o
+**manual v1.2** documentando temas e menus. Estimativa de saúde após estas mudanças:
+~34-36/40. Restam (precisam de iteração visual / decisão): confirm dialog em ações
+destrutivas, validação inline nos formulários, auditoria de cards (containers
+redundantes). Chegar a 38-40 depende desses itens + teste de usabilidade real.

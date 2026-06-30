@@ -190,6 +190,9 @@ o restante. A paleta inteira evoca deserto ao entardecer + céu noturno.
 - **Rail colapsável** (desktop): toggle persistente (`sigma.sidebar.rail`), `lg:w-16`
   só-ícone com tooltips; esconde wordmark/labels/headers de categoria (`lg:`). Mobile
   permanece como drawer full com overlay (rail não afeta o mobile).
+- **Acordeão single-open**: uma categoria aberta por vez (abrir uma fecha a anterior);
+  por padrão abre a categoria da rota atual (`activeCategory`).
+- Item ativo destacado em ouro. Ícone também em ouro no item ativo.
 
 ## Estados
 

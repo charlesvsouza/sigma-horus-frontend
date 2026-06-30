@@ -15,7 +15,8 @@ Crítica registrada em `design_refinado.md` (saúde ~28/40 → estimado ~33-34 a
 - ✅ **Tema claro — bordas/tabelas:** `border-white/x` → tinta escura (`sand-light`) no claro/system (cards e linhas de tabela legíveis no pergaminho); reforço de borda; `divide`.
 - ✅ **DESIGN alignment:** removidas as sombras do `Card` (elevação por tom); removido glassmorphism decorativo de `onboarding`/`trocar-senha` (mantido só no `login`).
 - ✅ **Command palette `Ctrl/Cmd+K`** (`components/command-palette.tsx` + botão "Buscar" no header do `DashboardShell`): navega/busca telas por teclado. `DESIGN.md` atualizado (Alert, no-shadow, tema claro, paleta).
-- ✅ **Sidebar (2026-06-30):** **ícones Lucide** por item (`lucide-react`, mapa `NAV_ICONS`), sidebar **fixa** no desktop (`lg:sticky lg:h-screen` — só o conteúdo rola) e **rail colapsável** só-ícone (toggle `sigma.sidebar.rail`, tooltips, botão "Recolher menu"); mobile drawer inalterado.
+- ✅ **Sidebar (2026-06-30):** **ícones Lucide** por item (`lucide-react`, mapa `NAV_ICONS`), sidebar **fixa** no desktop (`lg:sticky lg:h-screen` — só o conteúdo rola), **rail colapsável** só-ícone (toggle `sigma.sidebar.rail`, tooltips, botão "Recolher menu") e **acordeão single-open** (abrir uma categoria fecha a anterior; abre a categoria da rota atual por padrão, `activeCategory`). Mobile drawer inalterado.
+- ✅ **Manual (2026-06-30, v1.2):** seta **"Voltar"** (`router.back`) no topo (a `/manual` usa o layout institucional, sem o menu do dashboard); cap. 4 documenta ícones, menu fixo/recolhível, acordeão, busca `Ctrl/Cmd+K` e tema (Escuro/Claro/Sistema).
 - ⏳ **Adiados (com motivo, em `design_refinado.md`):** confirm dialog (refactor assíncrono em ações destrutivas é arriscado às cegas), `useTransition`/validação inline/auditoria de cards (backlog; precisa iteração visual no navegador).
 
 ## 🔧 REPARAÇÕES (status)
