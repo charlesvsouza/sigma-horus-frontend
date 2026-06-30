@@ -99,6 +99,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     sub = data.subscription;
   }
 
+  // Server Component: roda 1× por request; Date.now() é determinístico no escopo
+  // da request (falso-positivo da regra de impureza, que mira componentes cliente).
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const trialEnds = sub?.trialEndsAt ? sub.trialEndsAt.getTime() : null;
   const trialDaysLeft = trialEnds ? Math.ceil((trialEnds - now) / (24 * 60 * 60 * 1000)) : 0;

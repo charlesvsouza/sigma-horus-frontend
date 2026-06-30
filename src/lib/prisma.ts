@@ -8,13 +8,27 @@ const globalForPrisma = globalThis as unknown as {
   prismaAdmin?: PrismaClient;
 };
 
+// Pooling para serverless (Vercel) sobre Postgres (Railway): cada instância de
+// função abre seu próprio pool, então o nº de conexões = (instâncias) × (max).
+// Sem limite, o adapter cai no default do node-postgres (10/instância) e pode
+// estourar o max_connections do Postgres sob fan-out. Mantemos o pool pequeno e
+// liberamos conexões ociosas rápido; `max` é calibrável por env sob carga
+// (DB_POOL_MAX) sem alterar código. Sob carga alta o ideal é um pooler externo
+// (pgBouncer) — ver sigmahorus_documentacao.md §10.
+const POOL_MAX = Number(process.env.DB_POOL_MAX) || 5;
+const poolTuning = {
+  max: POOL_MAX,
+  idleTimeoutMillis: 10_000, // devolve conexões ociosas ao Postgres rápido
+  connectionTimeoutMillis: 10_000, // falha rápido em vez de pendurar a request
+};
+
 // Tenant client: connects as the NOBYPASSRLS role (`sigma_app`) via
 // APP_DATABASE_URL. Every query is subject to Row-Level Security and only sees
 // rows of the current lodge, which must be set per request via `withTenant`.
 export const prisma =
   globalForPrisma.prisma ??
   new GeneratedPrismaClient({
-    adapter: new PrismaPg({ connectionString: process.env.APP_DATABASE_URL }),
+    adapter: new PrismaPg({ connectionString: process.env.APP_DATABASE_URL, ...poolTuning }),
   });
 
 // Admin client: connects as the superuser (bypasses RLS) via DATABASE_URL. Use
@@ -23,7 +37,7 @@ export const prisma =
 export const prismaAdmin =
   globalForPrisma.prismaAdmin ??
   new GeneratedPrismaClient({
-    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL, ...poolTuning }),
   });
 
 /**

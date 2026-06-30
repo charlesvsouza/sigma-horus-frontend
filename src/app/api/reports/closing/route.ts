@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { reconcileMemberBalances } from '@/lib/closing';
 import { NextResponse } from 'next/server';
 
 // Suíte de relatórios de fechamento do veneralato (formato livro caixa):
@@ -142,29 +143,16 @@ export async function GET(request: Request) {
   const totalCobrancas = cobrancas.reduce((s, c) => s + c.amount, 0);
 
   // ---------- 6. Saldo dos Irmãos ----------
-  // Reconciliação por documento "até a data": débito = cobranças (Account
-  // RECEIVABLE) já vencidas até `to`; crédito = pagamentos cujo recebível também
-  // já venceu até `to`. Pagamento antecipado (conta a vencer depois de `to`) é
-  // ignorado dos dois lados — antes distorcia o saldo (crédito sem o débito par).
-  const byMember = new Map<string, { name: string; debito: number; credito: number }>();
-  for (const a of data.accounts) {
-    if (!a.member || a.type !== 'RECEIVABLE' || a.dueDate > to) continue;
-    const m = byMember.get(a.member.id) ?? { name: a.member.name, debito: 0, credito: 0 };
-    m.debito += Number(a.amount);
-    byMember.set(a.member.id, m);
-  }
-  for (const p of data.payments) {
-    if (!p.member || !isRevenue(p.account?.type) || p.paidAt > to) continue;
-    // Pagamento ligado a recebível ainda não vencido (antecipado) fica de fora,
-    // mantendo débito e crédito na mesma janela "até `to`".
-    if (p.account?.dueDate && p.account.dueDate > to) continue;
-    const m = byMember.get(p.member.id) ?? { name: p.member.name, debito: 0, credito: 0 };
-    m.credito += Number(p.amount);
-    byMember.set(p.member.id, m);
-  }
-  const saldoIrmaos = [...byMember.values()]
-    .map((m) => ({ name: m.name, debito: m.debito, credito: m.credito, saldo: m.debito - m.credito }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  // Reconciliação por documento "até a data" (lógica pura em lib/closing.ts).
+  const saldoIrmaos = reconcileMemberBalances(
+    data.accounts
+      .filter((a) => a.member)
+      .map((a) => ({ memberId: a.member!.id, memberName: a.member!.name, type: a.type, amount: Number(a.amount), dueDate: a.dueDate })),
+    data.payments
+      .filter((p) => p.member)
+      .map((p) => ({ memberId: p.member!.id, memberName: p.member!.name, amount: Number(p.amount), paidAt: p.paidAt, accountType: p.account?.type ?? null, accountDueDate: p.account?.dueDate ?? null })),
+    to,
+  );
 
   return NextResponse.json({
     meta: {

@@ -26,6 +26,9 @@ export default function LoginPage() {
   useEffect(() => {
     const saved = localStorage.getItem(REMEMBER_KEY);
     if (saved) {
+      // Init hidratação-safe do e-mail lembrado (localStorage só no cliente);
+      // não é fetch-on-mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEmail(saved);
       setRemember(true);
     }

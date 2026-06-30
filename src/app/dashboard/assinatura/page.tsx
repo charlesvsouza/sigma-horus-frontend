@@ -27,6 +27,8 @@ export default async function AssinaturaPage() {
       )
     : null;
 
+  // Server Component: Date.now() roda 1× por request (falso-positivo da regra).
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const trialEnds = sub?.trialEndsAt?.getTime() ?? null;
   const isTrialing = sub?.status === 'trialing' && trialEnds !== null && trialEnds > now;

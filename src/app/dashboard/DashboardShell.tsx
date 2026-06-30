@@ -40,6 +40,9 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
   useEffect(() => {
     try {
       const saved = localStorage.getItem('sh.nav.collapsed');
+      // Init hidratação-safe a partir do localStorage (só existe no cliente);
+      // não é o fetch-on-mount que a regra mira.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved) setCollapsed(JSON.parse(saved));
     } catch {}
   }, []);

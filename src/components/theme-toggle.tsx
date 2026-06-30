@@ -25,6 +25,9 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     const saved = (typeof localStorage !== 'undefined' && localStorage.getItem('sigma-theme')) as Theme | null;
+    // Init hidratação-safe do tema a partir do localStorage (só no cliente);
+    // não é fetch-on-mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(saved === 'light' || saved === 'system' ? saved : 'dark');
   }, []);
 

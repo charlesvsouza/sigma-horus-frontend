@@ -30,6 +30,9 @@ export default function OnboardingPage() {
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('invite');
     if (code) {
+      // Init a partir do parâmetro de URL no cliente (dispensa Suspense);
+      // não é fetch-on-mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm((f) => ({ ...f, invite: code.trim().toUpperCase() }));
       setInviteFromUrl(true);
     }
