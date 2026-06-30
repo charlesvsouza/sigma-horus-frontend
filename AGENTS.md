@@ -9,11 +9,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `75b7d45` + alterações locais NÃO commitadas da sessão 2026-06-29)
-- ✅ A sessão 2026-06-28 (acesso do obreiro, encerramento, tema claro) foi **commitada** (`e24ec1d`…`75b7d45`); working tree estava limpo antes desta sessão.
-- ⚠️ **Sessão 2026-06-29 com mudanças não commitadas** (valores dos planos, Saldo dos Irmãos, login, tonalidade) — ver bloco abaixo. `npx tsc --noEmit` ✅ limpo no app (erros só em `.test.ts`).
+## Estado atual (`main`, sessão 2026-06-29)
+- ✅ Lote 1 da sessão (valores 80/110/170 + Stripe LIVE, Saldo dos Irmãos, login, tonalidade) **commitado e no ar** (`4c18ed6`, deploy Vercel Ready).
+- ✅ **Item 5 (backlog técnico)** commitado em lotes (`23d2c1c`…`32472bf`) — ver bloco abaixo. `npx tsc` limpo (app), `npm test` 24/24, `npx next build` ✅, **`set-state-in-effect` = 0**.
 - Banco: **20/20 migrations** no Railway, RLS ativo. 24 modelos; `User` liga a `Member` (`memberId`). **Nenhuma migration nova nesta sessão.**
 - Next.js 16.2.9, next-auth v5 beta.31. Deploy automático Vercel. Domínio `sigmahorus.com.br` no ar (SSL ok).
+
+## Item 5 (backlog técnico) concluído (2026-06-29) — NÃO refazer
+- ✅ **5A Pooling** (`lib/prisma.ts`): `PrismaPg` com `max` (env `DB_POOL_MAX`, default 5) + `idleTimeoutMillis`/`connectionTimeoutMillis`.
+- ✅ **5B Testes**: `npm test` = `node --import ./test/setup.mjs --test "src/**/*.test.ts"` (runner nativo `node:test`; loader `test/loader.mjs` resolve alias `@/` + extensões). Reconciliação do Saldo dos Irmãos extraída p/ `lib/closing.ts` (puro) + `lib/closing.test.ts` (6 casos, cobre o pagamento antecipado). **24 testes verdes.**
+- ✅ **5C `set-state-in-effect` ZERADO**: ~20 páginas do dashboard migradas p/ **Server Components**. Padrão: `page.tsx` (async, `auth()`+`withTenant`/`prismaAdmin`, mapeia p/ tipos serializáveis) + `XClient.tsx` (`'use client'`, recebe dados por props, mutações via fetch + `router.refresh()`). Migradas: cargos, auditoria, sessoes, sessoes/[id], comunicacao, documentos, contas, pagamentos, cadastros, usuarios, permissoes (matriz editável com descartar=reset), hospitalaria/campanhas (detalhe on-demand + `reload()`), integracoes (status Asaas+messaging reconstruídos no server), configuracoes, cobrancas. **`relatorios/fechamento`**: período via `searchParams` (`?from&to`), "Aplicar" navega pela URL; computação extraída p/ `lib/closing-report.ts` (route + page reusam). Disables **justificados** (não é o anti-padrão): init localStorage/URL (`DashboardShell`, `login`, `theme-toggle`, `onboarding`), `react-hooks/purity` em server components (`layout`, `assinatura` — `Date.now()`), e `comecar/concluir` (fluxo público pós-checkout Stripe).
+- ⏳ **Não tocado (fora do item 5)**: ~11 `no-explicit-any` + 1 `no-html-link-for-pages` (lint pré-existente, não bloqueia build).
 
 ## Concluído nesta sessão (2026-06-29) — NÃO refazer
 - ✅ **Valores dos planos calibrados:** Oficina **R$ 80**, Loja **R$ 110**, Potência **R$ 170** (`lib/plans.ts`); atualizado em manual (`manual-book.tsx`), compliance e docs. **6 Prices LIVE materializados** no Stripe (lookup_keys versionadas: mês `_v2`, ano `_v3`; anual = 12× −10%). IDs: oficina `price_1TnphG…`/`…phH…`; loja `…phI…`(mês)/`…phI…8sPu`(ano); potência `…phJ…`/`…phK…`. Assinaturas antigas **grandfathered**.
