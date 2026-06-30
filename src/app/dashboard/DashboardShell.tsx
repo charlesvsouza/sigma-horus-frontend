@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
+import CommandPalette, { type Command } from '@/components/command-palette';
 
 interface NavItem { href: string; label: string; }
 interface NavGroup { category: string; items: NavItem[]; }
@@ -74,6 +75,13 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
     const map: Record<string, string> = { '/dashboard': 'Painel' };
     for (const g of groups) for (const it of g.items) map[it.href] = it.label;
     return map;
+  }, [groups]);
+
+  // Comandos (telas) para a paleta Ctrl/Cmd+K.
+  const commands = useMemo<Command[]>(() => {
+    const list: Command[] = [{ label: 'Painel', href: '/dashboard', group: 'Geral' }];
+    for (const g of groups) for (const it of g.items) list.push({ label: it.label, href: it.href, group: g.category });
+    return list;
   }, [groups]);
 
   const crumbs = useMemo(() => {
@@ -192,6 +200,18 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
             </div>
 
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => window.dispatchEvent(new Event('sigma:open-cmdk'))}
+                className="hidden items-center gap-2 rounded-full border border-white/[8%] px-3 py-1.5 text-xs text-sand-dark transition hover:border-gold/40 hover:text-sand sm:flex"
+                aria-label="Buscar (Ctrl ou Cmd + K)"
+                title="Buscar telas e ações"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+                </svg>
+                <span className="hidden md:inline">Buscar</span>
+                <kbd className="hidden rounded border border-white/15 px-1.5 py-0.5 font-mono text-[0.6rem] md:inline">⌘K</kbd>
+              </button>
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-medium text-sand-light">{userName}</p>
                 <p className="text-xs text-gold/70">{ROLE_LABEL[role] ?? role}</p>
@@ -228,6 +248,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
           <div className="flex-1 bg-sigma-app">{children}</div>
         </div>
       </div>
+      <CommandPalette commands={commands} />
     </div>
   );
 }
