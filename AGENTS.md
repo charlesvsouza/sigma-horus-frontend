@@ -9,6 +9,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
+## 🔧 PRÓXIMAS REPARAÇÕES (iniciar ao retomar — pedido do dono 2026-06-29)
+1. **Tema claro — legibilidade dos avisos/alertas.** No tema claro (pergaminho), textos de status em tons claros tunados para o escuro ficam ilegíveis: o **banner de assinatura** ("sem assinatura"/trial) em **rosa** (`dashboard/layout.tsx`) e textos em **vermelho** (`text-rose-300`/`rose-200`), além de `amber-200`/`emerald-300`/`sky-200` e utilitários `bg-*-500/10` + `border-white/[x%]`. **Solução:** tornar os tokens de alerta theme-aware — overrides em `[data-theme="light"]` (e no `@media prefers-color-scheme:light [data-theme="system"]`) escurecendo os tons de texto de alerta (rose/amber/emerald/sky → 600/700) e ajustando os fundos. Avaliar criar classes semânticas de alerta (`.alert-danger/-warn/-ok`) em `globals.css` em vez de utilitários soltos. Varrer com `grep -rE "rose-(200|300)|amber-200|emerald-300|sky-200"`.
+2. **Tema "Sistema" herdar o SO.** Implementação atual está correta em padrão web (`data-theme="system"` + `@media (prefers-color-scheme)`), que já cobre **Windows 11 e macOS** — `prefers-color-scheme` segue o *modo do aplicativo* do SO. **Validar** no Windows 11 do dono (pode ser o modo de aplicativo do Windows em Escuro, ou override do navegador). **Não** precisa de código específico de Mac. Se quiser robustez extra, adicionar listener `matchMedia('(prefers-color-scheme: dark)')` só para telemetria/UX — mas o CSS já atualiza ao vivo.
+
+> ✅ **Lint fora do escopo — RESOLVIDO (2026-06-29):** ESLint 100% limpo (exit 0). `where:any`→`Prisma.*WhereInput`/`DateTimeFilter`; `catch(error)`→`catch`; `<a>`→`<Link>`. `any` de next-auth/Stripe com disable justificado (tipar quebra o build / SDK v22 move `current_period_*`).
+
+
 ## Estado atual (`main`, sessão 2026-06-29)
 - ✅ Lote 1 da sessão (valores 80/110/170 + Stripe LIVE, Saldo dos Irmãos, login, tonalidade) **commitado e no ar** (`4c18ed6`, deploy Vercel Ready).
 - ✅ **Item 5 (backlog técnico)** commitado em lotes (`23d2c1c`…`32472bf`) — ver bloco abaixo. `npx tsc` limpo (app), `npm test` 24/24, `npx next build` ✅, **`set-state-in-effect` = 0**.

@@ -53,6 +53,9 @@ export const authOptions = {
   ],
   pages: { signIn: '/login' },
   callbacks: {
+    // Tipos dos callbacks do next-auth v5 sem module augmentation (o app usa
+    // casts explícitos abaixo em vez de aumentar Session/JWT/User globalmente).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async jwt({ token, user, trigger }: { token: any; user?: any; trigger?: string }) {
       if (user) {
         token.id = user.id;
@@ -67,6 +70,7 @@ export const authOptions = {
       }
       return token;
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
         session.user.id = token.id as string;

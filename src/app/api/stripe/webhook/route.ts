@@ -33,6 +33,9 @@ export async function POST(request: Request) {
         const plan = obj.metadata?.plan ?? 'oficina';
         const interval = obj.metadata?.interval === 'year' ? 'year' : 'month';
         if (lodgeId) {
+          // SDK v22 tipa current_period_* dentro de items.data[]; aqui lemos no
+          // root (compat. com a forma do objeto). Tipar quebraria o build.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const sub = await stripeObj.subscriptions.retrieve(obj.subscription) as any;
           await prismaAdmin.subscription.update({
             where: { lodgeId },
@@ -95,6 +98,7 @@ export async function POST(request: Request) {
     case 'invoice.paid': {
       const subId = obj.subscription;
       if (subId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sub = await stripeObj.subscriptions.retrieve(subId) as any;
         const lodgeId = sub.metadata?.lodgeId;
         if (lodgeId) {

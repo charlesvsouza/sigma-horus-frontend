@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import { Prisma } from '@/generated/prisma/client';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -13,15 +14,16 @@ export async function GET(request: Request) {
   const from = searchParams.get('from');
   const to = searchParams.get('to');
 
-  const where: any = { lodgeId: String(lodgeId) };
+  const where: Prisma.PaymentWhereInput = { lodgeId: String(lodgeId) };
   if (from || to) {
-    where.paidAt = {};
-    if (from) where.paidAt.gte = new Date(from);
+    const paidAt: Prisma.DateTimeFilter = {};
+    if (from) paidAt.gte = new Date(from);
     if (to) {
       const end = new Date(to);
       end.setHours(23, 59, 59, 999);
-      where.paidAt.lte = end;
+      paidAt.lte = end;
     }
+    where.paidAt = paidAt;
   }
 
   const payments = await withTenant(String(lodgeId), (db) =>

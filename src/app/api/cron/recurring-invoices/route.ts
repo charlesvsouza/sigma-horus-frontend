@@ -83,7 +83,7 @@ export async function POST() {
         });
       });
       processed.push(invoice.id);
-    } catch (error) {
+    } catch {
       errors.push(invoice.id);
     }
   }

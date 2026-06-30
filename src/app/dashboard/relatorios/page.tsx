@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import { Prisma } from '@/generated/prisma/client';
 import { FiltrosRelatorios } from './filtros';
 import { BotaoExportar } from './exportar';
 
@@ -29,28 +30,21 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
     );
   }
 
-  const accountWhere: any = { lodgeId: String(lodgeId) };
-  const invoiceWhere: any = { lodgeId: String(lodgeId) };
-  const paymentWhere: any = { lodgeId: String(lodgeId) };
+  const accountWhere: Prisma.AccountWhereInput = { lodgeId: String(lodgeId) };
+  const invoiceWhere: Prisma.InvoiceWhereInput = { lodgeId: String(lodgeId) };
+  const paymentWhere: Prisma.PaymentWhereInput = { lodgeId: String(lodgeId) };
 
   if (fromDate || toDate) {
-    if (fromDate || toDate) {
-      accountWhere.dueDate = {};
-      invoiceWhere.dueDate = {};
-      paymentWhere.paidAt = {};
-    }
-    if (fromDate) {
-      accountWhere.dueDate.gte = fromDate;
-      invoiceWhere.dueDate.gte = fromDate;
-      paymentWhere.paidAt.gte = fromDate;
-    }
+    const range: Prisma.DateTimeFilter = {};
+    if (fromDate) range.gte = fromDate;
     if (toDate) {
       const end = new Date(toDate);
       end.setHours(23, 59, 59, 999);
-      accountWhere.dueDate.lte = end;
-      invoiceWhere.dueDate.lte = end;
-      paymentWhere.paidAt.lte = end;
+      range.lte = end;
     }
+    accountWhere.dueDate = range;
+    invoiceWhere.dueDate = range;
+    paymentWhere.paidAt = range;
   }
 
   const [accounts, invoices, payments] = await withTenant(String(lodgeId), (db) =>

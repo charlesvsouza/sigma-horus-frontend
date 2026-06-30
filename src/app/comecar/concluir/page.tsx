@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BRAZILIAN_RITES } from '@/lib/masonic-reference';
 import { PLANS } from '@/lib/plans';
@@ -59,14 +60,14 @@ function Concluir() {
   if (loadError) {
     return (
       <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-6 text-sm text-rose-200">
-        {loadError} <a href="/#planos" className="font-medium underline">Voltar aos planos</a>
+        {loadError} <Link href="/#planos" className="font-medium underline">Voltar aos planos</Link>
       </div>
     );
   }
   if (summary?.alreadyUsed) {
     return (
       <div className="rounded-xl border border-gold/30 bg-gold/10 p-6 text-sm text-gold">
-        Este pagamento já criou uma loja. <a href="/login" className="font-medium underline">Fazer login</a>
+        Este pagamento já criou uma loja. <Link href="/login" className="font-medium underline">Fazer login</Link>
       </div>
     );
   }
