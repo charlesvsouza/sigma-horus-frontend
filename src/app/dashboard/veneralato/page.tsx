@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, inputClass } from '@/components/ui';
+import { Button, inputClass, Alert } from '@/components/ui';
 
 interface TermItem { id: string; title: string; startDate: string; endDate?: string | null; status: string; _count: { memberOffices: number }; }
 interface MemberOfficeItem { id: string; office: { id: string; name: string }; member: { id: string; name: string }; }
@@ -136,7 +136,7 @@ export default function VeneralatoPage() {
           <p className="mt-1 text-sm text-sand-dark">Gerencie períodos de gestão, cargos dos membros e fechamento de caixa.</p>
         </div>
 
-        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
+        {message ? <Alert intent="warn">{message}</Alert> : null}
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Novo período</h2>

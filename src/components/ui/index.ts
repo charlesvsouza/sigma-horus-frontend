@@ -7,3 +7,5 @@ export { Input } from './input';
 export { inputClass, inputBase, inputBorder } from './field-styles';
 export { Skeleton, SkeletonCard } from './skeleton';
 export { EmptyState } from './empty-state';
+export { Alert } from './alert';
+export type { AlertIntent } from './alert';

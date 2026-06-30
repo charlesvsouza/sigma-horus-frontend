@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, Skeleton, inputClass } from '@/components/ui';
+import { Button, EmptyState, Skeleton, inputClass, Alert } from '@/components/ui';
 
 interface Donation { id: string; donorName?: string | null; anonymous: boolean; amount: number; receivedAt: string; note?: string | null; }
 interface Campaign {
@@ -86,7 +86,7 @@ export default function CampanhasClient({ items, tronco, channels }: { items: Ca
           )}
         </section>
 
-        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
+        {message ? <Alert intent="warn">{message}</Alert> : null}
 
         {creating ? (
           <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">

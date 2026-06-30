@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { Alert } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 
 interface Item { id: string; name: string; order: number; }
@@ -130,7 +131,7 @@ export default function CadastrosClient({ rites, powers, chartAccounts }: { rite
           </button>
         </div>
 
-        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
+        {message ? <Alert intent="warn">{message}</Alert> : null}
 
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">

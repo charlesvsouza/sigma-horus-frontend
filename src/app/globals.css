@@ -262,3 +262,33 @@
   [data-theme="system"] .bg-sky-500\/10,
   [data-theme="system"] .bg-sky-500\/12 { background-color: color-mix(in oklab, var(--color-sky-500) 15%, transparent); }
 }
+
+/* ===========================================================================
+   TEMA CLARO — bordas e separadores. No claro, border-white/x é branco sobre
+   pergaminho (invisível). Trocamos por tinta escura (sand-light = #2A261D) para
+   cards e linhas de tabela lerem com contraste AA. Borda de card reforçada
+   (~12-16%) conforme a crítica. Fora de @layer p/ vencer as utilities.
+   =========================================================================== */
+[data-theme="light"] .border-white\/\[5\%\] { border-color: color-mix(in srgb, var(--sigma-sand-light) 10%, transparent); }
+[data-theme="light"] .border-white\/\[6\%\] { border-color: color-mix(in srgb, var(--sigma-sand-light) 12%, transparent); }
+[data-theme="light"] .border-white\/\[8\%\] { border-color: color-mix(in srgb, var(--sigma-sand-light) 14%, transparent); }
+[data-theme="light"] .border-white\/\[10\%\],
+[data-theme="light"] .border-white\/10 { border-color: color-mix(in srgb, var(--sigma-sand-light) 16%, transparent); }
+[data-theme="light"] .border-white\/\[12\%\] { border-color: color-mix(in srgb, var(--sigma-sand-light) 18%, transparent); }
+[data-theme="light"] .bg-white\/\[3\%\],
+[data-theme="light"] .hover\:bg-white\/\[3\%\]:hover { background-color: color-mix(in srgb, var(--sigma-sand-light) 5%, transparent); }
+[data-theme="light"] .divide-white\/\[5\%\] > :not([hidden]) ~ :not([hidden]) { border-color: color-mix(in srgb, var(--sigma-sand-light) 10%, transparent); }
+[data-theme="light"] .divide-white\/\[6\%\] > :not([hidden]) ~ :not([hidden]) { border-color: color-mix(in srgb, var(--sigma-sand-light) 12%, transparent); }
+
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] .border-white\/\[5\%\] { border-color: color-mix(in srgb, var(--sigma-sand-light) 10%, transparent); }
+  [data-theme="system"] .border-white\/\[6\%\] { border-color: color-mix(in srgb, var(--sigma-sand-light) 12%, transparent); }
+  [data-theme="system"] .border-white\/\[8\%\] { border-color: color-mix(in srgb, var(--sigma-sand-light) 14%, transparent); }
+  [data-theme="system"] .border-white\/\[10\%\],
+  [data-theme="system"] .border-white\/10 { border-color: color-mix(in srgb, var(--sigma-sand-light) 16%, transparent); }
+  [data-theme="system"] .border-white\/\[12\%\] { border-color: color-mix(in srgb, var(--sigma-sand-light) 18%, transparent); }
+  [data-theme="system"] .bg-white\/\[3\%\],
+  [data-theme="system"] .hover\:bg-white\/\[3\%\]:hover { background-color: color-mix(in srgb, var(--sigma-sand-light) 5%, transparent); }
+  [data-theme="system"] .divide-white\/\[5\%\] > :not([hidden]) ~ :not([hidden]) { border-color: color-mix(in srgb, var(--sigma-sand-light) 10%, transparent); }
+  [data-theme="system"] .divide-white\/\[6\%\] > :not([hidden]) ~ :not([hidden]) { border-color: color-mix(in srgb, var(--sigma-sand-light) 12%, transparent); }
+}

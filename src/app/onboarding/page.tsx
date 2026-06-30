@@ -68,7 +68,7 @@ export default function OnboardingPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-sigma-blue-deep/90 via-sigma-blue-deep/60 to-sigma-blue-deep/90" />
 
       <div className="relative z-10 w-full max-w-2xl">
-        <div className="animate-slide-up rounded-2xl border border-white/[8%] bg-sigma-blue-dark/80 p-8 backdrop-blur-sm">
+        <div className="animate-slide-up rounded-2xl border border-white/[8%] bg-sigma-blue-dark/80 p-8">
           <p className="text-[0.6rem] uppercase tracking-[0.3em] text-gold/60">
             Sigma Horus
           </p>

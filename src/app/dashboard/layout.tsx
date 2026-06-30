@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import { Alert } from '@/components/ui';
 import DashboardShell from './DashboardShell';
 
 interface NavEntry { href: string; label: string; roles: string[]; }
@@ -120,21 +121,21 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   return (
     <DashboardShell groups={groups} lodgeName={lodgeName} userName={session?.user?.name ?? 'Usuário'} role={role}>
       {blocked ? (
-        <div className="border-b border-rose-500/30 bg-rose-500/10 px-6 py-3 text-center text-sm text-rose-200">
+        <Alert variant="banner" intent="danger">
           {trialExpired
             ? 'Seu período de teste terminou. Assine um plano para continuar usando o Sigma Horus.'
             : 'Sua loja não possui uma assinatura ativa.'}{' '}
           <a href="/dashboard/assinatura" className="font-medium underline hover:text-rose-100">Assinar agora</a>
-        </div>
+        </Alert>
       ) : isTrialing ? (
         <div className="border-b border-gold/30 bg-gold/10 px-6 py-3 text-center text-sm text-gold">
           Período de teste: {trialDaysLeft} {trialDaysLeft === 1 ? 'dia restante' : 'dias restantes'}.{' '}
           <a href="/dashboard/assinatura" className="font-medium underline hover:text-gold-light">Escolher plano</a>
         </div>
       ) : isActive && sub?.pendingPlan ? (
-        <div className="border-b border-sky-500/30 bg-sky-500/10 px-6 py-3 text-center text-sm text-sky-200">
+        <Alert variant="banner" intent="info">
           Downgrade agendado para {fmtDate(sub.pendingPlanEffectiveAt)}. Você mantém o plano atual até lá.
-        </div>
+        </Alert>
       ) : null}
       {children}
     </DashboardShell>

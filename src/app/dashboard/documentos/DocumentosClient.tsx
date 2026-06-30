@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, inputClass } from '@/components/ui';
+import { Button, EmptyState, inputClass, Alert } from '@/components/ui';
 
 interface DocumentItem {
   id: string;
@@ -65,7 +65,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
           <p className="mt-1 text-sm text-sand-dark">Centralize atas, prontuários, comprovantes e arquivos da loja.</p>
         </div>
 
-        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
+        {message ? <Alert intent="warn">{message}</Alert> : null}
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Novo documento</h2>

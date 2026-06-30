@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel } from '@/lib/masonic-degree';
 import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
-import { Button, EmptyState, Input, Skeleton, inputClass } from '@/components/ui';
+import { Button, EmptyState, Input, Skeleton, inputClass, Alert } from '@/components/ui';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -305,7 +305,7 @@ export default function MembrosPage() {
           </button>
         </div>
 
-        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
+        {message ? <Alert intent="warn">{message}</Alert> : null}
 
         {creating ? (
           <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
