@@ -108,7 +108,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
         ) : null}
 
         <aside
-          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/[6%] bg-sigma-blue-dark/95 transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/[6%] bg-sigma-blue-dark/95 transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
         >
           <div className="flex items-center justify-between border-b border-white/[5%] px-6 py-5">
             <Link href="/dashboard" className="flex items-center gap-3">
