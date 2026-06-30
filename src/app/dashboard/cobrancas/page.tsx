@@ -130,7 +130,7 @@ export default function CobrancasPage() {
 
         {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-sand-light">Recorrência</h2>
             <button
@@ -151,7 +151,7 @@ export default function CobrancasPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Cobrança em massa</h2>
           <p className="mt-1 text-sm text-sand-dark">Gera uma cobrança para todos os irmãos de uma vez (ex.: mensalidade). O número de cada cobrança é gerado automaticamente.</p>
           <form onSubmit={handleBulk} className="mt-5 grid gap-4 md:grid-cols-2">
@@ -182,7 +182,7 @@ export default function CobrancasPage() {
           </form>
         </section>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Nova cobrança</h2>
           <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
             <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })} className={INPUT} required>
@@ -211,7 +211,7 @@ export default function CobrancasPage() {
           </form>
         </section>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Cobranças cadastradas</h2>
           <div className="mt-5 space-y-3">
             {loading ? (

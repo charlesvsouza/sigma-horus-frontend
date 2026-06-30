@@ -77,7 +77,7 @@ export default function CampanhasPage() {
         </div>
 
         {/* Saldo do Tronco */}
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-sand-dark">Tronco de Solidariedade</p>
           {tronco?.configured ? (
             <>
@@ -92,7 +92,7 @@ export default function CampanhasPage() {
         {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
 
         {creating ? (
-          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Nova campanha</h2>
             <form onSubmit={createCampaign} className="mt-5 space-y-4">
               <div>
@@ -119,7 +119,7 @@ export default function CampanhasPage() {
           </section>
         ) : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Campanhas</h2>
           <div className="mt-4 space-y-3">
             {loading ? (

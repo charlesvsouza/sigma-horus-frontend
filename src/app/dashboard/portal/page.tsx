@@ -64,7 +64,7 @@ export default function PortalPage() {
         </div>
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Resumo do obreiro</h2>
             {loading ? (
               <p className="mt-6 text-sm text-sand-dark">Carregando...</p>
@@ -92,7 +92,7 @@ export default function PortalPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Resumo financeiro</h2>
             <div className="mt-5 space-y-3 text-sm text-sand">
               <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
@@ -112,7 +112,7 @@ export default function PortalPage() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Últimas contas</h2>
             <div className="mt-5 space-y-3">
               {accounts.length === 0 ? <p className="text-sm text-sand-dark">Nenhuma conta vinculada.</p> : accounts.map((account) => (
@@ -130,7 +130,7 @@ export default function PortalPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Documentos recentes</h2>
             <div className="mt-5 space-y-3">
               {documents.length === 0 ? <p className="text-sm text-sand-dark">Nenhum documento registrado.</p> : documents.map((document) => (

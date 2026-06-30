@@ -40,7 +40,7 @@ export default function IrmaosConsultaPage() {
           <p className="mt-1 text-sm text-sand-dark">Contatos dos obreiros e seus familiares para o acompanhamento da Hospitalaria. Somente leitura.</p>
         </div>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Obreiros</h2>
             <input value={query} onChange={(e) => setQuery(e.target.value)} className={`${inputClass} w-auto min-w-[16rem]`} placeholder="Buscar por nome, telefone ou e-mail…" />

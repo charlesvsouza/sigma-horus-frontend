@@ -59,7 +59,7 @@ export default function SessionDetailPage(props: { params: Promise<{ id: string 
           <button onClick={() => router.push('/dashboard/sessoes')} className="text-sm text-gold hover:text-gold-light">Voltar</button>
         </div>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Registrar presença</h2>
           <p className="mt-1 text-sm text-sand-dark">Clique no membro para marcar presença/ausência.</p>
           <div className="mt-5 space-y-2">

@@ -153,7 +153,7 @@ export default function CadastrosPage() {
         {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Ritos</h2>
             <form onSubmit={createRite} className="mt-4 flex gap-3">
               <input value={riteName} onChange={(event) => setRiteName(event.target.value)} className={INPUT} placeholder="Nome do rito" />
@@ -169,7 +169,7 @@ export default function CadastrosPage() {
             </ul>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Potências</h2>
             <form onSubmit={createPower} className="mt-4 flex gap-3">
               <input value={powerName} onChange={(event) => setPowerName(event.target.value)} className={INPUT} placeholder="Nome da potência" />
@@ -186,7 +186,7 @@ export default function CadastrosPage() {
           </section>
         </div>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold text-sand-light">Plano de contas</h2>

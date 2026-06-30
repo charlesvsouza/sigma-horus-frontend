@@ -581,7 +581,7 @@ export function ManualBook() {
                   Em <UI>Financeiro → Fechamento</UI> está o <strong>relatório financeiro completo</strong> no formato livro
                   caixa, para o fechamento do veneralato: <strong>Balanço Financeiro</strong>, <strong>Balancete por plano
                   de contas</strong>, <strong>Receitas × Despesas</strong> mensal, <strong>Livro Caixa</strong>,
-                  <strong> Cobranças</strong> e <strong>Saldo dos Associados</strong>. Escolha o período e use
+                  <strong> Cobranças</strong> e <strong>Saldo dos Irmãos</strong>. Escolha o período e use
                   <UI>Salvar como PDF</UI> para gerar o documento. As contas são agrupadas pelo plano de contas (código),
                   então vincule cada lançamento a uma <strong>categoria do plano de contas</strong> para o relatório sair correto.
                 </p>
@@ -794,9 +794,9 @@ export function ManualBook() {
                 ativos:
               </p>
               <Bullets>
-                <li><strong>Oficina</strong> — até 30 membros — R$ 60,00/mês.</li>
-                <li><strong>Loja</strong> — 31 a 80 membros — R$ 90,00/mês.</li>
-                <li><strong>Potência</strong> — 81+ ou multiloja — R$ 180,00/mês.</li>
+                <li><strong>Oficina</strong> — até 30 membros — R$ 80,00/mês.</li>
+                <li><strong>Loja</strong> — 31 a 80 membros — R$ 110,00/mês.</li>
+                <li><strong>Potência</strong> — 81+ ou multiloja — R$ 170,00/mês.</li>
               </Bullets>
               <p>Formas de contratação:</p>
               <Bullets>

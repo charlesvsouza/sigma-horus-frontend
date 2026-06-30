@@ -67,7 +67,7 @@ export default function AuditoriaPage() {
 
         <div className="overflow-x-auto rounded-xl border border-white/[6%]">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/[6%] bg-sigma-blue-dark/80">
+            <thead className="border-b border-white/[6%] bg-sigma-card">
               <tr>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Data</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Ação</th>

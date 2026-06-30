@@ -104,7 +104,7 @@ export default function PermissoesPage() {
           <p className="text-sm text-sand-dark">Carregando…</p>
         ) : roles.length === 0 ? null : (
           <>
-            <div className="overflow-x-auto rounded-xl border border-white/[6%] bg-sigma-blue-dark/80">
+            <div className="overflow-x-auto rounded-xl border border-white/[6%] bg-sigma-card">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-white/[6%]">
                   <tr>

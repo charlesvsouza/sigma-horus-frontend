@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       db.payment.findMany({
         where: { lodgeId: String(lodgeId) },
         include: {
-          account: { select: { type: true, title: true, chartAccount: { select: { code: true, name: true, category: true } } } },
+          account: { select: { type: true, title: true, dueDate: true, chartAccount: { select: { code: true, name: true, category: true } } } },
           member: { select: { id: true, name: true } },
         },
         orderBy: { paidAt: 'asc' },
@@ -141,7 +141,11 @@ export async function GET(request: Request) {
     .map((i) => ({ number: i.number, member: i.member?.name ?? '—', amount: Number(i.amount), dueDate: i.dueDate, status: i.status }));
   const totalCobrancas = cobrancas.reduce((s, c) => s + c.amount, 0);
 
-  // ---------- 6. Saldo dos Associados ----------
+  // ---------- 6. Saldo dos Irmãos ----------
+  // Reconciliação por documento "até a data": débito = cobranças (Account
+  // RECEIVABLE) já vencidas até `to`; crédito = pagamentos cujo recebível também
+  // já venceu até `to`. Pagamento antecipado (conta a vencer depois de `to`) é
+  // ignorado dos dois lados — antes distorcia o saldo (crédito sem o débito par).
   const byMember = new Map<string, { name: string; debito: number; credito: number }>();
   for (const a of data.accounts) {
     if (!a.member || a.type !== 'RECEIVABLE' || a.dueDate > to) continue;
@@ -151,11 +155,14 @@ export async function GET(request: Request) {
   }
   for (const p of data.payments) {
     if (!p.member || !isRevenue(p.account?.type) || p.paidAt > to) continue;
+    // Pagamento ligado a recebível ainda não vencido (antecipado) fica de fora,
+    // mantendo débito e crédito na mesma janela "até `to`".
+    if (p.account?.dueDate && p.account.dueDate > to) continue;
     const m = byMember.get(p.member.id) ?? { name: p.member.name, debito: 0, credito: 0 };
     m.credito += Number(p.amount);
     byMember.set(p.member.id, m);
   }
-  const saldoAssociados = [...byMember.values()]
+  const saldoIrmaos = [...byMember.values()]
     .map((m) => ({ name: m.name, debito: m.debito, credito: m.credito, saldo: m.debito - m.credito }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -172,6 +179,6 @@ export async function GET(request: Request) {
     receitasDespesas,
     livroCaixa,
     cobrancas: { items: cobrancas, total: totalCobrancas },
-    saldoAssociados,
+    saldoIrmaos,
   });
 }

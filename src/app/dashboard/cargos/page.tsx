@@ -42,7 +42,7 @@ export default function CargosPage() {
           <p className="mt-1 text-sm text-sand-dark">Cadastre os cargos da loja (Venerável, Tesoureiro, Secretário...).</p>
         </div>
         {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <form onSubmit={create} className="flex gap-3">
             <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20" placeholder="Nome do cargo" required />
             <button type="submit" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Adicionar</button>

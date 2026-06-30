@@ -77,7 +77,7 @@ export default function IntegracoesPage() {
           <p className="mt-1 text-sm text-sand-dark">Cada loja conecta a própria conta — as chaves são salvas aqui, sem precisar de reimplantação do sistema.</p>
         </div>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-base font-semibold text-sand-light">Asaas</h2>
@@ -148,7 +148,7 @@ export default function IntegracoesPage() {
 
         <MessagingIntegration />
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Stripe</h2>
           <p className="mt-2 text-sm text-sand-dark">Assinatura da plataforma (a loja paga o SaaS). Gerenciado pela plataforma.</p>
           <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/12 px-4 py-3 text-sm text-emerald-300">
@@ -204,7 +204,7 @@ function MessagingIntegration() {
   );
 
   return (
-    <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+    <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold text-sand-light">Comunicação (WhatsApp / SMS)</h2>

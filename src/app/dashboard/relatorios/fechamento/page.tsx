@@ -17,7 +17,7 @@ interface Closing {
   receitasDespesas: { mes: string; receita: number; despesa: number }[];
   livroCaixa: { data: string; nome: string; plano: string; historico: string; value: number; saldo: number }[];
   cobrancas: { items: { number: string; member: string; amount: number; dueDate: string; status: string }[]; total: number };
-  saldoAssociados: { name: string; debito: number; credito: number; saldo: number }[];
+  saldoIrmaos: { name: string; debito: number; credito: number; saldo: number }[];
 }
 
 const PRINT_CSS = `
@@ -38,7 +38,7 @@ const PRINT_CSS = `
 
 function Section({ title, children, breakBefore }: { title: string; children: React.ReactNode; breakBefore?: boolean }) {
   return (
-    <section className={`report-section rcard rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6 ${breakBefore ? 'pagebreak' : ''}`}>
+    <section className={`report-section rcard rounded-xl border border-white/[6%] bg-sigma-card p-6 ${breakBefore ? 'pagebreak' : ''}`}>
       <h2 className="text-lg font-semibold text-sand-light">{title}</h2>
       <div className="mt-4 text-sm text-sand">{children}</div>
     </section>
@@ -194,15 +194,15 @@ export default function FechamentoPage() {
               <p className="mt-2 text-right text-sm text-sand-dark">Total: <strong className="text-sand-light tabular-nums">{money(data.cobrancas.total)}</strong></p>
             </Section>
 
-            {/* 6. Saldo dos Associados */}
-            <Section title="6. Saldo dos Associados" breakBefore>
+            {/* 6. Saldo dos Irmãos */}
+            <Section title="6. Saldo dos Irmãos" breakBefore>
               <table>
-                <thead><tr><th className={TH}>Associado</th><th className={`${TH} text-right`}>Débito</th><th className={`${TH} text-right`}>Crédito</th><th className={`${TH} text-right`}>Saldo</th></tr></thead>
+                <thead><tr><th className={TH}>Irmão</th><th className={`${TH} text-right`}>Débito</th><th className={`${TH} text-right`}>Crédito</th><th className={`${TH} text-right`}>Saldo</th></tr></thead>
                 <tbody>
-                  {data.saldoAssociados.map((s, i) => (
+                  {data.saldoIrmaos.map((s, i) => (
                     <tr key={i}><td className={TD}>{s.name}</td><td className={`${TD} text-right tabular-nums`}>{money(s.debito)}</td><td className={`${TD} text-right tabular-nums`}>{money(s.credito)}</td><td className={`${TD} text-right tabular-nums ${s.saldo > 0 ? 'text-rose-300' : 'text-emerald-300'}`}>{money(s.saldo)}</td></tr>
                   ))}
-                  {data.saldoAssociados.length === 0 ? <tr><td className={TD} colSpan={4}>Sem associados com movimentação.</td></tr> : null}
+                  {data.saldoIrmaos.length === 0 ? <tr><td className={TD} colSpan={4}>Sem irmãos com movimentação.</td></tr> : null}
                 </tbody>
               </table>
             </Section>

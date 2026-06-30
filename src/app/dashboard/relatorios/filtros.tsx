@@ -24,7 +24,7 @@ export function FiltrosRelatorios({ from, to }: { from: string; to: string }) {
   const hasFilter = !!from || !!to;
 
   return (
-    <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+    <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
       <div className="flex flex-wrap items-end gap-4">
         <div>
           <label className="mb-2 block text-sm text-sand-dark">De</label>

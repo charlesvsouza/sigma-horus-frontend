@@ -136,7 +136,7 @@ export default function ConfiguracoesPage() {
         ) : null}
 
         <form onSubmit={save} className="space-y-6">
-          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Identificação</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field label="Nome da loja" value={form.name} onChange={(v) => set('name', v)} required />
@@ -148,7 +148,7 @@ export default function ConfiguracoesPage() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Loja maçônica</h2>
             <p className="mt-1 text-sm text-sand-dark">Rito praticado e potência (obediência). O rito define os cargos da loja.</p>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -175,7 +175,7 @@ export default function ConfiguracoesPage() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Sessões</h2>
             <p className="mt-1 text-sm text-sand-dark">Dias da semana e periodicidade padrão das sessões da loja.</p>
             <div className="mt-5 space-y-5">
@@ -206,7 +206,7 @@ export default function ConfiguracoesPage() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Endereço</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div>
@@ -221,7 +221,7 @@ export default function ConfiguracoesPage() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Dados bancários</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field label="Banco" value={form.bankName} onChange={(v) => set('bankName', v)} />
@@ -236,7 +236,7 @@ export default function ConfiguracoesPage() {
           </Button>
         </form>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Aparência</h2>
           <p className="mt-1 text-sm text-sand-dark">Escolha o tema da interface. A preferência fica salva neste navegador e vale para todas as telas.</p>
           <div className="mt-5">

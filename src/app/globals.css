@@ -110,6 +110,36 @@
 }
 
 @layer utilities {
+  /* Tonalidade unificada azul/gradiente (inspirada no sketch "Câmara do Tesouro").
+     Token-aware: funciona no tema escuro e no claro (os tokens são remapeados).
+     A ideia é que o fundo da área principal (.bg-sigma-app) e as superfícies
+     (.bg-sigma-card) compartilhem o mesmo degradê, fazendo o "frame" do card
+     quase desaparecer. Títulos, menus e fontes permanecem inalterados. */
+  .bg-sigma-app {
+    background-image: linear-gradient(
+      180deg,
+      var(--sigma-blue-deep) 0%,
+      color-mix(in srgb, var(--sigma-blue-mid) 16%, var(--sigma-blue-deep)) 45%,
+      var(--sigma-blue-deep) 100%
+    );
+  }
+
+  .bg-sigma-card {
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--sigma-blue-mid) 40%, var(--sigma-blue-dark)) 0%,
+      var(--sigma-blue-dark) 100%
+    );
+  }
+
+  .bg-sigma-card-elevated {
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--sigma-blue-mid) 70%, var(--sigma-blue-dark)) 0%,
+      color-mix(in srgb, var(--sigma-blue-mid) 25%, var(--sigma-blue-dark)) 100%
+    );
+  }
+
   .bg-gradient-radial-gold {
     background-image: radial-gradient(circle at top left, color-mix(in srgb, var(--sigma-gold) 18%, transparent), transparent 40%),
       linear-gradient(135deg, var(--sigma-blue-deep) 0%, #0f172a 100%);

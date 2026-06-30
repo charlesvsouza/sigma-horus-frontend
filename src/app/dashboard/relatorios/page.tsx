@@ -101,26 +101,26 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
         <FiltrosRelatorios from={searchParams.from ?? ''} to={searchParams.to ?? ''} />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-5">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">A receber</p>
             <p className="mt-3 text-2xl font-semibold text-emerald-300">R$ {totalReceivables.toFixed(2)}</p>
           </div>
-          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-5">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">A pagar</p>
             <p className="mt-3 text-2xl font-semibold text-rose-300">R$ {totalPayables.toFixed(2)}</p>
           </div>
-          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-5">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Pagamentos registrados</p>
             <p className="mt-3 text-2xl font-semibold text-gold">R$ {totalPayments.toFixed(2)}</p>
           </div>
-          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-5">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Fluxo líquido</p>
             <p className={`mt-3 text-2xl font-semibold ${netFlow >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>R$ {netFlow.toFixed(2)}</p>
           </div>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-sand-light">Resumo de abertura</h2>
               <Link href="/dashboard/contas" className="text-sm text-gold hover:text-gold-light">Ver contas</Link>
@@ -137,7 +137,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Próximos vencimentos</h2>
             <div className="mt-5 space-y-3">
               {upcoming.map((item) => (
@@ -153,7 +153,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Últimos registros</h2>
           <div className="mt-5 space-y-3">
             {payments.slice(0, 6).map((payment) => (

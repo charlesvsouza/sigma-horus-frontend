@@ -9,10 +9,19 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
-## Estado atual (`main`, HEAD `cbe6c28` + alterações locais não commitadas)
-- ⚠️ **Há trabalho não commitado** (sessão 2026-06-28): acesso do obreiro, encerramento de veneralato e tema claro. `npx next build` ✅ passou; `npx tsc --noEmit` ✅ limpo no app (erros só em `.test.ts`).
-- Banco: **20/20 migrations** no Railway, RLS ativo (`prisma migrate deploy` aplicado). 24 modelos; `User` agora liga a `Member` (`memberId`).
+## Estado atual (`main`, HEAD `75b7d45` + alterações locais NÃO commitadas da sessão 2026-06-29)
+- ✅ A sessão 2026-06-28 (acesso do obreiro, encerramento, tema claro) foi **commitada** (`e24ec1d`…`75b7d45`); working tree estava limpo antes desta sessão.
+- ⚠️ **Sessão 2026-06-29 com mudanças não commitadas** (valores dos planos, Saldo dos Irmãos, login, tonalidade) — ver bloco abaixo. `npx tsc --noEmit` ✅ limpo no app (erros só em `.test.ts`).
+- Banco: **20/20 migrations** no Railway, RLS ativo. 24 modelos; `User` liga a `Member` (`memberId`). **Nenhuma migration nova nesta sessão.**
 - Next.js 16.2.9, next-auth v5 beta.31. Deploy automático Vercel. Domínio `sigmahorus.com.br` no ar (SSL ok).
+
+## Concluído nesta sessão (2026-06-29) — NÃO refazer
+- ✅ **Valores dos planos calibrados:** Oficina **R$ 80**, Loja **R$ 110**, Potência **R$ 170** (`lib/plans.ts`); atualizado em manual (`manual-book.tsx`), compliance e docs. **6 Prices LIVE materializados** no Stripe (lookup_keys versionadas: mês `_v2`, ano `_v3`; anual = 12× −10%). IDs: oficina `price_1TnphG…`/`…phH…`; loja `…phI…`(mês)/`…phI…8sPu`(ano); potência `…phJ…`/`…phK…`. Assinaturas antigas **grandfathered**.
+- ✅ **Saldo dos Irmãos** (ex-"Associados", termo do AMORIO): renomeado em UI (`relatorios/fechamento/page.tsx`), API (`api/reports/closing/route.ts` → chave `saldoIrmaos`), manual e docs. **Reconciliação por documento**: pagamento ligado a recebível com `dueDate > to` (antecipado) é ignorado dos dois lados (add `dueDate` ao include de payments).
+- ✅ **Login** (`app/login/page.tsx`): "Lembrar de mim" (prefill e-mail via `localStorage` `sigma-remember-email`), painel **"Esqueceu a senha?"** → `POST /api/account/forgot-password` (público, gera senha provisória, envia por Resend, `mustChangePassword`; **resposta genérica anti-enumeração**; reusa `lib/password.ts` + `dispatch`). Card refinado (backdrop-blur-md).
+- ✅ **Tonalidade unificada (sketch 003):** utilities `.bg-sigma-app`/`.bg-sigma-card`/`.bg-sigma-card-elevated` em `globals.css` (token-aware, valem nos 2 temas); `components/ui/card.tsx` e os painéis inline do dashboard (sweep `bg-sigma-blue-dark/80→bg-sigma-card`) ao degradê azul. **Sidebar/header (menus), títulos e fontes preservados** (pedido do dono).
+- ⏳ **Backlog técnico investigado, NÃO executado** (ver razões em `sigmahorus_documentacao.md` §10): lint `set-state-in-effect` precisa de refactor arquitetural (não suprimir); pooling Railway precisa de validação sob carga; **não há test runner** (vitest/jest não instalados — `*.test.ts` não rodam).
+- ⏳ **WhatsApp adiado** (dono vai comprar novo chip). **E-mail profissional** será contratado pelo dono. Sem ação de código.
 
 ## Concluído nesta sessão (2026-06-28) — NÃO refazer
 - ✅ **Acesso do obreiro (Membro→Usuário):** `User.memberId` (1-1) + `mustChangePassword` (migration `20260628140000_add_user_member_link`). `POST /api/members/[id]/grant-access` (Admin) cria/renova login com senha provisória **enviada por e-mail (Resend)** (`lib/password.ts`). Gate de 1º acesso no `dashboard/layout.tsx` → `/trocar-senha` (revalida via `signIn`; `jwt` trata `trigger==='update'`). Página **Usuários & acessos** `/dashboard/configuracoes/usuarios` (`GET /api/users`, `PATCH /api/users/[id]` papel/status/reset; trava o último admin). `POST /api/account/password` (troca própria). **Self-edit**: `members/[id]` PUT libera quando `session.memberId === id`. Auth expõe `memberId`/`mustChangePassword`. Botão "Conceder acesso" no detalhe de Membros (role via `/api/auth/session`).

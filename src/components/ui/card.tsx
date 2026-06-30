@@ -6,11 +6,11 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 const variantStyles = {
   default:
-    'border border-white/[6%] bg-sigma-blue-dark/80 rounded-xl',
+    'border border-white/[5%] bg-sigma-card rounded-xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)]',
   elevated:
-    'border border-white/[10%] bg-sigma-blue-mid/70 rounded-xl',
+    'border border-white/[8%] bg-sigma-card-elevated rounded-xl shadow-[0_12px_32px_-14px_rgba(0,0,0,0.55)]',
   interactive:
-    'border border-white/[6%] bg-sigma-blue-dark/80 rounded-xl hover:border-white/[12%] hover:bg-sigma-blue-dark/90 transition-all duration-200 ease-out cursor-pointer',
+    'border border-white/[5%] bg-sigma-card rounded-xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)] hover:border-gold/25 hover:-translate-y-0.5 transition-all duration-200 ease-out cursor-pointer',
 };
 
 const Card = forwardRef<HTMLDivElement, CardProps>(

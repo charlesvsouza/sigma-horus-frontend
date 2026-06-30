@@ -133,7 +133,7 @@ export function SubscriptionManager({ currentPlan, isActiveCard, pendingPlan }: 
           return (
             <div
               key={plan.id}
-              className={`flex flex-col rounded-2xl border p-6 ${currentPlan === plan.id ? 'border-gold/40 bg-sigma-blue-dark/80' : 'border-white/[0.08] bg-sigma-blue-dark/40'}`}
+              className={`flex flex-col rounded-2xl border p-6 ${currentPlan === plan.id ? 'border-gold/40 bg-sigma-card' : 'border-white/[0.08] bg-sigma-blue-dark/40'}`}
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-display text-lg font-semibold text-sand-light">{plan.name}</h3>

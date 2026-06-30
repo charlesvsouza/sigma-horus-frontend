@@ -308,13 +308,13 @@ export default function MembrosPage() {
         {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
 
         {creating ? (
-          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Novo membro</h2>
             <MemberForm initial={emptyForm} initialRelatives={[]} rites={rites} powers={powers} saving={saving} submitLabel="Salvar membro" onSubmit={createMember} onCancel={() => setCreating(false)} />
           </section>
         ) : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <h2 className="text-base font-semibold text-sand-light">Listagem</h2>

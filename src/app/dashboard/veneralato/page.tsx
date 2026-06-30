@@ -138,7 +138,7 @@ export default function VeneralatoPage() {
 
         {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Novo período</h2>
           <form onSubmit={create} className="mt-5 grid gap-4 md:grid-cols-2">
             <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Ex: Gestão 2025-2026" required />
@@ -150,7 +150,7 @@ export default function VeneralatoPage() {
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
-          <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Períodos</h2>
             <div className="mt-5 space-y-3">
               {terms.map((t) => (
@@ -163,7 +163,7 @@ export default function VeneralatoPage() {
           </section>
 
           {selectedTerm && termDetail && (
-            <section className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-6">
+            <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-base font-semibold text-sand-light">{termDetail.title}</h2>
                 {termDetail.status === 'closed'

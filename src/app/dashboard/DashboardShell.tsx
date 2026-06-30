@@ -222,7 +222,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
             </nav>
           ) : null}
 
-          <div className="flex-1">{children}</div>
+          <div className="flex-1 bg-sigma-app">{children}</div>
         </div>
       </div>
     </div>

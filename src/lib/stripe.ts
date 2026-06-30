@@ -48,13 +48,15 @@ async function ensureProduct(plan: PlanId): Promise<string> {
 /**
  * Garante (idempotente) o Price recorrente (cartão) para plano+intervalo,
  * usando lookup_key estável. Anual no cartão = 12× o mensal com 10% de desconto
- * (ver priceFor). A lookup_key do anual é versionada (_v2) para invalidar
- * os Prices antigos sem desconto — Prices no Stripe são imutáveis.
+ * (ver priceFor). As lookup_keys são versionadas para invalidar Prices antigos
+ * quando o valor muda — Prices no Stripe são imutáveis. Assinaturas já criadas
+ * permanecem no Price antigo (grandfathered); novos checkouts usam o novo.
+ * Versão atual: mês `_v2`, ano `_v3` (tabela 80/110/170, calibrada 2026-06-29).
  * Retorna o id do Price para uso em subscriptions e schedules.
  */
 export async function ensurePrice(plan: PlanId, interval: BillingInterval): Promise<string> {
   const stripe = getStripe();
-  const lookupKey = interval === 'year' ? `sigma_${plan}_year_v2` : `sigma_${plan}_month`;
+  const lookupKey = interval === 'year' ? `sigma_${plan}_year_v3` : `sigma_${plan}_month_v2`;
   const existing = await stripe.prices.list({ lookup_keys: [lookupKey], active: true, limit: 1 });
   if (existing.data[0]) return existing.data[0].id;
   const productId = await ensureProduct(plan);
