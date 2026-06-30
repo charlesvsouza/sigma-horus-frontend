@@ -1,113 +1,184 @@
 Design Refinado — Sigma Horus
 ==============================
 
-Propósito: consolidar a análise do estado atual, referências de mercado (ERPs modernos como SAP S/4HANA Fiori, Oracle NetSuite, Microsoft Dynamics, Linear, Stripe Dashboard) e diretrizes refinadas para modelar a interface do Sigma Horus, alinhadas à marca egípcia e a boas práticas de legibilidade, densidade de informação e acessibilidade.
+Propósito: orientar a evolução da interface do Sigma Horus com base numa crítica de
+design (skill impeccable, registro Product) do estado atual já em produção. O foco
+não é "parecer moderno"; é a tesouraria operar com confiança e a ferramenta sumir
+dentro da tarefa. Referências de mercado úteis como aferição, não como cópia: Linear,
+Stripe Dashboard, Notion (densidade, consistência, foco), com a identidade egípcia
+(Olho de Hórus, ouro do deserto, céu noturno) já consolidada nos tokens.
+
+Documento vivo. Não altera código por si; consolida decisões. Fonte da verdade visual.
 
 
-1. Cenário atual — ponto de partida
------------------------------------
+1. Aferição (impeccable critique, 2026-06-30)
+---------------------------------------------
 
-- Paleta: tokens já bem definidos (blue-deep/blue-dark/blue-mid + gold + sand), com sistema de tema claro/escuro token-aware em `globals.css`.
-- Tema claro atual: baseado em `#E7E1D2` (pergaminho). Aplicação está funcional, mas há pontos críticos:
-  - avisos/alertas: textos em tons claros (`rose-200/300`, `amber-200/300`, `emerald-200/300`, `sky-200/300`) perdem contraste no fundo claro; já existe override parcial em `globals.css`.
-  - modais/drawers/cards: boa elevação, mas contraste de borda pode ser reforçado para WCAG AA no pergaminho.
-  - tabelas: zebra/linhas separadoras quase invisíveis no tema claro.
-- Componentes principais:
-  - `Card` (`ui/card.tsx`): já usa `bg-sigma-card` e `bg-sigma-card-elevated` (tema-aware). Fortes pontos.
-  - `Badge` (`ui/badge.tsx`): bom padrão; precisa garantir no tema claro que as variantes continuem com contraste AA (já há tendência a tokens de ouro/verde, que podem precisar de ajuste de opacidade).
-- Sidebar (`DashboardShell.tsx`): estado fixo expandido em desktop, menu mobile abre/fecha com overlay; **ainda não** está recolhida por padrão nem faz hover “só ícone → expandir para a direita”.
+Registro: Product. O teste de slop aqui não é "parece feito por IA"; é "um tesoureiro
+fluente em boas ferramentas confia e flui, ou trava em cada componente sutilmente
+errado?". A barra é familiaridade conquistada.
 
+Saúde do design (heurísticas de Nielsen, leitura honesta): ~28/40, faixa "Bom, com
+folga clara para subir". Resumo dos pontos que puxam a nota:
 
-2. Padrões observados em ERPs modernos
----------------------------------------
+- Consistência (3/4): o design system (Card, Button, Input, Badge) é coeso, mas os
+  avisos/alertas são `div`s com classes Tailwind soltas, repetidas em ~18 telas. Foi
+  a origem da regressão de contraste no tema claro (já corrigida via variáveis).
+- Estética e minimalismo (3/4): tonalidade azul/ouro está sólida, porém quase toda
+  seção vem embrulhada em card. "Form num card + lista num card" repetido página após
+  página dilui a hierarquia e lê como template.
+- Prevenção de erro (2/4): exclusões usam `window.confirm`; várias formas sem validação
+  inline; mensagens de erro genéricas ("Erro ao salvar.").
+- Flexibilidade e eficiência (2/4): público diário (tesoureiro) sem atalhos de teclado,
+  sem paleta de comandos, sem ações em lote além de cobranças; sidebar fixa ocupa
+  largura mesmo para quem já decorou o caminho.
+- Status do sistema (3/4): a migração para Server Components removeu skeletons; o
+  `router.refresh()` pós-mutação não tem indicador de "processando". Pequena regressão.
 
-São 4 eixos recorrentes nos produtos de referência:
-
-2.1 Layout e densidade
-- “Mais dados por tela” com hierarquia clara: pouco whitespace, subtítulos calibrados, separadores sutis.
-- Uso intenso de cartões e tabelas compactas.
-- Atalhos globais via sidebar fixa e breadcrumb visível; pouca dependência de menus suspensos.
-
-2.2 Navegação lateral
-- SAP Fiori, Oracle NetSuite, Odoo e Linearity adotam menu lateral recolhido em ```collapsed``` padrão no desktop.
-- Comportamento no hover/expand:
-  - Estado collapsed: apenas ícone (largura ~56–68px), labels ocultas, tooltips opcionais.
-  - Estado expandido: largura 240–320px, aparece label principal; submenus, se existirem, abrem como flyout/lateral integrada à própria barra, não dentro da área principal.
-  - Transição: width 200–300ms, cubic-bezier suave (ease-out-expo/out-circ).
-- Importante: quando a barra expande, o conteúdo principal pode ser “achatado” para a esquerda (empurrar) ou sobreposto (overlay). ERPs enterprise preferem “empurrar” para manter o fluxo sem perda de contexto.
-
-2.3 Cards e hierarquia
-- Sistema de elevação por camadas (nível 0 = fundo, nível 1 = card, nível 2 = elevado (dropdown/modal), nível 3 = overlay).
-- Cards com micro-interação: hover sutil (borda dourada no Sigma Horus), sem animações pesadas.
-- Títulos e KPIs devem ter proporção visual 1:2:4 (label, valor, delta) em métricas.
-
-2.4 Tabelas
-- Cabeçalho com fundo superfície + separador fino inferior.
-- Linhas com altura aproximada 36–44px.
-- Badges de status operando como semáforo (paid=pending=em andamento, overdue=atenção, billed=informativo).
+Absolute bans (varredura): limpos os dois piores. Sem texto em gradiente
+(`bg-clip-text`) e sem borda lateral colorida como acento (side-stripe). Pendências
+menores: (a) glassmorphism decorativo nos cards de `onboarding` e `trocar-senha`
+(`backdrop-blur` sobre fundo quase sólido); no `login` o glass é aceitável por estar
+sobre a foto egípcia; (b) sombras adicionadas ao `Card` na unificação de tonalidade
+contradizem o DESIGN.md ("Sem sombras"; o contraste de tom já faz a elevação no
+escuro).
 
 
-3. Diretrizes refinadas para o Sigma Horus
+2. O que está forte (preservar)
+-------------------------------
+
+- Tokens e tema: paleta egípcia bem definida, tema claro/escuro token-aware, e a
+  legibilidade dos alertas no claro já resolvida por override das variáveis de cor do
+  Tailwind (rose/amber/emerald/sky 100-300 escurecidos em `[data-theme=light]` e no
+  "system" claro). Não refazer.
+- Tonalidade unificada: utilities `bg-sigma-app` / `bg-sigma-card` /
+  `bg-sigma-card-elevated`; cards e fundo compartilham o degradê azul (frame quase
+  imperceptível). Boa decisão, manter.
+- Vocabulário do domínio: "Irmãos", "veneralato", "Tronco de Solidariedade",
+  "Saldo dos Irmãos". Casa com o mundo real do usuário (heurística 2 forte).
+- Login: pico emocional. Cinematográfico, premium, sobre a foto egípcia. Único lugar
+  onde o glass se justifica.
+
+
+3. O que está fraco (prioridades)
+---------------------------------
+
+P1. Card por toda parte (monotonia / hierarquia). Quase toda tela é "card de formulário
+    + card de lista". Lei de design: card é a resposta preguiçosa; não embrulhe tudo
+    num container. Custo: hierarquia plana, sensação de template, mais ruído.
+    Direção: reservar card para agrupamento real (uma entidade, um bloco coeso); usar
+    espaçamento e divisores finos para o resto; títulos de seção sem moldura. Cards
+    aninhados são sempre erro (conferir páginas com card dentro de card).
+
+P1. Alertas como utilitário solto (consistência / regressão). Banners de status,
+    mensagens e erros são classes Tailwind inline em ~18 telas. Frágil e foi o que
+    quebrou no tema claro. Direção: componente `ui/alert.tsx` com intents
+    (`danger | warn | ok | info`), uma só fonte de cor/contraste, e migrar os banners
+    inline para ele. Mata a dívida na raiz.
+
+P2. Feedback de carregamento pós-RSC (status do sistema). Sem skeleton e sem pending no
+    `router.refresh()`. Direção: `useTransition` nas mutações dos client components
+    para um indicador discreto de "salvando/atualizando"; opcionalmente `loading.tsx`
+    por rota para a carga inicial do Server Component.
+
+P2. Tema claro, acabamento que falta (acessibilidade). Os alertas já estão legíveis,
+    mas tabelas (zebra/separadores) somem no pergaminho e a borda de card está fraca.
+    Direção: subir a borda de card de 6% para ~12% no claro; separador de linha de
+    tabela com tom de tinta (não branco translúcido); cabeçalho de tabela com
+    superfície + linha inferior fina. Tudo escopado a `[data-theme=light]`/"system".
+
+P2. Glassmorphism e sombras fora do sistema (consistência). Alinhar ao DESIGN.md:
+    remover o `backdrop-blur` decorativo de `onboarding` e `trocar-senha` (manter só no
+    `login`); reavaliar as `shadow-[...]` do `Card` (no escuro a elevação vem do tom,
+    não de sombra).
+
+P3. Eficiência para o uso diário (flexibilidade). O tesoureiro entra todo dia para
+    lançar/baixar/cobrar. Direção (futuro): atalhos de teclado para ações frequentes,
+    paleta de comandos (Ctrl/Cmd+K) para navegar e agir, e foco automático no primeiro
+    campo dos formulários recorrentes.
+
+
+4. Navegação lateral: a decisão central (revisada)
+--------------------------------------------------
+
+O documento anterior propunha sidebar "collapsed por padrão + expandir no hover". A
+crítica de produto contraindica isso como decisão padrão:
+
+- Reinventa um padrão de navegação por estética. No registro Product, "padrões de
+  navegação são features; não reinvente por sabor".
+- Hover-expand gera jank: ao empurrar o conteúdo, qualquer passagem acidental do mouse
+  causa reflow e perda de posição de scroll.
+- Acessibilidade: nav só-ícone revelada por hover é hostil a teclado e leitor de tela,
+  e exige tooltips em ~18 itens.
+- Falta um set de ícones distintos por item (hoje usamos bolinhas), coerente com a
+  marca dourada. Projeto de design à parte, não orçado.
+
+Direção recomendada (substitui o hover-expand):
+
+- Toggle persistente de colapso. Um botão fixa o estado expandido (260px) ou recolhido
+  (60px), salvo em `localStorage` (a infra `sh.nav.collapsed` já existe para os grupos).
+  Previsível, acessível, sem jank. Transição de largura 200-250ms ease-out.
+- No estado recolhido, só-ícone com tooltip e o item ativo destacado em ouro.
+- Submenus continuam como grupos-categoria colapsáveis na própria barra (modelo atual),
+  não como flyout sobreposto.
+- Hover-expand pode entrar depois como refinamento opcional, mas via overlay (a barra
+  cresce por cima do conteúdo, sem empurrar), respeitando `prefers-reduced-motion`.
+- Mobile permanece como está: drawer full com overlay no botão hambúrguer.
+- Pré-requisito real: definir a família de ícones e mapear os ~18 itens antes de
+  qualquer colapso só-ícone.
+
+
+5. Cards, tabelas e tipografia
+------------------------------
+
+- Cards: manter `bg-sigma-card` / `bg-sigma-card-elevated`. Aplicar disciplina (item
+  P1): nem toda seção é card. Borda de card 6% no escuro; ~12% no claro.
+- Elevação por camadas (manter): 0 fundo, 1 card, 2 elevado (dropdown/modal), 3 overlay.
+  No escuro, elevação por tom, sem sombra.
+- Tabelas: cabeçalho com superfície + linha inferior fina; linhas 36-44px; separador de
+  linha visível nos dois temas; badges de status como semáforo (recebido/pendente/
+  vencido/emitido) usando o `Badge` existente.
+- Tipografia: manter a escala atual e a fonte Geist única no produto. Não divergir peso
+  de heading por tema (o ajuste "H2 mais leve só no claro" do doc anterior foi
+  descartado: gera inconsistência entre temas para ganho marginal).
+- Motion: 150-250ms ease-out em hover e transição de layout; zoom só em ícone, nunca em
+  bloco de dados; sem bounce/elastic; nunca animar largura/altura de conteúdo.
+
+
+6. Plano em duas ondas (por risco x valor)
 ------------------------------------------
 
-3.1 Sidebar collapsible com hover
-- Estado padrão desktop: collapsed (só ícone), largura 60px.
-- Hover do mouse na área da sidebar: expandir para 260px, transição 250ms ease-out.
-- Submenus (grupos de navegação): exibir como coluna abaixo do item pai na própria barra, alinhada à esquerda, sem overwrite do conteúdo principal.
-- Touch/dispositivos sem hover: botão toggle fixo (já existente no app) para expandir/colapsar.
-- Regra: label e breadcrumb continuam funcionais no estado expandido; quando collapsed, só ícone ativo é destacado em gold.
+Onda 1 (baixo risco, alto valor; fazer primeiro):
+1. `ui/alert.tsx` semântico (intents) e migração dos banners inline para ele.
+2. Tema claro: borda de card 6% para 12%, separadores de tabela com tom de tinta,
+   cabeçalho de tabela com superfície + linha.
+3. Feedback pós-RSC: `useTransition` nas mutações (pending discreto).
+4. Alinhar glass/sombra ao DESIGN.md (remover blur decorativo de onboarding/trocar-senha;
+   reavaliar sombras do Card).
 
-3.2 Cards e painéis
-- Sólida a atual estratégia de ```bg-sigma-card``` e ```bg-sigma-card-elevated``` — manter.
-- No tema claro, reforçar contraste das bordas de card (subir transp. da borda branca de 6% para 12%).
-- Manter hover com elevação sutil e foco dourado; não aplicar transformações fortes em toda a tela para não quebrar scroll.
+Onda 2 (repensar / mais esforço; depois):
+5. Navegação: toggle persistente de colapso (não hover-expand). Definir ícones antes.
+6. Disciplina de cards: revisar página a página, remover containers desnecessários,
+   eliminar qualquer card aninhado.
+7. Eficiência: atalhos de teclado e paleta de comandos para o uso diário.
 
-3.3 Tema claro — legibilidade dos avisos/alertas
-- Targets a atingir:
-  - `text-rose-200/300` → no claro, usar diretamente `#be123c` (rose-700; já mapeado em globals.css, ampliar cobertura).
-  - `text-amber-200/300` → `#b45309` (amber-700; já mapeado).
-  - `text-emerald-200/300` → `#047857` (emerald-700; já mapeado).
-  - `text-sky-200/300` → `#0369a1` (sky-700; já mapeado).
-- Todo componente novo de alerta usar semânticas/intents (`.alert-danger`, `.alert-warn`, `.alert-ok`, `.alert-info`) em vez de utilitários Tailwind soltos, para evitar regressão de contraste.
-
-3.4 Tipografia e ritmo
-- Seguir a escala atual, mas no tema claro reduzir peso em textos heading 2 (de Semibold para Medium) para evitar densidade excessiva.
-- Linha base 16px; tabelas e cards usam padding 16–20px.
-- Títulos e labels de seção em tracking amplo (já aplicado no projeto); manter.
-
-3.5 Animações e transições
-- Transições de layout (sidebar collapse/expand): 200–250ms ease-out, sem cubic-bezier muito elástico.
-- Hover em cards/botões: 150–200ms ease-out, zoom apenas em ícones, não em blocos de dados.
-- Respeitar `prefers-reduced-motion` (já existe regra em globals.css; expandir para incluir sidebar).
+Onda 2+ (opcional, refinamento):
+8. Hover-expand da sidebar como overlay (sem push), só depois do toggle estável.
 
 
-4. Requisitos funcionais para a sidebar “hover/icon”
-----------------------------------------------------
+7. Checklist de implementação
+-----------------------------
 
-- Quando collapsed:
-  - Largura total: 60px
-  - Apenas o ícone por item, sem texto.
-  - Tooltip (nativo ou próprio) exibindo o label ao pairar.
-- Quando expandido por hover:
-  - Largura total: 260px
-  - Labels e grupos reaparecem progressivamente.
-  - Submenus aparecem como lista vertical imediatamente abaixo do item pai (mesmo container da sidebar), alinhados à esquerda da barra.
-- Comportamento mobile: menu lateral full com overlay ao clicar no botão hambúrguer (mantendo o atual).
-- Foco acessível: Tab/Shift+Tab deve navegar entre os itens; hover não deve roubar foco.
+[ ] `ui/alert.tsx` com 4 intents + substituir banners inline (layout, mensagens das páginas).
+[ ] `globals.css` tema claro: borda de card 12%, separadores de tabela, cabeçalho de tabela.
+[ ] `useTransition` nos client components que fazem fetch + `router.refresh()`.
+[ ] Remover `backdrop-blur` de onboarding/trocar-senha; revisar `shadow` do Card.
+[ ] Toggle de colapso da sidebar (persistente, acessível) + ícones dos itens.
+[ ] Auditoria de cards: remover containers redundantes; zero cards aninhados.
+[ ] (Futuro) atalhos de teclado + paleta de comandos (Ctrl/Cmd+K).
+[ ] Atualizar DESIGN.md ao consolidar cada mudança (fonte da verdade).
 
-
-5. Checklist de implementação sugerido
----------------------------------------
-
-1. Refinar `globals.css` para tema claro:
-   - Reforçar contraste de bordas de cards e linhas de tabela.
-   - Garantir coverage global dos tokens de alerta no claro (extender mapeamento atual).
-2. Implementar variantes semânticas de alerta em `ui/alert.tsx` (novo componente).
-3. Redesenhar `DashboardShell.tsx`:
-   - Estado collapsed por padrão em desktop (>1024px).
-   - Comportamento de hover em toda a área da sidebar (desktop).
-   - Reorganizar submenus para aparecerem na mesma barra.
-4. Criar componente `ui/sidebar-icon-item.tsx` e `ui/sidebar-group.tsx` para encapsular estados active/hover/collapsed/expanded.
-5. Ajustar testes e lint para as novas dependências/interações.
-
-Observação: este documento não altera código, apenas consolida as decisões de design que deverão orientar a implementação seguinte. Manter este arquivo como fonte da verdade visual e comportamental do produto.
+Observação: este documento substitui a versão anterior, que tratava o hover-expand da
+sidebar como decisão central. A crítica de produto recomenda priorizar o componente de
+alerta e o acabamento do tema claro (baixo risco, alto valor) e trocar o hover-expand
+por um toggle de colapso previsível e acessível.
