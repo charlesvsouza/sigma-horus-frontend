@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 
 /* ------------------------------------------------------------------ */
@@ -173,6 +174,7 @@ const PRINT_CSS = `
 
 export function ManualBook() {
   const [openIdx, setOpenIdx] = useState(false);
+  const router = useRouter();
 
   return (
     <>
@@ -182,6 +184,16 @@ export function ManualBook() {
         {/* Barra de ações (não imprime) */}
         <div className="manual-noprint mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
+            <button
+              onClick={() => router.back()}
+              className="mb-3 inline-flex items-center gap-1.5 text-sm text-sand-dark transition-colors hover:text-gold"
+              aria-label="Voltar"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Voltar
+            </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
             <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de junho de 2026 · versão 1.1</p>

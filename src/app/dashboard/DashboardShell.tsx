@@ -69,18 +69,24 @@ const SEGMENT_LABELS: Record<string, string> = {
 export default function DashboardShell({ groups, lodgeName, userName, role, children }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [rail, setRail] = useState(false); // sidebar só-ícone no desktop
+
+  // Categoria da rota atual: abre por padrão no acordeão.
+  const activeCategory = useMemo(() => {
+    for (const g of groups) for (const it of g.items) {
+      if (pathname === it.href) return g.category;
+      if (it.href !== '/dashboard' && pathname?.startsWith(`${it.href}/`)) return g.category;
+    }
+    return groups[0]?.category ?? null;
+  }, [groups, pathname]);
+
+  // Acordeão de UMA categoria aberta por vez (single-open).
+  const [openCategory, setOpenCategory] = useState<string | null>(activeCategory);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('sh.nav.collapsed');
-      const railSaved = localStorage.getItem('sigma.sidebar.rail') === '1';
-      // Init hidratação-safe a partir do localStorage (só existe no cliente);
-      // não é o fetch-on-mount que a regra mira.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (saved) setCollapsed(JSON.parse(saved));
-      if (railSaved) setRail(true);
+      if (localStorage.getItem('sigma.sidebar.rail') === '1') setRail(true);
     } catch {}
   }, []);
 
@@ -103,12 +109,9 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
     return () => window.removeEventListener('pageshow', onShow);
   }, []);
 
+  // Single-open: abrir uma categoria fecha a anterior; clicar na aberta fecha-a.
   function toggleCategory(name: string) {
-    setCollapsed((prev) => {
-      const next = { ...prev, [name]: !prev[name] };
-      try { localStorage.setItem('sh.nav.collapsed', JSON.stringify(next)); } catch {}
-      return next;
-    });
+    setOpenCategory((cur) => (cur === name ? null : name));
   }
 
   const initials = userName.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('') || 'SH';
@@ -182,7 +185,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
 
           <nav className={`flex-1 space-y-5 overflow-y-auto py-6 ${rail ? 'px-4 lg:px-2' : 'px-4'}`}>
             {groups.map((group) => {
-              const isCollapsed = collapsed[group.category];
+              const isOpen = openCategory === group.category;
               return (
                 <div key={group.category}>
                   <button
@@ -191,13 +194,13 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                   >
                     {group.category}
                     <svg
-                      className={`h-3 w-3 text-sand-dark/50 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-90'}`}
+                      className={`h-3 w-3 text-sand-dark/50 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                  <div className={`mt-2 space-y-0.5 ${isCollapsed ? 'hidden' : ''} ${rail ? 'lg:block! lg:mt-0' : ''}`}>
+                  <div className={`mt-2 space-y-0.5 ${isOpen ? '' : 'hidden'} ${rail ? 'lg:block! lg:mt-0' : ''}`}>
                       {group.items.map((item) => {
                         const active = pathname === item.href;
                         const Icon = NAV_ICONS[item.href] ?? Circle;
