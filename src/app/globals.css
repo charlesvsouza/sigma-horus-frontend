@@ -220,3 +220,35 @@
     100% { background-position: -200% 0; }
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Legibilidade dos avisos/alertas no TEMA CLARO.
+   Os banners de status (assinatura, mensagens, erros) usam tons 200–300 do
+   Tailwind, desenhados para fundo escuro. No pergaminho do tema claro eles
+   somem. Aqui escurecemos só o TEXTO dos alertas (rose/amber/emerald/sky) para
+   contraste AA, sem mexer no tema escuro. Regras fora de @layer para vencerem as
+   utilities do Tailwind. Replicado no "system" quando o SO está em modo claro.
+   --------------------------------------------------------------------------- */
+[data-theme="light"] .text-rose-200,
+[data-theme="light"] .text-rose-300 { color: #be123c; }       /* rose-700 */
+[data-theme="light"] .hover\:text-rose-100:hover,
+[data-theme="light"] .hover\:text-rose-200:hover { color: #9f1239; } /* rose-800 */
+[data-theme="light"] .text-amber-200,
+[data-theme="light"] .text-amber-300 { color: #b45309; }      /* amber-700 */
+[data-theme="light"] .text-emerald-200,
+[data-theme="light"] .text-emerald-300 { color: #047857; }    /* emerald-700 */
+[data-theme="light"] .text-sky-200,
+[data-theme="light"] .text-sky-300 { color: #0369a1; }        /* sky-700 */
+
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] .text-rose-200,
+  [data-theme="system"] .text-rose-300 { color: #be123c; }
+  [data-theme="system"] .hover\:text-rose-100:hover,
+  [data-theme="system"] .hover\:text-rose-200:hover { color: #9f1239; }
+  [data-theme="system"] .text-amber-200,
+  [data-theme="system"] .text-amber-300 { color: #b45309; }
+  [data-theme="system"] .text-emerald-200,
+  [data-theme="system"] .text-emerald-300 { color: #047857; }
+  [data-theme="system"] .text-sky-200,
+  [data-theme="system"] .text-sky-300 { color: #0369a1; }
+}
