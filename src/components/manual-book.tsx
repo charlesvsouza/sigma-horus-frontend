@@ -196,7 +196,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de junho de 2026 · versão 1.1</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 30 de junho de 2026 · versão 1.2</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -344,6 +344,30 @@ export function ManualBook() {
                 <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
               </Bullets>
               <p>O topo mostra o nome da loja, o usuário logado e o status da assinatura (teste, ativa ou pendente).</p>
+              <p>
+                <strong>Cada item tem um ícone</strong> para você reconhecer a tela de relance, e o item da página
+                em que você está fica destacado em ouro.
+              </p>
+              <p>
+                <strong>O menu fica sempre visível:</strong> no computador ele é fixo à esquerda, então apenas o
+                conteúdo rola, a barra não some. Para ganhar espaço, clique em <UI>Recolher menu</UI> no rodapé da
+                barra: ela fica compacta (só os ícones) e, ao passar o mouse sobre um ícone, o nome aparece. No
+                celular, o menu abre pelo botão de menu (☰) e cobre a tela enquanto você escolhe.
+              </p>
+              <p>
+                <strong>Uma categoria por vez:</strong> ao abrir uma categoria, a anterior se fecha sozinha — assim a
+                lista não fica longa e poluída. A categoria da tela em que você está já abre automaticamente.
+              </p>
+              <p>
+                <strong>Busca rápida (atalho):</strong> pressione <UI>Ctrl + K</UI> (ou <UI>⌘ + K</UI> no Mac), ou
+                clique em <UI>Buscar</UI> no topo, para abrir a <strong>paleta de comandos</strong>. Digite o nome de
+                uma tela, use as setas para escolher e <UI>Enter</UI> para ir direto — sem precisar do mouse.
+              </p>
+              <p>
+                <strong>Tema da interface:</strong> em <UI>Configurações → Aparência</UI> você escolhe <strong>Escuro</strong>
+                (padrão), <strong>Claro</strong> (pergaminho suave) ou <strong>Sistema</strong> (acompanha o modo claro/escuro
+                do seu computador, Windows ou Mac). A preferência vale para todas as telas e fica salva neste navegador.
+              </p>
             </Chapter>
 
             {/* ============== 5. LUZES ============== */}
