@@ -1,181 +1,41 @@
-"use client";
+import { auth } from '@/lib/auth';
+import { withTenant } from '@/lib/prisma';
+import ContasClient from './ContasClient';
 
-import { FormEvent, useEffect, useState } from 'react';
-import { Button, EmptyState, Skeleton, inputClass } from '@/components/ui';
+// Server Component: carrega contas + membros + plano de contas no servidor.
+export default async function ContasPage() {
+  const session = await auth();
+  const lodgeId = session?.user?.lodgeId;
+  const data = lodgeId
+    ? await withTenant(String(lodgeId), async (db) => ({
+        accounts: await db.account.findMany({
+          where: { lodgeId: String(lodgeId) },
+          include: { member: { select: { id: true, name: true } } },
+          orderBy: { dueDate: 'asc' },
+        }),
+        members: await db.member.findMany({
+          where: { lodgeId: String(lodgeId) },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        }),
+        chartAccounts: await db.chartAccount.findMany({
+          where: { lodgeId: String(lodgeId) },
+          select: { id: true, code: true, name: true, type: true },
+          orderBy: { code: 'asc' },
+        }),
+      }))
+    : { accounts: [], members: [], chartAccounts: [] };
 
-interface ChartAccountOption {
-  id: string;
-  code: string;
-  name: string;
-  type: string;
-}
+  const accounts = data.accounts.map((a) => ({
+    id: a.id,
+    title: a.title,
+    type: a.type,
+    amount: Number(a.amount),
+    dueDate: a.dueDate.toISOString(),
+    status: a.status,
+    description: a.description ?? null,
+    member: a.member ? { id: a.member.id, name: a.member.name } : null,
+  }));
 
-interface MemberOption {
-  id: string;
-  name: string;
-}
-
-interface AccountItem {
-  id: string;
-  title: string;
-  type: string;
-  amount: number;
-  dueDate: string;
-  status: string;
-  description?: string | null;
-  member?: MemberOption | null;
-}
-
-const INPUT_CLASS = inputClass; // fonte única do design system
-
-export default function ContasPage() {
-  const [accounts, setAccounts] = useState<AccountItem[]>([]);
-  const [members, setMembers] = useState<MemberOption[]>([]);
-  const [chartAccounts, setChartAccounts] = useState<ChartAccountOption[]>([]);
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({
-    title: '',
-    type: 'RECEIVABLE',
-    chartAccountId: '',
-    amount: '',
-    dueDate: '',
-    status: 'pending',
-    description: '',
-    memberId: '',
-  });
-
-  async function loadData() {
-    setLoading(true);
-    const [accountsResponse, membersResponse, chartResponse] = await Promise.all([
-      fetch('/api/accounts'),
-      fetch('/api/members'),
-      fetch('/api/chart-accounts'),
-    ]);
-
-    const accountsData = await accountsResponse.json();
-    const membersData = await membersResponse.json();
-    const chartData = await chartResponse.json();
-    setAccounts(accountsData.items ?? []);
-    setMembers(membersData.items ?? []);
-    setChartAccounts(chartData.items ?? []);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    void loadData();
-  }, []);
-
-  function selectChart(id: string) {
-    const chart = chartAccounts.find((c) => c.id === id);
-    if (chart) {
-      setForm((prev) => ({ ...prev, chartAccountId: id, title: chart.name, type: chart.type === 'REVENUE' ? 'RECEIVABLE' : 'PAYABLE' }));
-    }
-  }
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    const response = await fetch('/api/accounts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        amount: Number(form.amount),
-        memberId: form.memberId || undefined,
-      }),
-    });
-
-    const data = await response.json();
-    if (response.ok) {
-      setMessage('Conta cadastrada com sucesso.');
-      setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '' });
-      await loadData();
-    } else {
-      setMessage(data.error ?? 'Erro ao cadastrar conta.');
-    }
-  }
-
-  async function handleDelete(id: string) {
-    const response = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
-    if (response.ok) {
-      await loadData();
-    }
-  }
-
-  const filteredCharts = chartAccounts.filter((c) =>
-    form.type === 'RECEIVABLE' ? c.type === 'REVENUE' : c.type === 'EXPENSE'
-  );
-
-  return (
-    <main className="min-h-screen px-6 py-12">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold text-sand-light">Contas a receber e pagar</h1>
-          <p className="mt-1 text-sm text-sand-dark">Registre contas financeiras e acompanhe vencimentos com base no fluxo do MVP.</p>
-        </div>
-
-        {message ? <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{message}</div> : null}
-
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Nova conta</h2>
-          <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
-            <select value={form.chartAccountId} onChange={(e) => selectChart(e.target.value)} className={INPUT_CLASS}>
-              <option value="">Categoria (plano de contas)</option>
-              {filteredCharts.map((c) => (
-                <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
-              ))}
-            </select>
-            <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className={INPUT_CLASS} placeholder="Título da conta" required />
-            <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className={INPUT_CLASS}>
-              <option value="RECEIVABLE">Conta a receber</option>
-              <option value="PAYABLE">Conta a pagar</option>
-            </select>
-            <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT_CLASS} placeholder="Valor" required />
-            <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT_CLASS} required />
-            <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
-              <option value="pending">Pendente</option>
-              <option value="paid">Pago</option>
-              <option value="overdue">Vencido</option>
-            </select>
-            <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
-              <option value="">Vincular a um membro (opcional)</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>{member.name}</option>
-              ))}
-            </select>
-            <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Descrição" rows={3} />
-            <Button type="submit" className="md:col-span-2">Salvar conta</Button>
-          </form>
-        </section>
-
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Contas cadastradas</h2>
-          <div className="mt-5 space-y-3">
-            {loading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
-                  <Skeleton variant="text" className="w-1/3" />
-                  <Skeleton variant="text" className="w-20" />
-                </div>
-              ))
-            ) : accounts.length === 0 ? (
-              <EmptyState title="Nenhuma conta cadastrada" description="Lance a primeira conta a receber ou a pagar para acompanhar vencimentos e o fluxo de caixa." />
-            ) : accounts.map((account) => (
-              <div key={account.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
-                <div>
-                  <p className="text-sm font-medium text-sand-light">{account.title}</p>
-                  <p className="mt-1 text-xs text-sand-dark">{account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} • {account.member?.name ?? 'Sem vínculo'}</p>
-                </div>
-                <div className="text-right text-xs text-sand-dark">
-                  <p className="tabular-nums">R$ {account.amount.toFixed(2)}</p>
-                  <p className="mt-0.5">{new Date(account.dueDate).toLocaleDateString('pt-BR')}</p>
-                </div>
-                <button onClick={() => void handleDelete(account.id)} className="text-xs text-rose-300/60 transition hover:text-rose-300">Remover</button>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    </main>
-  );
+  return <ContasClient accounts={accounts} members={data.members} chartAccounts={data.chartAccounts} />;
 }
