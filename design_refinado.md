@@ -173,8 +173,8 @@ Onda 2+ (opcional, refinamento):
 [x] `globals.css` tema claro: borda de card/tabela em tinta escura (legível no pergaminho).
 [x] Remover `backdrop-blur` de onboarding/trocar-senha; remover `shadow` do Card.
 [x] Paleta de comandos (Ctrl/Cmd+K) para navegar e buscar telas (eficiência diária).
-[ ] (Adiado) Toggle de colapso da sidebar + ícones dos itens. Requer um set de ícones
-    coerente com a marca antes de qualquer estado só-ícone. Não fazer sem isso.
+[x] Sidebar: ícones Lucide por item + fixa no desktop (sticky) + rail colapsável
+    (só-ícone, toggle persistente, tooltips). Mobile drawer inalterado. (2026-06-30)
 [ ] (Adiado, risco) Confirm dialog substituindo `window.confirm`. O refactor assíncrono
     em ações destrutivas (excluir membro, encerrar veneralato) é perigoso às cegas: um
     `await` esquecido remove a confirmação silenciosamente. Fazer só com iteração visual.

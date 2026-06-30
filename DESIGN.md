@@ -182,6 +182,15 @@ o restante. A paleta inteira evoca deserto ao entardecer + céu noturno.
 - Paleta de comandos `Ctrl/Cmd+K` (`command-palette.tsx`): busca e navega telas por
   teclado (setas/enter/esc). Botão "Buscar ⌘K" no cabeçalho do dashboard.
 
+### Sidebar (`DashboardShell.tsx`)
+
+- Ícones: **Lucide** (`lucide-react`), 1 por destino (mapa `NAV_ICONS` por href),
+  18px, stroke 1.75 (consistente com os SVGs inline). Ativo em ouro.
+- Fixa no desktop (`lg:sticky lg:top-0 lg:h-screen`); só o conteúdo principal rola.
+- **Rail colapsável** (desktop): toggle persistente (`sigma.sidebar.rail`), `lg:w-16`
+  só-ícone com tooltips; esconde wordmark/labels/headers de categoria (`lg:`). Mobile
+  permanece como drawer full com overlay (rail não afeta o mobile).
+
 ## Estados
 
 ### Loading
