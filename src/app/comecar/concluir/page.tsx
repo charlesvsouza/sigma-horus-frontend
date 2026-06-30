@@ -22,6 +22,9 @@ function Concluir() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Página pública/transitória pós-checkout: o resumo depende do session_id do
+    // redirect do Stripe (não é dado de dashboard). Carga sob demanda aceitável.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!sessionId) { setLoadError('Link inválido: faltou a referência do pagamento.'); return; }
     fetch(`/api/signup/complete?session_id=${encodeURIComponent(sessionId)}`)
       .then((r) => r.json())
