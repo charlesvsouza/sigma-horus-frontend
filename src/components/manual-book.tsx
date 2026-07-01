@@ -365,7 +365,7 @@ export function ManualBook() {
               </p>
               <p>
                 <strong>Tema da interface:</strong> em <UI>Configurações → Aparência</UI> você escolhe <strong>Escuro</strong>
-                (padrão), <strong>Claro</strong> (pergaminho suave) ou <strong>Sistema</strong> (acompanha o modo claro/escuro
+                (padrão), <strong>Papiro</strong> (pergaminho suave) ou <strong>Sistema</strong> (acompanha o modo claro/escuro
                 do seu computador, Windows ou Mac). A preferência vale para todas as telas e fica salva neste navegador.
               </p>
             </Chapter>
@@ -412,7 +412,7 @@ export function ManualBook() {
                 <Note>Mantenha o CNPJ e os dados bancários corretos: eles aparecem em relatórios e ajudam na conciliação financeira.</Note>
                 <p>
                   <strong>Aparência:</strong> na própria página de Configurações há a seção <UI>Aparência</UI>, onde você
-                  escolhe o tema <strong>Escuro</strong> (padrão), <strong>Claro</strong> (pergaminho suave) ou
+                  escolhe o tema <strong>Escuro</strong> (padrão), <strong>Papiro</strong> (pergaminho suave) ou
                   <strong> Sistema</strong> (segue o modo claro/escuro do seu computador). A preferência fica salva neste
                   navegador e vale para todas as telas.
                 </p>
@@ -741,7 +741,7 @@ export function ManualBook() {
                   <li><strong>Primeiro acesso:</strong> entre com o e-mail e a senha provisória recebida por e-mail; o sistema pede para você <strong>definir uma nova senha</strong>.</li>
                   <li><strong>Editar meus dados:</strong> você pode atualizar o próprio cadastro (contato, endereço, família). O seu <strong>papel/cargo</strong> só é definido pelo Administrador.</li>
                   <li><strong>Trocar senha:</strong> a qualquer momento, em <UI>/trocar-senha</UI>, informando a senha atual.</li>
-                  <li><strong>Tema claro:</strong> prefere a interface clara? Veja a seção Aparência (capítulo 6.1) — a escolha vale para o seu navegador.</li>
+                  <li><strong>Tema Papiro:</strong> prefere a interface clara? Veja a seção Aparência (capítulo 6.1) — a escolha vale para o seu navegador.</li>
                 </Bullets>
               </Sub>
             </Chapter>

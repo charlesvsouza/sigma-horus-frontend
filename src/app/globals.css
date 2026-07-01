@@ -258,6 +258,129 @@
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
+
+  /* Card pergaminho para a seção de planos da landing page — um rolo de
+     papiro aberto, com bordas enroladas (cilindros) e textura de fibra vegetal.
+     O conteúdo parece escrito com tinta escura sobre a folha. */
+  .scroll-card {
+    position: relative;
+    isolation: isolate;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 40px,
+        rgba(139, 126, 100, 0.04) 40px,
+        rgba(139, 126, 100, 0.04) 41px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 20px,
+        rgba(139, 126, 100, 0.03) 20px,
+        rgba(139, 126, 100, 0.03) 21px
+      ),
+      linear-gradient(
+        180deg,
+        #F5EDD6 0%,
+        #F0E3C5 30%,
+        #F5EDD6 60%,
+        #EDE0C0 100%
+      );
+    border-radius: 2px;
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.3),
+      0 1px 3px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .scroll-card::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: -10px;
+    left: 6px;
+    right: 6px;
+    height: 20px;
+    background: linear-gradient(
+      180deg,
+      #A89878 0%,
+      #D4C5A9 25%,
+      #C4B48E 50%,
+      #B8A88A 75%,
+      #9A8A6A 100%
+    );
+    border-radius: 50%;
+    box-shadow:
+      0 -2px 6px rgba(0, 0, 0, 0.25),
+      inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  }
+
+  .scroll-card::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    bottom: -10px;
+    left: 6px;
+    right: 6px;
+    height: 20px;
+    background: linear-gradient(
+      0deg,
+      #A89878 0%,
+      #D4C5A9 25%,
+      #C4B48E 50%,
+      #B8A88A 75%,
+      #9A8A6A 100%
+    );
+    border-radius: 50%;
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.25),
+      inset 0 -1px 2px rgba(255, 255, 255, 0.3);
+  }
+
+  /* Featured scroll-card (plano "Loja") — enrolamentos mais realçados */
+  .scroll-card-featured {
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 40px,
+        rgba(139, 126, 100, 0.06) 40px,
+        rgba(139, 126, 100, 0.06) 41px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 20px,
+        rgba(139, 126, 100, 0.04) 20px,
+        rgba(139, 126, 100, 0.04) 21px
+      ),
+      linear-gradient(
+        180deg,
+        #F5EDD6 0%,
+        #E8DCC0 30%,
+        #F5EDD6 60%,
+        #EDE0C0 100%
+      );
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.35),
+      inset 0 0 0 1px rgba(201, 162, 39, 0.25),
+      0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .scroll-card-featured::before {
+    box-shadow:
+      0 -2px 6px rgba(0, 0, 0, 0.3),
+      inset 0 1px 2px rgba(255, 255, 255, 0.3),
+      0 0 0 1px rgba(201, 162, 39, 0.2);
+  }
+
+  .scroll-card-featured::after {
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.3),
+      inset 0 -1px 2px rgba(255, 255, 255, 0.3),
+      0 0 0 1px rgba(201, 162, 39, 0.2);
+  }
 }
 
 /* ===========================================================================

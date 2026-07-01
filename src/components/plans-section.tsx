@@ -22,9 +22,6 @@ export function PlansSection() {
   async function handleSubscribe(planId: string) {
     setLoading(planId);
     try {
-      // Cartão: self-service público com teste grátis de 10 dias (visitante sem
-      // conta entra direto no Stripe). Boleto anual pré-pago segue o fluxo
-      // autenticado (exige conta) — cai em /login se não houver sessão.
       if (effectiveMethod === 'card') {
         const res = await fetch('/api/signup/checkout', {
           method: 'POST',
@@ -110,7 +107,7 @@ export function PlansSection() {
         ) : null}
       </div>
 
-      <div className="mt-10 grid gap-5 lg:grid-cols-3">
+      <div className="mt-10 grid gap-6 lg:grid-cols-3">
         {plans.map((plan, i) => {
           const featured = i === 1;
           const total = priceFor(plan.id, interval, effectiveMethod);
@@ -121,42 +118,40 @@ export function PlansSection() {
           return (
             <div
               key={plan.id}
-              className={`flex flex-col rounded-2xl border p-8 transition-colors ${
-                featured
-                  ? 'border-gold/40 bg-sigma-blue-dark/80'
-                  : 'border-white/[0.08] bg-sigma-blue-dark/40 hover:border-white/15'
+              className={`scroll-card flex flex-col p-8 transition-shadow duration-300 ${
+                featured ? 'scroll-card-featured' : ''
               }`}
             >
               <div className="flex items-center justify-between">
-                <h3 className="font-display text-lg font-semibold tracking-wide text-sand-light">{plan.name}</h3>
+                <h3 className="font-display text-lg font-semibold tracking-wide text-[#2D281E]">{plan.name}</h3>
                 {featured ? (
-                  <span className="rounded-full border border-gold/30 bg-gold/10 px-2.5 py-0.5 text-xs font-medium text-gold">
+                  <span className="rounded-full border border-[#8B6914]/40 bg-[#8B6914]/10 px-2.5 py-0.5 text-xs font-medium text-[#8B6914]">
                     Mais escolhido
                   </span>
                 ) : null}
               </div>
-              <p className="mt-2 text-sm text-sand-dark">{plan.description}</p>
+              <p className="mt-2 text-sm text-[#5C5346]">{plan.description}</p>
 
               <p className="mt-6 flex items-baseline gap-2">
-                <span className="text-4xl font-semibold tabular-nums text-sand-light">
+                <span className="text-4xl font-semibold tabular-nums text-[#2D281E]">
                   {formatPrice(perMonth)}
                 </span>
-                <span className="text-sm text-sand-dark">/mês</span>
+                <span className="text-sm text-[#5C5346]">/mês</span>
               </p>
               {isAnnual ? (
-                <p className="mt-1 text-xs text-sand-dark">
+                <p className="mt-1 text-xs text-[#5C5346]">
                   {formatPrice(total)} por ano
-                  <span className="ml-2 text-gold">{discountPct}% off (de {formatPrice(fullAnnual)})</span>
+                  <span className="ml-2 text-[#8B6914]">{discountPct}% off (de {formatPrice(fullAnnual)})</span>
                   <span className="ml-2">{isCardAnnual ? '· renova auto' : '· pré-pago 1 ano'}</span>
                 </p>
               ) : (
-                <p className="mt-1 text-xs text-sand-dark">cobrança mensal no cartão</p>
+                <p className="mt-1 text-xs text-[#5C5346]">cobrança mensal no cartão</p>
               )}
 
               <ul className="mt-8 space-y-3">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-sm text-sand">
-                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                  <li key={feature} className="flex items-start gap-3 text-sm text-[#4A4035]">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#8B6914]" />
                     {feature}
                   </li>
                 ))}
@@ -168,14 +163,14 @@ export function PlansSection() {
                   disabled={loading !== null}
                   className={`w-full rounded-full px-6 py-3 text-sm font-medium transition-all duration-300 ease-out disabled:opacity-50 ${
                     featured
-                      ? 'bg-gold text-sigma-blue-deep hover:bg-gold-light'
-                      : 'border border-gold/40 text-gold/90 hover:border-gold/60 hover:text-gold'
+                      ? 'bg-[#8B6914] text-[#F5EDD6] hover:bg-[#A08020]'
+                      : 'border border-[#8B6914]/50 text-[#8B6914] hover:border-[#8B6914] hover:text-[#A08020]'
                   }`}
                 >
                   {loading === plan.id ? 'Redirecionando...' : 'Assinar agora'}
                 </button>
                 {isAnnual && effectiveMethod !== 'card' ? (
-                  <p className="mt-3 text-center text-[0.7rem] text-sand-dark">
+                  <p className="mt-3 text-center text-[0.7rem] text-[#5C5346]">
                     Acesso liberado após a confirmação do pagamento.
                   </p>
                 ) : null}

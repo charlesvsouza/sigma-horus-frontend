@@ -14,7 +14,7 @@ function apply(theme: Theme) {
 
 const OPTIONS: { value: Theme; label: string }[] = [
   { value: 'dark', label: 'Escuro' },
-  { value: 'light', label: 'Claro' },
+  { value: 'light', label: 'Papiro' },
   { value: 'system', label: 'Sistema' },
 ];
 
