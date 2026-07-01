@@ -61,7 +61,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
-          <h1 className="text-2xl font-bold text-sand-light">Documentos</h1>
+          <h1 className="font-display text-2xl font-bold text-sand-light">Documentos</h1>
           <p className="mt-1 text-sm text-sand-dark">Centralize atas, prontuários, comprovantes e arquivos da loja.</p>
         </div>
 

@@ -119,7 +119,7 @@ export default function CadastrosClient({ rites, powers, chartAccounts }: { rite
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-sand-light">Cadastros mestre</h1>
+            <h1 className="font-display text-2xl font-bold text-sand-light">Cadastros mestre</h1>
             <p className="mt-1 text-sm text-sand-dark">Configure os ritos, potências e o plano de contas da sua loja.</p>
           </div>
           <button

@@ -67,7 +67,7 @@ export default function CampanhasClient({ items, tronco, channels }: { items: Ca
       <div className="mx-auto max-w-5xl space-y-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-sand-light">Campanhas de benemerência</h1>
+            <h1 className="font-display text-2xl font-bold text-sand-light">Campanhas de benemerência</h1>
             <p className="mt-1 text-sm text-sand-dark">Organize doações para irmãos, famílias ou instituições, com recursos do Tronco ou doação voluntária.</p>
           </div>
           <Button onClick={() => setCreating((v) => !v)}>{creating ? 'Fechar' : '+ Nova campanha'}</Button>

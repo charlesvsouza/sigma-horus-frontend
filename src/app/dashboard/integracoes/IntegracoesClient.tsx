@@ -68,7 +68,7 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-3xl space-y-8">
         <div>
-          <h1 className="text-2xl font-bold text-sand-light">Integrações</h1>
+          <h1 className="font-display text-2xl font-bold text-sand-light">Integrações</h1>
           <p className="mt-1 text-sm text-sand-dark">Cada loja conecta a própria conta — as chaves são salvas aqui, sem precisar de reimplantação do sistema.</p>
         </div>
 

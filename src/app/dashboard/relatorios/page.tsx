@@ -23,7 +23,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
     return (
       <main className="min-h-screen px-6 py-12">
         <div className="mx-auto max-w-6xl">
-          <h1 className="text-2xl font-bold text-sand-light">Relatórios</h1>
+          <h1 className="font-display text-2xl font-bold text-sand-light">Relatórios</h1>
           <p className="mt-1 text-sm text-sand-dark">Faça login para ver o fluxo financeiro da lodge.</p>
         </div>
       </main>
@@ -86,7 +86,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-sand-light">Relatórios financeiros</h1>
+            <h1 className="font-display text-2xl font-bold text-sand-light">Relatórios financeiros</h1>
             <p className="mt-1 text-sm text-sand-dark">Extrato resumido, contas abertas e fluxo de caixa do período.</p>
           </div>
           <BotaoExportar from={searchParams.from} to={searchParams.to} />

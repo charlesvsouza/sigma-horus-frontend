@@ -308,6 +308,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
             </nav>
           ) : null}
 
+          <div className="fio-de-prumo mx-5 lg:mx-8" />
           <div className="flex-1 bg-sigma-app"><ConfirmProvider>{children}</ConfirmProvider></div>
         </div>
       </div>

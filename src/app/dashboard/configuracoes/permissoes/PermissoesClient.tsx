@@ -80,7 +80,7 @@ export default function PermissoesClient({ initialMatrix, roles, resources, acti
       <div className="mx-auto max-w-5xl space-y-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-sand-light">Permissões por cargo</h1>
+            <h1 className="font-display text-2xl font-bold text-sand-light">Permissões por cargo</h1>
             <p className="mt-1 text-sm text-sand-dark">
               Defina o que cada papel pode <strong>ver</strong> e <strong>editar</strong> em cada módulo.
               {customized ? ' Esta loja usa permissões personalizadas.' : ' Esta loja usa os padrões do sistema (ainda não personalizados).'}

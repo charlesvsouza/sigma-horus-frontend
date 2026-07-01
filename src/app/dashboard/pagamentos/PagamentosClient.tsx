@@ -56,7 +56,7 @@ export default function PagamentosClient({ accounts, members, payments }: { acco
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
-          <h1 className="text-2xl font-bold text-sand-light">Pagamentos</h1>
+          <h1 className="font-display text-2xl font-bold text-sand-light">Pagamentos</h1>
           <p className="mt-1 text-sm text-sand-dark">Registre entradas e saídas de caixa vinculadas às contas do MVP.</p>
         </div>
 

@@ -68,7 +68,7 @@ export default function FechamentoClient({ data, initialFrom, initialTo }: { dat
         {/* Controles (não imprime) */}
         <div className="report-noprint flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-sand-light">Fechamento do veneralato</h1>
+            <h1 className="font-display text-2xl font-bold text-sand-light">Fechamento do veneralato</h1>
             <p className="mt-1 text-sm text-sand-dark">Relatório financeiro completo no formato livro caixa.</p>
           </div>
           <div className="flex flex-wrap items-end gap-3">

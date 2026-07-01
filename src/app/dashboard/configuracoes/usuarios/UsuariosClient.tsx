@@ -65,7 +65,7 @@ export default function UsuariosClient({ users, denied }: { users: AppUser[]; de
       <div className="mx-auto max-w-4xl space-y-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-sand-light">Usuários & acessos</h1>
+            <h1 className="font-display text-2xl font-bold text-sand-light">Usuários & acessos</h1>
             <p className="mt-1 text-sm text-sand-dark">
               Defina o papel (cargo de permissão) de cada usuário. O acesso do obreiro é criado em <Link href="/dashboard/membros" className="text-gold/80 underline hover:text-gold">Membros</Link> → &ldquo;Conceder acesso&rdquo;.
             </p>

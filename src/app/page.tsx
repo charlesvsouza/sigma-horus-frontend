@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { PlansSection } from '@/components/plans-section';
+import { Reveal } from '@/components/reveal';
 
 const modules = [
   {
@@ -132,6 +133,7 @@ export default function Home() {
 
       {/* ===================== OS QUATRO OFÍCIOS ===================== */}
       <section id="modulos" className="relative border-t border-white/[0.06]">
+        <Reveal>
         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-28">
           <div className="max-w-2xl">
             <p className="font-display text-xs tracking-[0.4em] text-gold">OS QUATRO OFÍCIOS</p>
@@ -166,10 +168,12 @@ export default function Home() {
             ))}
           </div>
         </div>
+      </Reveal>
       </section>
 
       {/* ===================== A BASE ===================== */}
       <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-24">
+        <Reveal>
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
           <div>
             <h2 className="font-display text-[clamp(1.6rem,3vw,2.3rem)] font-semibold leading-tight text-sand-light">
@@ -189,10 +193,12 @@ export default function Home() {
             ))}
           </div>
         </div>
+        </Reveal>
       </section>
 
       {/* ===================== CONCEITO DA MARCA ===================== */}
       <section className="relative border-y border-white/[0.06]">
+        <Reveal>
         <div className="mx-auto flex max-w-5xl flex-col items-center px-6 py-24 text-center lg:py-28">
           <Image
             src="/sigmahorus_ouro.png"
@@ -209,12 +215,14 @@ export default function Home() {
             somavam o todo — a mesma exatidão que um sistema de contas e prestação de contas exige.
           </p>
         </div>
+        </Reveal>
       </section>
 
       <PlansSection />
 
       {/* ===================== CTA FINAL ===================== */}
       <section className="mx-auto max-w-7xl px-6 pb-28 lg:px-10">
+        <Reveal>
         <div className="relative overflow-hidden rounded-2xl border border-gold/20 px-8 py-16 text-center">
           <div
             aria-hidden="true"
@@ -239,6 +247,7 @@ export default function Home() {
             </Link>
           </div>
         </div>
+        </Reveal>
       </section>
 
       {/* ===================== RODAPÉ ===================== */}

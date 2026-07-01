@@ -48,9 +48,28 @@ de dados financeiros, eficiência operacional, confiança institucional.
 
 ### Estratégia de cor
 
-**Committed**: o gold carrega 20-30% das superfícies de interação (CTAs, indicador
-ativo, badges de status). O fundo escuro (blue-deep) domina com ~70%. A areia texturiza
-o restante. A paleta inteira evoca deserto ao entardecer + céu noturno.
+**Regra do Ourives:** o ouro é precioso porque é raro. Aparece apenas em:
+1. CTAs primários (Começar, Salvar, Criar)
+2. Estado ativo (sidebar, breadcrumb final)
+3. Nome da loja no cabeçalho
+4. **Fio de Prumo** — uma única linha dourada por página entre cabeçalho e conteúdo
+
+O fundo escuro (blue-deep) domina com ~70%. A areia texturiza o restante. A paleta
+inteira evoca deserto ao entardecer + céu noturno.
+
+### Tema Papiro (claro)
+
+O tema claro não é um mero inverso — é uma experiência própria:
+
+| Token | Escuro (noite) | Papiro (claro) |
+|-------|----------------|----------------|
+| Fundo página | `#0A1628` (azul profundo) | `#F5F0E8` (papiro envelhecido) |
+| Cards | `#0B1A2E` | `#EDE7DB` (tom sobre tom) |
+| Texto principal | `#F2E8D5` (areia iluminada) | `#2D281E` (sépia escuro) |
+| Ouro | `#C9A227` | `#B8860B` (ouro antigo) |
+
+No Papiro, as bordas `border-white/x` são convertidas para tinta sépia escura via
+override no `globals.css`, mantendo a arquitetura de tokens sem duplicar componentes.
 
 ### Feedback
 
@@ -69,16 +88,20 @@ o restante. A paleta inteira evoca deserto ao entardecer + céu noturno.
 
 ## Tipografia
 
+**Duas vozes:** contraste entre solidez atemporal (Cinzel) e precisão moderna (Geist).
+
 | Nível | Fonte | Tamanho | Peso | Uso |
 |-------|-------|---------|------|-----|
-| Display | Geist | 3xl-4xl (30-36px) | Bold | Título de página |
-| Heading 1 | Geist | 2xl (24px) | Semibold | Seções principais |
-| Heading 2 | Geist | xl (20px) | Semibold | Subseções |
+| Display | **Cinzel** (serifa inscricional) | 3xl-4xl (30-36px) | Bold | Título de página (dashboard + landing) |
+| Heading 1 | Cinzel | 2xl (24px) | Semibold | Seções principais da landing |
+| Heading 2 | Geist | xl (20px) | Semibold | Subseções (dashboard) |
 | Body | Geist | base (16px) | Normal | Conteúdo principal |
 | Body small | Geist | sm (14px) | Normal | Metadados, labels |
 | Caption | Geist | xs (12px) | Normal | Auxiliar, badges |
 | Mono | Geist Mono | sm (14px) | Normal | Valores financeiros, código |
 
+- Cinzel evoca pedra gravada de templo — usada com moderação: landing, nome da loja no header, títulos de página.
+- Geist responde pelo corpo, UI e dados — a face utilitária e legível.
 - Body line length: 65-75ch
 - Escala com proporção 1.25 entre níveis
 
@@ -223,3 +246,47 @@ o restante. A paleta inteira evoca deserto ao entardecer + céu noturno.
 - Sidebar collapse: width 300ms ease-out
 - Modal/Drawer: fade + scale 200ms ease-out
 - Sem bounce, sem elastic, sem animar propriedades CSS layout (width/height/top/left)
+
+### Movimento orquestrado
+
+- **Reveal (`animate-reveal`):** elementos entram com fade+translate ao entrar no
+  viewport (IntersectionObserver). Usado em seções da landing e blocos do dashboard.
+- **Stagger (`animate-stagger`):** cascata com delay progressivo controlado por
+  `style="--i:N"`. Cards do dashboard entram em sequência — a tesouraria primeiro,
+  depois os demais ofícios.
+- **Cerimonial (`animate-rise`):** reservado para o hero da landing — entrada solene
+  com `cubic-bezier(0.16, 1, 0.3, 1)`.
+- **Prefers-reduced-motion:** todas as animações respeitam a preferência do SO.
+
+## Assinaturas
+
+### Fio de Prumo
+
+A única linha dourada por página. Inspirada no fio de prumo do arquiteto — o
+instrumento que aprova o que está reto. Aparece como separador entre o cabeçalho
+e o conteúdo em cada tela do dashboard.
+
+```css
+.fio-de-prumo {
+  height: 1px;
+  background: linear-gradient(
+    90deg, transparent 0%, var(--sigma-gold) 20%,
+    var(--sigma-gold) 80%, transparent 100%
+  );
+  opacity: 0.4;
+}
+```
+
+Classe global em `globals.css`. Posicionada no DashboardShell entre o `<header>`
+e `<main>`, exatamente antes do `bg-sigma-app`.
+
+### Empty states
+
+Cada ofício tem sua própria voz quando vazio:
+- **Tesouraria:** "Nenhum lançamento. O Livro está limpo."
+- **Hospitalaria:** "Nenhuma campanha de benemerência. Que tal semear a primeira?"
+- **Secretaria:** "Nenhum membro cadastrado. A Loja espera seu quadro."
+- **Chancelaria:** "Nenhum documento. O arquivo aguarda."
+
+Os textos substituem o genérico "Nada aqui ainda", dando personalidade à primeira
+experiência de cada módulo.

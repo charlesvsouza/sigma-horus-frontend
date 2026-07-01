@@ -12,20 +12,20 @@
   --sigma-sand-dark: #C4B49A;
 }
 
-/* Tema claro (leitura clara) — remapeia os MESMOS tokens, invertendo superfícies
-   (azul→claro) e textos (areia→escuro). Como o Tailwind v4 mapeia as classes
-   para estes tokens, toda a UI alterna junto ao trocar data-theme no <html>.
-   Paleta "pergaminho" suavizada (menos branco → menos cansaço visual). */
+/* Tema "Papiro" — o claro não é um mero inverso do escuro, é uma experiência
+   própria. Fundo de papiro envelhecido (#F5F0E8), texto em tinta sépia, ouro
+   em tom mais antigo/terroso (#B8860B — ouro velho). Cards com tom sobre tom
+   para baixo brilho e leitura confortável em ambientes claros. */
 [data-theme="light"] {
-  --sigma-blue-deep: #E7E1D2;  /* fundo da página (pergaminho quente, baixa glare) */
-  --sigma-blue-dark: #F1ECDE;  /* cards / superfícies (mais claro = elevação) */
-  --sigma-blue-mid:  #DAD2C0;  /* superfícies elevadas / chips */
-  --sigma-gold:       #8A6D12; /* ouro mais escuro p/ contraste em fundo claro */
-  --sigma-gold-light: #A8861E;
-  --sigma-gold-dark:  #6E5710;
-  --sigma-sand:       #4A4636; /* texto secundário (escuro) */
-  --sigma-sand-light: #2A261D; /* texto principal (marrom escuro, não preto puro) */
-  --sigma-sand-dark:  #6E6650; /* texto desabilitado / leve */
+  --sigma-blue-deep: #F5F0E8;  /* papiro envelhecido (fundo página) */
+  --sigma-blue-dark: #EDE7DB;  /* cards (tom sobre tom, elevação sutil) */
+  --sigma-blue-mid:  #E2D9CA;  /* superfícies elevadas / chips */
+  --sigma-gold:       #B8860B; /* ouro antigo (DarkGoldenrod) */
+  --sigma-gold-light: #D4A017; /* ouro papiro claro (hover) */
+  --sigma-gold-dark:  #8B6914; /* ouro pressionado */
+  --sigma-sand:       #5C5346; /* texto secundário (marrom sépia) */
+  --sigma-sand-light: #2D281E; /* texto principal (tinta sépia escura, não preto) */
+  --sigma-sand-dark:  #7D725E; /* texto desabilitado / leve */
 }
 
 /* Tema "Sistema": segue a preferência clara/escura do SO. Quando o SO está em
@@ -33,15 +33,15 @@
    escuro (:root). Resolvido em CSS (sem flash e atualiza sozinho com o SO). */
 @media (prefers-color-scheme: light) {
   [data-theme="system"] {
-    --sigma-blue-deep: #E7E1D2;
-    --sigma-blue-dark: #F1ECDE;
-    --sigma-blue-mid:  #DAD2C0;
-    --sigma-gold:       #8A6D12;
-    --sigma-gold-light: #A8861E;
-    --sigma-gold-dark:  #6E5710;
-    --sigma-sand:       #4A4636;
-    --sigma-sand-light: #2A261D;
-    --sigma-sand-dark:  #6E6650;
+    --sigma-blue-deep: #F5F0E8;
+    --sigma-blue-dark: #EDE7DB;
+    --sigma-blue-mid:  #E2D9CA;
+    --sigma-gold:       #B8860B;
+    --sigma-gold-light: #D4A017;
+    --sigma-gold-dark:  #8B6914;
+    --sigma-sand:       #5C5346;
+    --sigma-sand-light: #2D281E;
+    --sigma-sand-dark:  #7D725E;
   }
 }
 
@@ -104,7 +104,7 @@
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {
     -webkit-text-fill-color: var(--sigma-sand-light);
-    -webkit-box-shadow: 0 0 0px 1000px var(--sigma-blue-deep) inset;
+    -webkit-box-shadow: 0 0 0px 1000px color-mix(in srgb, var(--sigma-blue-deep) 92%, var(--sigma-blue-mid)) inset;
     transition: background-color 5000s ease-in-out 0s;
   }
 }
@@ -191,8 +191,13 @@
     .animate-rise,
     .animate-slide-up,
     .animate-fade-in,
-    .animate-pulse-glow {
+    .animate-pulse-glow,
+    .animate-reveal,
+    .animate-stagger {
       animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
     }
   }
 
@@ -200,9 +205,43 @@
     animation: pulse-glow 2s ease-in-out infinite;
   }
 
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  /* Revelação por scroll: opaco + translação zero ao entrar no viewport.
+     Usar com IntersectionObserver via classe JS ou data attribute. */
+  .animate-reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .animate-reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Cascata com delay progressivo (1-based index via style="--i:N") */
+  .animate-stagger {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 80ms),
+                transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 80ms);
+  }
+  .animate-stagger.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Fio de Prumo — a única linha dourada por página. Marca o topo do conteúdo
+     após o cabeçalho, como o fio que o arquiteto usa para aprovar o que está reto. */
+  .fio-de-prumo {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--sigma-gold) 20%,
+      var(--sigma-gold) 80%,
+      transparent 100%
+    );
+    opacity: 0.4;
   }
 
   @keyframes slide-up {

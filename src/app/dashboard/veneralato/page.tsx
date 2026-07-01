@@ -133,7 +133,7 @@ export default function VeneralatoPage() {
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
-          <h1 className="text-2xl font-bold text-sand-light">Veneralato</h1>
+          <h1 className="font-display text-2xl font-bold text-sand-light">Veneralato</h1>
           <p className="mt-1 text-sm text-sand-dark">Gerencie períodos de gestão, cargos dos membros e fechamento de caixa.</p>
         </div>
 
