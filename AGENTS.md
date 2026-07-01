@@ -7,7 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- BEGIN:handoff -->
 # Handoff — Sessão 2026-06-27
 
-> 📘 **Escopo, arquitetura e histórico completos:** [`../../sigmahorus_documentacao.md`](../../sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
+> 📘 **Escopo, arquitetura e histórico completos:** [`./sigmahorus_documentacao.md`](./sigmahorus_documentacao.md) (documento único de referência). Este arquivo é só o **estado da sessão corrente** — não duplicar escopo/história aqui.
 
 ## 🎨 UPLIFT DE DESIGN (crítica impeccable, 2026-06-30)
 Crítica registrada em `design_refinado.md` (saúde ~28/40 → estimado ~33-34 após estas mudanças). **Onda 1 + paleta entregues:**
@@ -57,7 +57,7 @@ Crítica registrada em `design_refinado.md` (saúde ~28/40 → estimado ~33-34 a
 - ⏳ **Falta (pós-sessão):** **conexão Meta do WhatsApp** (ação do dono — em andamento; guia em [`CONEXAO_WHATSAPP.md`](CONEXAO_WHATSAPP.md)); validar E2E o fluxo de acesso e o encerramento em produção.
 
 ## Em andamento (2026-06-28, noite) — retomar amanhã
-- **Conexão WhatsApp (Meta):** dono criando app/WABA, número, token permanente (System User) e template `aviso_loja` com 1 variável `{{1}}`. Estava sendo bloqueado pela Meta no cadastro. Guia completo salvo em **`apps/frontend/CONEXAO_WHATSAPP.md`** (WhatsApp + apêndice Twilio/SMS). Ao retomar: aprovar o template, conectar em Integrações (Phone Number ID, Token, nome do template, `pt_BR`) e testar por uma convocação de campanha ou gatilho diário.
+- **Conexão WhatsApp (Meta):** dono criando app/WABA, número, token permanente (System User) e template `aviso_loja` com 1 variável `{{1}}`. Estava sendo bloqueado pela Meta no cadastro. Guia completo salvo em **`CONEXAO_WHATSAPP.md`** (WhatsApp + apêndice Twilio/SMS). Ao retomar: aprovar o template, conectar em Integrações (Phone Number ID, Token, nome do template, `pt_BR`) e testar por uma convocação de campanha ou gatilho diário.
 - Já entregue nesta sessão e no ar (pushed): tema claro suavizado + opção **Sistema**, guard de sessão + anti-bfcache no logout, breadcrumbs no dashboard.
 
 ## Sessão anterior (2026-06-27, HEAD `cbe6c28`)
@@ -76,7 +76,7 @@ Crítica registrada em `design_refinado.md` (saúde ~28/40 → estimado ~33-34 a
 - ✅ **Self-service de assinatura (Stripe-first + trial 10d)**: `POST /api/signup/checkout` (público, trial+cartão) → `/comecar/concluir` + `GET/POST /api/signup/complete` (cria loja ligada ao Stripe real) → auto-cobrança ao fim do trial. Landing usa o checkout self-service no cartão. Webhook preserva `trialing`. `POST /api/cron/cancel-abandoned-trials` (token `PLATFORM_OWNER_TOKEN`) cancela trials abandonados >48h. **Stripe LIVE verificado: 6 preços existem — nada a criar.**
 - ✅ **Vercel Cron** do `cancel-abandoned-trials` (vercel.json, diário 04:00; rota aceita GET + `CRON_SECRET`, já configurado na Vercel). Botão do plano renomeado para "Atualizar plano de contas" (sem AMORIO).
 - ✅ **Hospitalaria — Fase 1**: papel `hospitaller` + recurso `campaigns` no RBAC (admin/venerável também acessam). Seção "Hospitalaria": **Irmãos (consulta)** read-only com contatos do obreiro + família; **Campanhas** de benemerência (criar com modelos, beneficiário pessoa/empresa/instituição, meta, fonte; doações voluntárias que lançam no financeiro no Tronco com doador ocultável; custear pelo Tronco validando saldo). **Tronco de Solidariedade**: `ChartAccount.isSolidarity` (migration `20260627180000`), saldo = entradas − gastos (helper `lib/hospitalaria.ts`); seed/sync marcam Tronco de Beneficência (1.1.05) e Ação Social (8.9.03). Modelos `Campaign`/`CampaignDonation` com RLS.
-- ✅ Docs consolidados em `../../sigmahorus_documentacao.md` (fonte única de escopo/história).
+- ✅ Docs consolidados em `./sigmahorus_documentacao.md` (fonte única de escopo/história).
 
 - ✅ **Hospitalaria — Fase 2 (convocação)**: `lib/messaging.ts` (providers via fetch, ativados por env — **Resend** `RESEND_API_KEY`/`RESEND_FROM`, **Meta WhatsApp** `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_ID`, **Twilio SMS** `TWILIO_*`); sem credenciais, fica `queued` no `MessageLog`. `POST /api/campaigns/[id]/convocar` envia a campanha por canal a cada irmão (ativos/todos). UI "Convocar os irmãos" no detalhe. **Reaproveitável pela Fase 7** (aniversários/jubileus/cobrança).
 - ✅ **Manual v1.1** (`manual-book.tsx`): autocadastro/trial, papel Hospitaleiro, menu Hospitalaria, nova área de Membros, "Atualizar plano de contas", novo cap. 11 "Guia do Hospitaleiro".
