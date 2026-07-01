@@ -52,3 +52,7 @@ tmp_*
 
 # wrangler / cloudflare local simulator state
 .wrangler/
+
+# temp/diagnostico e config local
+_*.mjs
+.codex/
