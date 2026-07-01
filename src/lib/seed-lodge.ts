@@ -46,6 +46,13 @@ export async function seedLodgeDefaults(
     result.chartAccounts = missingChart.length;
   }
 
+  // Atualiza isSolidarity nas contas existentes que estão no padrão canônico.
+  for (const c of MASONIC_CHART_OF_ACCOUNTS) {
+    if (c.solidarity && haveChartCodes.has(c.code)) {
+      await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, isSolidarity: { not: true } }, data: { isSolidarity: true } });
+    }
+  }
+
   // Semeia cargos do rito escolhido (apenas se não houver cargos ainda).
   if (offices === 0 && riteName) {
     const rite = await db.rite.findFirst({ where: { lodgeId, name: riteName } });
@@ -96,6 +103,14 @@ export async function syncChartAccounts(
     await db.chartAccount.createMany({
       data: toAdd.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false })),
     });
+  }
+
+  // Atualiza isSolidarity nas contas existentes que estão no padrão canônico,
+  // para corrigir registros criados antes do campo existir (ex.: Tronco).
+  for (const c of MASONIC_CHART_OF_ACCOUNTS) {
+    if (c.solidarity && haveCodes.has(c.code)) {
+      await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, isSolidarity: { not: true } }, data: { isSolidarity: true } });
+    }
   }
 
   return { added: toAdd.length, removed: toRemove.length, kept: current.length - toRemove.length };
