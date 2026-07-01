@@ -1,3 +1,43 @@
+<!-- BEGIN:handoff-session-2026-07-01 -->
+# Handoff — Sessão 2026-07-01
+
+## 🎨 Design: Pergaminhos na landing + Papiro
+
+**Tema "Claro" → "Papiro"** — renomeado no `theme-toggle.tsx` e `manual-book.tsx` (3 referências). Atualizado no `sigmahorus_documentacao.md` e `DESIGN.md`.
+
+### Cards de planos como rolos de papiro abertos
+
+A seção `#planos` da landing (`plans-section.tsx`) agora exibe cartões
+estilizados como pergaminhos:
+
+- **Rolamentos laterais:** `linear-gradient(90deg)` com 4 stops simulando
+  cilindros nas bordas esquerda e direita (16px cada)
+- **Transparência:** `rgba(245, 237, 214, 0.60)` — 40% transparente;
+  o fundo egípcio (pirâmides/camelos) aparece através do papiro
+- **Fio dourado + glow:** `box-shadow: 0 0 0 2px rgba(201,162,39,0.45)`
+  contorna cada card; `0 0 40px rgba(201,162,39,0.25)` glow ambiente
+- **Featured (Loja):** glow maior (`50px/0.35`) + filete 0.55
+- **Textos:** tinta sépia `#2D281E` / `#4A4035` sobre o papiro
+- **CTAs/selos:** ouro antigo `#8B6914`
+
+**Classes CSS** em `globals.css`: `.scroll-card` e `.scroll-card-featured`.
+**Commits:** `7574102`, `1905637`, `a96e976`, `b884574`.
+
+### Hero sem gradiente extra
+
+Removido o `div` com `bg-gradient-to-r from-sigma-blue-deep/72 via-sigma-blue-deep/15`
+que escurecia o lado esquerdo do hero. Todas as seções usam só o overlay fixo
+vertical do fundo, mantendo tonalidade uniforme ao scrollar. **Commit:** `a96e976`.
+
+### Cadastros UI
+- `CadastrosClient.tsx`: seções colapsáveis (CollapsibleCard),
+  edição inline (InlineEdit via PATCH), confirmação em remoções,
+  formulário de adicionar conta manual no plano de contas. **Commits:** `53e583f`, `7fc18b4`.
+- Fix `isSolidarity` em `seed-lodge.ts`: seed/sync atualizam o flag
+  em contas canônicas existentes. **Commit:** `7fc18b4`.
+
+<!-- END:handoff-session-2026-07-01 -->
+
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 

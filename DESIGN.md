@@ -280,6 +280,49 @@ e o conteúdo em cada tela do dashboard.
 Classe global em `globals.css`. Posicionada no DashboardShell entre o `<header>`
 e `<main>`, exatamente antes do `bg-sigma-app`.
 
+## Landing Page — Cards de Assinatura como Pergaminhos
+
+Os cartões de plano (Oficina, Loja, Potência) na seção `#planos` da landing page
+são estilizados como **rolos de papiro abertos**, com enrolamentos cilíndricos nas
+laterais e textura de fibra vegetal.
+
+### Estrutura
+
+- **Rolamentos laterais:** gradiente `linear-gradient(90deg, ...)` com 4 stops
+  de cor que simulam cilindros nas bordas esquerda e direita (16px cada): escuro
+  externo → highlight claro → tom médio → sombra interna.
+- **Superfície plana:** o centro do card é o papiro esticado entre os rolos,
+  com textura de fibra em grade (`repeating-linear-gradient`).
+- **Transparência:** o fundo é `rgba(245, 237, 214, 0.60)` — 40% transparente,
+  permitindo que o fundo egípcio (pirâmides/camelos) apareça através do pergaminho.
+- **Fio dourado + glow:** `box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.45)` —
+  filete ouro contornando o card; `0 0 40px rgba(201, 162, 39, 0.25)` —
+  glow dourado ambiente ao redor.
+- **Featured (Loja):** `box-shadow` reforçado com filete `0.55` e glow
+  `50px/0.35` + filete dourado nos enrolamentos internos (`inset`).
+- **Textos:** tinta sépia escura (`#2D281E`, `#4A4035`) sobre o papiro.
+- **CTAs e selos:** ouro antigo `#8B6914` (funciona sobre o bege do papiro).
+
+### Classes CSS
+
+Definidas em `globals.css`:
+- `.scroll-card` — pergaminho base (todos os planos)
+- `.scroll-card-featured` — variante do plano Loja (destaque extra)
+
+### Controles
+
+- Seletor **Mensal / Anual** com desconto: 10% cartão, 5% boleto.
+- No anual: seletor **Cartão · 10% off / Boleto · 5% off**.
+- Cartão: self-service público com trial 10 dias (Stripe Checkout).
+- Boleto: fluxo autenticado (exige conta).
+
+### Hero removido gradiente extra
+
+O hero "Toda a loja, no prumo" teve seu gradiente lateral
+(`from-sigma-blue-deep/72 via-sigma-blue-deep/15 to-transparent`) removido
+para manter a tonalidade uniforme com as demais seções ao scrollar, usando
+apenas o overlay fixo vertical do fundo egípcio.
+
 ### Empty states
 
 Cada ofício tem sua própria voz quando vazio:

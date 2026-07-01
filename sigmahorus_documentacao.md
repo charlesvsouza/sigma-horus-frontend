@@ -3,7 +3,7 @@
 ## Sistema de Gestão de Lojas Maçônicas — Plataforma SaaS Multiloja
 
 > **Documento único de referência** (escopo, arquitetura, modelo de dados, módulos e histórico de desenvolvimento).
-> Consolidado em **2026-06-27**, atualizado em **2026-06-28** (HEAD `cbe6c28`). Substitui os antigos `sigmahorus_blueprint.md`, `sigmahorus_roadmap_inicial.md`, `sigmahorus_handoff_template.md`, `sigmahorus_handoff_dominio.md`, `sigmahorus_plano_execucao_agentes.md` e `themas_cores.md`.
+> Consolidado em **2026-06-27**, atualizado em **2026-07-01** (HEAD `b884574`). Substitui os antigos `sigmahorus_blueprint.md`, `sigmahorus_roadmap_inicial.md`, `sigmahorus_handoff_template.md`, `sigmahorus_handoff_dominio.md`, `sigmahorus_plano_execucao_agentes.md` e `themas_cores.md`.
 >
 > **Fonte viva para agentes:** `AGENTS.md` (estado da sessão corrente). **Este arquivo** é a memória persistente do escopo e da história. **Design system:** `DESIGN.md`. **Contexto de produto para design:** `PRODUCT.md`. **Análise jurídica e compliance:** `sigmahorus_legal_docs.md`.
 
@@ -57,7 +57,7 @@ O **Sigma Horus** é uma plataforma web (SaaS) para gestão administrativa e fin
 | Modelos Prisma | 24 modelos (inclui `Relative`, `Campaign`, `CampaignDonation`; `User` ligado a `Member`) |
 | Acesso do obreiro | Membro→Usuário: "Conceder acesso" gera login + senha por e-mail; gestão de papéis em Usuários & acessos |
 | Encerramento veneralato | Fluxo 3 passos (Tesoureiro fecha → Venerável aprova → Admin encerra) + trava + herança de saldo |
-| Tema | Escuro (padrão) + **Claro** alternável (Configurações → Aparência) |
+| Tema | Escuro (padrão) + **Papiro** alternável (Configurações → Aparência) |
 | Framework | Next.js 16.2.9, next-auth v5 (`5.0.0-beta.31`) |
 | Domínio | `sigmahorus.com.br` no ar (apex + www→apex 308), SSL Let's Encrypt válido até 24/set/2026 |
 | Stripe | **LIVE**, 6 preços (3 planos × mês/ano), 1 produto ativo por plano; self-service Stripe-first com trial 10d |
@@ -340,6 +340,18 @@ Crítica de design (registro Product) em `design_refinado.md` (saúde ~28/40 →
 
 ### Relatório de crítica executado com impeccable v3.8.0 (2026-06-30)
 Executada análise com skill `impeccable` atualizado (`v3.8.0`) sobre os alvos `src/app/dashboard/assinatura`, `src/components/plans-section.tsx` e `src/app/page.tsx`. Relatório salvo em `impeccable-critique-2026-06-30.md`. Principais achados executados: ausência de fallback de erro visível no fluxo de checkout e ausência de `PRODUCT.md` para o fluxo `impeccable`. Nenhum código alterado; documento serve como fonte de avaliação para ajustes futuros.
+
+### Cadastros UI + Papiro + pergaminhos (2026-07-01)
+- **CadastrosClient** reescrito: seções colapsáveis (`CollapsibleCard`), edição inline (`InlineEdit` via PATCH), confirmação em remoções, formulário de adicionar conta manual no plano de contas (code/name/type via POST). **Commits:** `53e583f`, `7fc18b4`.
+- **Fix `isSolidarity`:** `seedLodgeDefaults` e `syncChartAccounts` agora atualizam o flag nas contas canônicas existentes (Tronco de Beneficência / Ação Social) corrigindo lojas criadas antes do campo existir. **Commit:** `7fc18b4`.
+- **"Claro" renomeado para "Papiro"** no seletor de tema (`theme-toggle.tsx`) e no manual (`manual-book.tsx` — 3 referências). **Commit:** `7574102`.
+- **Cards de planos como pergaminhos abertos** (`.scroll-card` / `.scroll-card-featured` em `globals.css`):
+  - Rolamentos cilíndricos laterais via `linear-gradient(90deg, ...)` com 4 stops
+  - Transparência progressiva (0.80 → 0.60) para revelar o fundo egípcio
+  - Fio dourado contornando + glow ambiente (`box-shadow`)
+  - Texto em tinta sépia escura sobre o papiro
+  - Hero sem gradiente extra — tonalidade uniforme ao scrollar
+  - **Commits:** `7574102`, `1905637`, `a96e976`, `b884574`.
 
 ---
 
