@@ -56,12 +56,6 @@ export default function Home() {
 
       {/* ===================== HERO ===================== */}
       <section className="relative flex min-h-[94svh] flex-col">
-        {/* Reforço de contraste só no herói (esquerda), sem escurecer o resto */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-sigma-blue-deep/72 via-sigma-blue-deep/15 to-transparent"
-        />
-
         {/* Navegação — sem logo: o emblema do herói já é a marca */}
         <nav className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-end px-6 py-6 lg:px-10">
           <div className="flex items-center gap-4 text-sm sm:gap-7">
