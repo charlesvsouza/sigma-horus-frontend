@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import CommandPalette, { type Command } from '@/components/command-palette';
+import { ConfirmProvider } from '@/components/ui';
 import {
   LayoutDashboard, CircleUser, BookOpen, Users, Database, Briefcase, Crown, Wallet,
   ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
@@ -307,7 +308,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
             </nav>
           ) : null}
 
-          <div className="flex-1 bg-sigma-app">{children}</div>
+          <div className="flex-1 bg-sigma-app"><ConfirmProvider>{children}</ConfirmProvider></div>
         </div>
       </div>
       <CommandPalette commands={commands} />

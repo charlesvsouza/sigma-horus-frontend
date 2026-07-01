@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, inputClass } from '@/components/ui';
+import { Button, inputClass, useConfirm } from '@/components/ui';
 
 export interface AsaasStatus {
   configured: boolean;
@@ -20,6 +20,7 @@ export interface MsgStatus {
 
 export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasStatus; messaging: MsgStatus }) {
   const router = useRouter();
+  const askConfirm = useConfirm();
   const [apiKey, setApiKey] = useState('');
   const [env, setEnv] = useState(asaas.env ?? 'sandbox');
   const [webhookToken, setWebhookToken] = useState('');
@@ -52,7 +53,7 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
   }
 
   async function disconnect() {
-    if (!confirm('Desconectar o Asaas desta loja?')) return;
+    if (!(await askConfirm({ title: 'Desconectar Asaas', message: 'Desconectar o Asaas desta loja?', confirmLabel: 'Desconectar', intent: 'danger' }))) return;
     const res = await fetch('/api/integrations/asaas', { method: 'DELETE' });
     if (res.ok) {
       setMessage({ kind: 'ok', text: 'Asaas desconectado.' });
@@ -156,6 +157,7 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
 
 function MessagingIntegration({ initial }: { initial: MsgStatus }) {
   const router = useRouter();
+  const askConfirm = useConfirm();
   const st = initial;
   const [wa, setWa] = useState({ phoneId: initial.whatsapp.phoneId ?? '', token: '', template: initial.whatsapp.template ?? '', lang: initial.whatsapp.lang ?? 'pt_BR' });
   const [sms, setSms] = useState({ sid: initial.sms.sid ?? '', token: '', from: initial.sms.from ?? '' });
@@ -172,7 +174,7 @@ function MessagingIntegration({ initial }: { initial: MsgStatus }) {
     else setMsg({ kind: 'error', text: data.error ?? 'Erro ao salvar.' });
   }
   async function disconnect(channel: 'whatsapp' | 'sms') {
-    if (!confirm(`Desconectar ${channel === 'whatsapp' ? 'o WhatsApp' : 'o SMS'} desta loja?`)) return;
+    if (!(await askConfirm({ title: 'Desconectar canal', message: `Desconectar ${channel === 'whatsapp' ? 'o WhatsApp' : 'o SMS'} desta loja?`, confirmLabel: 'Desconectar', intent: 'danger' }))) return;
     const res = await fetch(`/api/integrations/messaging?channel=${channel}`, { method: 'DELETE' });
     if (res.ok) { setMsg({ kind: 'ok', text: 'Canal desconectado.' }); router.refresh(); }
   }

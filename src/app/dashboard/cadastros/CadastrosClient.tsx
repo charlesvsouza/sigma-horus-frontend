@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Alert } from '@/components/ui';
+import { Alert, useConfirm } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 
 interface Item { id: string; name: string; order: number; }
@@ -9,6 +9,7 @@ interface ChartAccountItem { id: string; code: string; name: string; type: strin
 
 export default function CadastrosClient({ rites, powers, chartAccounts }: { rites: Item[]; powers: Item[]; chartAccounts: ChartAccountItem[] }) {
   const router = useRouter();
+  const askConfirm = useConfirm();
   const [riteName, setRiteName] = useState('');
   const [powerName, setPowerName] = useState('');
   const [message, setMessage] = useState('');
@@ -31,7 +32,7 @@ export default function CadastrosClient({ rites, powers, chartAccounts }: { rite
   }
 
   async function syncChart() {
-    if (!window.confirm('Atualizar o plano de contas para o padrão atual? Adiciona as contas que faltam e remove as contas padrão antigas que não estão em uso.')) return;
+    if (!(await askConfirm({ title: 'Atualizar plano de contas', message: 'Adiciona as contas que faltam e remove as contas padrão antigas que não estão em uso. Continuar?', confirmLabel: 'Atualizar' }))) return;
     setLinking(true);
     setMessage('');
     const res = await fetch('/api/chart-accounts/sync', { method: 'POST' });
@@ -105,7 +106,7 @@ export default function CadastrosClient({ rites, powers, chartAccounts }: { rite
   }
 
   async function removeChartAccount(id: string) {
-    if (!window.confirm('Remover esta conta do plano de contas?')) return;
+    if (!(await askConfirm({ title: 'Remover conta', message: 'Remover esta conta do plano de contas?', confirmLabel: 'Remover', intent: 'danger' }))) return;
     await fetch(`/api/chart-accounts/${id}`, { method: 'DELETE' });
     router.refresh();
   }

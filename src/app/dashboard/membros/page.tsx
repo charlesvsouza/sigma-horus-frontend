@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel } from '@/lib/masonic-degree';
 import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
-import { Button, EmptyState, Input, Skeleton, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, Input, Skeleton, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -144,6 +144,7 @@ const REPORT_PRINT_CSS = `
 `;
 
 export default function MembrosPage() {
+  const askConfirm = useConfirm();
   const [members, setMembers] = useState<Member[]>([]);
   const [rites, setRites] = useState<Option[]>([]);
   const [powers, setPowers] = useState<Option[]>([]);
@@ -172,7 +173,7 @@ export default function MembrosPage() {
       return;
     }
     const verb = m.user ? 'reenviar a senha de acesso para' : 'conceder acesso a';
-    if (!confirm(`Deseja ${verb} ${m.name}? Uma senha provisória será enviada para ${m.email}.`)) return;
+    if (!(await askConfirm({ title: 'Acesso do obreiro', message: `Deseja ${verb} ${m.name}? Uma senha provisória será enviada para ${m.email}.`, confirmLabel: 'Confirmar' }))) return;
     setGrantingId(m.id);
     setMessage('');
     const res = await fetch(`/api/members/${m.id}/grant-access`, { method: 'POST' });
@@ -263,7 +264,7 @@ export default function MembrosPage() {
   }
 
   async function backfillRelatives() {
-    if (!window.confirm('Migrar os campos antigos de família (mãe/pai/esposa/filhos) para a nova ficha de dependentes? Só afeta membros que ainda não têm familiares cadastrados.')) return;
+    if (!(await askConfirm({ title: 'Migrar família antiga', message: 'Migrar os campos antigos de família (mãe/pai/esposa/filhos) para a nova ficha de dependentes? Só afeta membros que ainda não têm familiares cadastrados.', confirmLabel: 'Migrar' }))) return;
     setMessage('');
     const res = await fetch('/api/members/backfill-relatives', { method: 'POST' });
     const data = await res.json();
@@ -277,7 +278,7 @@ export default function MembrosPage() {
   }
 
   async function deleteMember(m: Member) {
-    if (!window.confirm(`Excluir definitivamente o cadastro de "${m.name}"? Esta ação não pode ser desfeita.`)) return;
+    if (!(await askConfirm({ title: 'Excluir membro', message: `Excluir definitivamente o cadastro de "${m.name}"? Esta ação não pode ser desfeita.`, confirmLabel: 'Excluir', intent: 'danger' }))) return;
     setMessage('');
     const res = await fetch(`/api/members/${m.id}`, { method: 'DELETE' });
     const data = await res.json();

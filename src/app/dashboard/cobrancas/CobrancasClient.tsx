@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface MemberOption { id: string; name: string; }
 interface AccountOption { id: string; title: string; }
@@ -23,6 +23,7 @@ interface InvoiceItem {
 
 export default function CobrancasClient({ invoices, accounts, members }: { invoices: InvoiceItem[]; accounts: AccountOption[]; members: MemberOption[] }) {
   const router = useRouter();
+  const askConfirm = useConfirm();
   const [message, setMessage] = useState('');
   const [processing, setProcessing] = useState(false);
   const [emittingId, setEmittingId] = useState('');
@@ -56,7 +57,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
   async function handleBulk(event: FormEvent) {
     event.preventDefault();
     const alvo = bulk.scope === 'all' ? 'todos os membros' : 'todos os membros ativos';
-    if (!window.confirm(`Gerar uma cobrança para ${alvo}?`)) return;
+    if (!(await askConfirm({ title: 'Cobrança em massa', message: `Gerar uma cobrança para ${alvo}?`, confirmLabel: 'Gerar' }))) return;
     setBulkProcessing(true);
     setMessage('');
     const res = await fetch('/api/invoices/bulk', {

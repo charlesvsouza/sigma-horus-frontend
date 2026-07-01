@@ -9,3 +9,5 @@ export { Skeleton, SkeletonCard } from './skeleton';
 export { EmptyState } from './empty-state';
 export { Alert } from './alert';
 export type { AlertIntent } from './alert';
+export { ConfirmProvider, useConfirm } from './confirm-dialog';
+export type { ConfirmOptions } from './confirm-dialog';

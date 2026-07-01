@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, inputClass, Alert } from '@/components/ui';
+import { Button, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface TermItem { id: string; title: string; startDate: string; endDate?: string | null; status: string; _count: { memberOffices: number }; }
 interface MemberOfficeItem { id: string; office: { id: string; name: string }; member: { id: string; name: string }; }
@@ -29,6 +29,7 @@ interface TermDetail {
 }
 
 export default function VeneralatoPage() {
+  const askConfirm = useConfirm();
   const [terms, setTerms] = useState<TermItem[]>([]);
   const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
   const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
@@ -106,7 +107,7 @@ export default function VeneralatoPage() {
   }
 
   async function approveAccounts(termId: string) {
-    if (!confirm('Aprovar a prestação de contas deste período? Após aprovada, o Admin poderá encerrar o veneralato.')) return;
+    if (!(await askConfirm({ title: 'Aprovar prestação de contas', message: 'Após aprovada, o Admin poderá encerrar o veneralato.', confirmLabel: 'Aprovar' }))) return;
     const res = await fetch('/api/cash-close/approve', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ termId }),
     });
@@ -116,7 +117,7 @@ export default function VeneralatoPage() {
   }
 
   async function closeTerm(termId: string) {
-    if (!confirm('Encerrar o veneralato? Esta ação trava todos os lançamentos do período e o saldo final será herdado pela próxima gestão. Não pode ser desfeita.')) return;
+    if (!(await askConfirm({ title: 'Encerrar veneralato', message: 'Esta ação trava todos os lançamentos do período e o saldo final será herdado pela próxima gestão. Não pode ser desfeita.', confirmLabel: 'Encerrar', intent: 'danger' }))) return;
     const res = await fetch(`/api/terms/${termId}/close`, { method: 'POST' });
     const data = await res.json();
     setMessage(res.ok ? `Veneralato encerrado. Saldo final R$ ${Number(data.closingBalance ?? 0).toFixed(2)} será herdado pela próxima gestão.` : data.error ?? 'Erro.');
