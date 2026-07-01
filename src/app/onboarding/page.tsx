@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BRAZILIAN_RITES } from '@/lib/masonic-reference';
+import { validateLodgeSignup } from '@/lib/validation';
 
 const RITE_OPTIONS = BRAZILIAN_RITES.map((r) => ({
   value: r.name,
@@ -25,7 +26,10 @@ export default function OnboardingPage() {
   });
   const [inviteFromUrl, setInviteFromUrl] = useState(false);
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  const clearErr = (k: string) => setErrors((e) => (e[k] ? { ...e, [k]: '' } : e));
 
   // Convite via link (?invite=CODE). Lido do client para dispensar Suspense.
   useEffect(() => {
@@ -42,6 +46,14 @@ export default function OnboardingPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError('');
+
+    const errs: Record<string, string> = {
+      ...validateLodgeSignup(form),
+      ...(form.invite.trim() ? {} : { invite: 'Informe o código de convite.' }),
+    };
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
+
     setLoading(true);
 
     const response = await fetch('/api/lodges', {
@@ -90,10 +102,10 @@ export default function OnboardingPage() {
               <Input
                 label="Código de convite"
                 value={form.invite}
-                onChange={(e) => setForm({ ...form, invite: e.target.value.toUpperCase() })}
+                onChange={(e) => { setForm({ ...form, invite: e.target.value.toUpperCase() }); clearErr('invite'); }}
                 placeholder="SH-XXXXXXXX"
                 readOnly={inviteFromUrl}
-                required
+                error={errors.invite}
               />
               <p className="mt-1.5 text-xs text-sand-dark">
                 {inviteFromUrl
@@ -107,9 +119,9 @@ export default function OnboardingPage() {
                 <Input
                   label="Nome da loja"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(e) => { setForm({ ...form, name: e.target.value }); clearErr('name'); }}
                   placeholder="Ex: Loja Estrela do Oriente"
-                  required
+                  error={errors.name}
                 />
               </div>
 
@@ -117,27 +129,27 @@ export default function OnboardingPage() {
                 <Input
                   label="Slug da loja"
                   value={form.slug}
-                  onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                  onChange={(e) => { setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }); clearErr('slug'); }}
                   placeholder="ex: loja-estrela"
-                  required
+                  error={errors.slug}
                 />
               </div>
 
               <Input
                 label="Nome do administrador"
                 value={form.adminName}
-                onChange={(e) => setForm({ ...form, adminName: e.target.value })}
+                onChange={(e) => { setForm({ ...form, adminName: e.target.value }); clearErr('adminName'); }}
                 placeholder="Ex: João Silva"
-                required
+                error={errors.adminName}
               />
 
               <Input
                 label="E-mail do administrador"
                 type="email"
                 value={form.adminEmail}
-                onChange={(e) => setForm({ ...form, adminEmail: e.target.value })}
+                onChange={(e) => { setForm({ ...form, adminEmail: e.target.value }); clearErr('adminEmail'); }}
                 placeholder="ex: joao@email.com"
-                required
+                error={errors.adminEmail}
               />
 
               <div className="md:col-span-2">
@@ -145,9 +157,9 @@ export default function OnboardingPage() {
                   label="Senha"
                   type="password"
                   value={form.adminPassword}
-                  onChange={(e) => setForm({ ...form, adminPassword: e.target.value })}
+                  onChange={(e) => { setForm({ ...form, adminPassword: e.target.value }); clearErr('adminPassword'); }}
                   placeholder="Mínimo 8 caracteres"
-                  required
+                  error={errors.adminPassword}
                 />
               </div>
 

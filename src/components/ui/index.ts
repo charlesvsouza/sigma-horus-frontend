@@ -4,7 +4,7 @@ export { Card, CardTitle, CardDescription } from './card';
 export { Badge } from './badge';
 export type { BadgeVariant } from './badge';
 export { Input } from './input';
-export { inputClass, inputBase, inputBorder } from './field-styles';
+export { inputClass, inputBase, inputBorder, inputBorderError } from './field-styles';
 export { Skeleton, SkeletonCard } from './skeleton';
 export { EmptyState } from './empty-state';
 export { Alert } from './alert';

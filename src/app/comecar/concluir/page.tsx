@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BRAZILIAN_RITES } from '@/lib/masonic-reference';
 import { PLANS } from '@/lib/plans';
-import { Button, Input, inputClass } from '@/components/ui';
+import { validateLodgeSignup } from '@/lib/validation';
+import { Button, Input, inputClass, inputBase, inputBorderError } from '@/components/ui';
 
 const slugify = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
@@ -21,6 +22,7 @@ function Concluir() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     // Página pública/transitória pós-checkout: o resumo depende do session_id do
@@ -37,11 +39,16 @@ function Concluir() {
       .catch(() => setLoadError('Não foi possível carregar os dados do pagamento.'));
   }, [sessionId]);
 
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v, ...(k === 'name' && !slugTouched ? { slug: slugify(v) } : {}) }));
+  const set = (k: string, v: string) => {
+    setForm((f) => ({ ...f, [k]: v, ...(k === 'name' && !slugTouched ? { slug: slugify(v) } : {}) }));
+    setErrors((e) => (e[k] ? { ...e, [k]: '' } : e));
+  };
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    const errs = validateLodgeSignup(form);
+    if (Object.keys(errs).length) { setErrors(errs); return; }
     setSaving(true);
     const res = await fetch('/api/signup/complete', {
       method: 'POST',
@@ -83,11 +90,14 @@ function Concluir() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Nome da loja *" required />
-        <input value={form.slug} onChange={(e) => { setSlugTouched(true); set('slug', slugify(e.target.value)); }} className={inputClass} placeholder="Endereço (slug) *" required />
-        <Input value={form.adminName} onChange={(e) => set('adminName', e.target.value)} placeholder="Seu nome *" required />
-        <Input type="email" value={form.adminEmail} onChange={(e) => set('adminEmail', e.target.value)} placeholder="Seu e-mail *" required />
-        <Input type="password" value={form.adminPassword} onChange={(e) => set('adminPassword', e.target.value)} placeholder="Senha *" required minLength={8} />
+        <Input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Nome da loja *" error={errors.name} />
+        <div className="space-y-1.5">
+          <input value={form.slug} onChange={(e) => { setSlugTouched(true); set('slug', slugify(e.target.value)); }} className={errors.slug ? `${inputBase} ${inputBorderError}` : inputClass} placeholder="Endereço (slug) *" />
+          {errors.slug ? <p className="text-xs text-rose-300">{errors.slug}</p> : null}
+        </div>
+        <Input value={form.adminName} onChange={(e) => set('adminName', e.target.value)} placeholder="Seu nome *" error={errors.adminName} />
+        <Input type="email" value={form.adminEmail} onChange={(e) => set('adminEmail', e.target.value)} placeholder="Seu e-mail *" error={errors.adminEmail} />
+        <Input type="password" value={form.adminPassword} onChange={(e) => set('adminPassword', e.target.value)} placeholder="Senha *" error={errors.adminPassword} />
         <select value={form.riteName} onChange={(e) => set('riteName', e.target.value)} className={inputClass}>
           {BRAZILIAN_RITES.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
         </select>
