@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -76,8 +77,12 @@ export default function OnboardingPage() {
             Configure sua loja
           </h1>
           <p className="mt-2 text-sm text-sand-dark">
-            O cadastro é por convite, com <strong className="text-sand">10 dias de teste</strong> no
-            plano Oficina. Cadastre a loja, escolha o rito e crie o primeiro administrador.
+            Esta tela é para quem recebeu um <strong className="text-sand">código de convite</strong>. Informe o código,
+            cadastre a loja, escolha o rito e crie o primeiro administrador.
+          </p>
+          <p className="mt-3 rounded-lg border border-gold/25 bg-gold/[0.06] px-3 py-2 text-xs text-sand-dark">
+            Não tem convite? A entrada padrão é pelo plano, com <strong className="text-sand">10 dias de teste grátis</strong>.{' '}
+            <Link href="/#planos" className="font-medium text-gold hover:text-gold-light">Escolher um plano e começar →</Link>
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">

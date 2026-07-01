@@ -74,7 +74,7 @@ export default function Home() {
               Entrar
             </Link>
             <Link
-              href="/onboarding"
+              href="#planos"
               className="rounded-full bg-gold px-5 py-2 font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light"
             >
               Começar
@@ -114,7 +114,7 @@ export default function Home() {
             </p>
             <div className="animate-rise mt-9 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: '400ms' }}>
               <Link
-                href="/onboarding"
+                href="#planos"
                 className="rounded-full bg-gold px-7 py-3 text-center font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light"
               >
                 Começar agora
@@ -232,7 +232,7 @@ export default function Home() {
               Comece hoje com avaliação gratuita. Sem instalar nada, com seus dados isolados e seguros.
             </p>
             <Link
-              href="/onboarding"
+              href="#planos"
               className="mt-8 inline-flex rounded-full bg-gold px-8 py-3 font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light"
             >
               Criar conta gratuita
