@@ -12,6 +12,9 @@ export async function logAudit(
     action: Action;
     entity: string;
     entityId: string;
+    /** Estado anterior (opcional) — snapshot antes da alteração. */
+    before?: Record<string, unknown>;
+    /** Estado posterior (opcional) — snapshot depois da alteração. */
     metadata?: Record<string, unknown>;
   },
 ) {
@@ -23,6 +26,7 @@ export async function logAudit(
         action: params.action,
         entity: params.entity,
         entityId: params.entityId,
+        before: params.before ? JSON.stringify(params.before) : null,
         after: JSON.stringify(params.metadata ?? {}),
       },
     });

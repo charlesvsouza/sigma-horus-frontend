@@ -28,9 +28,9 @@ export default function CompliancePage() {
           <li><strong>Documentos privados:</strong> arquivos em bucket fechado (Cloudflare R2), acessíveis só por links assinados temporários (presigned URLs com expiração curta).</li>
         </ul>
         <p className="mt-3">
-          Nossas práticas de segurança são orientadas por referenciais como <strong>OWASP</strong> (no desenvolvimento)
-          e <strong>NIST</strong> (na gestão de segurança). Realizamos revisões periódicas de dependências e
-          verificações automatizadas de vulnerabilidades.
+          Buscamos seguir boas práticas de segurança reconhecidas, como as recomendações do
+          <strong> OWASP</strong> para desenvolvimento seguro e do <strong>NIST</strong> para gestão de riscos.
+          Realizamos revisões periódicas de dependências e verificações automatizadas de vulnerabilidades.
         </p>
       </Section>
 
@@ -86,7 +86,7 @@ export default function CompliancePage() {
         </p>
         <ul className="list-disc space-y-2 pl-5">
           <li><strong>Código de Conduta e Ética</strong> próprio, que orienta a atuação da equipe e o relacionamento com clientes e fornecedores.</li>
-          <li><strong>Prevenção à corrupção</strong> em conformidade com a Lei nº 12.846/2013 (Lei Anticorrupção), vedando práticas ilícitas na relação com o poder público e privado.</li>
+          <li><strong>Prevenção à corrupção e suborno</strong>, repudiando práticas ilícitas na relação com o poder público e privado, em linha com a Lei nº 12.846/2013 (Lei Anticorrupção).</li>
           <li><strong>Confidencialidade e proteção de dados</strong> como diretrizes contratuais em todos os acordos com suboperadores e parceiros.</li>
           <li><strong>Due diligence</strong> na seleção de suboperadores e prestadores de serviço que tratam dados em nome da plataforma.</li>
         </ul>

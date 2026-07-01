@@ -77,9 +77,14 @@ export function processWebhook(body: unknown): AsaasWebhookEvent {
  * Asaas autentica o webhook por um token configurável enviado no header
  * `asaas-access-token` (não há assinatura HMAC como no Stripe). Compara o token
  * recebido contra o token armazenado da loja dona da cobrança.
- * - Sem token armazenado → aceita (facilita o setup inicial / sandbox).
+ * - Sem token armazenado → recusa (segurança: não aceita webhook sem token).
+ * - Token inválido → recusa.
  */
 export function isWebhookAuthorized(received: string | null, expected: string | null | undefined) {
-  if (!expected) return true;
+  if (!expected) {
+    console.warn('[Asaas] Webhook recebido mas loja não configurou token de validação. Rejeitado.');
+    return false;
+  }
+  if (!received) return false;
   return received === expected;
 }

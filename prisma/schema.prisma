@@ -48,8 +48,9 @@ model Lodge {
   smsAccountSid        String?  // Twilio Account SID
   smsAuthTokenEnc      String?
   smsFrom              String?  // número/remetente Twilio
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  terminatedAt DateTime? // data de encerramento; aciona purge automático após 90d
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   users         User[]
   members       Member[]

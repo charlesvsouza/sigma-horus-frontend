@@ -137,15 +137,14 @@ export default function TermosPage() {
       <Section n={10} title="Disponibilidade, SLA e suporte">
         <p>
           Empregamos esforços razoáveis para manter a Plataforma disponível e segura, com backups periódicos.
-          Nosso objetivo é manter uma <strong>disponibilidade mínima de 99,5%</strong> ao mês, excluídas interrupções
+          Buscamos manter uma alta disponibilidade, com <strong>meta de 99,5%</strong> ao mês, excluídas interrupções
           para manutenção programada (comunicadas com antecedência), fatores externos fora de nosso controle (como
-          falhas de terceiros ou ataques DDoS) e casos de força maior.
+          falhas de terceiros ou ataques DDoS) e casos de força maior. Esta meta representa um compromisso de
+          melhor esforço, não uma garantia contratual vinculante.
         </p>
         <p className="mt-3">
           O suporte técnico pode ser acionado pelo e-mail{' '}
           <a className="text-gold hover:text-gold-light" href="mailto:contato@sigmahorus.com.br">contato@sigmahorus.com.br</a>.
-          Em caso de indisponibilidade que exceda o SLA, a loja poderá solicitar crédito de serviço proporcional,
-          limitado a um mês de assinatura.
         </p>
       </Section>
 
