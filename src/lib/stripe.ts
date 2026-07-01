@@ -34,8 +34,11 @@ export function getStripe(): Stripe {
 async function ensureProduct(plan: PlanId): Promise<string> {
   const stripe = getStripe();
   const key = `sigma_plan_${plan}`;
+  // Filtra por active:'true' — senão a busca pode devolver um produto ARQUIVADO
+  // (havia duplicados arquivados), e um Price anexado a produto inativo não pode
+  // ser comprado ("product is not active"), quebrando o checkout.
   const found = await stripe.products
-    .search({ query: `metadata['key']:'${key}'`, limit: 1 })
+    .search({ query: `metadata['key']:'${key}' AND active:'true'`, limit: 1 })
     .catch(() => null);
   if (found?.data?.[0]) return found.data[0].id;
   const product = await stripe.products.create({
