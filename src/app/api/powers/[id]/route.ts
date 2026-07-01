@@ -17,3 +17,26 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   return NextResponse.json({ ok: true });
 }
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  const lodgeId = session?.user?.lodgeId;
+
+  if (!lodgeId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const body = await request.json();
+  const { name } = body;
+
+  if (!name || typeof name !== 'string') {
+    return NextResponse.json({ error: 'Nome é obrigatório.' }, { status: 400 });
+  }
+
+  await withTenant(String(lodgeId), (db) =>
+    db.power.updateMany({ where: { id, lodgeId: String(lodgeId) }, data: { name } }),
+  );
+
+  return NextResponse.json({ ok: true });
+}
