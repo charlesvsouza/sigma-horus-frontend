@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import { MiniBar } from '@/components/mini-bar';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -87,7 +88,11 @@ export default async function DashboardPage() {
           </p>
           <p className="mt-1 text-sm text-sand-dark">Saldo líquido — a receber menos a pagar</p>
 
-          <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[6%] bg-white/[6%]">
+          <div className="mt-6 space-y-1">
+            <MiniBar value={receivableTotal} total={receivableTotal + payableTotal} color="var(--color-emerald-500)" label="A receber" />
+            <MiniBar value={payableTotal} total={receivableTotal + payableTotal} color="var(--color-rose-500)" label="A pagar" />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[6%] bg-white/[6%]">
             <div className="bg-sigma-blue-deep/60 p-4">
               <p className="text-xs text-sand-dark">A receber</p>
               <p className="mt-1 text-lg font-semibold tabular-nums text-emerald-300">{brl(receivableTotal)}</p>
