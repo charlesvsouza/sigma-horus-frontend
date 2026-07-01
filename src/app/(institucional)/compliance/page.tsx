@@ -11,7 +11,7 @@ export default function CompliancePage() {
     <LegalDoc
       eyebrow="Confiança"
       title="Compliance & Transparência"
-      updatedAt="26 de junho de 2026"
+      updatedAt="30 de junho de 2026"
       draftNotice
       intro={
         <>
@@ -22,11 +22,16 @@ export default function CompliancePage() {
     >
       <Section n={1} title="Segurança da informação">
         <ul className="list-disc space-y-2 pl-5">
-          <li><strong>Isolamento por loja:</strong> cada loja só enxerga seus próprios dados (Row-Level Security no banco).</li>
-          <li><strong>Acesso por papel (RBAC):</strong> permissões granulares por cargo e por recurso, ajustáveis pela loja.</li>
-          <li><strong>Criptografia:</strong> dados em trânsito por TLS; senhas com hash forte; chaves sensíveis cifradas.</li>
-          <li><strong>Documentos privados:</strong> arquivos em bucket fechado, acessíveis só por links assinados temporários.</li>
+          <li><strong>Isolamento por loja:</strong> cada loja só enxerga seus próprios dados (Row-Level Security no banco PostgreSQL).</li>
+          <li><strong>Acesso por papel (RBAC):</strong> permissões granulares por cargo e por recurso, ajustáveis pela loja, seguindo o princípio do menor privilégio.</li>
+          <li><strong>Criptografia:</strong> dados em trânsito por TLS (HTTPS obrigatório); senhas com hash forte (bcrypt); chaves sensíveis cifradas (AES-256-GCM).</li>
+          <li><strong>Documentos privados:</strong> arquivos em bucket fechado (Cloudflare R2), acessíveis só por links assinados temporários (presigned URLs com expiração curta).</li>
         </ul>
+        <p className="mt-3">
+          Nossas práticas de segurança são orientadas por referenciais como <strong>OWASP</strong> (no desenvolvimento)
+          e <strong>NIST</strong> (na gestão de segurança). Realizamos revisões periódicas de dependências e
+          verificações automatizadas de vulnerabilidades.
+        </p>
       </Section>
 
       <Section n={2} title="Trilha de auditoria">
@@ -62,33 +67,61 @@ export default function CompliancePage() {
 
       <Section n={5} title="Conformidade com a LGPD">
         <p>
-          Tratamos dados pessoais conforme a Lei nº 13.709/2018. Detalhes sobre bases legais, direitos do titular,
+          Tratamos dados pessoais conforme a Lei nº 13.709/2018 (LGPD). Detalhes sobre bases legais, direitos do titular,
           retenção e contato do Encarregado estão na página de{' '}
           <a className="text-gold hover:text-gold-light" href="/privacidade">Privacidade & LGPD</a>.
         </p>
-      </Section>
-
-      <Section n={6} title="Disponibilidade e continuidade">
-        <p>
-          Mantemos backups periódicos do banco de dados e empregamos infraestrutura gerenciada com redundância.
-          Buscamos comunicar com antecedência manutenções programadas que possam afetar o uso.
+        <p className="mt-3">
+          <strong>Contrato de Tratamento de Dados (DPA):</strong> o Sigma Horus disponibiliza às lojas contratantes
+          um DPA que formaliza a relação operador-controladora, estabelecendo finalidades, instruções, medidas de
+          segurança e responsabilidades (art. 39 LGPD). Solicite pelo e-mail{' '}
+          <a className="text-gold hover:text-gold-light" href="mailto:compliance@sigmahorus.com.br">compliance@sigmahorus.com.br</a>.
         </p>
       </Section>
 
-      <Section n={7} title="Canal de transparência e denúncias">
+      <Section n={6} title="Programa de compliance e ética">
         <p>
-          Incidentes de segurança, vulnerabilidades ou condutas em desacordo com nossas práticas podem ser comunicados
-          em <a className="text-gold hover:text-gold-light" href="mailto:compliance@sigmahorus.com.br">compliance@sigmahorus.com.br</a>.
-          Apuramos as comunicações com confidencialidade e sem retaliação a quem reporta de boa-fé.
+          Mantemos um <strong>programa de compliance</strong> fundamentado na integridade, transparência e respeito
+          às leis aplicáveis, incluindo:
+        </p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li><strong>Código de Conduta e Ética</strong> próprio, que orienta a atuação da equipe e o relacionamento com clientes e fornecedores.</li>
+          <li><strong>Prevenção à corrupção</strong> em conformidade com a Lei nº 12.846/2013 (Lei Anticorrupção), vedando práticas ilícitas na relação com o poder público e privado.</li>
+          <li><strong>Confidencialidade e proteção de dados</strong> como diretrizes contratuais em todos os acordos com suboperadores e parceiros.</li>
+          <li><strong>Due diligence</strong> na seleção de suboperadores e prestadores de serviço que tratam dados em nome da plataforma.</li>
+        </ul>
+      </Section>
+
+      <Section n={7} title="Disponibilidade e continuidade">
+        <p>
+          Mantemos backups periódicos do banco de dados e empregamos infraestrutura gerenciada com redundância
+          (Vercel + Railway + Cloudflare R2). Buscamos comunicar com antecedência mínima de 48 horas úteis as
+          manutenções programadas que possam afetar o uso, exceto em emergências de segurança.
         </p>
       </Section>
 
-      <Section n={8} title="Boas práticas recomendadas à loja">
+      <Section n={8} title="Canal de transparência e denúncias">
+        <p>
+          Incidentes de segurança, vulnerabilidades, desvios éticos ou condutas em desacordo com nossas práticas
+          podem ser comunicados de forma <strong>confidencial</strong> em{' '}
+          <a className="text-gold hover:text-gold-light" href="mailto:compliance@sigmahorus.com.br">compliance@sigmahorus.com.br</a>.
+          Apuramos todas as comunicações com confidencialidade e <strong>sem retaliação</strong> a quem reporta de
+          boa-fé (proteção ao denunciante).
+        </p>
+        <p className="mt-3">
+          Comprometemo-nos a acusar recebimento em até 48 horas úteis e a conduzir a apuração com a diligência
+          adequada à gravidade do reporte.
+        </p>
+      </Section>
+
+      <Section n={9} title="Boas práticas recomendadas à loja">
         <ul className="list-disc space-y-2 pl-5">
           <li>Conceder a cada usuário apenas as permissões necessárias ao seu cargo.</li>
           <li>Revisar periodicamente quem tem acesso e remover usuários inativos.</li>
           <li>Usar senhas fortes e não compartilhar credenciais.</li>
           <li>Conferir os dados bancários e fiscais antes de emitir cobranças.</li>
+          <li>Manter os dados dos membros atualizados e com base legal adequada.</li>
+          <li>Comunicar o Encarregado (DPO) em caso de incidente envolvendo dados de membros.</li>
         </ul>
       </Section>
     </LegalDoc>
