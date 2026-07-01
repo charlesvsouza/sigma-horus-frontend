@@ -284,19 +284,19 @@
         rgba(139, 126, 100, 0.025) 18px,
         rgba(139, 126, 100, 0.025) 19px
       ),
-      /* superfície + enrolamentos laterais (semi-transparentes p/ ver o fundo) */
+      /* superfície + enrolamentos laterais (60% opacos p/ o fundo aparecer) */
       linear-gradient(
         90deg,
-        rgba(168, 152, 120, 0.80) 0px,
-        rgba(212, 197, 169, 0.80) 4px,
-        rgba(196, 180, 142, 0.80) 8px,
-        rgba(184, 168, 138, 0.80) 12px,
-        rgba(245, 237, 214, 0.80) 16px,
-        rgba(245, 237, 214, 0.80) calc(100% - 16px),
-        rgba(184, 168, 138, 0.80) calc(100% - 12px),
-        rgba(196, 180, 142, 0.80) calc(100% - 8px),
-        rgba(212, 197, 169, 0.80) calc(100% - 4px),
-        rgba(168, 152, 120, 0.80) 100%
+        rgba(168, 152, 120, 0.60) 0px,
+        rgba(212, 197, 169, 0.60) 4px,
+        rgba(196, 180, 142, 0.60) 8px,
+        rgba(184, 168, 138, 0.60) 12px,
+        rgba(245, 237, 214, 0.60) 16px,
+        rgba(245, 237, 214, 0.60) calc(100% - 16px),
+        rgba(184, 168, 138, 0.60) calc(100% - 12px),
+        rgba(196, 180, 142, 0.60) calc(100% - 8px),
+        rgba(212, 197, 169, 0.60) calc(100% - 4px),
+        rgba(168, 152, 120, 0.60) 100%
       );
     box-shadow:
       /* sombra de profundidade */
@@ -306,7 +306,10 @@
       inset -2px 0 4px rgba(139, 126, 100, 0.12),
       /* envelhecimento de cantos */
       inset 0.5px 0.5px 3px rgba(100, 80, 50, 0.08),
-      inset -0.5px -0.5px 3px rgba(100, 80, 50, 0.08);
+      inset -0.5px -0.5px 3px rgba(100, 80, 50, 0.08),
+      /* fio dourado + glow */
+      0 0 0 1px rgba(201, 162, 39, 0.15),
+      0 0 25px rgba(201, 162, 39, 0.08);
   }
 
   /* Featured scroll-card (plano "Loja") — destaque dourado sutil */
@@ -330,16 +333,16 @@
       ),
       linear-gradient(
         90deg,
-        rgba(168, 152, 120, 0.80) 0px,
-        rgba(212, 197, 169, 0.80) 4px,
-        rgba(196, 180, 142, 0.80) 8px,
-        rgba(184, 168, 138, 0.80) 12px,
-        rgba(245, 237, 214, 0.80) 16px,
-        rgba(245, 237, 214, 0.80) calc(100% - 16px),
-        rgba(184, 168, 138, 0.80) calc(100% - 12px),
-        rgba(196, 180, 142, 0.80) calc(100% - 8px),
-        rgba(212, 197, 169, 0.80) calc(100% - 4px),
-        rgba(168, 152, 120, 0.80) 100%
+        rgba(168, 152, 120, 0.60) 0px,
+        rgba(212, 197, 169, 0.60) 4px,
+        rgba(196, 180, 142, 0.60) 8px,
+        rgba(184, 168, 138, 0.60) 12px,
+        rgba(245, 237, 214, 0.60) 16px,
+        rgba(245, 237, 214, 0.60) calc(100% - 16px),
+        rgba(184, 168, 138, 0.60) calc(100% - 12px),
+        rgba(196, 180, 142, 0.60) calc(100% - 8px),
+        rgba(212, 197, 169, 0.60) calc(100% - 4px),
+        rgba(168, 152, 120, 0.60) 100%
       );
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.4),
@@ -347,8 +350,9 @@
       inset -2px 0 4px rgba(139, 126, 100, 0.15),
       inset 0.5px 0.5px 3px rgba(100, 80, 50, 0.1),
       inset -0.5px -0.5px 3px rgba(100, 80, 50, 0.1),
-      /* filete dourado nas bordas do enrolamento */
-      inset 0 0 0 1px rgba(201, 162, 39, 0.15);
+      /* filete dourado nas bordas do enrolamento + glow externo */
+      inset 0 0 0 1px rgba(201, 162, 39, 0.20),
+      0 0 30px rgba(201, 162, 39, 0.12);
   }
 }
 
