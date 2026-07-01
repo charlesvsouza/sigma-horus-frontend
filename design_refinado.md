@@ -180,9 +180,9 @@ Onda 2+ (opcional, refinamento):
 [x] Seta "Voltar" (`router.back`) no manual, que usa o layout institucional. (2026-06-30)
 [x] Manual do usuário (v1.2): cap. 4 documenta ícones, menu fixo/recolhível, acordeão,
     busca `Ctrl/Cmd+K` e tema (Escuro/Claro/Sistema). (2026-06-30)
-[ ] (Adiado, risco) Confirm dialog substituindo `window.confirm`. O refactor assíncrono
-    em ações destrutivas (excluir membro, encerrar veneralato) é perigoso às cegas: um
-    `await` esquecido remove a confirmação silenciosamente. Fazer só com iteração visual.
+[x] ConfirmDialog do design system (`ui/confirm-dialog.tsx`, ConfirmProvider + `useConfirm`
+    → `askConfirm`) substituiu os 10 `window.confirm` (intents default/danger). Nome
+    distinto + verificação (0 sem `await`) mitigaram o risco do refactor assíncrono. (2026-07-01)
 [ ] (Backlog) `useTransition` para indicador de "atualizando" no `router.refresh()`.
     Hoje os estados de botão ("Salvando…") + a paleta já dão feedback; ganho marginal.
 [ ] (Backlog) Auditoria de cards: remover containers redundantes; zero cards aninhados.
