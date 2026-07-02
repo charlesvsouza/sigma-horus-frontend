@@ -37,13 +37,13 @@ src/
 Os seguintes dados são semeados automaticamente no onboarding:
 
 - **8 ritos maçônicos** (REAA, York, Adonhiramita, Brasileiro, Moderno, Schröder, Emulação, RER)
-- **37 potências** (GOB + 27 Grandes Lojas estaduais + 8 Grandes Orientes COMAB)
+- **37 potências** (GOB + 27 Grandes Lojas estaduais + 8 Grandes Orientes COMAB + opção "Outra/Independente")
 - **Cargos do rito escolhido** (ex.: 22 cargos para REAA)
 - **Plano de contas** (14 contas típicas de receita/despesa)
 
 ## Stripe / Asaas
 
-- Stripe: assinaturas (3 planos: Oficina, Areópago, Capitular)
+- Stripe: assinaturas (3 planos: Oficina, Loja, Potência)
 - Asaas: emissão de boletos/PIX com BYO-key por loja
 
 ## Migrations

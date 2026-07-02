@@ -3,7 +3,7 @@
 ## Sistema de Gestão de Lojas Maçônicas — Plataforma SaaS Multiloja
 
 > **Documento único de referência** (escopo, arquitetura, modelo de dados, módulos e histórico de desenvolvimento).
-> Consolidado em **2026-06-27**, atualizado em **2026-07-01** (HEAD `b884574`). Substitui os antigos `sigmahorus_blueprint.md`, `sigmahorus_roadmap_inicial.md`, `sigmahorus_handoff_template.md`, `sigmahorus_handoff_dominio.md`, `sigmahorus_plano_execucao_agentes.md` e `themas_cores.md`.
+> Consolidado em **2026-06-27**, atualizado em **2026-07-01** (HEAD `e68f562`). Substitui os antigos `sigmahorus_blueprint.md`, `sigmahorus_roadmap_inicial.md`, `sigmahorus_handoff_template.md`, `sigmahorus_handoff_dominio.md`, `sigmahorus_plano_execucao_agentes.md` e `themas_cores.md`.
 >
 > **Fonte viva para agentes:** `AGENTS.md` (estado da sessão corrente). **Este arquivo** é a memória persistente do escopo e da história. **Design system:** `DESIGN.md`. **Contexto de produto para design:** `PRODUCT.md`. **Análise jurídica e compliance:** `sigmahorus_legal_docs.md`.
 
@@ -12,7 +12,7 @@
 ## Sumário
 
 1. [Visão Geral](#1-visão-geral)
-2. [Estado Atual Verificado](#2-estado-atual-verificado-2026-06-27)
+2. [Estado Atual Verificado](#2-estado-atual-verificado-2026-07-01)
 3. [Arquitetura Técnica](#3-arquitetura-técnica)
 4. [Modelo de Dados](#4-modelo-de-dados)
 5. [Módulos Funcionais](#5-módulos-funcionais)
@@ -47,13 +47,13 @@ O **Sigma Horus** é uma plataforma web (SaaS) para gestão administrativa e fin
 
 ---
 
-## 2. Estado Atual Verificado (2026-06-28)
+## 2. Estado Atual Verificado (2026-07-01)
 
-> Verificado contra o código (`apps/frontend`) e o git. **HEAD `cbe6c28` (`main`)**, working tree limpo, tudo pushed (deploy automático na Vercel).
+> Verificado contra o código (`apps/frontend`) e o git. **HEAD `e68f562` (`main`)**, working tree limpo, tudo pushed (deploy automático na Vercel).
 
 | Item | Estado |
 |------|--------|
-| Migrations Prisma | **20/20 aplicadas** no Railway, RLS ativo (`prisma migrate deploy` ok, 2026-06-28) |
+| Migrations Prisma | **23/23 aplicadas** no Railway, RLS ativo (`prisma migrate deploy` ok; +3 de 2026-06-30: RLS Document/MessageLog, role `sigma_app`, `terminatedAt`) |
 | Modelos Prisma | 24 modelos (inclui `Relative`, `Campaign`, `CampaignDonation`; `User` ligado a `Member`) |
 | Acesso do obreiro | Membro→Usuário: "Conceder acesso" gera login + senha por e-mail; gestão de papéis em Usuários & acessos |
 | Encerramento veneralato | Fluxo 3 passos (Tesoureiro fecha → Venerável aprova → Admin encerra) + trava + herança de saldo |
@@ -160,7 +160,7 @@ Toda tabela de domínio carrega `lodge_id` (tenant). Entidades centrais (24 mode
 
 > `Lodge` também carrega campos de mensageria BYO criptografados (`whatsapp*`/`sms*`) e `ChartAccount.isSolidarity` (Tronco de Solidariedade).
 
-**Migrations (18):** `init_postgres`, `enable_rls`, `add_member_profile_fields`, `add_documents_and_messages`, `add_document_storage_fields`, `add_asaas_lodge_credentials`, `add_chart_accounts`, `add_lodge_business_fields`, `add_riteid_to_offices`, `add_role_permissions`, `add_invites_and_billing`, `add_lodge_rite_power_sessions`, `add_account_chart_link`, `add_member_installation`, `add_relatives`, `add_member_origin_power`, `add_campaigns`, `add_lodge_messaging`.
+**Migrations (23):** `init_postgres`, `enable_rls`, `add_member_profile_fields`, `add_documents_and_messages`, `add_document_storage_fields`, `add_asaas_lodge_credentials`, `add_chart_accounts`, `add_lodge_business_fields`, `add_riteid_to_offices`, `add_role_permissions`, `add_invites_and_billing`, `add_lodge_rite_power_sessions`, `add_account_chart_link`, `add_member_installation`, `add_relatives`, `add_member_origin_power`, `add_campaigns`, `add_lodge_messaging`, `add_user_member_link`, `add_term_closing_flow`, `fix_rls_document_message`, `ensure_sigma_app_role`, `add_lodge_terminated_at`.
 
 ---
 
@@ -196,13 +196,13 @@ Cadastro de sessões (data, tipo, grau), registro de presença por sessão (togg
 - **WhatsApp/SMS — BYO por loja** (decisão de produto: e-mail incluso na plataforma; WhatsApp/SMS com custo direto da loja). Cada loja conecta a própria conta em **Integrações**: WhatsApp (Meta — Phone Number ID + token + template aprovado) e/ou SMS (Twilio — SID/token/from). Credenciais criptografadas por tenant (`Lodge.whatsapp*`/`sms*`). `lib/messaging.ts` recebe `lodgeChannels`; sem credenciais o envio fica `queued`.
 - **Pendente:** conexão Meta da plataforma para o WhatsApp funcionar de ponta a ponta; opt-out por membro.
 
-### 5.12 Hospitalaria (Fases 1–2)
+### 5.10 Hospitalaria (Fases 1–2)
 Papel `hospitaller` (admin/venerável também acessam). **Irmãos (consulta)** read-only com contatos do obreiro + família. **Campanhas de benemerência** (`Campaign`/`CampaignDonation`): criar com modelos, beneficiário pessoa/empresa/instituição, meta e fonte; doações voluntárias que lançam no financeiro no Tronco (doador ocultável); custeio pelo Tronco validando saldo. **Tronco de Solidariedade**: `ChartAccount.isSolidarity`, saldo = entradas − gastos (`lib/hospitalaria.ts`). **Convocação dos irmãos** (`POST /api/campaigns/[id]/convocar`) por e-mail/WhatsApp/SMS via `lib/messaging.ts`.
 
-### 5.10 Portal do Obreiro
+### 5.11 Portal do Obreiro
 `/dashboard/portal` + `/api/portal`: visão financeira/documentos do próprio membro, sob RBAC.
 
-### 5.11 Centro de Documentos
+### 5.12 Centro de Documentos
 Repositório de arquivos (atas, comprovantes, certificados) em **Cloudflare R2** (S3-compatible), isolado por tenant (RLS) e RBAC. Upload real para o bucket, registro `Document` por loja, download via **presigned GET URL (5 min, bucket privado/LGPD)**, cleanup automático no DELETE (sem órfãos).
 
 ---
