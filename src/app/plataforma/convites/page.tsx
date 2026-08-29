@@ -43,6 +43,10 @@ function fmtDate(v: string) {
   return new Date(v).toLocaleString('pt-BR');
 }
 
+function fmtDateShort(v: string) {
+  return new Date(v).toLocaleDateString('pt-BR');
+}
+
 function planLabel(plan: string | null) {
   if (!plan) return `${PLANS[TRIAL_PLAN].name} (padrão)`;
   return PLANS[plan as PlanId]?.name ?? plan;
@@ -204,8 +208,8 @@ export default function ConvitesPlataformaPage() {
   return (
     <main className="min-h-screen bg-sigma-blue-deep px-6 py-12">
       <div className="mx-auto max-w-5xl space-y-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <p className="text-[0.6rem] uppercase tracking-[0.3em] text-gold/60">Sigma Horus — Plataforma</p>
             <h1 className="mt-2 text-2xl font-bold text-sand-light">Convites de acesso</h1>
             <p className="mt-1 text-sm text-sand-dark">
@@ -213,7 +217,7 @@ export default function ConvitesPlataformaPage() {
               {TRIAL_DAYS} dias no plano {PLANS[TRIAL_PLAN].name}.
             </p>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>Sair</Button>
+          <Button variant="ghost" size="sm" className="self-start" onClick={handleLogout}>Sair</Button>
         </div>
 
         <Card>
@@ -285,7 +289,8 @@ export default function ConvitesPlataformaPage() {
                   {copiedLink === created.link ? 'Copiado!' : 'Copiar link'}
                 </Button>
                 <span className="text-xs">
-                  {planLabel(created.plan)} · {created.trialDays ?? TRIAL_DAYS} dias de teste · expira em {fmtDate(created.expiresAt)}
+                  Concede {created.trialDays ?? TRIAL_DAYS} dias de teste no plano {planLabel(created.plan)} a partir do cadastro.
+                  Link válido até {fmtDate(created.expiresAt)} (depois disso, expira sem uso).
                 </span>
               </div>
             </Alert>
@@ -309,15 +314,15 @@ export default function ConvitesPlataformaPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-white/[6%] bg-sigma-card">
                   <tr>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Código</th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">E-mail</th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Nota</th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Plano</th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Dias</th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Status</th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Expira em</th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Criado em</th>
-                    <th className="px-4 py-3" />
+                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Código</th>
+                    <th className="hidden px-3 py-3 text-xs font-semibold uppercase text-sand-dark lg:table-cell">E-mail</th>
+                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Nota</th>
+                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Plano</th>
+                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark" title="Dias de teste concedidos no cadastro (contam a partir do cadastro, não da criação do convite)">Dias</th>
+                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Status</th>
+                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark" title="Prazo para usar o convite — o trial só começa a contar no cadastro">Link até</th>
+                    <th className="hidden px-3 py-3 text-xs font-semibold uppercase text-sand-dark xl:table-cell">Criado</th>
+                    <th className="px-3 py-3" />
                   </tr>
                 </thead>
                 <tbody>
@@ -326,17 +331,25 @@ export default function ConvitesPlataformaPage() {
                     const link = `${window.location.origin}/onboarding?invite=${inv.code}`;
                     return (
                       <tr key={inv.id} className="border-b border-white/[5%] transition-colors hover:bg-white/[3%]">
-                        <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-sand-light">{inv.code}</td>
-                        <td className="px-4 py-3 text-sand-dark">{inv.email ?? '—'}</td>
-                        <td className="max-w-[14rem] truncate px-4 py-3 text-sand-dark">{inv.note ?? '—'}</td>
-                        <td className="px-4 py-3 text-sand">{planLabel(inv.plan)}</td>
-                        <td className="px-4 py-3 text-sand-dark">{inv.trialDays ?? TRIAL_DAYS}</td>
-                        <td className="px-4 py-3">
+                        <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-sand-light">{inv.code}</td>
+                        <td className="hidden max-w-[11rem] truncate px-3 py-3 text-sand-dark lg:table-cell" title={inv.email ?? undefined}>
+                          {inv.email ?? '—'}
+                        </td>
+                        <td className="max-w-[9rem] break-words px-3 py-3 text-sand-dark" title={inv.note ?? undefined}>
+                          {inv.note ?? '—'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-sand">{planLabel(inv.plan)}</td>
+                        <td className="px-3 py-3 text-sand-dark">{inv.trialDays ?? TRIAL_DAYS}</td>
+                        <td className="whitespace-nowrap px-3 py-3">
                           <Badge variant={badge.variant}>{badge.label}</Badge>
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-sand-dark">{fmtDate(inv.expiresAt)}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-sand-dark">{fmtDate(inv.createdAt)}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-right">
+                        <td className="whitespace-nowrap px-3 py-3 text-sand-dark" title={fmtDate(inv.expiresAt)}>
+                          {fmtDateShort(inv.expiresAt)}
+                        </td>
+                        <td className="hidden whitespace-nowrap px-3 py-3 text-sand-dark xl:table-cell" title={fmtDate(inv.createdAt)}>
+                          {fmtDateShort(inv.createdAt)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right">
                           {inv.status === 'pending' ? (
                             <button
                               type="button"
