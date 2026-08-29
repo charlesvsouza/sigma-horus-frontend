@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prismaAdmin } from '@/lib/prisma';
 import { createInvite } from '@/lib/invites';
+import { isPlanId } from '@/lib/plans';
 
 // Endpoint do DONO DA PLATAFORMA (não é multi-tenant). Protegido por um token
 // secreto enviado no header `x-platform-token` (env PLATFORM_OWNER_TOKEN).
@@ -20,13 +21,21 @@ export async function POST(request: Request) {
   const email = typeof body?.email === 'string' ? body.email : undefined;
   const note = typeof body?.note === 'string' ? body.note : undefined;
   const ttlDays = Number.isFinite(body?.ttlDays) ? Number(body.ttlDays) : undefined;
+  const plan = typeof body?.plan === 'string' ? body.plan : undefined;
+  const trialDays = Number.isFinite(body?.trialDays) ? Number(body.trialDays) : undefined;
 
-  const invite = await createInvite({ email, note, ttlDays });
+  if (plan !== undefined && !isPlanId(plan)) {
+    return NextResponse.json({ error: `Plano inválido: ${plan}` }, { status: 400 });
+  }
+
+  const invite = await createInvite({ email, note, ttlDays, plan, trialDays });
   const base = process.env.NEXT_PUBLIC_APP_URL ?? '';
   return NextResponse.json({
     code: invite.code,
     link: `${base}/onboarding?invite=${invite.code}`,
     expiresAt: invite.expiresAt,
+    plan: invite.plan,
+    trialDays: invite.trialDays,
   });
 }
 

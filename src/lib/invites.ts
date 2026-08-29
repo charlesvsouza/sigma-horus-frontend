@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import { prismaAdmin } from '@/lib/prisma';
+import { isPlanId, type PlanId } from '@/lib/plans';
 
 export const INVITE_TTL_DAYS = 14;
 
@@ -12,16 +13,32 @@ export function generateInviteCode(): string {
   return `SH-${out}`;
 }
 
-export async function createInvite(opts: { email?: string; note?: string; ttlDays?: number }) {
+export async function createInvite(opts: {
+  email?: string;
+  note?: string;
+  ttlDays?: number;
+  /** Override do plano concedido ao consumir o convite (ex.: 'loja'). Padrão: TRIAL_PLAN (Oficina). */
+  plan?: PlanId;
+  /** Override da duração do trial em dias (ex.: 60). Padrão: TRIAL_DAYS (10). */
+  trialDays?: number;
+}) {
   const code = generateInviteCode();
   const ttl = opts.ttlDays ?? INVITE_TTL_DAYS;
   const expiresAt = new Date(Date.now() + ttl * 24 * 60 * 60 * 1000);
+  if (opts.plan !== undefined && !isPlanId(opts.plan)) {
+    throw new Error(`Plano inválido para convite: ${opts.plan}`);
+  }
+  if (opts.trialDays !== undefined && (!Number.isFinite(opts.trialDays) || opts.trialDays <= 0)) {
+    throw new Error(`trialDays inválido para convite: ${opts.trialDays}`);
+  }
   return prismaAdmin.invitation.create({
     data: {
       code,
       email: opts.email?.trim().toLowerCase() || null,
       note: opts.note?.trim() || null,
       status: 'pending',
+      plan: opts.plan ?? null,
+      trialDays: opts.trialDays ?? null,
       expiresAt,
     },
   });

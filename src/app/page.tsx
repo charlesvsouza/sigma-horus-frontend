@@ -272,6 +272,10 @@ export default function Home() {
         </div>
         <div className="border-t border-white/[0.05] px-6 py-6 text-center text-xs text-sand-dark lg:px-10">
           © {new Date().getFullYear()} Sigma Horus — a tesouraria da sua loja no prumo.
+          {' · '}
+          <Link href="/plataforma/convites" className="text-sand-dark/60 transition-colors hover:text-sand-light">
+            Admin
+          </Link>
         </div>
       </footer>
     </main>

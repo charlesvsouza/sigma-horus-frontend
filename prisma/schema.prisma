@@ -307,6 +307,8 @@ model Invitation {
   note        String?  // referência interna (ex.: nome da loja/contato)
   // status: pending | used | revoked | expired
   status      String   @default("pending")
+  plan        String?  // override do plano do trial (ex.: "loja"); null = padrão (Oficina)
+  trialDays   Int?     // override da duração do trial em dias; null = padrão (TRIAL_DAYS)
   lodgeId     String?  // preenchido quando o convite é consumido
   usedAt      DateTime?
   expiresAt   DateTime

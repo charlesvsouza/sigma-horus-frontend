@@ -2,6 +2,7 @@ import { prismaAdmin } from '@/lib/prisma';
 import { seedLodgeDefaults } from '@/lib/seed-lodge';
 import { validateInvite, consumeInvite, INVITE_ERROR_MESSAGES } from '@/lib/invites';
 import { TRIAL_DAYS, TRIAL_PLAN } from '@/lib/stripe';
+import { isPlanId } from '@/lib/plans';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
 
@@ -50,7 +51,11 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await bcrypt.hash(adminPassword, 12);
-  const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  // Convite pode conceder plano/duração de trial diferentes do padrão
+  // (ex.: convite especial de 60 dias no plano Loja).
+  const trialPlan = isPlanId(check.invite.plan) ? check.invite.plan : TRIAL_PLAN;
+  const trialDaysForInvite = check.invite.trialDays ?? TRIAL_DAYS;
+  const trialEndsAt = new Date(Date.now() + trialDaysForInvite * 24 * 60 * 60 * 1000);
 
   const result = await prismaAdmin.$transaction(async (tx) => {
     const lodge = await tx.lodge.create({
@@ -72,11 +77,11 @@ export async function POST(request: Request) {
       },
     });
 
-    // Trial de 10 dias no plano Oficina. Ao fim, deve assinar um dos planos.
+    // Trial no plano e duração do convite (ou padrão). Ao fim, deve assinar um dos planos.
     await tx.subscription.create({
       data: {
         lodgeId: lodge.id,
-        plan: TRIAL_PLAN,
+        plan: trialPlan,
         status: 'trialing',
         billingInterval: 'month',
         trialEndsAt,
