@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { syncMemberArt002Status } from '@/lib/overdue';
 import { NextResponse } from 'next/server';
 
 // Cancela uma cobrança individual (não afeta a Account nem pagamentos já
@@ -24,6 +25,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     await db.invoice.delete({ where: { id } });
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'invoice', entityId: id, metadata: { number: invoice.number } });
+    if (invoice.memberId) {
+      await syncMemberArt002Status(db, String(lodgeId), invoice.memberId);
+    }
     return { ok: true as const };
   });
 

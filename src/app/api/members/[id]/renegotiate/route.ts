@@ -3,7 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
-import { calculateLateCharge, daysOverdue, syncMemberArt002Status } from '@/lib/overdue';
+import { sumLateCharges, syncMemberArt002Status, type LateCharge } from '@/lib/overdue';
 import { NextResponse } from 'next/server';
 
 function addMonths(date: Date, n: number) {
@@ -48,11 +48,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (openAccounts.length === 0) return { error: 'noopen' as const };
 
     let total = openAccounts.reduce((sum, a) => sum + Number(a.amount), 0);
-    let lateCharge = { fee: 0, interest: 0, total } as ReturnType<typeof calculateLateCharge>;
+    let lateCharge: LateCharge = { fee: 0, interest: 0, total };
     if (applyLateCharge) {
       const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { lateFeePercent: true, lateInterestPercentMonth: true } });
-      const oldestOverdue = daysOverdue(openAccounts[0].dueDate, now);
-      lateCharge = calculateLateCharge(total, oldestOverdue, lodge?.lateFeePercent, lodge?.lateInterestPercentMonth);
+      lateCharge = sumLateCharges(openAccounts, now, lodge?.lateFeePercent, lodge?.lateInterestPercentMonth);
       total = lateCharge.total;
     }
 
@@ -60,19 +59,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const base = Math.floor((total / n) * 100) / 100;
     const roundedTotal = base * (n - 1);
     const lastAmount = Math.round((total - roundedTotal) * 100) / 100;
+    const dueDates = Array.from({ length: n }, (_, i) => addMonths(firstDueDate, i));
+
+    // Confere TODOS os vencimentos antes de escrever qualquer parcela: um
+    // `return` no meio do loop de updates NÃO desfaz a transação (só um
+    // `throw` desfaz) — checar tudo antes evita deixar parcelas atualizadas
+    // pela metade se algum vencimento cair num período já encerrado.
+    for (const dueDate of dueDates) {
+      const lockedFor = await findClosedTermForDate(db, String(lodgeId), dueDate);
+      if (lockedFor) return { error: 'locked' as const, term: lockedFor };
+    }
 
     const updated = [];
     for (let i = 0; i < n; i++) {
-      const dueDate = addMonths(firstDueDate, i);
-      const lockedFor = await findClosedTermForDate(db, String(lodgeId), dueDate);
-      if (lockedFor) return { error: 'locked' as const, term: lockedFor };
-
       const amount = i === n - 1 ? lastAmount : base;
       const acc = await db.account.update({
         where: { id: openAccounts[i].id },
         data: {
           amount,
-          dueDate,
+          dueDate: dueDates[i],
           status: 'pending',
           title: `${openAccounts[i].title} (renegociado — parcela ${i + 1}/${n})`,
         },

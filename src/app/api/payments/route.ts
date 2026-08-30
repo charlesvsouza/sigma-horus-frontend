@@ -93,29 +93,33 @@ export async function POST(request: Request) {
       },
     });
 
-    const aggregate = await db.payment.aggregate({
-      _sum: { amount: true },
-      where: { accountId },
-    });
-
-    const totalPaid = Number(aggregate._sum.amount ?? 0);
-    const nextStatus = totalPaid >= Number(account.amount) ? 'paid' : 'pending';
-
-    await db.account.update({
-      where: { id: accountId },
-      data: { status: nextStatus },
-    });
-
-    // Espelha no lado das cobranças (Invoice): quando a conta é quitada por
-    // baixa manual (fora do Asaas), as cobranças associadas também devem
-    // refletir "paga" — do contrário a tela de Cobranças mostra "pendente"
-    // pra sempre mesmo com a conta já quitada.
-    if (nextStatus === 'paid') {
-      await db.invoice.updateMany({ where: { accountId, status: { not: 'paid' } }, data: { status: 'paid' } });
-    }
-
+    // Uma Account pode ser "de um só membro" (memberId setado — fluxo normal
+    // de Contas) ou uma categoria COMPARTILHADA entre vários membros, cada um
+    // com sua própria Invoice (accountId igual, memberId diferente — é assim
+    // que a cobrança em massa funciona, ver /api/invoices/bulk). Nesse segundo
+    // caso, somar TODOS os pagamentos da accountId e marcar TODAS as Invoices
+    // como pagas quitaria por engano a mensalidade dos outros membros quando
+    // só um paga — por isso o escopo muda conforme o caso.
     if (account.memberId) {
+      const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId } });
+      const totalPaid = Number(aggregate._sum.amount ?? 0);
+      const nextStatus = totalPaid >= Number(account.amount) ? 'paid' : 'pending';
+
+      await db.account.update({ where: { id: accountId }, data: { status: nextStatus } });
+      if (nextStatus === 'paid') {
+        await db.invoice.updateMany({ where: { accountId, status: { not: 'paid' } }, data: { status: 'paid' } });
+      }
       await syncMemberArt002Status(db, String(lodgeId), account.memberId);
+    } else if (memberId) {
+      const memberInvoices = await db.invoice.findMany({ where: { accountId, memberId } });
+      const owedByMember = memberInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
+      const paidByMember = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId, memberId } });
+      const totalPaidByMember = Number(paidByMember._sum.amount ?? 0);
+
+      if (owedByMember > 0 && totalPaidByMember >= owedByMember) {
+        await db.invoice.updateMany({ where: { accountId, memberId, status: { not: 'paid' } }, data: { status: 'paid' } });
+      }
+      await syncMemberArt002Status(db, String(lodgeId), memberId);
     }
 
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method } });

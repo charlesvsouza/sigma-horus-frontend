@@ -17,13 +17,19 @@ export async function generateBalancete(
 
   const [accounts, payments] = await Promise.all([
     db.account.findMany({ where: { lodgeId, dueDate: { gte: from, lte: to } }, select: { amount: true, type: true } }),
-    db.payment.findMany({ where: { lodgeId, paidAt: { gte: from, lte: to } }, select: { amount: true } }),
+    // Payment serve tanto pra baixa de conta a receber quanto a pagar — sem o
+    // tipo da Account associada não dá pra saber se cada linha é entrada ou
+    // saída de caixa (ver findClosedTermForDate/PagamentosClient: o mesmo
+    // formulário lança os dois sentidos).
+    db.payment.findMany({ where: { lodgeId, paidAt: { gte: from, lte: to } }, select: { amount: true, account: { select: { type: true } } } }),
   ]);
 
   const totalReceivables = accounts.filter((a) => a.type === 'RECEIVABLE').reduce((s, a) => s + Number(a.amount ?? 0), 0);
   const totalPayables = accounts.filter((a) => a.type === 'PAYABLE').reduce((s, a) => s + Number(a.amount ?? 0), 0);
-  const totalPayments = payments.reduce((s, p) => s + Number(p.amount ?? 0), 0);
-  const netBalance = totalPayments - totalPayables;
+  const cashIn = payments.filter((p) => p.account?.type === 'RECEIVABLE').reduce((s, p) => s + Number(p.amount ?? 0), 0);
+  const cashOut = payments.filter((p) => p.account?.type === 'PAYABLE').reduce((s, p) => s + Number(p.amount ?? 0), 0);
+  const totalPayments = cashIn; // "Pagamentos" = dinheiro efetivamente recebido no período (entradas)
+  const netBalance = cashIn - cashOut; // saldo de caixa real do período (entradas − saídas), não entradas − obrigações em aberto
 
   const created = await db.balancete.create({
     data: { lodgeId, periodFrom: from, periodTo: to, totalReceivables, totalPayables, totalPayments, netBalance, notes, createdById },

@@ -57,7 +57,9 @@ export async function PUT(request: Request) {
     if (numField in body) {
       const raw = String(body[numField] ?? '').trim();
       const n = raw ? Number(raw) : null;
-      data[numField] = n != null && !Number.isNaN(n) && n > 0 ? n : null;
+      // 0 é um valor explícito válido (ex.: exigir aprovação de QUALQUER
+      // despesa) — só string vazia limpa o campo (volta a null/desativado).
+      data[numField] = n != null && !Number.isNaN(n) && n >= 0 ? n : null;
     }
   }
   if (!data.name) {

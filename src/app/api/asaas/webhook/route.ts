@@ -68,6 +68,7 @@ export async function POST(request: Request) {
         amount: payment.value,
         asaasPaymentId: payment.id,
         userId: 'system:asaas-webhook',
+        source: event,
       }),
     );
 

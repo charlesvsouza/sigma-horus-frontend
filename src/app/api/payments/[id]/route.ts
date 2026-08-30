@@ -27,10 +27,21 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     const locked = await findClosedTermForDate(db, String(lodgeId), payment.paidAt);
     if (locked) return { error: 'locked' as const, term: locked };
 
+    // Antes de apagar: se este pagamento estava conciliado com uma linha de
+    // extrato bancário, o FK cai pra null sozinho (onDelete: SetNull), mas o
+    // status "matched" fica preso — reabre pra "unmatched" pra não deixar um
+    // lançamento fantasma sem opção de reconciliar de novo.
+    const linkedBankTx = await db.bankTransaction.findMany({ where: { matchedPaymentId: id }, select: { id: true } });
+
     await db.payment.delete({ where: { id } });
 
+    if (linkedBankTx.length > 0) {
+      await db.bankTransaction.updateMany({ where: { id: { in: linkedBankTx.map((t) => t.id) } }, data: { status: 'unmatched' } });
+    }
+
     const account = await db.account.findUnique({ where: { id: payment.accountId } });
-    if (account) {
+    if (account?.memberId) {
+      // Conta de um só membro: mesmo escopo de sempre (accountId inteiro).
       const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: account.id } });
       const totalPaid = Number(aggregate._sum.amount ?? 0);
       const nextStatus = totalPaid >= Number(account.amount) ? 'paid' : 'pending';
@@ -41,9 +52,19 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       if (account.status === 'paid' && nextStatus !== 'paid') {
         await db.invoice.updateMany({ where: { accountId: account.id, status: 'paid' }, data: { status: 'pending' } });
       }
-      if (account.memberId) {
-        await syncMemberArt002Status(db, String(lodgeId), account.memberId);
+      await syncMemberArt002Status(db, String(lodgeId), account.memberId);
+    } else if (account && payment.memberId) {
+      // Conta compartilhada entre membros (cobrança em massa): reabre só a
+      // Invoice DESTE membro, nunca a dos outros que pagaram de verdade.
+      const memberInvoices = await db.invoice.findMany({ where: { accountId: account.id, memberId: payment.memberId } });
+      const owedByMember = memberInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
+      const paidByMember = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: account.id, memberId: payment.memberId } });
+      const totalPaidByMember = Number(paidByMember._sum.amount ?? 0);
+
+      if (totalPaidByMember < owedByMember) {
+        await db.invoice.updateMany({ where: { accountId: account.id, memberId: payment.memberId, status: 'paid' }, data: { status: 'pending' } });
       }
+      await syncMemberArt002Status(db, String(lodgeId), payment.memberId);
     }
 
     await logAudit(db, {

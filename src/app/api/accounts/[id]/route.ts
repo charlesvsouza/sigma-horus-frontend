@@ -42,6 +42,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
     }
 
+    // Recalcula o visto do Venerável quando valor ou tipo mudam — sem isso,
+    // dava pra criar uma despesa pequena (aprovada automaticamente) e depois
+    // editar o valor pra algo grande sem nunca passar pela aprovação.
+    let approvalStatus: string | undefined;
+    if (body?.amount !== undefined || body?.type !== undefined) {
+      const nextType = body?.type !== undefined ? String(body.type).trim().toUpperCase() : existing.type;
+      const nextAmount = body?.amount !== undefined ? Number(body.amount) : Number(existing.amount);
+      if (nextType === 'PAYABLE') {
+        const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { expenseApprovalThreshold: true } });
+        const threshold = lodge?.expenseApprovalThreshold;
+        approvalStatus = threshold != null && nextAmount >= threshold ? 'pending' : 'approved';
+      } else {
+        approvalStatus = 'approved';
+      }
+    }
+
     const updated = await db.account.update({
       where: { id },
       data: {
@@ -54,6 +70,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         memberId: body?.memberId !== undefined ? (body.memberId ? String(body.memberId) : null) : undefined,
         isDues: body?.isDues !== undefined ? Boolean(body.isDues) : undefined,
         chartAccountId: body?.chartAccountId !== undefined ? chartAccountId : undefined,
+        approvalStatus,
       },
       include: {
         member: { select: { id: true, name: true } },
@@ -101,16 +118,32 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
 
-  await withTenant(String(lodgeId), async (db) => {
-    const prev = await db.account.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, title: true, memberId: true } });
-    if (prev) {
-      await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'account', entityId: id, metadata: { title: prev.title } });
-    }
+  const result = await withTenant(String(lodgeId), async (db) => {
+    const prev = await db.account.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, title: true, memberId: true, dueDate: true } });
+    if (!prev) return { error: 'notfound' as const };
+
+    // Mesma trava do PATCH: não deixa apagar um lançamento de período já
+    // encerrado (destruiria histórico de uma prestação de contas aprovada).
+    const locked = await findClosedTermForDate(db, String(lodgeId), prev.dueDate);
+    if (locked) return { error: 'locked' as const, term: locked };
+
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'account', entityId: id, metadata: { title: prev.title } });
     await db.account.deleteMany({ where: { id, lodgeId: String(lodgeId) } });
-    if (prev?.memberId) {
+    if (prev.memberId) {
       await syncMemberArt002Status(db, String(lodgeId), prev.memberId);
     }
+    return { ok: true as const };
   });
+
+  if ('error' in result) {
+    if (result.error === 'notfound') return NextResponse.json({ success: true });
+    if (result.error === 'locked') {
+      return NextResponse.json(
+        { error: `Período encerrado (${result.term.title}). Não é possível excluir lançamento dentro de um veneralato já fechado.` },
+        { status: 409 },
+      );
+    }
+  }
 
   return NextResponse.json({ success: true });
 }

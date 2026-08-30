@@ -40,9 +40,18 @@ export async function POST(request: Request) {
   }
 
   const result = await withTenant(String(lodgeId), async (db) => {
+    // A cobrança em massa é genérica (evento, campanha, mensalidade — qualquer
+    // Account serve de categoria). A isenção do Maçom Remido só faz sentido
+    // pra mensalidade — cobrar um isento por uma taxa de evento, por exemplo,
+    // continua válido mesmo com scope="all".
+    const targetAccount = await db.account.findFirst({ where: { id: accountId, lodgeId: String(lodgeId) }, select: { isDues: true } });
+
     const members = await db.member.findMany({
-      // Isentos (ex.: Maçom Remido) nunca entram na cobrança em massa, mesmo com scope="all".
-      where: { lodgeId: String(lodgeId), duesExempt: false, ...(scope === 'active' ? { status: 'active' } : {}) },
+      where: {
+        lodgeId: String(lodgeId),
+        ...(targetAccount?.isDues ? { duesExempt: false } : {}),
+        ...(scope === 'active' ? { status: 'active' } : {}),
+      },
       select: { id: true },
       orderBy: { name: 'asc' },
     });

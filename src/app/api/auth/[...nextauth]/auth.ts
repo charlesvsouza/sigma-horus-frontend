@@ -63,6 +63,14 @@ export const authOptions = {
         token.lodgeId = user.lodgeId;
         token.memberId = user.memberId ?? null;
         token.mustChangePassword = Boolean(user.mustChangePassword);
+      } else if (token.id && token.memberId === undefined) {
+        // Sessão emitida antes do campo memberId existir neste callback (ou
+        // seja, antes de 2026-06-28) nunca teve essa propriedade preenchida —
+        // sem isso, telas que dependem da identidade do membro (Meu Portal,
+        // aviso do Art. 002) ficam vazias até o usuário deslogar e logar de
+        // novo. Preenche uma vez, sozinho, na próxima requisição.
+        const dbUser = await prismaAdmin.user.findUnique({ where: { id: token.id as string }, select: { memberId: true } });
+        token.memberId = dbUser?.memberId ?? null;
       }
       // Após o usuário trocar a senha, o cliente chama update() para limpar a flag.
       if (trigger === 'update') {

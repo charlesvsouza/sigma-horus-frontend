@@ -107,6 +107,27 @@ export function calculateLateCharge(
   return { fee, interest, total: amount + fee + interest };
 }
 
+/**
+ * Soma a multa/juros de CADA pendência pelos seus próprios dias de atraso
+ * (não os dias do item mais antigo aplicados sobre a soma total — isso
+ * superestimaria o encargo sempre que o membro tiver pendências de idades
+ * diferentes, já que cada uma vence e acumula juros num ritmo próprio).
+ */
+export function sumLateCharges(
+  items: { amount: number; dueDate: Date }[],
+  now: Date,
+  feePercent?: number | null,
+  interestPercentMonth?: number | null,
+): LateCharge {
+  return items.reduce(
+    (acc, item) => {
+      const c = calculateLateCharge(item.amount, daysOverdue(item.dueDate, now), feePercent, interestPercentMonth);
+      return { fee: acc.fee + c.fee, interest: acc.interest + c.interest, total: acc.total + c.total };
+    },
+    { fee: 0, interest: 0, total: 0 },
+  );
+}
+
 export interface OverdueReportRow {
   memberId: string;
   memberName: string;
@@ -153,7 +174,7 @@ export async function getLodgeOverdueDuesReport(
       oldestDueDate: oldest.dueDate,
       daysOverdue: overdue,
       art002: overdue > ART_002_THRESHOLD_DAYS,
-      lateCharge: calculateLateCharge(totalAmount, overdue, lodge?.lateFeePercent, lodge?.lateInterestPercentMonth),
+      lateCharge: sumLateCharges(items, now, lodge?.lateFeePercent, lodge?.lateInterestPercentMonth),
     };
   });
 
