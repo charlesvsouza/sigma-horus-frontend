@@ -8,7 +8,7 @@ const modules = [
     numeral: 'I',
     name: 'Tesouraria',
     description:
-      'O coração financeiro: cobranças e mensalidades, boletos e PIX com baixa automática, contas a pagar e a receber, fechamento de caixa e balancetes.',
+      'O coração financeiro: cobranças e mensalidades, boletos e PIX com baixa automática, contas a pagar e a receber, fechamento de caixa e balancetes, com análise preditiva de inadimplência.',
   },
   {
     numeral: 'II',

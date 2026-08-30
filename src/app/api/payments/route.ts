@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { syncMemberArt002Status } from '@/lib/overdue';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -100,6 +101,10 @@ export async function POST(request: Request) {
       where: { id: accountId },
       data: { status: nextStatus },
     });
+
+    if (account.memberId) {
+      await syncMemberArt002Status(db, String(lodgeId), account.memberId);
+    }
 
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method } });
     return { payment: created };

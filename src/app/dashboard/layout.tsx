@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { Alert } from '@/components/ui';
+import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus } from '@/lib/overdue';
 import DashboardShell from './DashboardShell';
 
 interface NavEntry { href: string; label: string; roles: string[]; }
@@ -34,6 +35,7 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
       { href: '/dashboard/relatorios', label: 'Relatórios', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
       { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+      { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
     ],
   },
   {
@@ -85,19 +87,27 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     pendingPlan: string | null;
     pendingPlanEffectiveAt: Date | null;
   } | null = null;
+  let art002DaysOverdue: number | null = null;
+  const memberId = session?.user?.memberId;
   if (lodgeId) {
     const data = await withTenant(String(lodgeId), async (db) => {
-      const [lodge, subscription] = await Promise.all([
+      const [lodge, subscription, dues] = await Promise.all([
         db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true } }),
         db.subscription.findUnique({
           where: { lodgeId: String(lodgeId) },
           select: { status: true, plan: true, trialEndsAt: true, pendingPlan: true, pendingPlanEffectiveAt: true },
         }),
+        memberId ? getMemberDuesStatus(db, String(lodgeId), String(memberId)) : Promise.resolve(null),
       ]);
-      return { lodge, subscription };
+      return { lodge, subscription, dues };
     });
     if (data.lodge?.name) lodgeName = data.lodge.name;
     sub = data.subscription;
+    // Só avisa o próprio membro quando já cruzou o prazo do Art. 002 (60 dias);
+    // mensalidade em atraso mas ainda dentro do prazo não dispara o popup.
+    if (data.dues && data.dues.daysOverdue > ART_002_THRESHOLD_DAYS) {
+      art002DaysOverdue = data.dues.daysOverdue;
+    }
   }
 
   // Server Component: roda 1× por request; Date.now() é determinístico no escopo
@@ -119,7 +129,14 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     .filter((g) => g.items.length > 0);
 
   return (
-    <DashboardShell groups={groups} lodgeName={lodgeName} userName={session?.user?.name ?? 'Usuário'} role={role}>
+    <>
+      {/* Aplica o tema salvo antes da pintura, só dentro do dashboard (evita flash). */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `try{var t=localStorage.getItem('sigma-theme');if(t==='light'||t==='system')document.documentElement.setAttribute('data-theme',t);}catch(e){}`,
+        }}
+      />
+      <DashboardShell groups={groups} lodgeName={lodgeName} userName={session?.user?.name ?? 'Usuário'} role={role} art002DaysOverdue={art002DaysOverdue}>
       {blocked ? (
         <Alert variant="banner" intent="danger">
           {trialExpired
@@ -138,6 +155,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </Alert>
       ) : null}
       {children}
-    </DashboardShell>
+      </DashboardShell>
+    </>
   );
 }

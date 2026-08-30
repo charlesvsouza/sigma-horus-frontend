@@ -46,6 +46,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-pagamentos', label: '7.5 Registrar pagamentos' },
       { id: 'tes-relatorios', label: '7.6 Relatórios' },
       { id: 'tes-fechamento', label: '7.7 Fechamento do veneralato' },
+      { id: 'tes-inadimplencia', label: '7.8 Inadimplência e Art. 002' },
     ],
   },
   { id: 'secretario', num: '8', label: 'Guia do Secretário' },
@@ -366,7 +367,8 @@ export function ManualBook() {
               <p>
                 <strong>Tema da interface:</strong> em <UI>Configurações → Aparência</UI> você escolhe <strong>Escuro</strong>
                 (padrão), <strong>Papiro</strong> (pergaminho suave) ou <strong>Sistema</strong> (acompanha o modo claro/escuro
-                do seu computador, Windows ou Mac). A preferência vale para todas as telas e fica salva neste navegador.
+                do seu computador, Windows ou Mac). A preferência vale para as telas do painel e fica salva neste navegador
+                — o site público (landing, login) continua sempre no escuro da marca.
               </p>
             </Chapter>
 
@@ -414,7 +416,7 @@ export function ManualBook() {
                   <strong>Aparência:</strong> na própria página de Configurações há a seção <UI>Aparência</UI>, onde você
                   escolhe o tema <strong>Escuro</strong> (padrão), <strong>Papiro</strong> (pergaminho suave) ou
                   <strong> Sistema</strong> (segue o modo claro/escuro do seu computador). A preferência fica salva neste
-                  navegador e vale para todas as telas.
+                  navegador e vale para as telas do painel — o site público continua sempre no escuro da marca.
                 </p>
               </Sub>
 
@@ -639,6 +641,36 @@ export function ManualBook() {
                   livro caixa já abre com o saldo herdado do período anterior.
                 </Note>
               </Sub>
+
+              <Sub id="tes-inadimplencia" title="7.8 Inadimplência e Art. 002">
+                <p>
+                  O Art. 002 é a sanção regimental de <strong>suspensão dos direitos maçônicos</strong> do membro
+                  inadimplente com a mensalidade há mais de <strong>60 dias</strong>. O Sigma Horus acompanha isso
+                  automaticamente, com base no regimento interno da loja.
+                </p>
+                <Steps>
+                  <li>
+                    Ao lançar uma conta a receber vinculada a um membro em <UI>Financeiro → Contas</UI>, marque a
+                    caixa <strong>&quot;É mensalidade do membro&quot;</strong>. Só contas marcadas assim entram na
+                    regra dos 60 dias — cobranças pontuais (evento, campanha) não contam.
+                  </li>
+                  <li>
+                    Em <UI>Financeiro → Relatórios → Inadimplência (Art. 002)</UI>, veja todos os membros com
+                    mensalidade em aberto: quantidade de parcelas, valor total, vencimento mais antigo e dias de
+                    atraso. Os enquadrados no Art. 002 aparecem destacados.
+                  </li>
+                  <li>
+                    O critério é o <strong>vencimento em aberto mais antigo</strong>: se ele já passou de 60 dias, o
+                    membro está enquadrado, mesmo que parcelas mais recentes tenham sido pagas fora de ordem.
+                  </li>
+                </Steps>
+                <Note>
+                  A situação do membro é atualizada <strong>automaticamente</strong>: ao cruzar 60 dias, o cadastro
+                  passa para &quot;Art. 002&quot;; quando a pendência é paga ou excluída, volta para &quot;Ativo&quot;
+                  sozinho — não é preciso alterar o cadastro manualmente. Enquanto durar, o próprio membro recebe um
+                  aviso no painel pedindo para procurar o Tesoureiro ou o Venerável Mestre (capítulo 10).
+                </Note>
+              </Sub>
             </Chapter>
 
             {/* ============== 8. SECRETÁRIO ============== */}
@@ -736,6 +768,12 @@ export function ManualBook() {
                 Assim você confere, a qualquer momento, <strong>o que pagou, o que está em aberto e o que vence</strong> —
                 sem precisar pedir à tesouraria.
               </p>
+              <Note>
+                Se a sua mensalidade ficar em aberto por mais de <strong>60 dias</strong>, um aviso vermelho aparece por
+                alguns segundos ao entrar no painel, pedindo para você procurar o Tesoureiro ou o Venerável Mestre
+                (situação prevista no Art. 002 do regimento — ver capítulo 7.8). Ele some sozinho assim que a pendência
+                for paga ou excluída pela tesouraria.
+              </Note>
               <Sub title="Seu acesso e seus dados">
                 <Bullets>
                   <li><strong>Primeiro acesso:</strong> entre com o e-mail e a senha provisória recebida por e-mail; o sistema pede para você <strong>definir uma nova senha</strong>.</li>

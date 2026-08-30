@@ -1,6 +1,7 @@
 import { isWebhookAuthorized, processWebhook } from '@/lib/asaas';
 import { logAudit } from '@/lib/audit';
 import { prismaAdmin } from '@/lib/prisma';
+import { syncMemberArt002Status } from '@/lib/overdue';
 import { NextResponse } from 'next/server';
 
 // Eventos do Asaas que significam "dinheiro recebido" → baixa automática.
@@ -81,6 +82,10 @@ export async function POST(request: Request) {
         });
       }
 
+      if (invoice.memberId) {
+        await syncMemberArt002Status(tx, invoice.lodgeId, invoice.memberId);
+      }
+
       await logAudit(tx, {
         lodgeId: invoice.lodgeId,
         userId: 'system:asaas-webhook',
@@ -103,6 +108,9 @@ export async function POST(request: Request) {
 
   if (REVERSED_EVENTS.has(event)) {
     await prismaAdmin.invoice.update({ where: { id: invoice.id }, data: { status: 'pending' } });
+    if (invoice.memberId) {
+      await syncMemberArt002Status(prismaAdmin, invoice.lodgeId, invoice.memberId);
+    }
     return NextResponse.json({ received: true, status: 'reversed' });
   }
 

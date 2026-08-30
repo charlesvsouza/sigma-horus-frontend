@@ -14,6 +14,7 @@ interface AccountItem {
   dueDate: string;
   status: string;
   description?: string | null;
+  isDues: boolean;
   member?: MemberOption | null;
 }
 
@@ -31,6 +32,7 @@ export default function ContasClient({ accounts, members, chartAccounts }: { acc
     status: 'pending',
     description: '',
     memberId: '',
+    isDues: false,
   });
 
   function selectChart(id: string) {
@@ -55,7 +57,7 @@ export default function ContasClient({ accounts, members, chartAccounts }: { acc
     const data = await response.json();
     if (response.ok) {
       setMessage('Conta cadastrada com sucesso.');
-      setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '' });
+      setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', isDues: false });
       router.refresh();
     } else {
       setMessage(data.error ?? 'Erro ao cadastrar conta.');
@@ -108,6 +110,12 @@ export default function ContasClient({ accounts, members, chartAccounts }: { acc
                 <option key={member.id} value={member.id}>{member.name}</option>
               ))}
             </select>
+            {form.type === 'RECEIVABLE' && form.memberId ? (
+              <label className="flex items-center gap-2 text-sm text-sand-dark md:col-span-2">
+                <input type="checkbox" checked={form.isDues} onChange={(event) => setForm({ ...form, isDues: event.target.checked })} />
+                É mensalidade do membro (conta para a regra do Art. 002 — 60 dias de inadimplência)
+              </label>
+            ) : null}
             <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Descrição" rows={3} />
             <Button type="submit" className="md:col-span-2">Salvar conta</Button>
           </form>
@@ -121,7 +129,7 @@ export default function ContasClient({ accounts, members, chartAccounts }: { acc
             ) : accounts.map((account) => (
               <div key={account.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div>
-                  <p className="text-sm font-medium text-sand-light">{account.title}</p>
+                  <p className="text-sm font-medium text-sand-light">{account.title}{account.isDues ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">Mensalidade</span> : null}</p>
                   <p className="mt-1 text-xs text-sand-dark">{account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} • {account.member?.name ?? 'Sem vínculo'}</p>
                 </div>
                 <div className="text-right text-xs text-sand-dark">

@@ -7,11 +7,12 @@ import { signOut } from 'next-auth/react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import CommandPalette, { type Command } from '@/components/command-palette';
 import { ConfirmProvider } from '@/components/ui';
+import Art002Alert from '@/components/art002-alert';
 import {
   LayoutDashboard, CircleUser, BookOpen, Users, Database, Briefcase, Crown, Wallet,
   ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
   MessageSquare, Contact, HeartHandshake, Settings, KeyRound, Gem, Plug, ScrollText,
-  PanelLeft, PanelLeftClose, Circle, type LucideIcon,
+  PanelLeft, PanelLeftClose, Circle, TriangleAlert, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -32,6 +33,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/pagamentos': CreditCard,
   '/dashboard/relatorios': ChartColumn,
   '/dashboard/relatorios/fechamento': BookCheck,
+  '/dashboard/relatorios/inadimplencia': TriangleAlert,
   '/dashboard/sessoes': CalendarDays,
   '/dashboard/documentos': FolderClosed,
   '/dashboard/comunicacao': MessageSquare,
@@ -50,6 +52,8 @@ interface Props {
   userName: string;
   role: string;
   children: ReactNode;
+  /** Dias de atraso da mensalidade do usuário logado, só quando > 60 (Art. 002). */
+  art002DaysOverdue?: number | null;
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -65,9 +69,10 @@ const SEGMENT_LABELS: Record<string, string> = {
   configuracoes: 'Configurações da loja', relatorios: 'Relatórios', hospitalaria: 'Hospitalaria',
   sessoes: 'Sessões', usuarios: 'Usuários & acessos', permissoes: 'Permissões',
   fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', portal: 'Meu portal',
+  inadimplencia: 'Inadimplência (Art. 002)',
 };
 
-export default function DashboardShell({ groups, lodgeName, userName, role, children }: Props) {
+export default function DashboardShell({ groups, lodgeName, userName, role, children, art002DaysOverdue }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [rail, setRail] = useState(false); // sidebar só-ícone no desktop
@@ -98,6 +103,19 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
       return next;
     });
   }
+
+  // Tema: aplicado só enquanto o dashboard está montado. Ao sair (navegação
+  // client-side para landing/login/institucional), remove data-theme para
+  // voltar ao escuro fixo da marca — essas páginas não usam o script anti-flash
+  // do dashboard/layout.tsx e ficariam com o data-theme "vazado" do <html>
+  // compartilhado se não for limpo aqui.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('sigma-theme');
+      if (saved === 'light' || saved === 'system') document.documentElement.setAttribute('data-theme', saved);
+    } catch {}
+    return () => { document.documentElement.removeAttribute('data-theme'); };
+  }, []);
 
   // Anti-bfcache: ao voltar pelo navegador, se a página vier do cache de
   // back/forward, recarrega para revalidar a sessão (após "Sair", o guard do
@@ -313,6 +331,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
         </div>
       </div>
       <CommandPalette commands={commands} />
+      {art002DaysOverdue != null ? <Art002Alert daysOverdue={art002DaysOverdue} /> : null}
     </div>
   );
 }

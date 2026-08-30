@@ -7,6 +7,7 @@ export async function GET() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
+  const memberId = session?.user?.memberId;
 
   if (!lodgeId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,10 +18,16 @@ export async function GET() {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
+  // Sem vínculo User→Member (ex.: admin criado sem cadastro de membro), não há
+  // "meu portal" a mostrar — evita expor o primeiro membro da loja por engano.
+  if (!memberId) {
+    return NextResponse.json({ member: null, accounts: [], documents: [], summary: { totalReceivables: 0, totalPayables: 0, pending: 0 } });
+  }
+
   const [member, accounts, documents] = await Promise.all([
     withTenant(String(lodgeId), (db) =>
       db.member.findFirst({
-        where: { lodgeId: String(lodgeId) },
+        where: { id: String(memberId), lodgeId: String(lodgeId) },
         select: {
           id: true,
           name: true,
@@ -39,7 +46,7 @@ export async function GET() {
     ),
     withTenant(String(lodgeId), (db) =>
       db.account.findMany({
-        where: { lodgeId: String(lodgeId) },
+        where: { lodgeId: String(lodgeId), memberId: String(memberId) },
         select: { id: true, title: true, type: true, amount: true, dueDate: true, status: true },
         orderBy: { dueDate: 'asc' },
       }),

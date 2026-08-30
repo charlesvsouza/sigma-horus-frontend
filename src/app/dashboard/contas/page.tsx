@@ -34,6 +34,7 @@ export default async function ContasPage() {
     dueDate: a.dueDate.toISOString(),
     status: a.status,
     description: a.description ?? null,
+    isDues: a.isDues,
     member: a.member ? { id: a.member.id, name: a.member.name } : null,
   }));
 

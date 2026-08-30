@@ -56,6 +56,7 @@ export async function POST(request: Request) {
   const description = String(body?.description ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
   const chartAccountId = body?.chartAccountId ? String(body.chartAccountId) : null;
+  const isDues = Boolean(body?.isDues);
 
   if (!title || !['RECEIVABLE', 'PAYABLE'].includes(type) || Number.isNaN(amount)) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
@@ -83,6 +84,7 @@ export async function POST(request: Request) {
         description: description || null,
         memberId,
         chartAccountId: validChartId,
+        isDues,
       },
       include: {
         member: { select: { id: true, name: true } },

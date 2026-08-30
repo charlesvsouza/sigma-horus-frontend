@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/purge-terminated",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync-art002",
+      "schedule": "0 6 * * *"
     }
   ]
 }

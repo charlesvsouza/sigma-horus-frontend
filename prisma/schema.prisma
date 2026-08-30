@@ -226,6 +226,7 @@ model Account {
   amount         Float
   dueDate        DateTime
   status         String   @default("pending")
+  isDues         Boolean  @default(false) // mensalidade do membro (base da regra dos 60 dias / Art. 002)
   description    String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

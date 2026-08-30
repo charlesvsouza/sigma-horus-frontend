@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { syncMemberArt002Status } from '@/lib/overdue';
 import { NextResponse } from 'next/server';
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -21,11 +22,14 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const { id } = await params;
 
   await withTenant(String(lodgeId), async (db) => {
-    const prev = await db.account.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, title: true } });
+    const prev = await db.account.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, title: true, memberId: true } });
     if (prev) {
       await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'account', entityId: id, metadata: { title: prev.title } });
     }
     await db.account.deleteMany({ where: { id, lodgeId: String(lodgeId) } });
+    if (prev?.memberId) {
+      await syncMemberArt002Status(db, String(lodgeId), prev.memberId);
+    }
   });
 
   return NextResponse.json({ success: true });
