@@ -8,6 +8,7 @@ const EMPTY: Record<string, string> = {
   bankName: '', bankAgency: '', bankAccount: '', pixKey: '',
   riteName: '', powerName: '', sessionWeekdays: '', sessionFrequency: 'weekly',
   expenseApprovalThreshold: '', lateFeePercent: '', lateInterestPercentMonth: '',
+  autoBalanceteEnabled: 'false',
 };
 
 // Server Component: carrega os dados cadastrais da loja para o formulário.
@@ -24,6 +25,7 @@ export default async function ConfiguracoesPage() {
             bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
             riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,
             expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
+            autoBalanceteEnabled: true,
           },
         }),
       )

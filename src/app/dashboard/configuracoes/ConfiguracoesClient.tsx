@@ -224,6 +224,11 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
               <Field label="Juros de mora ao mês (%)" value={form.lateInterestPercentMonth} onChange={(v) => set('lateInterestPercentMonth', v)} type="number" step="0.1" min="0" placeholder="Ex.: 1" />
             </div>
             <p className="mt-2 text-xs text-sand-dark">Multa/juros são informativos: aparecem no relatório de inadimplência e na renegociação, mas não alteram sozinhos o valor das contas já lançadas.</p>
+
+            <label className="mt-5 flex items-center gap-2 text-sm text-sand">
+              <input type="checkbox" checked={form.autoBalanceteEnabled === 'true'} onChange={(e) => set('autoBalanceteEnabled', String(e.target.checked))} />
+              Emitir balancete mensal automaticamente (todo dia 1º, referente ao mês anterior)
+            </label>
           </section>
 
           <Button type="submit" disabled={saving}>

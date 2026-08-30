@@ -25,6 +25,7 @@ export async function GET() {
         bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
         riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,
         expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
+        autoBalanceteEnabled: true,
       },
     }),
   );
@@ -42,7 +43,10 @@ export async function PUT(request: Request) {
   }
 
   const body = await request.json();
-  const data: Record<string, string | number | null> = {};
+  const data: Record<string, string | number | boolean | null> = {};
+  if ('autoBalanceteEnabled' in body) {
+    data.autoBalanceteEnabled = String(body.autoBalanceteEnabled) === 'true';
+  }
   for (const field of FIELDS) {
     if (field in body) {
       const value = String(body[field] ?? '').trim();

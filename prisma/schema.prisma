@@ -42,6 +42,8 @@ model Lodge {
   // valor lançado; usado no relatório de inadimplência e na renegociação).
   lateFeePercent           Float? // multa única, ex.: 2 = 2%
   lateInterestPercentMonth Float? // juros ao mês, pro-rata por dia, ex.: 1 = 1%/mês
+  // Emite automaticamente o balancete do mês anterior no dia 1 (cron mensal).
+  autoBalanceteEnabled     Boolean @default(false)
   // Asaas (BYO-key): cada loja conecta a própria conta. Chave criptografada (AES-256-GCM).
   asaasApiKeyEnc    String?
   asaasEnv          String?  @default("sandbox") // sandbox | production
@@ -74,6 +76,8 @@ model Lodge {
   cashCloses    CashClose[]
   balancetes    Balancete[]
   budgets       Budget[]
+  assets           Asset[]
+  bankTransactions BankTransaction[]
   attendances   Attendance[]
   memberOffices MemberOffice[]
   documents     Document[]
@@ -287,6 +291,51 @@ model Payment {
   lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   member       Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  bankTransactions BankTransaction[]
+}
+
+// Patrimônio/inventário da loja — cadastro simples de bens (móveis, insígnias,
+// equipamentos), sem depreciação contábil automática. Vínculo opcional à
+// categoria "Investimentos" do plano de contas.
+model Asset {
+  id               String    @id @default(cuid())
+  lodgeId          String
+  name             String
+  description      String?
+  category         String?   // ex.: Móveis, Insígnias, Equipamentos, Imóveis
+  acquisitionDate  DateTime?
+  acquisitionValue Float     @default(0)
+  currentValue     Float?    // valor atual estimado (opcional; sem cálculo automático)
+  status           String    @default("active") // active | disposed | lost
+  chartAccountId   String?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  lodge        Lodge         @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  chartAccount ChartAccount? @relation(fields: [chartAccountId], references: [id], onDelete: SetNull)
+
+  @@index([lodgeId])
+}
+
+// Linha importada de extrato bancário (OFX/CSV), pra conciliar com os
+// Payments já lançados no sistema. amount > 0 = crédito (entrada), < 0 =
+// débito (saída) — segue a convenção do próprio extrato.
+model BankTransaction {
+  id               String    @id @default(cuid())
+  lodgeId          String
+  date             DateTime
+  description      String
+  amount           Float
+  externalId       String?   // FITID do OFX, quando houver (evita duplicar em reimportações)
+  status           String    @default("unmatched") // unmatched | matched | ignored
+  matchedPaymentId String?
+  importedAt       DateTime  @default(now())
+
+  lodge          Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  matchedPayment Payment? @relation(fields: [matchedPaymentId], references: [id], onDelete: SetNull)
+
+  @@index([lodgeId])
 }
 
 model Subscription {
@@ -520,6 +569,7 @@ model ChartAccount {
   lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   accounts  Account[]
   budgets   Budget[]
+  assets    Asset[]
 
   @@unique([lodgeId, code])
 }

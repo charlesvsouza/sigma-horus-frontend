@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
-import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { generateBalancete } from '@/lib/balancete';
 import { NextResponse } from 'next/server';
 
 // Balancete periódico (trimestral/semestral) apresentado em sessão — exigido
@@ -43,34 +43,9 @@ export async function POST(request: Request) {
   const periodTo = new Date(to);
   periodTo.setHours(23, 59, 59, 999);
 
-  const item = await withTenant(String(lodgeId), async (db) => {
-    const [accounts, payments] = await Promise.all([
-      db.account.findMany({ where: { lodgeId: String(lodgeId), dueDate: { gte: from, lte: periodTo } }, select: { amount: true, type: true } }),
-      db.payment.findMany({ where: { lodgeId: String(lodgeId), paidAt: { gte: from, lte: periodTo } }, select: { amount: true } }),
-    ]);
-
-    const totalReceivables = accounts.filter((a) => a.type === 'RECEIVABLE').reduce((s, a) => s + Number(a.amount ?? 0), 0);
-    const totalPayables = accounts.filter((a) => a.type === 'PAYABLE').reduce((s, a) => s + Number(a.amount ?? 0), 0);
-    const totalPayments = payments.reduce((s, p) => s + Number(p.amount ?? 0), 0);
-    const netBalance = totalPayments - totalPayables;
-
-    const created = await db.balancete.create({
-      data: {
-        lodgeId: String(lodgeId),
-        periodFrom: from,
-        periodTo,
-        totalReceivables,
-        totalPayables,
-        totalPayments,
-        netBalance,
-        notes,
-        createdById: session.user.id,
-      },
-    });
-
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'balancete', entityId: created.id, metadata: { periodFrom: from, periodTo } });
-    return created;
-  });
+  const item = await withTenant(String(lodgeId), (db) =>
+    generateBalancete(db, { lodgeId: String(lodgeId), from, to: periodTo, notes, createdById: session.user.id }),
+  );
 
   return NextResponse.json({ item });
 }
