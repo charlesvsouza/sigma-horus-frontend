@@ -26,6 +26,21 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
   const [webhookToken, setWebhookToken] = useState('');
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [reconciling, setReconciling] = useState(false);
+
+  async function reconcile() {
+    setReconciling(true);
+    setMessage(null);
+    const res = await fetch('/api/asaas/reconcile', { method: 'POST' });
+    const data = await res.json();
+    setReconciling(false);
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: `Verificadas ${data.checked} cobrança(s): ${data.reconciled} baixada(s) agora, ${data.stillPending} ainda em aberto${data.errors ? `, ${data.errors} com erro` : ''}.` });
+      if (data.reconciled > 0) router.refresh();
+    } else {
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao verificar no Asaas.' });
+    }
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -139,6 +154,15 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
             <code className="mt-2 block break-all text-gold">{webhookFullUrl}</code>
             <p className="mt-2">Use o mesmo token acima no campo de autenticação do webhook (header <code className="text-gold">asaas-access-token</code>).</p>
           </div>
+
+          {asaas.configured ? (
+            <div className="mt-4 flex items-center gap-3">
+              <button type="button" onClick={reconcile} disabled={reconciling} className="rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40">
+                {reconciling ? 'Verificando…' : 'Verificar pagamentos no Asaas'}
+              </button>
+              <span className="text-xs text-sand-dark">Confere no Asaas cobranças emitidas que ainda não baixaram aqui — cobre falha ou atraso do webhook.</span>
+            </div>
+          ) : null}
         </section>
 
         <MessagingIntegration initial={messaging} />

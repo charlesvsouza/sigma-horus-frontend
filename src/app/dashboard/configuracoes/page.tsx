@@ -7,6 +7,7 @@ const EMPTY: Record<string, string> = {
   addressLine: '', addressNumber: '', neighborhood: '', city: '', state: '', zipCode: '',
   bankName: '', bankAgency: '', bankAccount: '', pixKey: '',
   riteName: '', powerName: '', sessionWeekdays: '', sessionFrequency: 'weekly',
+  expenseApprovalThreshold: '', lateFeePercent: '', lateInterestPercentMonth: '',
 };
 
 // Server Component: carrega os dados cadastrais da loja para o formulário.
@@ -22,6 +23,7 @@ export default async function ConfiguracoesPage() {
             addressLine: true, addressNumber: true, neighborhood: true, city: true, state: true, zipCode: true,
             bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
             riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,
+            expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
           },
         }),
       )
@@ -29,7 +31,7 @@ export default async function ConfiguracoesPage() {
 
   const initialForm = { ...EMPTY };
   if (lodge) {
-    for (const [k, v] of Object.entries(lodge)) initialForm[k] = (v ?? '') as string;
+    for (const [k, v] of Object.entries(lodge)) initialForm[k] = v == null ? '' : String(v);
   }
 
   return <ConfiguracoesClient initialForm={initialForm} />;

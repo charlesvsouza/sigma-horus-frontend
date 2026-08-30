@@ -37,6 +37,7 @@ export default async function CobrancasPage() {
     recurringInterval: i.recurringInterval ?? null,
     recurringCount: i.recurringCount ?? null,
     nextDueDate: i.nextDueDate ? i.nextDueDate.toISOString() : null,
+    asaasInvoiceUrl: i.asaasInvoiceUrl ?? null,
     account: i.account ? { id: i.account.id, title: i.account.title } : null,
     member: i.member ? { id: i.member.id, name: i.member.name } : null,
   }));

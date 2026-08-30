@@ -12,7 +12,7 @@ import {
   LayoutDashboard, CircleUser, BookOpen, Users, Database, Briefcase, Crown, Wallet,
   ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
   MessageSquare, Contact, HeartHandshake, Settings, KeyRound, Gem, Plug, ScrollText,
-  PanelLeft, PanelLeftClose, Circle, TriangleAlert, type LucideIcon,
+  PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -34,6 +34,9 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/relatorios': ChartColumn,
   '/dashboard/relatorios/fechamento': BookCheck,
   '/dashboard/relatorios/inadimplencia': TriangleAlert,
+  '/dashboard/relatorios/balancetes': ClipboardCheck,
+  '/dashboard/relatorios/fluxo-caixa': TrendingUp,
+  '/dashboard/relatorios/orcamento': PieChart,
   '/dashboard/sessoes': CalendarDays,
   '/dashboard/documentos': FolderClosed,
   '/dashboard/comunicacao': MessageSquare,
@@ -69,7 +72,8 @@ const SEGMENT_LABELS: Record<string, string> = {
   configuracoes: 'Configurações da loja', relatorios: 'Relatórios', hospitalaria: 'Hospitalaria',
   sessoes: 'Sessões', usuarios: 'Usuários & acessos', permissoes: 'Permissões',
   fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', portal: 'Meu portal',
-  inadimplencia: 'Inadimplência (Art. 002)',
+  inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos',
+  'fluxo-caixa': 'Fluxo de caixa projetado', orcamento: 'Orçamento anual',
 };
 
 export default function DashboardShell({ groups, lodgeName, userName, role, children, art002DaysOverdue }: Props) {

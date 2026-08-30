@@ -73,6 +73,16 @@ export async function POST(request: Request) {
       const chart = await db.chartAccount.findFirst({ where: { id: chartAccountId, lodgeId: String(lodgeId) }, select: { id: true } });
       validChartId = chart?.id ?? null;
     }
+
+    // Visto do Venerável: despesa acima do limite configurado nasce "pending"
+    // e só pode ser paga depois de aprovada (ver POST /api/accounts/[id]/approve).
+    let approvalStatus = 'approved';
+    if (type === 'PAYABLE') {
+      const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { expenseApprovalThreshold: true } });
+      const threshold = lodge?.expenseApprovalThreshold;
+      if (threshold != null && amount >= threshold) approvalStatus = 'pending';
+    }
+
     const created = await db.account.create({
       data: {
         lodgeId: String(lodgeId),
@@ -85,6 +95,7 @@ export async function POST(request: Request) {
         memberId,
         chartAccountId: validChartId,
         isDues,
+        approvalStatus,
       },
       include: {
         member: { select: { id: true, name: true } },

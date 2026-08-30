@@ -83,6 +83,49 @@ export function timeInOrderLabel(initiationDate?: string | Date | null, ref: Dat
   return parts.join(' e ');
 }
 
+// ---------- Elegibilidade a Maçom Remido ----------
+// Critério usual (varia por Potência, por isso é só um indicativo — a decisão
+// de conceder a isenção de mensalidade é sempre da Loja): 65 anos de idade E
+// 15 anos como Mestre (desde a exaltação), OU 25 anos ininterruptos de Ordem
+// (desde a iniciação). Não confirma "ininterrupção" (não rastreamos afastamentos).
+
+function fullYearsBetween(start: Date, ref: Date): number {
+  let years = ref.getFullYear() - start.getFullYear();
+  const m = ref.getMonth() - start.getMonth();
+  if (m < 0 || (m === 0 && ref.getDate() < start.getDate())) years--;
+  return years;
+}
+
+export interface RemidoSource {
+  birthDate?: string | Date | null;
+  initiationDate?: string | Date | null;
+  exaltationDate?: string | Date | null;
+}
+
+export interface RemidoEligibility {
+  eligible: boolean;
+  byAgeAndTenure: boolean; // 65 anos + 15 anos de Mestre
+  byContinuousOrder: boolean; // 25 anos de Ordem
+  age: number | null;
+  yearsAsMestre: number | null;
+  yearsInOrder: number | null;
+}
+
+export function remidoEligibility(m: RemidoSource, ref: Date = new Date()): RemidoEligibility {
+  const birth = toDate(m.birthDate);
+  const exaltation = toDate(m.exaltationDate);
+  const initiation = toDate(m.initiationDate);
+
+  const age = birth && birth <= ref ? fullYearsBetween(birth, ref) : null;
+  const yearsAsMestre = exaltation && exaltation <= ref ? fullYearsBetween(exaltation, ref) : null;
+  const years = initiation && initiation <= ref ? fullYearsBetween(initiation, ref) : null;
+
+  const byAgeAndTenure = age !== null && yearsAsMestre !== null && age >= 65 && yearsAsMestre >= 15;
+  const byContinuousOrder = years !== null && years >= 25;
+
+  return { eligible: byAgeAndTenure || byContinuousOrder, byAgeAndTenure, byContinuousOrder, age, yearsAsMestre, yearsInOrder: years };
+}
+
 // Marcos comemorativos de tempo de Ordem (anos). Base para os disparos da Fase 7.
 export const TENURE_MILESTONES = [1, 5, 10, 15, 20, 25, 30, 40, 50, 60];
 

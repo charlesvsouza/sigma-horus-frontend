@@ -88,7 +88,14 @@ export async function POST(request: Request) {
       if (createdCustomer && customerId) {
         await db.member.update({ where: { id: member.id }, data: { asaasCustomerId: customerId } });
       }
-      await db.invoice.update({ where: { id: ctx.invoice!.id }, data: { status: 'billed' } });
+      await db.invoice.update({
+        where: { id: ctx.invoice!.id },
+        data: {
+          status: 'billed',
+          asaasPaymentId: payment?.id ?? null,
+          asaasInvoiceUrl: payment?.invoiceUrl ?? payment?.bankSlipUrl ?? null,
+        },
+      });
       await logAudit(db, {
         lodgeId: String(lodgeId),
         userId: session.user.id,

@@ -1,7 +1,8 @@
 import { isWebhookAuthorized, processWebhook } from '@/lib/asaas';
-import { logAudit } from '@/lib/audit';
 import { prismaAdmin } from '@/lib/prisma';
 import { syncMemberArt002Status } from '@/lib/overdue';
+import { settleAsaasInvoicePayment } from '@/lib/asaas-settlement';
+import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { NextResponse } from 'next/server';
 
 // Eventos do Asaas que significam "dinheiro recebido" → baixa automática.
@@ -38,7 +39,10 @@ export async function POST(request: Request) {
   // Webhook não tem sessão de tenant → prismaAdmin (bypassa RLS), escopado pelo lodgeId da própria invoice.
   const invoice = await prismaAdmin.invoice.findUnique({
     where: { id: invoiceId },
-    include: { lodge: { select: { asaasWebhookToken: true } } },
+    include: {
+      lodge: { select: { asaasWebhookToken: true, name: true } },
+      member: { select: { name: true, email: true } },
+    },
   });
   if (!invoice) {
     return NextResponse.json({ received: true, ignored: 'invoice not found' });
@@ -55,46 +59,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, alreadyPaid: true });
     }
 
-    await prismaAdmin.$transaction(async (tx) => {
-      const created = await tx.payment.create({
-        data: {
-          lodgeId: invoice.lodgeId,
-          accountId: invoice.accountId,
-          memberId: invoice.memberId,
-          amount: payment.value,
-          method: 'asaas',
-          note: `Baixa automática Asaas (${payment.id})`,
-        },
-      });
-
-      const account = await tx.account.findUnique({ where: { id: invoice.accountId } });
-      const aggregate = await tx.payment.aggregate({
-        _sum: { amount: true },
-        where: { accountId: invoice.accountId },
-      });
-      const totalPaid = Number(aggregate._sum.amount ?? 0);
-
-      await tx.invoice.update({ where: { id: invoice.id }, data: { status: 'paid' } });
-      if (account) {
-        await tx.account.update({
-          where: { id: account.id },
-          data: { status: totalPaid >= Number(account.amount) ? 'paid' : 'pending' },
-        });
-      }
-
-      if (invoice.memberId) {
-        await syncMemberArt002Status(tx, invoice.lodgeId, invoice.memberId);
-      }
-
-      await logAudit(tx, {
+    await prismaAdmin.$transaction((tx) =>
+      settleAsaasInvoicePayment(tx, {
         lodgeId: invoice.lodgeId,
+        invoiceId: invoice.id,
+        accountId: invoice.accountId,
+        memberId: invoice.memberId,
+        amount: payment.value,
+        asaasPaymentId: payment.id,
         userId: 'system:asaas-webhook',
-        action: 'CREATE',
-        entity: 'payment',
-        entityId: created.id,
-        metadata: { source: 'asaas', event, asaasPaymentId: payment.id, invoiceId: invoice.id, amount: payment.value },
-      });
-    });
+      }),
+    );
+
+    if (invoice.member?.email) {
+      const valor = Number(payment.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      dispatch(
+        'email',
+        invoice.member.email,
+        `Pagamento confirmado — ${invoice.lodge.name}`,
+        `Olá, ${invoice.member.name}.\n\nConfirmamos o recebimento do seu pagamento de ${valor} referente à cobrança ${invoice.number}.\n\nAtenciosamente,\n${invoice.lodge.name}`,
+        EMPTY_CHANNELS,
+      ).catch(() => {});
+    }
 
     return NextResponse.json({ received: true, settled: true });
   }

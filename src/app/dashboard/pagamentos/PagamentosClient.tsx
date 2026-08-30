@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface MemberOption { id: string; name: string; }
 interface AccountOption { id: string; title: string; type: string; amount: number; }
@@ -19,9 +19,29 @@ interface PaymentItem {
 
 export default function PagamentosClient({ accounts, members, payments }: { accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[] }) {
   const router = useRouter();
+  const askConfirm = useConfirm();
   const [message, setMessage] = useState('');
   const [form, setForm] = useState({ accountId: '', memberId: '', amount: '', paidAt: '', method: 'manual', note: '' });
   const [consent, setConsent] = useState(false);
+  const [search, setSearch] = useState('');
+
+  async function handleEstorno(id: string) {
+    const ok = await askConfirm({
+      title: 'Estornar pagamento',
+      message: 'Remove este pagamento e recalcula o status da conta (volta a ficar pendente, se for o caso). Não pode ser desfeito.',
+      confirmLabel: 'Estornar',
+      intent: 'danger',
+    });
+    if (!ok) return;
+    const response = await fetch(`/api/payments/${id}`, { method: 'DELETE' });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) {
+      setMessage('Pagamento estornado.');
+      router.refresh();
+    } else {
+      setMessage(data.error ?? 'Erro ao estornar pagamento.');
+    }
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -51,6 +71,11 @@ export default function PagamentosClient({ accounts, members, payments }: { acco
   }
 
   const INPUT = inputClass; // fonte única do design system
+
+  const q = search.trim().toLowerCase();
+  const filteredPayments = q
+    ? payments.filter((p) => p.account?.title.toLowerCase().includes(q) || p.member?.name.toLowerCase().includes(q) || p.method.toLowerCase().includes(q))
+    : payments;
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -95,11 +120,16 @@ export default function PagamentosClient({ accounts, members, payments }: { acco
         </section>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Pagamentos recentes</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-sand-light">Pagamentos recentes</h2>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por conta, membro ou forma…" className={`${INPUT} max-w-xs`} />
+          </div>
           <div className="mt-5 space-y-3">
             {payments.length === 0 ? (
               <EmptyState title="Nenhum pagamento registrado" description="Registre baixas manuais aqui; as baixas automáticas do Asaas aparecem assim que o webhook confirma o pagamento." />
-            ) : payments.map((payment) => (
+            ) : filteredPayments.length === 0 ? (
+              <p className="text-sm text-sand-dark">Nenhum pagamento encontrado para &quot;{search}&quot;.</p>
+            ) : filteredPayments.map((payment) => (
               <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{payment.account?.title ?? 'Conta removida'}</p>
@@ -108,6 +138,10 @@ export default function PagamentosClient({ accounts, members, payments }: { acco
                 <div className="text-right text-xs text-sand-dark">
                   <p className="tabular-nums">Valor: R$ {payment.amount.toFixed(2)}</p>
                   <p className="mt-0.5">Data: {new Date(payment.paidAt).toLocaleDateString('pt-BR')}</p>
+                  <div className="mt-1 flex items-center justify-end gap-3">
+                    <Link href={`/dashboard/pagamentos/${payment.id}/recibo`} target="_blank" className="text-xs text-gold/70 transition hover:text-gold">Recibo</Link>
+                    <button onClick={() => void handleEstorno(payment.id)} className="text-xs text-rose-300/60 transition hover:text-rose-300">Estornar</button>
+                  </div>
                 </div>
               </div>
             ))}

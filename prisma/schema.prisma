@@ -35,6 +35,13 @@ model Lodge {
   // Agenda padrão de sessões
   sessionWeekdays  String?  // dias da semana: índices 0=Dom..6=Sáb separados por vírgula (ex.: "2,4")
   sessionFrequency String?  @default("weekly") // weekly | biweekly | monthly
+  // Aprovação de despesa (visto do Venerável): contas a pagar com valor >= este
+  // limite nascem "pending" e só podem ser pagas após aprovação. null = desativado.
+  expenseApprovalThreshold Float?
+  // Multa/juros de mora sobre mensalidade em atraso (informativo — não altera o
+  // valor lançado; usado no relatório de inadimplência e na renegociação).
+  lateFeePercent           Float? // multa única, ex.: 2 = 2%
+  lateInterestPercentMonth Float? // juros ao mês, pro-rata por dia, ex.: 1 = 1%/mês
   // Asaas (BYO-key): cada loja conecta a própria conta. Chave criptografada (AES-256-GCM).
   asaasApiKeyEnc    String?
   asaasEnv          String?  @default("sandbox") // sandbox | production
@@ -65,6 +72,8 @@ model Lodge {
   terms         Term[]
   offices       Office[]
   cashCloses    CashClose[]
+  balancetes    Balancete[]
+  budgets       Budget[]
   attendances   Attendance[]
   memberOffices MemberOffice[]
   documents     Document[]
@@ -101,6 +110,7 @@ model Member {
   email              String?
   phone              String?
   status             String   @default("active")
+  duesExempt         Boolean  @default(false) // isento de mensalidade (ex.: Maçom Remido) — fora da cobrança em massa e do Art. 002
   riteId             String?
   powerId            String?
   originPowerId      String?  // potência de origem (bloco "Origem"), distinta da potência atual
@@ -227,6 +237,7 @@ model Account {
   dueDate        DateTime
   status         String   @default("pending")
   isDues         Boolean  @default(false) // mensalidade do membro (base da regra dos 60 dias / Art. 002)
+  approvalStatus String   @default("approved") // approved | pending | rejected — visto do Venerável (despesas acima do limite)
   description    String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -253,6 +264,8 @@ model Invoice {
   recurringInterval  String?
   recurringCount     Int?
   nextDueDate        DateTime?
+  asaasPaymentId     String?  // id da cobrança no Asaas (reconciliação reversa)
+  asaasInvoiceUrl    String?  // link universal da cobrança no Asaas (boleto/PIX/cartão), persistido p/ sobreviver a reload
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -452,6 +465,31 @@ model CashClose {
   @@unique([lodgeId, termId])
 }
 
+// Balancete periódico (trimestral/semestral) apresentado em sessão, exigido
+// pelo regulamento independente do encerramento do veneralato inteiro — mais
+// leve que o CashClose (não trava período nem depende de um Term específico).
+model Balancete {
+  id               String    @id @default(cuid())
+  lodgeId          String
+  periodFrom       DateTime
+  periodTo         DateTime
+  totalReceivables Float     @default(0)
+  totalPayables    Float     @default(0)
+  totalPayments    Float     @default(0)
+  netBalance       Float     @default(0)
+  presentedAt      DateTime  @default(now()) // data da sessão em que foi apresentado
+  approved         Boolean   @default(false) // aprovado pela Loja/Venerável em sessão
+  approvedAt       DateTime?
+  approvedById     String?
+  notes            String?
+  createdById      String?
+  createdAt        DateTime  @default(now())
+
+  lodge Lodge @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+
+  @@index([lodgeId])
+}
+
 model Power {
   id        String   @id @default(cuid())
   lodgeId   String
@@ -481,8 +519,27 @@ model ChartAccount {
 
   lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   accounts  Account[]
+  budgets   Budget[]
 
   @@unique([lodgeId, code])
+}
+
+// Orçamento anual por categoria do plano de contas: meta definida no início da
+// gestão, comparada ao realizado (soma das Account por vencimento no ano).
+model Budget {
+  id             String   @id @default(cuid())
+  lodgeId        String
+  year           Int
+  chartAccountId String
+  plannedAmount  Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  lodge        Lodge        @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  chartAccount ChartAccount @relation(fields: [chartAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([lodgeId, year, chartAccountId])
+  @@index([lodgeId])
 }
 
 // Campanha de benemerência da Hospitalaria (ex.: cadeira de rodas, cesta básica).

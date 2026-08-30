@@ -1,11 +1,13 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import { normalizeRole } from '@/lib/rbac';
 import ContasClient from './ContasClient';
 
 // Server Component: carrega contas + membros + plano de contas no servidor.
 export default async function ContasPage() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
+  const role = normalizeRole(session?.user?.role);
   const data = lodgeId
     ? await withTenant(String(lodgeId), async (db) => ({
         accounts: await db.account.findMany({
@@ -35,8 +37,9 @@ export default async function ContasPage() {
     status: a.status,
     description: a.description ?? null,
     isDues: a.isDues,
+    approvalStatus: a.approvalStatus,
     member: a.member ? { id: a.member.id, name: a.member.name } : null,
   }));
 
-  return <ContasClient accounts={accounts} members={data.members} chartAccounts={data.chartAccounts} />;
+  return <ContasClient accounts={accounts} members={data.members} chartAccounts={data.chartAccounts} role={role} />;
 }

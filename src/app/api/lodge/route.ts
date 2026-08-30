@@ -24,6 +24,7 @@ export async function GET() {
         addressLine: true, addressNumber: true, neighborhood: true, city: true, state: true, zipCode: true,
         bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
         riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,
+        expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
       },
     }),
   );
@@ -41,11 +42,18 @@ export async function PUT(request: Request) {
   }
 
   const body = await request.json();
-  const data: Record<string, string | null> = {};
+  const data: Record<string, string | number | null> = {};
   for (const field of FIELDS) {
     if (field in body) {
       const value = String(body[field] ?? '').trim();
       data[field] = value || null;
+    }
+  }
+  for (const numField of ['expenseApprovalThreshold', 'lateFeePercent', 'lateInterestPercentMonth'] as const) {
+    if (numField in body) {
+      const raw = String(body[numField] ?? '').trim();
+      const n = raw ? Number(raw) : null;
+      data[numField] = n != null && !Number.isNaN(n) && n > 0 ? n : null;
     }
   }
   if (!data.name) {

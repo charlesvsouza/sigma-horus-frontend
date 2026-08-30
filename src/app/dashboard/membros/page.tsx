@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
-import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel } from '@/lib/masonic-degree';
+import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel, remidoEligibility } from '@/lib/masonic-degree';
 import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
 import { Button, EmptyState, Input, Skeleton, inputClass, Alert, useConfirm } from '@/components/ui';
 
@@ -23,6 +23,7 @@ interface Member {
   email?: string | null;
   phone?: string | null;
   status: string;
+  duesExempt?: boolean;
   gradeName?: string | null;
   riteId?: string | null;
   powerId?: string | null;
@@ -72,7 +73,7 @@ type FormState = Record<string, string>;
 const INPUT = inputClass; // fonte única do design system (src/components/ui/field-styles)
 
 const emptyForm: FormState = {
-  name: '', email: '', phone: '', status: 'active', riteId: '', powerId: '', originPowerId: '',
+  name: '', email: '', phone: '', status: 'active', duesExempt: 'false', riteId: '', powerId: '', originPowerId: '',
   birthDate: '', cpf: '', rg: '', maritalStatus: '', occupation: '', nationality: '',
   addressLine: '', addressNumber: '', complement: '', neighborhood: '', city: '', state: '',
   zipCode: '', country: '', initiationDate: '', elevationDate: '', exaltationDate: '',
@@ -531,6 +532,14 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
     installationDate: form.installationDate || null,
   });
 
+  // Elegibilidade a Maçom Remido (isenção de mensalidade) — indicativo, a
+  // decisão de conceder é sempre da Loja (ver capítulo 7.8 do manual).
+  const remido = remidoEligibility({
+    birthDate: form.birthDate || null,
+    initiationDate: form.initiationDate || null,
+    exaltationDate: form.exaltationDate || null,
+  });
+
   // Família: slots fixos (mãe/pai/esposa) + dependentes dinâmicos.
   const pick = (kind: RelativeKind): RelativeData => {
     const found = initialRelatives.find((r) => r.kind === kind);
@@ -718,6 +727,19 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
             </label>
             <input value={form.masonicNumber} onChange={(e) => set('masonicNumber', e.target.value)} className={INPUT} placeholder="Número maçônico (CIM)" />
             <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Observações maçônicas e administrativas" rows={3} />
+          </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[6%] bg-sigma-blue-deep/40 px-4 py-3">
+            <label className="flex items-center gap-2 text-sm text-sand">
+              <input type="checkbox" checked={form.duesExempt === 'true'} onChange={(e) => set('duesExempt', String(e.target.checked))} />
+              Isento de mensalidade (Maçom Remido)
+            </label>
+            {remido.eligible ? (
+              <span className="rounded-full border border-gold/20 bg-gold/10 px-2.5 py-0.5 text-xs text-gold">
+                Elegível{remido.byAgeAndTenure ? ` (${remido.age} anos, ${remido.yearsAsMestre} como Mestre)` : ` (${remido.yearsInOrder} anos de Ordem)`}
+              </span>
+            ) : (
+              <span className="text-xs text-sand-dark">Não elegível pelos critérios usuais (65 anos + 15 de Mestre, ou 25 anos de Ordem)</span>
+            )}
           </div>
         </div>
       </Collapsible>

@@ -26,6 +26,8 @@ async function findOpenDues(
   memberId: string | undefined,
   now: Date,
 ): Promise<OpenDue[]> {
+  // Isentos (ex.: Maçom Remido) nunca entram na regra do Art. 002.
+  const memberFilter = { duesExempt: false } as const;
   const [accounts, invoices] = await Promise.all([
     db.account.findMany({
       where: {
@@ -35,6 +37,7 @@ async function findOpenDues(
         status: { not: 'paid' },
         memberId: memberId ?? { not: null },
         dueDate: { lt: now },
+        member: memberFilter,
       },
       select: { memberId: true, amount: true, dueDate: true },
     }),
@@ -45,6 +48,7 @@ async function findOpenDues(
         memberId: memberId ?? { not: null },
         dueDate: { lt: now },
         account: { isDues: true },
+        member: memberFilter,
       },
       select: { memberId: true, amount: true, dueDate: true },
     }),
@@ -80,6 +84,29 @@ export async function getMemberDuesStatus(
   };
 }
 
+export interface LateCharge {
+  fee: number;
+  interest: number;
+  total: number; // amount + fee + interest
+}
+
+/**
+ * Multa (única) + juros de mora (ao mês, pro-rata por dia) sobre um valor em
+ * atraso. Informativo: não altera o Account.amount lançado, só serve para
+ * exibir "quanto seria hoje com encargos" e para a renegociação/parcelamento.
+ */
+export function calculateLateCharge(
+  amount: number,
+  daysOverdue: number,
+  feePercent?: number | null,
+  interestPercentMonth?: number | null,
+): LateCharge {
+  if (daysOverdue <= 0) return { fee: 0, interest: 0, total: amount };
+  const fee = feePercent ? amount * (feePercent / 100) : 0;
+  const interest = interestPercentMonth ? amount * (interestPercentMonth / 100) * (daysOverdue / 30) : 0;
+  return { fee, interest, total: amount + fee + interest };
+}
+
 export interface OverdueReportRow {
   memberId: string;
   memberName: string;
@@ -89,6 +116,7 @@ export interface OverdueReportRow {
   oldestDueDate: Date;
   daysOverdue: number;
   art002: boolean;
+  lateCharge: LateCharge; // multa/juros informativos sobre o total, calculados no vencimento mais antigo
 }
 
 /** Relatório de inadimplência de mensalidades de todos os membros da loja. */
@@ -97,9 +125,10 @@ export async function getLodgeOverdueDuesReport(
   lodgeId: string,
   now: Date = new Date(),
 ): Promise<OverdueReportRow[]> {
-  const [open, members] = await Promise.all([
+  const [open, members, lodge] = await Promise.all([
     findOpenDues(db, lodgeId, undefined, now),
     db.member.findMany({ where: { lodgeId }, select: { id: true, name: true, status: true } }),
+    db.lodge.findUnique({ where: { id: lodgeId }, select: { lateFeePercent: true, lateInterestPercentMonth: true } }),
   ]);
 
   const byMember = new Map<string, OpenDue[]>();
@@ -114,15 +143,17 @@ export async function getLodgeOverdueDuesReport(
   const rows: OverdueReportRow[] = [...byMember.entries()].map(([memberId, items]) => {
     const oldest = items.reduce((a, b) => (a.dueDate < b.dueDate ? a : b));
     const overdue = daysOverdue(oldest.dueDate, now);
+    const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
     return {
       memberId,
       memberName: memberById.get(memberId)?.name ?? '—',
       memberStatus: memberById.get(memberId)?.status ?? 'active',
       openCount: items.length,
-      totalAmount: items.reduce((sum, item) => sum + item.amount, 0),
+      totalAmount,
       oldestDueDate: oldest.dueDate,
       daysOverdue: overdue,
       art002: overdue > ART_002_THRESHOLD_DAYS,
+      lateCharge: calculateLateCharge(totalAmount, overdue, lodge?.lateFeePercent, lodge?.lateInterestPercentMonth),
     };
   });
 

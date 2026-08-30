@@ -31,5 +31,6 @@ export default async function InadimplenciaPage() {
   const rows = await withTenant(String(lodgeId), (db) => getLodgeOverdueDuesReport(db, String(lodgeId)));
 
   const serialized = rows.map((r) => ({ ...r, oldestDueDate: r.oldestDueDate.toISOString() }));
-  return <InadimplenciaClient rows={serialized} />;
+  const canWrite = (await requireLodgeAccess(String(lodgeId), role, 'accounts', 'write')).ok;
+  return <InadimplenciaClient rows={serialized} canRenegotiate={canWrite} />;
 }

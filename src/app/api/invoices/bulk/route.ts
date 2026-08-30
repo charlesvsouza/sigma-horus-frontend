@@ -41,7 +41,8 @@ export async function POST(request: Request) {
 
   const result = await withTenant(String(lodgeId), async (db) => {
     const members = await db.member.findMany({
-      where: { lodgeId: String(lodgeId), ...(scope === 'active' ? { status: 'active' } : {}) },
+      // Isentos (ex.: Maçom Remido) nunca entram na cobrança em massa, mesmo com scope="all".
+      where: { lodgeId: String(lodgeId), duesExempt: false, ...(scope === 'active' ? { status: 'active' } : {}) },
       select: { id: true },
       orderBy: { name: 'asc' },
     });

@@ -211,6 +211,21 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             </div>
           </section>
 
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+            <h2 className="text-base font-semibold text-sand-light">Financeiro</h2>
+            <p className="mt-1 text-sm text-sand-dark">
+              Despesas (contas a pagar) com valor igual ou acima deste limite ficam &quot;aguardando aprovação&quot; até o
+              Venerável ou Administrador aprovar — só depois disso o Tesoureiro pode registrar o pagamento. Deixe em
+              branco para não exigir aprovação de nenhuma despesa.
+            </p>
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              <Field label="Limite para aprovação de despesa (R$)" value={form.expenseApprovalThreshold} onChange={(v) => set('expenseApprovalThreshold', v)} type="number" step="0.01" min="0" placeholder="Ex.: 500" />
+              <Field label="Multa por atraso (%)" value={form.lateFeePercent} onChange={(v) => set('lateFeePercent', v)} type="number" step="0.1" min="0" placeholder="Ex.: 2" />
+              <Field label="Juros de mora ao mês (%)" value={form.lateInterestPercentMonth} onChange={(v) => set('lateInterestPercentMonth', v)} type="number" step="0.1" min="0" placeholder="Ex.: 1" />
+            </div>
+            <p className="mt-2 text-xs text-sand-dark">Multa/juros são informativos: aparecem no relatório de inadimplência e na renegociação, mas não alteram sozinhos o valor das contas já lançadas.</p>
+          </section>
+
           <Button type="submit" disabled={saving}>
             {saving ? 'Salvando…' : 'Salvar dados da loja'}
           </Button>

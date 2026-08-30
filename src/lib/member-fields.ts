@@ -14,6 +14,7 @@ export interface MemberFields {
   email: string | null;
   phone: string | null;
   status: string;
+  duesExempt: boolean;
   riteId: string | null;
   powerId: string | null;
   originPowerId: string | null;
@@ -57,6 +58,7 @@ export function parseMemberFields(body: Body): MemberFields {
     email: str(body?.email),
     phone: str(body?.phone),
     status: String(body?.status ?? 'active'),
+    duesExempt: String(body?.duesExempt) === 'true',
     riteId: str(body?.riteId),
     powerId: str(body?.powerId),
     originPowerId: str(body?.originPowerId),

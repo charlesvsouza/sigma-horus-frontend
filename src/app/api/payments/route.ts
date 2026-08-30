@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
+import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -72,6 +73,9 @@ export async function POST(request: Request) {
     if (!account) {
       return { notFound: true as const };
     }
+    if (account.type === 'PAYABLE' && account.approvalStatus === 'pending') {
+      return { pendingApproval: true as const };
+    }
 
     const created = await db.payment.create({
       data: {
@@ -85,7 +89,7 @@ export async function POST(request: Request) {
       },
       include: {
         account: { select: { id: true, title: true, type: true } },
-        member: { select: { id: true, name: true } },
+        member: { select: { id: true, name: true, email: true } },
       },
     });
 
@@ -102,12 +106,27 @@ export async function POST(request: Request) {
       data: { status: nextStatus },
     });
 
+    // Espelha no lado das cobranças (Invoice): quando a conta é quitada por
+    // baixa manual (fora do Asaas), as cobranças associadas também devem
+    // refletir "paga" — do contrário a tela de Cobranças mostra "pendente"
+    // pra sempre mesmo com a conta já quitada.
+    if (nextStatus === 'paid') {
+      await db.invoice.updateMany({ where: { accountId, status: { not: 'paid' } }, data: { status: 'paid' } });
+    }
+
     if (account.memberId) {
       await syncMemberArt002Status(db, String(lodgeId), account.memberId);
     }
 
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method } });
-    return { payment: created };
+
+    let lodgeName = 'Sua loja';
+    if (created.account?.type === 'RECEIVABLE' && created.member?.email) {
+      const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true } });
+      lodgeName = lodge?.name ?? lodgeName;
+    }
+
+    return { payment: created, lodgeName };
   });
 
   if ('locked' in result && result.locked) {
@@ -121,5 +140,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });
   }
 
-  return NextResponse.json({ item: result.payment });
+  if ('pendingApproval' in result) {
+    return NextResponse.json({ error: 'Esta despesa está aguardando aprovação do Venerável Mestre antes de ser paga.' }, { status: 409 });
+  }
+
+  // Confirmação por e-mail ao membro (recibo simples). Best-effort: falha de
+  // envio não deve derrubar o registro do pagamento, que já está salvo.
+  const { payment, lodgeName } = result;
+  if (payment.account?.type === 'RECEIVABLE' && payment.member?.email) {
+    const valor = Number(payment.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const data = new Date(payment.paidAt).toLocaleDateString('pt-BR');
+    dispatch(
+      'email',
+      payment.member.email,
+      `Pagamento confirmado — ${lodgeName}`,
+      `Olá, ${payment.member.name}.\n\nConfirmamos o recebimento do seu pagamento de ${valor} em ${data}, referente a "${payment.account.title}".\n\nAtenciosamente,\n${lodgeName}`,
+      EMPTY_CHANNELS,
+    ).catch(() => {});
+  }
+
+  return NextResponse.json({ item: payment });
 }

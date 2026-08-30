@@ -17,6 +17,7 @@ interface InvoiceItem {
   recurringInterval?: string | null;
   recurringCount?: number | null;
   nextDueDate?: string | null;
+  asaasInvoiceUrl?: string | null;
   account?: AccountOption | null;
   member?: MemberOption | null;
 }
@@ -31,6 +32,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
   const [form, setForm] = useState({ accountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
   const [bulk, setBulk] = useState({ accountId: '', amount: '', dueDate: '', description: '', scope: 'active', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [search, setSearch] = useState('');
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -96,6 +98,21 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
     }
   }
 
+  async function cancelInvoice(invoiceId: string) {
+    if (!(await askConfirm({ title: 'Cancelar cobrança', message: 'Remove esta cobrança (não afeta a conta nem pagamentos já registrados).', confirmLabel: 'Cancelar cobrança', intent: 'danger' }))) return;
+    const res = await fetch(`/api/invoices/${invoiceId}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    setMessage(res.ok ? 'Cobrança cancelada.' : data.error ?? 'Erro ao cancelar.');
+    if (res.ok) router.refresh();
+  }
+
+  async function remindInvoice(invoiceId: string) {
+    setMessage('');
+    const res = await fetch(`/api/invoices/${invoiceId}/remind`, { method: 'POST' });
+    const data = await res.json();
+    setMessage(res.ok ? 'Lembrete enviado.' : data.error ?? 'Erro ao enviar lembrete.');
+  }
+
   async function processRecurring() {
     setProcessing(true);
     setMessage('');
@@ -107,6 +124,11 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
   }
 
   const INPUT = inputClass; // fonte única do design system
+
+  const q = search.trim().toLowerCase();
+  const filteredInvoices = q
+    ? invoices.filter((i) => i.number.toLowerCase().includes(q) || i.member?.name.toLowerCase().includes(q) || i.status.toLowerCase().includes(q))
+    : invoices;
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -192,11 +214,16 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
         </section>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Cobranças cadastradas</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-sand-light">Cobranças cadastradas</h2>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por número, membro ou status…" className={`${INPUT} max-w-xs`} />
+          </div>
           <div className="mt-5 space-y-3">
             {invoices.length === 0 ? (
               <EmptyState title="Nenhuma cobrança cadastrada" description="Crie uma cobrança individual ou use a cobrança em massa para gerar as mensalidades de todos os irmãos." />
-            ) : invoices.map((invoice) => (
+            ) : filteredInvoices.length === 0 ? (
+              <p className="text-sm text-sand-dark">Nenhuma cobrança encontrada para &quot;{search}&quot;.</p>
+            ) : filteredInvoices.map((invoice) => (
               <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{invoice.number}</p>
@@ -212,18 +239,22 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
                     <p className="mt-1 text-xs text-gold/70">Recorrente • {invoice.recurringInterval === 'quarterly' ? 'trimestral' : invoice.recurringInterval === 'yearly' ? 'anual' : 'mensal'}</p>
                   ) : null}
                   <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
-                    {asaasLinks[invoice.id] ? (
-                      <a href={asaasLinks[invoice.id]} target="_blank" rel="noreferrer" className="text-xs text-gold hover:text-gold-light">Abrir cobrança</a>
+                    {asaasLinks[invoice.id] ?? invoice.asaasInvoiceUrl ? (
+                      <a href={asaasLinks[invoice.id] ?? invoice.asaasInvoiceUrl!} target="_blank" rel="noreferrer" className="text-xs text-gold hover:text-gold-light">Abrir cobrança</a>
                     ) : null}
                     {invoice.status !== 'paid' ? (
-                      <button
-                        onClick={() => emitAsaas(invoice.id)}
-                        disabled={emittingId === invoice.id || !invoice.member}
-                        title={!invoice.member ? 'Vincule a cobrança a um membro com CPF' : 'Emite boleto/Pix no Asaas da loja'}
-                        className="rounded-full border border-gold/40 px-3 py-1 text-xs font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40"
-                      >
-                        {emittingId === invoice.id ? 'Emitindo…' : invoice.status === 'billed' ? 'Reemitir' : 'Emitir no Asaas'}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => emitAsaas(invoice.id)}
+                          disabled={emittingId === invoice.id || !invoice.member}
+                          title={!invoice.member ? 'Vincule a cobrança a um membro com CPF' : 'Emite boleto/Pix no Asaas da loja'}
+                          className="rounded-full border border-gold/40 px-3 py-1 text-xs font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40"
+                        >
+                          {emittingId === invoice.id ? 'Emitindo…' : invoice.status === 'billed' ? 'Reemitir' : 'Emitir no Asaas'}
+                        </button>
+                        <button onClick={() => void remindInvoice(invoice.id)} title="Envia um lembrete por e-mail ao membro" className="text-xs text-sand-dark transition hover:text-sand-light">Lembrar</button>
+                        <button onClick={() => void cancelInvoice(invoice.id)} className="text-xs text-rose-300/60 transition hover:text-rose-300">Cancelar</button>
+                      </>
                     ) : null}
                   </div>
                 </div>
