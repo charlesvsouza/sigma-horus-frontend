@@ -62,14 +62,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        {/* Aplica o tema salvo antes da pintura (evita flash). */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('sigma-theme');if(t==='light'||t==='system')document.documentElement.setAttribute('data-theme',t);}catch(e){}`,
-          }}
-        />
-      </head>
+      {/*
+        Tema da marca fixo (escuro) fora do dashboard: a preferência salva em
+        localStorage só é lida/aplicada dentro de /dashboard (ver DashboardShell
+        e dashboard/layout.tsx). Sem script aqui — landing, login e páginas
+        institucionais sempre renderizam no escuro padrão (sem data-theme).
+      */}
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

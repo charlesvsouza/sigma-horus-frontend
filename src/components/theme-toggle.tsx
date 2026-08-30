@@ -19,7 +19,9 @@ const OPTIONS: { value: Theme; label: string }[] = [
 ];
 
 // Alterna o tema da interface. Persiste em localStorage e aplica no <html> —
-// vale para todo o sistema (ver globals.css [data-theme]).
+// vale só dentro do dashboard (ver globals.css [data-theme] e DashboardShell,
+// que aplica/limpa o atributo ao entrar/sair). Fora do dashboard (landing,
+// login, institucional) o tema da marca é fixo no escuro.
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>('dark');
 

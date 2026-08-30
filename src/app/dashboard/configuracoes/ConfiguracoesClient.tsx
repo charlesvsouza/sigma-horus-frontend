@@ -218,7 +218,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Aparência</h2>
-          <p className="mt-1 text-sm text-sand-dark">Escolha o tema da interface. A preferência fica salva neste navegador e vale para todas as telas.</p>
+          <p className="mt-1 text-sm text-sand-dark">Escolha o tema da interface. A preferência fica salva neste navegador e vale para as telas do painel — o site público continua sempre no escuro da marca.</p>
           <div className="mt-5">
             <ThemeToggle />
           </div>
