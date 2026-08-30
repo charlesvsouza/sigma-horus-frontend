@@ -46,7 +46,11 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-pagamentos', label: '7.5 Registrar pagamentos' },
       { id: 'tes-relatorios', label: '7.6 Relatórios' },
       { id: 'tes-fechamento', label: '7.7 Fechamento do veneralato' },
-      { id: 'tes-inadimplencia', label: '7.8 Inadimplência e Art. 002' },
+      { id: 'tes-inadimplencia', label: '7.8 Inadimplência, Art. 002 e renegociação' },
+      { id: 'tes-aprovacao', label: '7.9 Aprovação de despesas e multa/juros' },
+      { id: 'tes-balancetes', label: '7.10 Balancetes periódicos' },
+      { id: 'tes-gerencial', label: '7.11 Fluxo de caixa, orçamento e patrimônio' },
+      { id: 'tes-conciliacao', label: '7.12 Conciliação (Asaas e extrato bancário)' },
     ],
   },
   { id: 'secretario', num: '8', label: 'Guia do Secretário' },
@@ -553,6 +557,11 @@ export function ManualBook() {
                   <li>Opcional: <UI>Vincular a um membro</UI> e escrever uma <UI>Descrição</UI>.</li>
                   <li>Clique em <UI>Salvar conta</UI>. A conta aparece na lista <UI>Contas cadastradas</UI>; use <UI>Remover</UI> para excluir.</li>
                 </Steps>
+                <Bullets>
+                  <li><strong>Editar:</strong> clique em <UI>Editar</UI> na linha da conta para corrigir valor, vencimento, título ou vínculo — não precisa excluir e recriar. Contas de um veneralato já encerrado não podem ser editadas nem excluídas.</li>
+                  <li><strong>Buscar:</strong> o campo de busca acima da lista filtra por título, membro ou status.</li>
+                  <li><strong>É mensalidade do membro:</strong> ao vincular a conta a um membro, aparece essa opção — marque para que ela entre na regra de inadimplência do Art. 002 (capítulo 7.8).</li>
+                </Bullets>
               </Sub>
 
               <Sub id="tes-cobrancas" title="7.3 Criar cobranças e recorrência">
@@ -580,8 +589,13 @@ export function ManualBook() {
                 </p>
                 <p>
                   Na lista <UI>Cobranças cadastradas</UI>, cada item mostra um status: <strong>Pendente</strong>,
-                  <strong> Emitida</strong>, <strong>Paga</strong> ou <strong>Vencida</strong>.
+                  <strong> Emitida</strong>, <strong>Paga</strong> ou <strong>Vencida</strong>. Use o campo de busca para
+                  filtrar por número, membro ou status.
                 </p>
+                <Bullets>
+                  <li><strong>Lembrar:</strong> envia por e-mail um lembrete avulso da cobrança ao membro — útil pra cobrar na hora, além do lembrete automático que o sistema já envia 3 dias antes do vencimento.</li>
+                  <li><strong>Cancelar:</strong> remove a cobrança (não mexe na conta nem em pagamentos já registrados). Só funciona em cobranças ainda não pagas.</li>
+                </Bullets>
               </Sub>
 
               <Sub id="tes-asaas" title="7.4 Emitir boleto/PIX no Asaas">
@@ -608,6 +622,11 @@ export function ManualBook() {
                   <li>Marque a <strong>declaração de ciência</strong> (confirma a veracidade e o aceite dos Termos) — obrigatória.</li>
                   <li>Clique em <UI>Registrar pagamento</UI>. Ele aparece em <UI>Pagamentos recentes</UI>.</li>
                 </Steps>
+                <Bullets>
+                  <li><strong>Recibo:</strong> cada pagamento tem um link <UI>Recibo</UI> — abre um comprovante pronto pra <UI>Salvar como PDF</UI> pelo diálogo de impressão do navegador.</li>
+                  <li><strong>Estornar:</strong> lançou errado? Clique em <UI>Estornar</UI> na linha do pagamento — ele é removido e o status da conta/cobrança volta ao que era antes. Não funciona dentro de um período já encerrado.</li>
+                  <li>Quando a conta é a receber (não a pagar), o membro recebe automaticamente um <strong>e-mail de confirmação</strong> do pagamento.</li>
+                </Bullets>
               </Sub>
 
               <Sub id="tes-relatorios" title="7.6 Relatórios e fechamento">
@@ -642,7 +661,7 @@ export function ManualBook() {
                 </Note>
               </Sub>
 
-              <Sub id="tes-inadimplencia" title="7.8 Inadimplência e Art. 002">
+              <Sub id="tes-inadimplencia" title="7.8 Inadimplência, Art. 002 e renegociação">
                 <p>
                   O Art. 002 é a sanção regimental de <strong>suspensão dos direitos maçônicos</strong> do membro
                   inadimplente com a mensalidade há mais de <strong>60 dias</strong>. O Sigma Horus acompanha isso
@@ -656,8 +675,9 @@ export function ManualBook() {
                   </li>
                   <li>
                     Em <UI>Financeiro → Relatórios → Inadimplência (Art. 002)</UI>, veja todos os membros com
-                    mensalidade em aberto: quantidade de parcelas, valor total, vencimento mais antigo e dias de
-                    atraso. Os enquadrados no Art. 002 aparecem destacados.
+                    mensalidade em aberto: quantidade de parcelas, valor total, vencimento mais antigo, dias de
+                    atraso e, se configurada (7.9), a <strong>multa/juros estimados</strong>. Os enquadrados no
+                    Art. 002 aparecem destacados.
                   </li>
                   <li>
                     O critério é o <strong>vencimento em aberto mais antigo</strong>: se ele já passou de 60 dias, o
@@ -670,6 +690,65 @@ export function ManualBook() {
                   sozinho — não é preciso alterar o cadastro manualmente. Enquanto durar, o próprio membro recebe um
                   aviso no painel pedindo para procurar o Tesoureiro ou o Venerável Mestre (capítulo 10).
                 </Note>
+                <p>
+                  <strong>Renegociar a dívida:</strong> no próprio relatório de Inadimplência, clique em <UI>Negociar</UI>
+                  na linha do membro. Escolha a data do <strong>1º vencimento</strong> e, se quiser, marque
+                  <UI> Incluir multa/juros no total</UI>. O sistema soma as mensalidades vencidas (mais o encargo, se
+                  marcado) e redistribui em novas parcelas mensais, reaproveitando as mesmas contas — o Art. 002 deixa
+                  de contar assim que os vencimentos passam a ser no futuro.
+                </p>
+                <p>
+                  <strong>Maçom Remido:</strong> membros isentos de mensalidade (cadastro em <UI>Membros → Evolução
+                  maçônica</UI>, marcando <UI>Isento de mensalidade</UI> — o sistema mostra se ele é elegível pelos
+                  critérios usuais: 65 anos + 15 de Mestre, ou 25 anos de Ordem) nunca entram na regra do Art. 002 nem
+                  na cobrança em massa de mensalidade.
+                </p>
+              </Sub>
+
+              <Sub id="tes-aprovacao" title="7.9 Aprovação de despesas e multa/juros de mora">
+                <p>
+                  Em <UI>Configurações → Financeiro</UI> (Administrador), três ajustes opcionais:
+                </p>
+                <Bullets>
+                  <li><strong>Limite para aprovação de despesa:</strong> contas a pagar com valor igual ou acima desse limite nascem &quot;aguardando aprovação&quot; — só o Venerável Mestre ou o Administrador podem liberar (botão <UI>Aprovar</UI> em Contas), e só depois disso o Tesoureiro consegue registrar o pagamento. Deixe em branco para não exigir aprovação de nada.</li>
+                  <li><strong>Multa por atraso (%)</strong> e <strong>Juros de mora ao mês (%)</strong>: informativos — aparecem no relatório de Inadimplência e na renegociação de dívida, mas não alteram sozinhos o valor das contas já lançadas.</li>
+                </Bullets>
+              </Sub>
+
+              <Sub id="tes-balancetes" title="7.10 Balancetes periódicos">
+                <p>
+                  Em <UI>Financeiro → Relatórios → Balancetes periódicos</UI>, gere o balancete de qualquer intervalo de
+                  datas (trimestral, semestral — o que o regulamento da sua Potência exigir), independente do
+                  encerramento do veneralato inteiro. Escolha <UI>De</UI>/<UI>Até</UI>, clique em <UI>Gerar
+                  balancete</UI> e, depois de apresentado em sessão, o Venerável ou o Administrador clica em
+                  <UI> Aprovar</UI> para registrar.
+                </p>
+                <Note>
+                  Em <UI>Configurações → Financeiro</UI>, marque <UI>Emitir balancete mensal automaticamente</UI> para
+                  o sistema gerar sozinho, todo dia 1º, o balancete do mês anterior — sem precisar lembrar de gerar
+                  manualmente.
+                </Note>
+              </Sub>
+
+              <Sub id="tes-gerencial" title="7.11 Fluxo de caixa, orçamento e patrimônio">
+                <p>
+                  Três telas de visão gerencial, em <UI>Financeiro</UI>:
+                </p>
+                <Bullets>
+                  <li><strong>Fluxo de caixa projetado:</strong> mostra o que já está lançado e ainda não foi pago, separado em faixas (vencido, próximos 30/60/90 dias) — ajuda a antecipar se o caixa vai apertar antes de acontecer.</li>
+                  <li><strong>Orçamento anual:</strong> defina a meta de receita/despesa por categoria do plano de contas no início do ano (clique no valor <UI>Orçado</UI> pra editar) e acompanhe o <UI>Realizado</UI> junto, com barra de progresso.</li>
+                  <li><strong>Patrimônio:</strong> inventário simples dos bens da loja (móveis, insígnias, equipamentos) — nome, categoria, data e valor de aquisição, valor atual estimado e vínculo opcional ao plano de contas. Não calcula depreciação sozinho.</li>
+                </Bullets>
+              </Sub>
+
+              <Sub id="tes-conciliacao" title="7.12 Conciliação: Asaas e extrato bancário">
+                <p>
+                  Duas formas de conferir se o que está lançado no sistema bate com o dinheiro de verdade:
+                </p>
+                <Bullets>
+                  <li><strong>Verificar pagamentos no Asaas</strong> (em <UI>Integrações</UI>, se o Asaas estiver conectado): confere no Asaas cobranças emitidas que ainda não baixaram no sistema — cobre o caso raro de o aviso automático (webhook) falhar ou atrasar.</li>
+                  <li><strong>Conciliação bancária</strong> (<UI>Financeiro → Conciliação bancária</UI>): importe o extrato do seu banco (arquivo <strong>OFX</strong>, exportado pelo internet banking, ou <strong>CSV</strong> com colunas Data/Descrição/Valor). O sistema tenta casar cada linha com um pagamento já registrado (mesmo valor, data próxima, mesma direção — receber ou pagar); o que não casar sozinho fica disponível para <UI>Vincular manualmente</UI> ou <UI>Ignorar</UI>.</li>
+                </Bullets>
               </Sub>
             </Chapter>
 

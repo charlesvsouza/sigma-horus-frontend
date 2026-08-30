@@ -17,6 +17,7 @@ export const PLANS = {
       'Até 30 membros ativos',
       'Gestão financeira completa',
       'Cobranças e boletos',
+      'Orçamento e fluxo de caixa',
       'Relatórios financeiros',
       'Presença em sessões',
     ],
