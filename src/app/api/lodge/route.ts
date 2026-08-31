@@ -25,7 +25,7 @@ export async function GET() {
         bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
         riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,
         expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
-        autoBalanceteEnabled: true,
+        autoBalanceteEnabled: true, art002Enabled: true,
       },
     }),
   );
@@ -46,6 +46,9 @@ export async function PUT(request: Request) {
   const data: Record<string, string | number | boolean | null> = {};
   if ('autoBalanceteEnabled' in body) {
     data.autoBalanceteEnabled = String(body.autoBalanceteEnabled) === 'true';
+  }
+  if ('art002Enabled' in body) {
+    data.art002Enabled = String(body.art002Enabled) === 'true';
   }
   for (const field of FIELDS) {
     if (field in body) {

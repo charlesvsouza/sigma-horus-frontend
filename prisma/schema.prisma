@@ -44,6 +44,10 @@ model Lodge {
   lateInterestPercentMonth Float? // juros ao mês, pro-rata por dia, ex.: 1 = 1%/mês
   // Emite automaticamente o balancete do mês anterior no dia 1 (cron mensal).
   autoBalanceteEnabled     Boolean @default(false)
+  // Aplica a régua automática do Art. 002 (afastamento por mensalidade em
+  // atraso > 60 dias). Default true preserva o comportamento de hoje; o
+  // relatório de inadimplência continua disponível mesmo com o flag desligado.
+  art002Enabled            Boolean @default(true)
   // Asaas (BYO-key): cada loja conecta a própria conta. Chave criptografada (AES-256-GCM).
   asaasApiKeyEnc    String?
   asaasEnv          String?  @default("sandbox") // sandbox | production

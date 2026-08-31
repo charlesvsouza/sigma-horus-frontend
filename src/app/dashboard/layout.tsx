@@ -97,7 +97,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (lodgeId) {
     const data = await withTenant(String(lodgeId), async (db) => {
       const [lodge, subscription, dues] = await Promise.all([
-        db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true } }),
+        db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, art002Enabled: true } }),
         db.subscription.findUnique({
           where: { lodgeId: String(lodgeId) },
           select: { status: true, plan: true, trialEndsAt: true, pendingPlan: true, pendingPlanEffectiveAt: true },
@@ -108,9 +108,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     });
     if (data.lodge?.name) lodgeName = data.lodge.name;
     sub = data.subscription;
-    // Só avisa o próprio membro quando já cruzou o prazo do Art. 002 (60 dias);
-    // mensalidade em atraso mas ainda dentro do prazo não dispara o popup.
-    if (data.dues && data.dues.daysOverdue > ART_002_THRESHOLD_DAYS) {
+    // Só avisa o próprio membro quando já cruzou o prazo do Art. 002 (60 dias)
+    // e a loja tem a régua automática ligada; mensalidade em atraso mas ainda
+    // dentro do prazo, ou loja com o Art. 002 desligado, não dispara o popup.
+    if (data.lodge?.art002Enabled !== false && data.dues && data.dues.daysOverdue > ART_002_THRESHOLD_DAYS) {
       art002DaysOverdue = data.dues.daysOverdue;
     }
   }

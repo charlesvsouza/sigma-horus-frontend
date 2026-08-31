@@ -196,6 +196,9 @@ export async function syncMemberArt002Status(
   memberId: string,
   now: Date = new Date(),
 ): Promise<void> {
+  const lodge = await db.lodge.findUnique({ where: { id: lodgeId }, select: { art002Enabled: true } });
+  if (!lodge?.art002Enabled) return;
+
   const member = await db.member.findFirst({ where: { id: memberId, lodgeId }, select: { status: true } });
   if (!member) return;
 
@@ -211,7 +214,7 @@ export async function syncMemberArt002Status(
 
 /** Varre todas as lojas e sincroniza o Art. 002 de todo mundo (cron diário). */
 export async function syncAllLodgesArt002(): Promise<{ lodges: number; promoted: number; reverted: number }> {
-  const lodges = await prismaAdmin.lodge.findMany({ select: { id: true } });
+  const lodges = await prismaAdmin.lodge.findMany({ where: { art002Enabled: true }, select: { id: true } });
   let promoted = 0;
   let reverted = 0;
 

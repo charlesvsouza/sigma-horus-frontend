@@ -229,6 +229,15 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
               <input type="checkbox" checked={form.autoBalanceteEnabled === 'true'} onChange={(e) => set('autoBalanceteEnabled', String(e.target.checked))} />
               Emitir balancete mensal automaticamente (todo dia 1º, referente ao mês anterior)
             </label>
+
+            <label className="mt-3 flex items-center gap-2 text-sm text-sand">
+              <input type="checkbox" checked={form.art002Enabled === 'true'} onChange={(e) => set('art002Enabled', String(e.target.checked))} />
+              Aplicar automaticamente o Art. 002 (afastamento por mensalidade em atraso há mais de 60 dias)
+            </label>
+            <p className="mt-1 text-xs text-sand-dark">
+              Desligar aqui não remove o histórico nem o relatório de inadimplência — só para de mudar
+              sozinha a situação do obreiro para &quot;Art. 002&quot; e de exibir o aviso a ele no portal.
+            </p>
           </section>
 
           <Button type="submit" disabled={saving}>
