@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { Alert } from '@/components/ui';
-import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus } from '@/lib/overdue';
+import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import DashboardShell from './DashboardShell';
 
 interface NavEntry { href: string; label: string; roles: string[]; }
@@ -111,7 +111,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     // Só avisa o próprio membro quando já cruzou o prazo do Art. 002 (60 dias)
     // e a loja tem a régua automática ligada; mensalidade em atraso mas ainda
     // dentro do prazo, ou loja com o Art. 002 desligado, não dispara o popup.
-    if (data.lodge?.art002Enabled !== false && data.dues && data.dues.daysOverdue > ART_002_THRESHOLD_DAYS) {
+    if (isArt002Enabled(data.lodge) && data.dues && data.dues.daysOverdue > ART_002_THRESHOLD_DAYS) {
       art002DaysOverdue = data.dues.daysOverdue;
     }
   }

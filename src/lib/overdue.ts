@@ -190,22 +190,29 @@ export async function getLodgeOverdueDuesReport(
  * pontos que mudam o quadro financeiro do membro (baixa de pagamento, exclusão
  * de conta, webhook Asaas) e, como rede de segurança, pelo cron diário.
  */
+/** true por padrão (Lodge ausente ou sem o campo carregado) — mesmo default do schema. */
+export function isArt002Enabled(lodge?: { art002Enabled: boolean } | null): boolean {
+  return lodge?.art002Enabled ?? true;
+}
+
 export async function syncMemberArt002Status(
   db: Prisma.TransactionClient,
   lodgeId: string,
   memberId: string,
   now: Date = new Date(),
 ): Promise<void> {
-  const lodge = await db.lodge.findUnique({ where: { id: lodgeId }, select: { art002Enabled: true } });
-  if (!lodge?.art002Enabled) return;
-
   const member = await db.member.findFirst({ where: { id: memberId, lodgeId }, select: { status: true } });
   if (!member) return;
 
   const status = await getMemberDuesStatus(db, lodgeId, memberId, now);
   const overThreshold = (status?.daysOverdue ?? 0) > ART_002_THRESHOLD_DAYS;
 
+  // Desligar o flag só impede NOVAS promoções — a reversão (dívida quitada
+  // → volta a 'active') continua sempre ativa, para não deixar ninguém preso
+  // em 'art_002' enquanto o enforcement automático estiver desligado.
   if (overThreshold && member.status === 'active') {
+    const lodge = await db.lodge.findUnique({ where: { id: lodgeId }, select: { art002Enabled: true } });
+    if (!isArt002Enabled(lodge)) return;
     await db.member.update({ where: { id: memberId }, data: { status: 'art_002' } });
   } else if (!overThreshold && member.status === 'art_002') {
     await db.member.update({ where: { id: memberId }, data: { status: 'active' } });
@@ -214,7 +221,10 @@ export async function syncMemberArt002Status(
 
 /** Varre todas as lojas e sincroniza o Art. 002 de todo mundo (cron diário). */
 export async function syncAllLodgesArt002(): Promise<{ lodges: number; promoted: number; reverted: number }> {
-  const lodges = await prismaAdmin.lodge.findMany({ where: { art002Enabled: true }, select: { id: true } });
+  // Varre TODAS as lojas, não só as com o flag ligado: a reversão (dívida
+  // quitada → volta a 'active') deve rodar mesmo com o Art. 002 desligado,
+  // para não deixar ninguém preso em 'art_002'. Só a promoção é condicional.
+  const lodges = await prismaAdmin.lodge.findMany({ select: { id: true, art002Enabled: true } });
   let promoted = 0;
   let reverted = 0;
 
@@ -223,10 +233,12 @@ export async function syncAllLodgesArt002(): Promise<{ lodges: number; promoted:
       const report = await getLodgeOverdueDuesReport(db, lodge.id);
       const overdueMemberIds = new Set(report.filter((r) => r.art002).map((r) => r.memberId));
 
-      for (const row of report) {
-        if (row.art002 && row.memberStatus === 'active') {
-          await db.member.update({ where: { id: row.memberId }, data: { status: 'art_002' } });
-          promoted++;
+      if (isArt002Enabled(lodge)) {
+        for (const row of report) {
+          if (row.art002 && row.memberStatus === 'active') {
+            await db.member.update({ where: { id: row.memberId }, data: { status: 'art_002' } });
+            promoted++;
+          }
         }
       }
 
