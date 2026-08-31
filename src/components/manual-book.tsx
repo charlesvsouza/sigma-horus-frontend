@@ -691,6 +691,21 @@ export function ManualBook() {
                   aviso no painel pedindo para procurar o Tesoureiro ou o Venerável Mestre (capítulo 10).
                 </Note>
                 <p>
+                  <strong>Desligar o enquadramento automático:</strong> em <UI>Configurações → Financeiro</UI>
+                  (Administrador), desmarque <UI>Aplicar automaticamente o Art. 002</UI> se a sua loja preferir tratar
+                  a suspensão manualmente (ex.: decisão em sessão, caso a caso) em vez de deixar o sistema mudar a
+                  situação do obreiro sozinho.
+                </p>
+                <Note>
+                  Desligar esse ajuste <strong>não some com nada</strong>: o relatório de Inadimplência continua
+                  mostrando todo mundo em atraso normalmente, e quem já está em &quot;Art. 002&quot; ainda volta para
+                  &quot;Ativo&quot; sozinho assim que a pendência for paga. O que muda é só que, com o ajuste
+                  desligado, ninguém <strong>novo</strong> é promovido a &quot;Art. 002&quot; automaticamente, e o
+                  membro em atraso não recebe mais o aviso no painel — a decisão de afastar fica manual, pelo
+                  cadastro do membro. O padrão de fábrica é <strong>ligado</strong>, preservando o comportamento
+                  automático de sempre.
+                </Note>
+                <p>
                   <strong>Renegociar a dívida:</strong> no próprio relatório de Inadimplência, clique em <UI>Negociar</UI>
                   na linha do membro. Escolha a data do <strong>1º vencimento</strong> e, se quiser, marque
                   <UI> Incluir multa/juros no total</UI>. O sistema soma as mensalidades vencidas (mais o encargo, se
@@ -851,7 +866,9 @@ export function ManualBook() {
                 Se a sua mensalidade ficar em aberto por mais de <strong>60 dias</strong>, um aviso vermelho aparece por
                 alguns segundos ao entrar no painel, pedindo para você procurar o Tesoureiro ou o Venerável Mestre
                 (situação prevista no Art. 002 do regimento — ver capítulo 7.8). Ele some sozinho assim que a pendência
-                for paga ou excluída pela tesouraria.
+                for paga ou excluída pela tesouraria. Esse aviso automático só aparece se a sua loja mantiver o
+                enquadramento automático do Art. 002 ligado em Configurações; algumas lojas preferem tratar isso
+                manualmente.
               </Note>
               <Sub title="Seu acesso e seus dados">
                 <Bullets>
