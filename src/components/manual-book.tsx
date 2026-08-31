@@ -738,6 +738,22 @@ export function ManualBook() {
                   balancete</UI> e, depois de apresentado em sessão, o Venerável ou o Administrador clica em
                   <UI> Aprovar</UI> para registrar.
                 </p>
+                <p>
+                  <strong>Acesso rápido:</strong> no topo da página, três botões — <UI>Bimestral</UI>,
+                  <UI> Trimestral</UI> e <UI>Semestral</UI> — geram de um clique o balancete do último período já
+                  fechado do <strong>veneralato em exercício</strong>, contando em blocos de 2/3/6 meses a partir da
+                  data de início desse veneralato (não do calendário civil). Abaixo de cada botão aparece o intervalo
+                  que ele vai gerar.
+                </p>
+                <Note>
+                  Um botão fica <strong>sem ação</strong> enquanto o veneralato ainda não tiver completado aquele
+                  bloco de meses — um período que termina justamente hoje ainda não conta como fechado, só a partir de
+                  amanhã. Por exemplo, veneralato iniciado em 01/07: em 31/08 nenhum dos três botões funciona ainda
+                  (o próprio bimestre só fecha nessa data); já em 31/12 o Bimestral e o Trimestral já geram o período
+                  mais recente completo, mas o Semestral continua sem ação até 01/01, pois o semestre inteiro só se
+                  completa em 31/12. Enquanto isso, o botão mostra <UI>Disponível a partir de</UI> e a data em que
+                  destrava. Sem veneralato em exercício, os três ficam ocultos.
+                </Note>
                 <Note>
                   Em <UI>Configurações → Financeiro</UI>, marque <UI>Emitir balancete mensal automaticamente</UI> para
                   o sistema gerar sozinho, todo dia 1º, o balancete do mês anterior — sem precisar lembrar de gerar

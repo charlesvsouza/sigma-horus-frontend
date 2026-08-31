@@ -27,8 +27,15 @@ export default async function BalancetesPage() {
     );
   }
 
-  const items = await withTenant(String(lodgeId), (db) =>
-    db.balancete.findMany({ where: { lodgeId: String(lodgeId) }, orderBy: { periodTo: 'desc' } }),
+  const [items, currentTerm] = await withTenant(String(lodgeId), (db) =>
+    Promise.all([
+      db.balancete.findMany({ where: { lodgeId: String(lodgeId) }, orderBy: { periodTo: 'desc' } }),
+      db.term.findFirst({
+        where: { lodgeId: String(lodgeId), status: { not: 'closed' } },
+        orderBy: { startDate: 'desc' },
+        select: { startDate: true },
+      }),
+    ]),
   );
 
   const serialized = items.map((b) => ({
@@ -48,5 +55,11 @@ export default async function BalancetesPage() {
   const normalizedRole = (role ?? 'member').toLowerCase();
   const canApprove = normalizedRole === 'venerable' || normalizedRole === 'admin';
 
-  return <BalancetesClient items={serialized} canApprove={canApprove} />;
+  return (
+    <BalancetesClient
+      items={serialized}
+      canApprove={canApprove}
+      currentTermStart={currentTerm?.startDate.toISOString() ?? null}
+    />
+  );
 }
