@@ -33,6 +33,7 @@ const INDEX: IndexEntry[] = [
       { id: 'admin-assinatura', label: '6.5 Assinatura' },
       { id: 'admin-comunicacao', label: '6.6 Comunicação (WhatsApp/SMS)' },
       { id: 'admin-importar', label: '6.7 Importar cadastro de outro sistema' },
+      { id: 'admin-backup', label: '6.8 Backup dos dados da loja' },
     ],
   },
   {
@@ -558,6 +559,21 @@ export function ManualBook() {
                   é criado pela metade.
                 </Note>
               </Sub>
+
+              <Sub id="admin-backup" title="6.8 Backup dos dados da loja">
+                <p>
+                  Em <UI>Administração → Configurações da loja</UI>, o botão <UI>Baixar backup completo da minha
+                  loja</UI> gera na hora um arquivo com todos os dados da sua loja — cadastro dos membros e família,
+                  financeiro, sessões, documentos, plano de contas, cargos e histórico de auditoria — e baixa direto
+                  pro seu computador (pasta padrão de downloads do navegador), com o nome da loja no arquivo.
+                </p>
+                <Note>
+                  Esse arquivo é seu — guarde-o num lugar seguro (ex.: nuvem própria, pen drive). Ele não inclui senhas
+                  nem chaves de integração (Asaas, WhatsApp, SMS), que ficam só no servidor. Além desse backup sob
+                  demanda, a plataforma também mantém um backup automático diário e criptografado de toda a base, para
+                  recuperação em caso de problema grave com a infraestrutura (capítulo 14).
+                </Note>
+              </Sub>
             </Chapter>
 
             {/* ============== 7. TESOUREIRO ============== */}
@@ -1061,6 +1077,12 @@ export function ManualBook() {
                 No tratamento de dados pessoais, em regra a <strong>loja é a controladora</strong> e o Sigma Horus atua
                 como <strong>operador</strong>. Use os dados dos obreiros com base legal e finalidade legítima, conforme a
                 LGPD.
+              </p>
+              <p>
+                Fazemos <strong>backup automático e criptografado</strong> de toda a plataforma diariamente, guardado por
+                30 dias, para reconstrução em caso de problema grave com a infraestrutura. Além disso, o Administrador
+                pode baixar a qualquer momento uma cópia completa dos dados da própria loja em <UI>Administração →
+                Configurações da loja → Baixar backup completo da minha loja</UI> (veja 6.8).
               </p>
               <p>
                 Detalhes completos nos{' '}

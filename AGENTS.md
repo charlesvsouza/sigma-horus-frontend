@@ -1,3 +1,69 @@
+<!-- BEGIN:handoff-session-2026-09-06 -->
+# Handoff — Sessão 2026-09-06
+
+## 🗄️ Backup completo da plataforma + backup por loja (runbook)
+
+**Contexto:** não havia backup real (só a alegação de "backups periódicos" em
+`/privacidade`, dependente só do Railway) nem forma de a loja levar os
+próprios dados embora. Implementado: (1) backup completo criptografado de
+TODAS as lojas, automático, pra reconstrução em caso de problema grave; (2)
+backup sob demanda dos dados de UMA loja, pro próprio admin.
+
+### (1) Backup completo da plataforma
+- **Motor**: `src/lib/backup.ts` — `BACKUP_MODELS` (28 tabelas, ordem que
+  respeita FKs — fonte única usada por backup E restore) → lê tudo via
+  `prismaAdmin` (sem RLS, cross-tenant) → `JSON.stringify` → `gzip` →
+  **AES-256-GCM** com chave dedicada (`BACKUP_ENCRYPTION_KEY`, **não** reusa
+  o `AUTH_SECRET`) → sobe pro R2 em `backups/<timestamp>.json.gz.enc` →
+  aplica retenção (apaga > 30 dias) → grava `BackupLog` (novo model,
+  migration `20260906035516_add_backup_log`, tabela de plataforma sem RLS).
+- **Disparo**: cron `api/cron/backup-database` (Vercel Cron, diário 03:00
+  UTC, `vercel.json`), mesmo padrão dos demais crons (`CRON_SECRET` ou
+  `PLATFORM_OWNER_TOKEN`). Disparo manual e histórico em **`/plataforma/backups`**
+  (mesmo token de `/plataforma/convites`, `POST/GET /api/backups`).
+- **Env obrigatória**: `BACKUP_ENCRYPTION_KEY` (32+ bytes aleatórios,
+  `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`).
+  **Sem essa env, o backup falha alto** (não grava nada sem criptografar) —
+  confirme que está setada tanto local quanto na Vercel (produção) antes de
+  confiar no cron. Perder essa chave = perder a capacidade de restaurar
+  backups já feitos (ela não é derivável de mais nada — guarde-a à parte,
+  ex.: gerenciador de senhas da equipe).
+- **Restauração — SÓ por script de linha de comando, nunca rota web**
+  (`scripts/restore-backup.ts`). Sempre rode primeiro **sem** `--yes`
+  (simulação: baixa, decifra, mostra a contagem por tabela, não grava nada).
+  Pra restaurar de verdade: precisa de `--confirm-host <trecho do host do
+  DATABASE_URL atual>` **e** `--yes` — trava manual pra nunca restaurar no
+  banco errado por engano. Usa `createMany({skipDuplicates:true})` por
+  tabela, na ordem de `BACKUP_MODELS`; erro numa tabela não trava as
+  seguintes (relatório final por tabela). Depois de restaurar, confira
+  manualmente alguns registros (datas, valores) antes de liberar o sistema.
+  ```
+  node --env-file=.env --import ./test/setup.mjs scripts/restore-backup.ts <storageKey>
+  node --env-file=.env --import ./test/setup.mjs scripts/restore-backup.ts <storageKey> --confirm-host kodama.proxy.rlwy.net --yes
+  ```
+- **Testado nesta sessão** contra o banco real (Railway): backup rodou (348
+  registros, 2 lojas, ~16 KB), restore em modo simulação bateu a mesma
+  contagem. Restauração real (`--yes`) **não** foi testada em produção (writes
+  reais só fazem sentido contra um banco vazio/de recuperação de verdade).
+
+### (2) Backup por loja (self-service)
+- `GET /api/lodges/export` (era um export parcial de LGPD, esquecido, sem
+  UI) — **completado** pra cobrir as 26 tabelas da loja (financeiro, plano
+  de contas, cargos, ritos/potências, sessões, documentos, auditoria etc.),
+  restrito a `role === 'admin'` (antes não tinha checagem de papel nenhuma).
+  Remove hashes/segredos (`passwordHash`, `asaasApiKeyEnc`,
+  `whatsappTokenEnc`, `smsAuthTokenEnc`, `asaasWebhookToken`) — não
+  criptografado (o próprio admin já tem acesso a tudo isso na UI; é um
+  download direto pro navegador dele, não um backup de disaster-recovery).
+- Botão **"Baixar backup completo da minha loja"** em `Configurações da
+  loja` (`ConfiguracoesClient.tsx`), baixa o JSON via blob no navegador.
+
+### Não fazer
+- Não expor restauração como rota HTTP — mesmo atrás do token de
+  plataforma, é destrutivo demais pra estar a um clique/replay de distância.
+- Não reusar a chave do backup (`BACKUP_ENCRYPTION_KEY`) pra outra coisa —
+  ela protege um dump com os dados de **todas** as lojas de uma vez.
+
 <!-- BEGIN:handoff-session-2026-07-01 -->
 # Handoff — Sessão 2026-07-01
 

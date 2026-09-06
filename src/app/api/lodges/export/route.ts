@@ -1,125 +1,95 @@
 import { auth } from '@/lib/auth';
+import { normalizeRole } from '@/lib/rbac';
 import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 /**
- * Exporta todos os dados da loja em formato JSON (portabilidade LGPD).
- * Acessível pelo administrador da loja via dashboard ou endpoint direto.
- * GET /api/lodges/export
+ * Backup completo dos dados de UMA loja (autoatendimento do admin) em JSON —
+ * cobre todas as tabelas da loja (membros/família, financeiro, sessões,
+ * documentos, plano de contas, cargos, permissões etc). Não inclui segredos
+ * (senha, chaves de integração) nem dados de outras lojas.
+ * GET /api/lodges/export — só o Administrador da própria loja.
  */
 export async function GET() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
+  const role = normalizeRole(session?.user?.role);
   if (!lodgeId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (role !== 'admin') {
+    return NextResponse.json({ error: 'Só o Administrador pode baixar o backup da loja.' }, { status: 403 });
+  }
 
-  const data = await withTenant(String(lodgeId), async (db) => {
-    const [lodge, members, users, accounts, payments, invoices, documents, sessions, campaigns] =
-      await Promise.all([
-        db.lodge.findUnique({ where: { id: String(lodgeId) } }),
-        db.member.findMany({
-          where: { lodgeId: String(lodgeId) },
-          include: { relatives: true },
-        }),
-        db.user.findMany({
-          where: { lodgeId: String(lodgeId) },
-          select: { id: true, name: true, email: true, role: true, status: true, createdAt: true },
-        }),
-        db.account.findMany({ where: { lodgeId: String(lodgeId) } }),
-        db.payment.findMany({ where: { lodgeId: String(lodgeId) } }),
-        db.invoice.findMany({ where: { lodgeId: String(lodgeId) } }),
-        db.document.findMany({ where: { lodgeId: String(lodgeId) } }),
-        db.session.findMany({ where: { lodgeId: String(lodgeId) } }),
-        db.campaign.findMany({
-          where: { lodgeId: String(lodgeId) },
-          include: { donations: true },
-        }),
-      ]);
+  const id = String(lodgeId);
+
+  // Timeout maior que o padrão (5s): são ~26 consultas em paralelo, todas as
+  // tabelas da loja — contra o Railway via proxy, o padrão estoura à toa.
+  const data = await withTenant(id, async (db) => {
+    const [
+      lodge, users, members, chartAccounts, accounts, invoices, payments, assets,
+      bankTransactions, documents, messageLogs, sessions, attendances, terms,
+      memberOffices, cashCloses, balancetes, budgets, campaigns, campaignDonations,
+      rolePermissions, subscription, auditLogs, rites, powers, offices,
+    ] = await Promise.all([
+      db.lodge.findUnique({ where: { id } }),
+      db.user.findMany({ where: { lodgeId: id }, select: { id: true, name: true, email: true, role: true, status: true, memberId: true, mustChangePassword: true, createdAt: true, updatedAt: true } }),
+      db.member.findMany({ where: { lodgeId: id }, include: { relatives: true } }),
+      db.chartAccount.findMany({ where: { lodgeId: id } }),
+      db.account.findMany({ where: { lodgeId: id } }),
+      db.invoice.findMany({ where: { lodgeId: id } }),
+      db.payment.findMany({ where: { lodgeId: id } }),
+      db.asset.findMany({ where: { lodgeId: id } }),
+      db.bankTransaction.findMany({ where: { lodgeId: id } }),
+      db.document.findMany({ where: { lodgeId: id } }),
+      db.messageLog.findMany({ where: { lodgeId: id } }),
+      db.session.findMany({ where: { lodgeId: id } }),
+      db.attendance.findMany({ where: { lodgeId: id } }),
+      db.term.findMany({ where: { lodgeId: id } }),
+      db.memberOffice.findMany({ where: { lodgeId: id } }),
+      db.cashClose.findMany({ where: { lodgeId: id } }),
+      db.balancete.findMany({ where: { lodgeId: id } }),
+      db.budget.findMany({ where: { lodgeId: id } }),
+      db.campaign.findMany({ where: { lodgeId: id }, include: { donations: true } }),
+      db.campaignDonation.findMany({ where: { lodgeId: id } }),
+      db.rolePermission.findMany({ where: { lodgeId: id } }),
+      db.subscription.findUnique({ where: { lodgeId: id } }),
+      db.auditLog.findMany({ where: { lodgeId: id } }),
+      db.rite.findMany({ where: { lodgeId: id } }),
+      db.power.findMany({ where: { lodgeId: id } }),
+      db.office.findMany({ where: { lodgeId: id } }),
+    ]);
+
+    // Remove os campos de credenciais/segredos criptografados — sem valor pro
+    // admin (só o servidor consegue decifrar) e sem motivo pra sair da loja.
+    const {
+      asaasApiKeyEnc: _asaas, asaasWebhookToken: _asaasWebhook,
+      whatsappTokenEnc: _wa, smsAuthTokenEnc: _sms,
+      ...lodgeSafe
+    } = lodge ?? {};
+    void _asaas; void _asaasWebhook; void _wa; void _sms;
 
     return {
-      exportedAt: new Date().toISOString(),
-      lodge: {
-        id: lodge?.id,
-        name: lodge?.name,
-        slug: lodge?.slug,
-        legalName: lodge?.legalName,
-        tradeName: lodge?.tradeName,
-        cnpj: lodge?.cnpj,
-        email: lodge?.email,
-        phone: lodge?.phone,
-        riteName: lodge?.riteName,
-        powerName: lodge?.powerName,
+      lodgeName: lodge?.name ?? 'loja',
+      payload: {
+        exportedAt: new Date().toISOString(),
+        lodge: lodgeSafe,
+        users, members, rites, powers, offices, chartAccounts, accounts, invoices,
+        payments, assets, bankTransactions, documents, messageLogs, sessions,
+        attendances, terms, memberOffices, cashCloses, balancetes, budgets,
+        campaigns, campaignDonations, rolePermissions, subscription, auditLogs,
       },
-      members: members.map((m) => ({
-        id: m.id,
-        name: m.name,
-        email: m.email,
-        phone: m.phone,
-        cpf: m.cpf,
-        status: m.status,
-        birthDate: m.birthDate,
-        initiationDate: m.initiationDate,
-        elevationDate: m.elevationDate,
-        exaltationDate: m.exaltationDate,
-        currentDegree: m.currentDegree,
-        relatives: m.relatives,
-      })),
-      users,
-      accounts: accounts.map((a) => ({
-        id: a.id,
-        type: a.type,
-        title: a.title,
-        amount: a.amount,
-        dueDate: a.dueDate,
-        status: a.status,
-        memberId: a.memberId,
-        chartAccountId: a.chartAccountId,
-      })),
-      payments: payments.map((p) => ({
-        id: p.id,
-        amount: p.amount,
-        paidAt: p.paidAt,
-        method: p.method,
-        accountId: p.accountId,
-        memberId: p.memberId,
-        note: p.note,
-      })),
-      invoices: invoices.map((i) => ({
-        id: i.id,
-        number: i.number,
-        status: i.status,
-        amount: i.amount,
-        dueDate: i.dueDate,
-        memberId: i.memberId,
-        accountId: i.accountId,
-      })),
-      documents: documents.map((d) => ({
-        id: d.id,
-        title: d.title,
-        kind: d.kind,
-        category: d.category,
-        fileName: d.fileName,
-        mimeType: d.mimeType,
-        createdAt: d.createdAt,
-      })),
-      sessions: sessions.map((s) => ({
-        id: s.id,
-        title: s.title,
-        date: s.date,
-        type: s.type,
-        grade: s.grade,
-      })),
-      campaigns: campaigns.map((c) => ({
-        id: c.id,
-        title: c.title,
-        status: c.status,
-        goalAmount: c.goalAmount,
-        fundingSource: c.fundingSource,
-        donations: c.donations,
-      })),
     };
-  });
+  }, { timeoutMs: 20_000 });
 
-  return NextResponse.json(data);
+  const slug = data.lodgeName
+    .normalize('NFD')
+    .split('')
+    .filter((ch: string) => { const cp = ch.codePointAt(0) ?? 0; return cp < 0x300 || cp > 0x36f; })
+    .join('')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'loja';
+
+  return NextResponse.json(data.payload, {
+    headers: { 'Content-Disposition': `attachment; filename="backup-${slug}.json"` },
+  });
 }

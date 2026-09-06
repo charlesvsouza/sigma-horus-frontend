@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Button, inputClass } from '@/components/ui';
+import { Alert, Button, inputClass } from '@/components/ui';
 import ThemeToggle from '@/components/theme-toggle';
 import { fetchCep, maskCEP, maskCNPJ, maskPhone } from '@/lib/masks';
 import { BRAZILIAN_RITES, BRAZILIAN_POWERS } from '@/lib/masonic-reference';
@@ -37,6 +37,38 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [cepStatus, setCepStatus] = useState('');
+  const [backingUp, setBackingUp] = useState(false);
+  const [backupError, setBackupError] = useState('');
+
+  async function handleDownloadBackup() {
+    setBackingUp(true);
+    setBackupError('');
+    try {
+      const res = await fetch('/api/lodges/export');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setBackupError(data.error ?? 'Não foi possível gerar o backup.');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const noAccents = (form.name || 'loja')
+        .normalize('NFD')
+        .split('')
+        .filter((ch) => { const cp = ch.codePointAt(0) ?? 0; return cp < 0x300 || cp > 0x36f; })
+        .join('');
+      const slug = noAccents.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'loja';
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup-${slug}-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setBackupError('Não foi possível gerar o backup. Tente novamente.');
+    } finally {
+      setBackingUp(false);
+    }
+  }
 
   function set(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -251,6 +283,20 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
           <div className="mt-5">
             <ThemeToggle />
           </div>
+        </section>
+
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <h2 className="text-base font-semibold text-sand-light">Backup dos dados</h2>
+          <p className="mt-1 text-sm text-sand-dark">
+            Baixe um arquivo com todos os dados desta loja (membros, família, financeiro, sessões,
+            documentos, plano de contas etc.) para guardar sua própria cópia de segurança.
+          </p>
+          <div className="mt-5">
+            <Button type="button" variant="secondary" onClick={handleDownloadBackup} disabled={backingUp}>
+              {backingUp ? 'Gerando…' : 'Baixar backup completo da minha loja'}
+            </Button>
+          </div>
+          {backupError ? <Alert intent="danger" className="mt-4">{backupError}</Alert> : null}
         </section>
       </div>
     </main>

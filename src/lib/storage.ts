@@ -1,6 +1,8 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -87,6 +89,49 @@ export async function deleteObject(storageKey: string) {
 
   await client.send(new DeleteObjectCommand({ Bucket: settings.bucket, Key: storageKey }));
   return true;
+}
+
+/** Baixa um objeto do bucket como Buffer (usado pelo script de restauração do backup). */
+export async function getObjectBuffer(storageKey: string): Promise<Buffer | null> {
+  const settings = getR2StorageSettings();
+  const client = getR2Client(settings);
+  if (!client || !settings.bucket) return null;
+  const res = await client.send(new GetObjectCommand({ Bucket: settings.bucket, Key: storageKey }));
+  if (!res.Body) return null;
+  const chunks: Buffer[] = [];
+  for await (const chunk of res.Body as AsyncIterable<Buffer>) chunks.push(Buffer.from(chunk));
+  return Buffer.concat(chunks);
+}
+
+/** Sobe um buffer bruto pro bucket (usado pelo backup completo — não passa pelo fluxo de Document). */
+export async function putObject(storageKey: string, body: Buffer, contentType: string) {
+  const settings = getR2StorageSettings();
+  const client = getR2Client(settings);
+  if (!client || !settings.bucket) return false;
+  await client.send(new PutObjectCommand({ Bucket: settings.bucket, Key: storageKey, Body: body, ContentType: contentType }));
+  return true;
+}
+
+/** Lista as chaves de objetos sob um prefixo (paginado). Usado pela retenção do backup. */
+export async function listObjectKeys(prefix: string): Promise<{ key: string; lastModified: Date | undefined }[]> {
+  const settings = getR2StorageSettings();
+  const client = getR2Client(settings);
+  if (!client || !settings.bucket) return [];
+
+  const out: { key: string; lastModified: Date | undefined }[] = [];
+  let continuationToken: string | undefined;
+  do {
+    const res = await client.send(new ListObjectsV2Command({
+      Bucket: settings.bucket,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+    }));
+    for (const obj of res.Contents ?? []) {
+      if (obj.Key) out.push({ key: obj.Key, lastModified: obj.LastModified });
+    }
+    continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (continuationToken);
+  return out;
 }
 
 export function normalizeStoragePayload(body: Record<string, unknown>) {

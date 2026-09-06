@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { Alert, Badge, type BadgeVariant, Button, Card, CardDescription, CardTitle, EmptyState, Input, inputClass } from '@/components/ui';
 import { PLANS, TRIAL_DAYS, TRIAL_PLAN, type PlanId } from '@/lib/plans';
@@ -217,7 +218,10 @@ export default function ConvitesPlataformaPage() {
               {TRIAL_DAYS} dias no plano {PLANS[TRIAL_PLAN].name}.
             </p>
           </div>
-          <Button variant="ghost" size="sm" className="self-start" onClick={handleLogout}>Sair</Button>
+          <div className="flex items-center gap-3 self-start">
+            <Link href="/plataforma/backups" className="text-sm text-gold-light hover:text-gold">Backups →</Link>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>Sair</Button>
+          </div>
         </div>
 
         <Card>

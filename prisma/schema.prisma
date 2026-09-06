@@ -385,6 +385,23 @@ model Invitation {
   @@index([status])
 }
 
+// Histórico de execuções do backup completo da plataforma (todas as lojas).
+// Tabela de plataforma (sem RLS) — só escrita/lida via prismaAdmin, pelo cron
+// de backup e pelo painel /plataforma/backups.
+model BackupLog {
+  id          String   @id @default(cuid())
+  storageKey  String?  // chave no R2 (null quando status = failed antes do upload)
+  status      String   // success | failed
+  sizeBytes   Int?
+  totalRows   Int?
+  modelCounts String?  // JSON: { "Member": 12, "Account": 34, ... }
+  durationMs  Int?
+  error       String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model AuditLog {
   id           String   @id @default(cuid())
   lodgeId      String

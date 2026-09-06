@@ -48,11 +48,15 @@ export const prismaAdmin =
 export function withTenant<T>(
   lodgeId: string,
   cb: (db: Prisma.TransactionClient) => Promise<T>,
+  options?: { timeoutMs?: number },
 ): Promise<T> {
-  return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT set_config('app.current_lodge_id', ${lodgeId}, true)`;
-    return cb(tx);
-  });
+  return prisma.$transaction(
+    async (tx) => {
+      await tx.$executeRaw`SELECT set_config('app.current_lodge_id', ${lodgeId}, true)`;
+      return cb(tx);
+    },
+    options?.timeoutMs ? { timeout: options.timeoutMs } : undefined,
+  );
 }
 
 if (process.env.NODE_ENV !== 'production') {
