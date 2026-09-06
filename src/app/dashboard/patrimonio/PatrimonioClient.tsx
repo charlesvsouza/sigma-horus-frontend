@@ -108,6 +108,7 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
           </div>
         </section>
 
+        <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard
           title={editingId ? 'Editar bem' : 'Novo bem'}
           headerAction={editingId ? <button type="button" onClick={cancelEdit} className="rounded text-xs text-sand-dark outline-none hover:text-sand focus-visible:ring-2 focus-visible:ring-gold/60">Cancelar edição</button> : undefined}
@@ -175,6 +176,7 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
             ))}
           </div>
         </section>
+        </div>
       </div>
     </main>
   );

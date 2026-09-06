@@ -112,6 +112,7 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
+        <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard title="Importar extrato" description="Arquivo OFX (exportado pelo internet banking) ou CSV com colunas Data/Descrição/Valor.">
           <div className="mt-4">
             <input
@@ -173,6 +174,7 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
             ))}
           </div>
         </section>
+        </div>
       </div>
     </main>
   );

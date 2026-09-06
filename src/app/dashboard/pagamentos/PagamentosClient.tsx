@@ -93,6 +93,7 @@ export default function PagamentosClient({ accounts, members, payments }: { acco
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
+        <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard title="Novo pagamento">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -154,6 +155,7 @@ export default function PagamentosClient({ accounts, members, payments }: { acco
             ))}
           </div>
         </section>
+        </div>
       </div>
     </main>
   );

@@ -145,7 +145,8 @@ export default function BalancetesClient({
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="max-w-2xl rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <div className="grid items-start gap-6 lg:grid-cols-2">
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Acesso rápido</h2>
           <p className="mt-1 text-xs text-sand-dark">
             Gera direto o balancete do último período fechado do veneralato atual. Um botão fica sem ação
@@ -196,6 +197,7 @@ export default function BalancetesClient({
             <Button type="submit" disabled={generating}>{generating ? 'Gerando…' : 'Gerar balancete'}</Button>
           </form>
         </FormCard>
+        </div>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Histórico</h2>
