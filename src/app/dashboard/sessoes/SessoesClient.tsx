@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard } from '@/components/ui';
 
 interface SessionItem { id: string; title: string; date: string; type: string; grade?: string | null; notes?: string | null; _count: { attendances: number }; }
 
@@ -53,6 +53,7 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
+        <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard title="Nova sessão">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -71,9 +72,8 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
           </form>
         </FormCard>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Sessões cadastradas</h2>
-          <div className="mt-5 space-y-3">
+        <CollapsibleCard title="Sessões cadastradas" count={sessions.length}>
+          <div className="space-y-3">
             {sessions.length === 0 ? (
               <EmptyState title="Nenhuma sessão cadastrada" description="Cadastre as sessões da loja para registrar presença e acompanhar a frequência dos obreiros." />
             ) : sessions.map((s) => (
@@ -90,7 +90,8 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleCard>
+        </div>
       </div>
     </main>
   );

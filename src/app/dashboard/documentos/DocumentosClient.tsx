@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard } from '@/components/ui';
 
 interface DocumentItem {
   id: string;
@@ -73,6 +73,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
+        <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard title="Novo documento">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -97,9 +98,8 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
           </form>
         </FormCard>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Arquivos e atas</h2>
-          <div className="mt-5 space-y-3">
+        <CollapsibleCard title="Arquivos e atas" count={items.length}>
+          <div className="space-y-3">
             {items.length === 0 ? (
               <EmptyState title="Nenhum documento registrado" description="Envie atas, comprovantes e certificados; ficam guardados com segurança e acesso por papel." />
             ) : items.map((item) => (
@@ -115,7 +115,8 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleCard>
+        </div>
       </div>
     </main>
   );

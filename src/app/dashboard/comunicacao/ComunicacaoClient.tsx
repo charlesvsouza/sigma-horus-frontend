@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard } from '@/components/ui';
 
 interface MessageItem {
   id: string;
@@ -59,6 +59,7 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
+        <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard title="Nova comunicação">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -78,9 +79,8 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
           </form>
         </FormCard>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Histórico</h2>
-          <div className="mt-5 space-y-3">
+        <CollapsibleCard title="Histórico" count={items.length}>
+          <div className="space-y-3">
             {items.length === 0 ? (
               <EmptyState title="Nenhuma comunicação registrada" description="As mensagens enviadas aos membros aparecem aqui. O envio externo (WhatsApp/e-mail) chega na Fase 7." />
             ) : items.map((item) => (
@@ -96,7 +96,8 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleCard>
+        </div>
       </div>
     </main>
   );
