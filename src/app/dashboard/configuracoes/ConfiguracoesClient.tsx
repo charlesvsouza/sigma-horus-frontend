@@ -52,15 +52,15 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      const noAccents = (form.name || 'loja')
-        .normalize('NFD')
-        .split('')
-        .filter((ch) => { const cp = ch.codePointAt(0) ?? 0; return cp < 0x300 || cp > 0x36f; })
-        .join('');
-      const slug = noAccents.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'loja';
+      // Usa o nome de arquivo que o servidor já calculou a partir do nome
+      // salvo da loja (Content-Disposition) — evita duplicar essa lógica no
+      // cliente e divergir se o campo "Nome" tiver edição ainda não salva.
+      const cd = res.headers.get('Content-Disposition') ?? '';
+      const match = cd.match(/filename="?([^"]+)"?/);
+      const filename = match?.[1] ?? `backup-loja-${new Date().toISOString().slice(0, 10)}.json`;
       const a = document.createElement('a');
       a.href = url;
-      a.download = `backup-${slug}-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
     } catch {

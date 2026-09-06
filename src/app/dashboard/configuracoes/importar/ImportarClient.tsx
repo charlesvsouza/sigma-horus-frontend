@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { UploadCloud } from 'lucide-react';
 import { useRef, useState, type ChangeEvent } from 'react';
-import { Alert, Badge, Button, Card, CardDescription, CardTitle, inputClass } from '@/components/ui';
+import { Alert, Badge, Button, Card, CardDescription, CardTitle, EmptyState, inputClass } from '@/components/ui';
 
 interface TargetFieldMeta { field: string; label: string; tier: 1 | 2 | 3; }
 interface RowIssue { row: number; field?: string; severity: 'error' | 'warning'; message: string; }
@@ -176,27 +177,33 @@ export default function ImportarClient({ denied, locked }: { denied: boolean; lo
       {error ? <Alert intent="danger">{error}</Alert> : null}
 
       {step === 'upload' ? (
-        <Card className="space-y-4">
-          <p className="text-sm text-sand-dark">
-            Aceita arquivos <strong>.csv</strong> ou <strong>.xlsx</strong>. Para garantir 100% de compatibilidade, baixe
-            nosso modelo e preencha nele — ou envie o export do seu sistema atual e ajuste o mapeamento na próxima
-            etapa.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <a href="/api/import/template">
-              <Button variant="secondary" type="button">Baixar modelo CSV</Button>
-            </a>
-            <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
-              {busy ? 'Analisando…' : 'Selecionar arquivo'}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,.xlsx"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-          </div>
+        <Card>
+          <EmptyState
+            icon={<UploadCloud className="h-7 w-7" strokeWidth={1.5} />}
+            title="Nenhum arquivo selecionado"
+            description={
+              busy
+                ? 'Analisando o arquivo…'
+                : 'Aceita CSV ou Excel (.xlsx). Para garantir 100% de compatibilidade, baixe nosso modelo e preencha nele — ou envie o export do seu sistema atual e ajuste o mapeamento na próxima etapa.'
+            }
+            action={
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <a href="/api/import/template">
+                  <Button variant="secondary" type="button">Baixar modelo CSV</Button>
+                </a>
+                <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
+                  {busy ? 'Analisando…' : 'Selecionar arquivo'}
+                </Button>
+              </div>
+            }
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.xlsx"
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </Card>
       ) : null}
 
@@ -230,19 +237,19 @@ export default function ImportarClient({ denied, locked }: { denied: boolean; lo
           <Card className="space-y-3">
             <CardTitle>Mapeamento das colunas</CardTitle>
             <CardDescription>Para cada coluna do arquivo, escolha a que campo do SigmaHorus ela corresponde.</CardDescription>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-sand-dark">
-                    <th className="py-2 pr-4">Coluna do arquivo</th>
-                    <th className="py-2">Campo no SigmaHorus</th>
+            <div className="overflow-x-auto rounded-xl border border-white/[6%]">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-white/[6%] bg-sigma-card">
+                  <tr>
+                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Coluna do arquivo</th>
+                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Campo no SigmaHorus</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[6%]">
+                <tbody>
                   {analysis.headers.map((header, idx) => (
-                    <tr key={idx}>
-                      <td className="py-2 pr-4 text-sand-light">{header || `Coluna ${idx + 1}`}</td>
-                      <td className="py-2">
+                    <tr key={idx} className="border-b border-white/[5%] transition-colors last:border-0 hover:bg-white/[3%]">
+                      <td className="px-3 py-3 text-sand-light">{header || `Coluna ${idx + 1}`}</td>
+                      <td className="px-3 py-3">
                         <select
                           className={inputClass}
                           value={slotForIndex(analysis.mapping, idx)}

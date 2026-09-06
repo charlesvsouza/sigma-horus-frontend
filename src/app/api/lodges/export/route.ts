@@ -10,6 +10,8 @@ import { NextResponse } from 'next/server';
  * (senha, chaves de integração) nem dados de outras lojas.
  * GET /api/lodges/export — só o Administrador da própria loja.
  */
+export const maxDuration = 60; // lojas grandes podem levar mais que o padrão da função
+
 export async function GET() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
@@ -80,7 +82,7 @@ export async function GET() {
         campaigns, campaignDonations, rolePermissions, subscription, auditLogs,
       },
     };
-  }, { timeoutMs: 20_000 });
+  }, { timeoutMs: 45_000 });
 
   const slug = data.lodgeName
     .normalize('NFD')

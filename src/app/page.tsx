@@ -35,6 +35,8 @@ const pillars = [
   { label: 'Auditoria de tudo', detail: 'Quem fez, o quê e quando — uma trilha imutável de cada alteração.' },
   { label: 'Conforme a LGPD', detail: 'Acesso por cargo, documentos privados e dados pessoais protegidos.' },
   { label: 'No prumo, no bolso', detail: 'Funciona de verdade no computador e no celular, sem app a instalar.' },
+  { label: 'Seus dados, sempre a salvo', detail: 'Backup diário e criptografado de toda a base, com cópia sob demanda pra sua loja.' },
+  { label: 'Migração sem dor', detail: 'Importe o cadastro de membros de outro sistema — a ferramenta reconhece as colunas sozinha.' },
 ];
 
 export default function Home() {

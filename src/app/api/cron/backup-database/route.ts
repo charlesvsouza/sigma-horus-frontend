@@ -7,6 +7,8 @@ import { NextResponse } from 'next/server';
  * manualmente (token = CRON_SECRET ou PLATFORM_OWNER_TOKEN).
  * Agendar: Vercel Cron, 1×/dia às 03:00 UTC (antes dos demais crons do dia).
  */
+export const maxDuration = 60; // conforme a base cresce, ler 28 tabelas pode passar do padrão da função
+
 function authorized(request: Request): boolean {
   const header = request.headers.get('authorization') ?? '';
   const bearer = header.startsWith('Bearer ') ? header.slice(7) : '';

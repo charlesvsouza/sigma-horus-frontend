@@ -56,23 +56,27 @@ export default function BackupsPlataformaPage() {
   async function loadBackups(t: string): Promise<boolean> {
     setLoadingList(true);
     setListError('');
-    const res = await fetch('/api/backups', { headers: { 'x-platform-token': t } });
-    if (res.status === 401) {
-      sessionStorage.removeItem(TOKEN_KEY);
-      setToken(null);
-      setTokenError('Token inválido ou expirado. Informe novamente.');
-      setLoadingList(false);
+    try {
+      const res = await fetch('/api/backups', { headers: { 'x-platform-token': t } });
+      if (res.status === 401) {
+        sessionStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+        setTokenError('Token inválido ou expirado. Informe novamente.');
+        return false;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setListError(data.error ?? 'Não foi possível carregar os backups.');
+        return false;
+      }
+      setBackups(data.backups ?? []);
+      return true;
+    } catch {
+      setListError('Não foi possível conectar ao servidor. Tente novamente.');
       return false;
-    }
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setListError(data.error ?? 'Não foi possível carregar os backups.');
+    } finally {
       setLoadingList(false);
-      return false;
     }
-    setBackups(data.backups ?? []);
-    setLoadingList(false);
-    return true;
   }
 
   useEffect(() => {
@@ -113,22 +117,27 @@ export default function BackupsPlataformaPage() {
     setRunning(true);
     setRunError('');
     setRunMessage('');
-    const res = await fetch('/api/backups', { method: 'POST', headers: { 'x-platform-token': token } });
-    const data = await res.json().catch(() => ({}));
-    setRunning(false);
+    try {
+      const res = await fetch('/api/backups', { method: 'POST', headers: { 'x-platform-token': token } });
+      const data = await res.json().catch(() => ({}));
 
-    if (res.status === 401) {
-      handleLogout();
-      setTokenError('Sessão expirada. Informe o token novamente.');
-      return;
-    }
-    if (!res.ok || !data.ok) {
-      setRunError(data.error ?? 'O backup falhou.');
+      if (res.status === 401) {
+        handleLogout();
+        setTokenError('Sessão expirada. Informe o token novamente.');
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        setRunError(data.error ?? 'O backup falhou.');
+        loadBackups(token);
+        return;
+      }
+      setRunMessage(`Backup concluído: ${data.totalRows} registro(s), ${fmtSize(data.sizeBytes)}.`);
       loadBackups(token);
-      return;
+    } catch {
+      setRunError('Não foi possível conectar ao servidor. Tente novamente.');
+    } finally {
+      setRunning(false);
     }
-    setRunMessage(`Backup concluído: ${data.totalRows} registro(s), ${fmtSize(data.sizeBytes)}.`);
-    loadBackups(token);
   }
 
   if (checking) {

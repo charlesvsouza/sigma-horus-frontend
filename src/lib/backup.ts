@@ -124,12 +124,16 @@ export async function runFullBackup(): Promise<BackupResult> {
     const models: Partial<Record<BackupModelName, Row[]>> = {};
     let totalRows = 0;
 
-    for (const name of BACKUP_MODELS) {
-      const rows = await delegateFor(name).findMany();
-      models[name] = rows;
-      modelCounts[name] = rows.length;
-      totalRows += rows.length;
-    }
+    // Em paralelo (limitado pelo pool de conexões, DB_POOL_MAX) em vez de uma
+    // consulta de cada vez — sequencial multiplicava a latência à toa contra
+    // o Railway via proxy, podendo estourar o tempo do cron conforme os
+    // dados crescem.
+    const allRows = await Promise.all(BACKUP_MODELS.map((name) => delegateFor(name).findMany()));
+    BACKUP_MODELS.forEach((name, i) => {
+      models[name] = allRows[i];
+      modelCounts[name] = allRows[i].length;
+      totalRows += allRows[i].length;
+    });
 
     const manifest: BackupManifest = { version: 1, createdAt: new Date().toISOString(), models };
     const json = Buffer.from(JSON.stringify(manifest));
@@ -141,11 +145,17 @@ export async function runFullBackup(): Promise<BackupResult> {
       throw new Error('Storage (R2) não configurado — backup não pôde ser enviado.');
     }
 
-    await purgeOldBackups();
-
     const durationMs = Date.now() - startedAt;
     await prismaAdmin.backupLog.create({
       data: { storageKey, status: 'success', sizeBytes: encrypted.length, totalRows, modelCounts: JSON.stringify(modelCounts), durationMs },
+    });
+
+    // Limpeza de backups antigos é best-effort e roda DEPOIS de já ter
+    // registrado o sucesso: uma falha aqui (ex.: erro transiente ao listar/
+    // apagar no R2) não pode fazer um backup que já foi gravado com sucesso
+    // aparecer como "falhou" em /plataforma/backups.
+    await purgeOldBackups().catch((err) => {
+      console.error('Falha ao aplicar retenção de backups (backup em si já foi gravado com sucesso):', err);
     });
 
     return { ok: true, storageKey, sizeBytes: encrypted.length, totalRows, modelCounts, durationMs };
