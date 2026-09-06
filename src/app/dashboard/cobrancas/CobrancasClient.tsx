@@ -156,6 +156,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
           </Button>
         </Card>
 
+        <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard title="Cobrança em massa" description="Gera uma cobrança para todos os irmãos de uma vez (ex.: mensalidade). O número de cada cobrança é gerado automaticamente.">
           <form onSubmit={handleBulk} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -224,6 +225,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
             <Button type="submit" disabled={submitting}>{submitting ? 'Criando…' : 'Criar cobrança'}</Button>
           </form>
         </FormCard>
+        </div>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">

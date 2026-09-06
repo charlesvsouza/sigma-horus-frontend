@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert } from '@/components/ui';
+import { Button, CollapsibleCard, EmptyState, FormCard, inputClass, Alert } from '@/components/ui';
 
 interface ChartAccountOption { id: string; code: string; name: string; type: string; }
 interface MemberOption { id: string; name: string; }
@@ -187,12 +187,13 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
           </form>
         </FormCard>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-sand-light">Contas cadastradas</h2>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por título, membro ou status…" className={`${INPUT_CLASS} max-w-xs`} />
-          </div>
-          <div className="mt-5 space-y-3">
+        <CollapsibleCard
+          title="Contas cadastradas"
+          count={accounts.length}
+          defaultOpen={accounts.length > 0}
+          headerAction={accounts.length > 0 ? <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por título, membro ou status…" className={`${INPUT_CLASS} max-w-xs`} /> : undefined}
+        >
+          <div className="space-y-3">
             {accounts.length === 0 ? (
               <EmptyState title="Nenhuma conta cadastrada" description="Lance a primeira conta a receber ou a pagar para acompanhar vencimentos e o fluxo de caixa." />
             ) : filteredAccounts.length === 0 ? (
@@ -221,7 +222,7 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleCard>
       </div>
     </main>
   );

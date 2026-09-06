@@ -172,19 +172,19 @@ export default function VeneralatoPage() {
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <FormCard title="Novo período">
-          <form onSubmit={create} className="mt-5 space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Ex: Gestão 2025-2026" required />
-              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={INPUT} required />
-              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={INPUT} />
-              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações" rows={3} />
-            </div>
-            <Button type="submit" disabled={creating}>{creating ? 'Criando…' : 'Criar período'}</Button>
-          </form>
-        </FormCard>
+        <div className="grid items-start gap-6 lg:grid-cols-2">
+          <FormCard title="Novo período">
+            <form onSubmit={create} className="mt-5 space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Ex: Gestão 2025-2026" required />
+                <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={INPUT} required />
+                <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={INPUT} />
+                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações" rows={3} />
+              </div>
+              <Button type="submit" disabled={creating}>{creating ? 'Criando…' : 'Criar período'}</Button>
+            </form>
+          </FormCard>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
           <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Períodos</h2>
             <div className="mt-5 space-y-3">
@@ -196,8 +196,9 @@ export default function VeneralatoPage() {
               ))}
             </div>
           </section>
+        </div>
 
-          {selectedTerm && termDetail && (
+        {selectedTerm && termDetail && (
             <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-base font-semibold text-sand-light">{termDetail.title}</h2>
@@ -308,8 +309,7 @@ export default function VeneralatoPage() {
                 </div>
               </div>
             </section>
-          )}
-        </div>
+        )}
       </div>
     </main>
   );

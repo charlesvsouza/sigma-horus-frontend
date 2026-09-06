@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface BalanceteItem {
   id: string;
@@ -88,14 +88,14 @@ export default function BalancetesClient({
 }) {
   const router = useRouter();
   const askConfirm = useConfirm();
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [generating, setGenerating] = useState(false);
   const [form, setForm] = useState({ periodFrom: '', periodTo: '', notes: '' });
   const INPUT = inputClass;
 
   async function generatePeriod(periodFrom: string, periodTo: string, notes: string) {
     setGenerating(true);
-    setMessage('');
+    setMessage(null);
     const res = await fetch('/api/balancetes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -104,11 +104,11 @@ export default function BalancetesClient({
     const data = await res.json();
     setGenerating(false);
     if (res.ok) {
-      setMessage('Balancete gerado.');
+      setMessage({ kind: 'ok', text: 'Balancete gerado.' });
       setForm({ periodFrom: '', periodTo: '', notes: '' });
       router.refresh();
     } else {
-      setMessage(data.error ?? 'Erro ao gerar balancete.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao gerar balancete.' });
     }
   }
 
@@ -128,7 +128,7 @@ export default function BalancetesClient({
     if (!ok) return;
     const res = await fetch(`/api/balancetes/${id}/approve`, { method: 'POST' });
     const data = await res.json();
-    setMessage(res.ok ? 'Balancete aprovado.' : data.error ?? 'Erro.');
+    setMessage(res.ok ? { kind: 'ok', text: 'Balancete aprovado.' } : { kind: 'error', text: data.error ?? 'Erro.' });
     router.refresh();
   }
 
@@ -143,9 +143,9 @@ export default function BalancetesClient({
           </p>
         </div>
 
-        {message ? <Alert intent="warn">{message}</Alert> : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="max-w-2xl rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Acesso rápido</h2>
           <p className="mt-1 text-xs text-sand-dark">
             Gera direto o balancete do último período fechado do veneralato atual. Um botão fica sem ação
@@ -180,21 +180,22 @@ export default function BalancetesClient({
           )}
         </section>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Gerar balancete do período</h2>
-          <form onSubmit={handleGenerate} className="mt-5 grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="text-xs uppercase tracking-wide text-sand-dark/70">De</span>
-              <input type="date" value={form.periodFrom} onChange={(e) => setForm({ ...form, periodFrom: e.target.value })} className={`mt-1.5 ${INPUT}`} required />
-            </label>
-            <label className="block">
-              <span className="text-xs uppercase tracking-wide text-sand-dark/70">Até</span>
-              <input type="date" value={form.periodTo} onChange={(e) => setForm({ ...form, periodTo: e.target.value })} className={`mt-1.5 ${INPUT}`} required />
-            </label>
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações (opcional)" rows={2} />
-            <Button type="submit" disabled={generating} className="md:col-span-2">{generating ? 'Gerando…' : 'Gerar balancete'}</Button>
+        <FormCard title="Gerar balancete do período">
+          <form onSubmit={handleGenerate} className="mt-5 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">De</span>
+                <input type="date" value={form.periodFrom} onChange={(e) => setForm({ ...form, periodFrom: e.target.value })} className={`mt-1.5 ${INPUT}`} required />
+              </label>
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Até</span>
+                <input type="date" value={form.periodTo} onChange={(e) => setForm({ ...form, periodTo: e.target.value })} className={`mt-1.5 ${INPUT}`} required />
+              </label>
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações (opcional)" rows={2} />
+            </div>
+            <Button type="submit" disabled={generating}>{generating ? 'Gerando…' : 'Gerar balancete'}</Button>
           </form>
-        </section>
+        </FormCard>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Histórico</h2>

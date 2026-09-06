@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface ChartAccountOption { id: string; code: string; name: string; }
 interface AssetItem {
@@ -26,9 +26,10 @@ const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', curren
 export default function PatrimonioClient({ assets, chartAccounts }: { assets: AssetItem[]; chartAccounts: ChartAccountOption[] }) {
   const router = useRouter();
   const askConfirm = useConfirm();
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const emptyForm = { name: '', description: '', category: '', acquisitionDate: '', acquisitionValue: '', currentValue: '', status: 'active', chartAccountId: '', notes: '' };
   const [form, setForm] = useState(emptyForm);
 
@@ -55,18 +56,23 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const response = await fetch(editingId ? `/api/assets/${editingId}` : '/api/assets', {
-      method: editingId ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    const data = await response.json();
-    if (response.ok) {
-      setMessage(editingId ? 'Bem atualizado.' : 'Bem cadastrado.');
-      cancelEdit();
-      router.refresh();
-    } else {
-      setMessage(data.error ?? 'Erro ao salvar.');
+    setSubmitting(true);
+    try {
+      const response = await fetch(editingId ? `/api/assets/${editingId}` : '/api/assets', {
+        method: editingId ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage({ kind: 'ok', text: editingId ? 'Bem atualizado.' : 'Bem cadastrado.' });
+        cancelEdit();
+        router.refresh();
+      } else {
+        setMessage({ kind: 'error', text: data.error ?? 'Erro ao salvar.' });
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -89,9 +95,9 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
           <p className="mt-1 text-sm text-sand-dark">Inventário de bens da loja — móveis, insígnias, equipamentos. Cadastro simples, sem cálculo automático de depreciação.</p>
         </div>
 
-        {message ? <Alert intent="warn">{message}</Alert> : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="grid gap-4 md:grid-cols-2">
+        <section className="grid max-w-2xl gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Total investido (aquisição)</p>
             <p className="mt-3 text-2xl font-semibold text-sand-light">{brl(totalAcquisition)}</p>
@@ -102,34 +108,35 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-sand-light">{editingId ? 'Editar bem' : 'Novo bem'}</h2>
-            {editingId ? <button type="button" onClick={cancelEdit} className="text-xs text-sand-dark hover:text-sand">Cancelar edição</button> : null}
-          </div>
-          <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={INPUT_CLASS} placeholder="Nome do bem" required />
-            <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={INPUT_CLASS} placeholder="Categoria" list="asset-categories" />
-            <datalist id="asset-categories">{CATEGORIES.map((c) => <option key={c} value={c} />)}</datalist>
-            <label className="block text-xs text-sand-dark">Data de aquisição
-              <input type="date" value={form.acquisitionDate} onChange={(e) => setForm({ ...form, acquisitionDate: e.target.value })} className={`mt-1.5 ${INPUT_CLASS}`} />
-            </label>
-            <input type="number" step="0.01" min="0" value={form.acquisitionValue} onChange={(e) => setForm({ ...form, acquisitionValue: e.target.value })} className={INPUT_CLASS} placeholder="Valor de aquisição" required />
-            <input type="number" step="0.01" min="0" value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: e.target.value })} className={INPUT_CLASS} placeholder="Valor atual estimado (opcional)" />
-            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={INPUT_CLASS}>
-              <option value="active">Em uso</option>
-              <option value="disposed">Baixado/alienado</option>
-              <option value="lost">Perdido/sinistrado</option>
-            </select>
-            <select value={form.chartAccountId} onChange={(e) => setForm({ ...form, chartAccountId: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
-              <option value="">Vincular ao plano de contas (opcional — categoria Investimentos)</option>
-              {chartAccounts.map((c) => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
-            </select>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Descrição" rows={2} />
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Observações" rows={2} />
-            <Button type="submit" className="md:col-span-2">{editingId ? 'Salvar alterações' : 'Cadastrar bem'}</Button>
+        <FormCard
+          title={editingId ? 'Editar bem' : 'Novo bem'}
+          headerAction={editingId ? <button type="button" onClick={cancelEdit} className="rounded text-xs text-sand-dark outline-none hover:text-sand focus-visible:ring-2 focus-visible:ring-gold/60">Cancelar edição</button> : undefined}
+        >
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={INPUT_CLASS} placeholder="Nome do bem" required />
+              <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={INPUT_CLASS} placeholder="Categoria" list="asset-categories" />
+              <datalist id="asset-categories">{CATEGORIES.map((c) => <option key={c} value={c} />)}</datalist>
+              <label className="block text-xs text-sand-dark">Data de aquisição
+                <input type="date" value={form.acquisitionDate} onChange={(e) => setForm({ ...form, acquisitionDate: e.target.value })} className={`mt-1.5 ${INPUT_CLASS}`} />
+              </label>
+              <input type="number" step="0.01" min="0" value={form.acquisitionValue} onChange={(e) => setForm({ ...form, acquisitionValue: e.target.value })} className={INPUT_CLASS} placeholder="Valor de aquisição" required />
+              <input type="number" step="0.01" min="0" value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: e.target.value })} className={INPUT_CLASS} placeholder="Valor atual estimado (opcional)" />
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={INPUT_CLASS}>
+                <option value="active">Em uso</option>
+                <option value="disposed">Baixado/alienado</option>
+                <option value="lost">Perdido/sinistrado</option>
+              </select>
+              <select value={form.chartAccountId} onChange={(e) => setForm({ ...form, chartAccountId: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
+                <option value="">Vincular ao plano de contas (opcional — categoria Investimentos)</option>
+                {chartAccounts.map((c) => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
+              </select>
+              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Descrição" rows={2} />
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Observações" rows={2} />
+            </div>
+            <Button type="submit" disabled={submitting}>{submitting ? 'Salvando…' : editingId ? 'Salvar alterações' : 'Cadastrar bem'}</Button>
           </form>
-        </section>
+        </FormCard>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">

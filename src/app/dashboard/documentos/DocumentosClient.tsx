@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, FormCard, inputClass, Alert } from '@/components/ui';
 
 interface DocumentItem {
   id: string;
@@ -20,38 +20,44 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
   const [content, setContent] = useState('');
   const [memberId, setMemberId] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
     if (!file) {
-      setMessage('Selecione um arquivo antes de salvar.');
+      setMessage({ kind: 'error', text: 'Selecione um arquivo antes de salvar.' });
       return;
     }
 
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('kind', kind);
-    formData.append('content', content);
-    if (memberId) formData.append('memberId', memberId);
-    formData.append('file', file);
+    setSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('kind', kind);
+      formData.append('content', content);
+      if (memberId) formData.append('memberId', memberId);
+      formData.append('file', file);
 
-    const response = await fetch('/api/documents/upload', {
-      method: 'POST',
-      body: formData,
-    });
-    const data = await response.json();
-    if (response.ok) {
-      setMessage('Documento enviado e registrado com sucesso.');
-      setTitle('');
-      setKind('document');
-      setContent('');
-      setMemberId('');
-      setFile(null);
-      router.refresh();
-    } else {
-      setMessage(data.error ?? 'Erro ao registrar documento.');
+      const response = await fetch('/api/documents/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage({ kind: 'ok', text: 'Documento enviado e registrado com sucesso.' });
+        setTitle('');
+        setKind('document');
+        setContent('');
+        setMemberId('');
+        setFile(null);
+        router.refresh();
+      } else {
+        setMessage({ kind: 'error', text: data.error ?? 'Erro ao registrar documento.' });
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -65,30 +71,31 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
           <p className="mt-1 text-sm text-sand-dark">Centralize atas, prontuários, comprovantes e arquivos da loja.</p>
         </div>
 
-        {message ? <Alert intent="warn">{message}</Alert> : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Novo documento</h2>
-          <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
-            <input value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT} placeholder="Título" required />
-            <select value={kind} onChange={(event) => setKind(event.target.value)} className={INPUT}>
-              <option value="document">Documento</option>
-              <option value="minutes">Ata</option>
-              <option value="certificate">Certificado</option>
-              <option value="receipt">Comprovante</option>
-            </select>
-            <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={INPUT}>
-              <option value="">Vincular a um membro</option>
-              {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-            </select>
-            <label className="rounded-lg border border-dashed border-white/[8%] bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand md:col-span-2">
-              <span className="mb-2 block font-medium text-sand-light">Arquivo</span>
-              <input type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} className="w-full" />
-            </label>
-            <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Resumo ou conteúdo do documento" rows={4} />
-            <Button type="submit" className="md:col-span-2">Enviar e salvar documento</Button>
+        <FormCard title="Novo documento">
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <input value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT} placeholder="Título" required />
+              <select value={kind} onChange={(event) => setKind(event.target.value)} className={INPUT}>
+                <option value="document">Documento</option>
+                <option value="minutes">Ata</option>
+                <option value="certificate">Certificado</option>
+                <option value="receipt">Comprovante</option>
+              </select>
+              <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={`${INPUT} md:col-span-2`}>
+                <option value="">Vincular a um membro</option>
+                {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+              </select>
+              <label className="rounded-lg border border-dashed border-white/[8%] bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand md:col-span-2">
+                <span className="mb-2 block font-medium text-sand-light">Arquivo</span>
+                <input type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} className="w-full" />
+              </label>
+              <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Resumo ou conteúdo do documento" rows={4} />
+            </div>
+            <Button type="submit" disabled={submitting}>{submitting ? 'Enviando…' : 'Enviar e salvar documento'}</Button>
           </form>
-        </section>
+        </FormCard>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Arquivos e atas</h2>
