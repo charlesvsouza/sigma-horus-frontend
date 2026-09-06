@@ -79,6 +79,9 @@ const SEGMENT_LABELS: Record<string, string> = {
   inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos',
   'fluxo-caixa': 'Fluxo de caixa projetado', orcamento: 'Orçamento anual',
   patrimonio: 'Patrimônio', 'conciliacao-bancaria': 'Conciliação bancária',
+  completo: 'Relatório completo', balanco: 'Balanço Financeiro', balancete: 'Balancete de Verificação',
+  'receitas-despesas': 'Receitas × Despesas', 'livro-caixa': 'Livro Caixa', cobrancas: 'Cobranças',
+  'saldo-irmaos': 'Saldo dos Irmãos',
 };
 
 export default function DashboardShell({ groups, lodgeName, userName, role, children, art002DaysOverdue }: Props) {
