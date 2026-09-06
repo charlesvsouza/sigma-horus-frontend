@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { EmptyState, Alert } from '@/components/ui';
+import { EmptyState, FormCard, Alert } from '@/components/ui';
 
 interface MatchedPayment { id: string; amount: number; paidAt: string; accountTitle: string | null; }
 interface BankTx { id: string; date: string; description: string; amount: number; status: string; matchedPayment: MatchedPayment | null; }
@@ -63,12 +63,12 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [pickingId, setPickingId] = useState<string | null>(null);
 
   async function handleFile(file: File) {
     setImporting(true);
-    setMessage('');
+    setMessage(null);
     const content = await file.text();
     const res = await fetch('/api/bank-reconciliation/import', {
       method: 'POST',
@@ -78,10 +78,10 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
     const data = await res.json();
     setImporting(false);
     if (res.ok) {
-      setMessage(`Extrato importado: ${data.parsed} linha(s) lida(s), ${data.imported} nova(s), ${data.duplicates} já existiam, ${data.autoMatched} conciliada(s) automaticamente.`);
+      setMessage({ kind: 'ok', text: `Extrato importado: ${data.parsed} linha(s) lida(s), ${data.imported} nova(s), ${data.duplicates} já existiam, ${data.autoMatched} conciliada(s) automaticamente.` });
       router.refresh();
     } else {
-      setMessage(data.error ?? 'Erro ao importar o extrato.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao importar o extrato.' });
     }
     if (fileRef.current) fileRef.current.value = '';
   }
@@ -110,11 +110,9 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
           <p className="mt-1 text-sm text-sand-dark">Importe o extrato do banco (OFX ou CSV) e concilie com os pagamentos já lançados no sistema.</p>
         </div>
 
-        {message ? <Alert intent="warn">{message}</Alert> : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Importar extrato</h2>
-          <p className="mt-1 text-sm text-sand-dark">Arquivo OFX (exportado pelo internet banking) ou CSV com colunas Data/Descrição/Valor.</p>
+        <FormCard title="Importar extrato" description="Arquivo OFX (exportado pelo internet banking) ou CSV com colunas Data/Descrição/Valor.">
           <div className="mt-4">
             <input
               ref={fileRef}
@@ -126,7 +124,7 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
             />
             {importing ? <p className="mt-2 text-xs text-sand-dark">Importando…</p> : null}
           </div>
-        </section>
+        </FormCard>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <div className="flex items-center justify-between">

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, FormCard, inputClass, Alert } from '@/components/ui';
 
 interface MessageItem {
   id: string;
@@ -19,25 +19,31 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
   const [channel, setChannel] = useState('email');
   const [content, setContent] = useState('');
   const [memberId, setMemberId] = useState('');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const response = await fetch('/api/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, channel, content, memberId }),
-    });
-    const data = await response.json();
-    if (response.ok) {
-      setMessage('Mensagem agendada com sucesso.');
-      setTitle('');
-      setChannel('email');
-      setContent('');
-      setMemberId('');
-      router.refresh();
-    } else {
-      setMessage(data.error ?? 'Erro ao registrar comunicação.');
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, channel, content, memberId }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage({ kind: 'ok', text: 'Mensagem agendada com sucesso.' });
+        setTitle('');
+        setChannel('email');
+        setContent('');
+        setMemberId('');
+        router.refresh();
+      } else {
+        setMessage({ kind: 'error', text: data.error ?? 'Erro ao registrar comunicação.' });
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -51,25 +57,26 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
           <p className="mt-1 text-sm text-sand-dark">Crie lembretes, convocações e avisos para membros e gestores da loja.</p>
         </div>
 
-        {message ? <Alert intent="warn">{message}</Alert> : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Nova comunicação</h2>
-          <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
-            <input value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT} placeholder="Título da mensagem" required />
-            <select value={channel} onChange={(event) => setChannel(event.target.value)} className={INPUT}>
-              <option value="email">E-mail</option>
-              <option value="whatsapp">WhatsApp</option>
-              <option value="sms">SMS</option>
-            </select>
-            <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={INPUT}>
-              <option value="">Enviar a todos ou a um membro</option>
-              {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-            </select>
-            <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Texto da comunicação" rows={4} />
-            <Button type="submit" className="md:col-span-2">Enviar</Button>
+        <FormCard title="Nova comunicação">
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <input value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT} placeholder="Título da mensagem" required />
+              <select value={channel} onChange={(event) => setChannel(event.target.value)} className={INPUT}>
+                <option value="email">E-mail</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="sms">SMS</option>
+              </select>
+              <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={`${INPUT} md:col-span-2`}>
+                <option value="">Enviar a todos ou a um membro</option>
+                {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+              </select>
+              <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Texto da comunicação" rows={4} />
+            </div>
+            <Button type="submit" disabled={submitting}>{submitting ? 'Enviando…' : 'Enviar'}</Button>
           </form>
-        </section>
+        </FormCard>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Histórico</h2>

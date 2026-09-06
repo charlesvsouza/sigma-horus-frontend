@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { inputClass } from '@/components/ui';
+import { Alert, inputClass } from '@/components/ui';
 
 interface Row {
   chartAccountId: string;
@@ -132,7 +132,7 @@ export default function OrcamentoClient({ year, items, canEdit }: { year: number
           </div>
         </div>
 
-        {message ? <p className="text-sm text-rose-300">{message}</p> : null}
+        {message ? <Alert intent="danger">{message}</Alert> : null}
 
         <Group title="Receitas" rows={revenues} canEdit={canEdit} onSave={savePlanned} />
         <Group title="Despesas" rows={expenses} canEdit={canEdit} onSave={savePlanned} />
