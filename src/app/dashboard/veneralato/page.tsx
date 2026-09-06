@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Button, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface TermItem { id: string; title: string; startDate: string; endDate?: string | null; status: string; _count: { memberOffices: number }; }
 interface MemberOfficeItem { id: string; office: { id: string; name: string }; member: { id: string; name: string }; }
@@ -33,8 +33,9 @@ export default function VeneralatoPage() {
   const [terms, setTerms] = useState<TermItem[]>([]);
   const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
   const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [form, setForm] = useState({ title: '', startDate: '', endDate: '', notes: '' });
+  const [creating, setCreating] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [termDetail, setTermDetail] = useState<TermDetail | null>(null);
   const [role, setRole] = useState('');
@@ -74,15 +75,23 @@ export default function VeneralatoPage() {
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch('/api/terms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, endDate: form.endDate || undefined, notes: form.notes || undefined }),
-    });
-    if (res.ok) {
-      setMessage('Período criado.');
-      setForm({ title: '', startDate: '', endDate: '', notes: '' });
-      await loadTerms();
+    setCreating(true);
+    try {
+      const res = await fetch('/api/terms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, endDate: form.endDate || undefined, notes: form.notes || undefined }),
+      });
+      if (res.ok) {
+        setMessage({ kind: 'ok', text: 'Período criado.' });
+        setForm({ title: '', startDate: '', endDate: '', notes: '' });
+        await loadTerms();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setMessage({ kind: 'error', text: data.error ?? 'Erro ao criar período.' });
+      }
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -102,7 +111,9 @@ export default function VeneralatoPage() {
       body: JSON.stringify({ termId }),
     });
     const data = await res.json();
-    setMessage(data.item ? 'Caixa fechado. Aguarda aprovação da prestação de contas.' : data.error ?? 'Erro.');
+    setMessage(data.item
+      ? { kind: 'ok', text: 'Caixa fechado. Aguarda aprovação da prestação de contas.' }
+      : { kind: 'error', text: data.error ?? 'Erro.' });
     await loadTermDetail(termId);
   }
 
@@ -110,7 +121,7 @@ export default function VeneralatoPage() {
     if (!(await askConfirm({ title: 'Desfazer fechamento de caixa', message: 'Permite refazer o Passo 1. Só é possível enquanto a prestação de contas não tiver sido aprovada.', confirmLabel: 'Desfazer', intent: 'danger' }))) return;
     const res = await fetch(`/api/cash-close?termId=${termId}`, { method: 'DELETE' });
     const data = await res.json();
-    setMessage(res.ok ? 'Fechamento de caixa desfeito.' : data.error ?? 'Erro.');
+    setMessage(res.ok ? { kind: 'ok', text: 'Fechamento de caixa desfeito.' } : { kind: 'error', text: data.error ?? 'Erro.' });
     await loadTermDetail(termId);
   }
 
@@ -120,7 +131,7 @@ export default function VeneralatoPage() {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ termId }),
     });
     const data = await res.json();
-    setMessage(res.ok ? 'Prestação de contas aprovada.' : data.error ?? 'Erro.');
+    setMessage(res.ok ? { kind: 'ok', text: 'Prestação de contas aprovada.' } : { kind: 'error', text: data.error ?? 'Erro.' });
     await loadTermDetail(termId);
   }
 
@@ -128,7 +139,7 @@ export default function VeneralatoPage() {
     if (!(await askConfirm({ title: 'Excluir período', message: 'Remove este período (só é possível enquanto não houver fechamento de caixa registrado).', confirmLabel: 'Excluir', intent: 'danger' }))) return;
     const res = await fetch(`/api/terms/${termId}`, { method: 'DELETE' });
     const data = await res.json();
-    setMessage(res.ok ? 'Período excluído.' : data.error ?? 'Erro.');
+    setMessage(res.ok ? { kind: 'ok', text: 'Período excluído.' } : { kind: 'error', text: data.error ?? 'Erro.' });
     if (res.ok) {
       setSelectedTerm(null);
       setTermDetail(null);
@@ -140,7 +151,9 @@ export default function VeneralatoPage() {
     if (!(await askConfirm({ title: 'Encerrar veneralato', message: 'Esta ação trava todos os lançamentos do período e o saldo final será herdado pela próxima gestão. Não pode ser desfeita.', confirmLabel: 'Encerrar', intent: 'danger' }))) return;
     const res = await fetch(`/api/terms/${termId}/close`, { method: 'POST' });
     const data = await res.json();
-    setMessage(res.ok ? `Veneralato encerrado. Saldo final R$ ${Number(data.closingBalance ?? 0).toFixed(2)} será herdado pela próxima gestão.` : data.error ?? 'Erro.');
+    setMessage(res.ok
+      ? { kind: 'ok', text: `Veneralato encerrado. Saldo final R$ ${Number(data.closingBalance ?? 0).toFixed(2)} será herdado pela próxima gestão.` }
+      : { kind: 'error', text: data.error ?? 'Erro.' });
     await loadTermDetail(termId);
     await loadTerms();
   }
@@ -157,18 +170,19 @@ export default function VeneralatoPage() {
           <p className="mt-1 text-sm text-sand-dark">Gerencie períodos de gestão, cargos dos membros e fechamento de caixa.</p>
         </div>
 
-        {message ? <Alert intent="warn">{message}</Alert> : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Novo período</h2>
-          <form onSubmit={create} className="mt-5 grid gap-4 md:grid-cols-2">
-            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Ex: Gestão 2025-2026" required />
-            <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={INPUT} required />
-            <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={INPUT} />
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações" rows={3} />
-            <Button type="submit" className="md:col-span-2">Criar período</Button>
+        <FormCard title="Novo período">
+          <form onSubmit={create} className="mt-5 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Ex: Gestão 2025-2026" required />
+              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={INPUT} required />
+              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={INPUT} />
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações" rows={3} />
+            </div>
+            <Button type="submit" disabled={creating}>{creating ? 'Criando…' : 'Criar período'}</Button>
           </form>
-        </section>
+        </FormCard>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
           <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
@@ -192,7 +206,7 @@ export default function VeneralatoPage() {
                     ? <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-sand-dark">encerrado</span>
                     : <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300">em exercício</span>}
                   {isAdmin && termDetail.status !== 'closed' && (!termDetail.cashCloses || termDetail.cashCloses.length === 0) ? (
-                    <button onClick={() => deleteTerm(termDetail.id)} className="text-xs text-rose-300/60 transition hover:text-rose-300">Excluir período</button>
+                    <button onClick={() => deleteTerm(termDetail.id)} className="rounded text-xs text-rose-300/60 outline-none transition hover:text-rose-300 focus-visible:ring-2 focus-visible:ring-rose-400/60">Excluir período</button>
                   ) : null}
                 </div>
               </div>
@@ -202,19 +216,19 @@ export default function VeneralatoPage() {
                 <div>
                   <h3 className="text-sm font-medium text-sand-dark">Vincular cargo</h3>
                   <div className="mt-2 grid grid-cols-3 gap-2">
-                    <select id="mo-member" className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
+                    <select id="mo-member" aria-label="Membro" className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
                       <option value="">Membro</option>
                       {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
-                    <select id="mo-office" className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
+                    <select id="mo-office" aria-label="Cargo" className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
                       <option value="">Cargo</option>
                       {offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                     </select>
-                    <button onClick={() => {
+                    <Button size="sm" onClick={() => {
                       const memberId = (document.getElementById('mo-member') as HTMLSelectElement)?.value;
                       const officeId = (document.getElementById('mo-office') as HTMLSelectElement)?.value;
                       if (memberId && officeId) assignOffice(selectedTerm, memberId, officeId);
-                    }} className="rounded-full bg-gold px-3 py-2 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Vincular</button>
+                    }}>Vincular</Button>
                   </div>
                 </div>
 
@@ -256,11 +270,11 @@ export default function VeneralatoPage() {
                                 <span>Saldo final: <span className="text-gold">{brl(close.closingBalance)}</span></span>
                               </div>
                               {canClose && !close.approved ? (
-                                <button onClick={() => undoCashClose(selectedTerm)} className="text-xs text-rose-300/60 transition hover:text-rose-300">Desfazer fechamento</button>
+                                <button onClick={() => undoCashClose(selectedTerm)} className="rounded text-xs text-rose-300/60 outline-none transition hover:text-rose-300 focus-visible:ring-2 focus-visible:ring-rose-400/60">Desfazer fechamento</button>
                               ) : null}
                             </div>
                           ) : canClose && !closed ? (
-                            <button onClick={() => closeCash(selectedTerm)} className="mt-2 rounded-full bg-gold px-4 py-2 text-sm font-medium text-sigma-blue-deep transition-all hover:bg-gold-light active:bg-gold-dark">Fechar caixa deste período</button>
+                            <Button size="sm" className="mt-2" onClick={() => closeCash(selectedTerm)}>Fechar caixa deste período</Button>
                           ) : <p className="mt-1 text-xs text-sand-dark">Aguardando o Tesoureiro fechar o caixa.</p>}
                         </div>
 
@@ -271,7 +285,7 @@ export default function VeneralatoPage() {
                             {close?.approved ? <span className="text-xs text-emerald-300">✓ aprovada</span> : null}
                           </div>
                           {close && !close.approved && (isVenerable || isAdmin) ? (
-                            <button onClick={() => approveAccounts(selectedTerm)} className="mt-2 rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all hover:border-gold/60 hover:text-gold">Aprovar prestação de contas</button>
+                            <button onClick={() => approveAccounts(selectedTerm)} className="mt-2 rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 outline-none transition-all hover:border-gold/60 hover:text-gold focus-visible:ring-2 focus-visible:ring-gold/60">Aprovar prestação de contas</button>
                           ) : !close ? <p className="mt-1 text-xs text-sand-dark">Disponível após o fechamento de caixa.</p>
                           : !close.approved ? <p className="mt-1 text-xs text-sand-dark">Aguardando aprovação do Venerável.</p> : null}
                         </div>
@@ -285,7 +299,7 @@ export default function VeneralatoPage() {
                           {closed ? (
                             <p className="mt-1 text-xs text-sand-dark">Encerrado em {termDetail.closedAt ? new Date(termDetail.closedAt).toLocaleDateString('pt-BR') : '—'}. Lançamentos do período travados; saldo herdado pela próxima gestão.</p>
                           ) : close?.approved && isAdmin ? (
-                            <button onClick={() => closeTerm(selectedTerm)} className="mt-2 rounded-full border border-rose-500/40 px-4 py-2 text-sm font-medium text-rose-300 transition-all hover:border-rose-500/60 hover:text-rose-200">Encerrar veneralato</button>
+                            <button onClick={() => closeTerm(selectedTerm)} className="mt-2 rounded-full border border-rose-500/40 px-4 py-2 text-sm font-medium text-rose-300 outline-none transition-all hover:border-rose-500/60 hover:text-rose-200 focus-visible:ring-2 focus-visible:ring-rose-400/60">Encerrar veneralato</button>
                           ) : <p className="mt-1 text-xs text-sand-dark">Disponível após a aprovação da prestação de contas.</p>}
                         </div>
                       </div>

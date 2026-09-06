@@ -3,29 +3,35 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, FormCard, inputClass, Alert } from '@/components/ui';
 
 interface SessionItem { id: string; title: string; date: string; type: string; grade?: string | null; notes?: string | null; _count: { attendances: number }; }
 
 export default function SessoesClient({ sessions }: { sessions: SessionItem[] }) {
   const router = useRouter();
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ title: '', date: '', type: 'ordinary', grade: '', notes: '' });
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const res = await fetch('/api/sessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, grade: form.grade || undefined, notes: form.notes || undefined }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setMessage('Sessão criada.');
-      setForm({ title: '', date: '', type: 'ordinary', grade: '', notes: '' });
-      router.refresh();
-    } else {
-      setMessage(data.error ?? 'Erro.');
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, grade: form.grade || undefined, notes: form.notes || undefined }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({ kind: 'ok', text: 'Sessão criada.' });
+        setForm({ title: '', date: '', type: 'ordinary', grade: '', notes: '' });
+        router.refresh();
+      } else {
+        setMessage({ kind: 'error', text: data.error ?? 'Erro.' });
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -45,24 +51,25 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
           <p className="mt-1 text-sm text-sand-dark">Cadastre sessões da loja e registre presença dos membros.</p>
         </div>
 
-        {message ? <Alert intent="warn">{message}</Alert> : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Nova sessão</h2>
-          <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
-            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Título da sessão" required />
-            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={INPUT} required />
-            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={INPUT}>
-              <option value="ordinary">Ordinária</option>
-              <option value="magnificent">Magnífica</option>
-              <option value="emergency">Extraordinária</option>
-              <option value="other">Outra</option>
-            </select>
-            <input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} className={INPUT} placeholder="Grau (opcional)" />
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações" rows={3} />
-            <Button type="submit" className="md:col-span-2">Criar sessão</Button>
+        <FormCard title="Nova sessão">
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Título da sessão" required />
+              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={INPUT} required />
+              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={INPUT}>
+                <option value="ordinary">Ordinária</option>
+                <option value="magnificent">Magnífica</option>
+                <option value="emergency">Extraordinária</option>
+                <option value="other">Outra</option>
+              </select>
+              <input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} className={INPUT} placeholder="Grau (opcional)" />
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações" rows={3} />
+            </div>
+            <Button type="submit" disabled={submitting}>{submitting ? 'Criando…' : 'Criar sessão'}</Button>
           </form>
-        </section>
+        </FormCard>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Sessões cadastradas</h2>

@@ -1,6 +1,7 @@
 export { Button } from './button';
 export type { ButtonProps, Variant, Size } from './button';
 export { Card, CardTitle, CardDescription } from './card';
+export { FormCard } from './form-card';
 export { Badge } from './badge';
 export type { BadgeVariant } from './badge';
 export { Input } from './input';

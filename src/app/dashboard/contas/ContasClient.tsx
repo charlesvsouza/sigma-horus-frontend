@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, FormCard, inputClass, Alert } from '@/components/ui';
 
 interface ChartAccountOption { id: string; code: string; name: string; type: string; }
 interface MemberOption { id: string; name: string; }
@@ -24,7 +24,8 @@ const INPUT_CLASS = inputClass; // fonte única do design system
 export default function ContasClient({ accounts, members, chartAccounts, role }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; role: string }) {
   const canApprove = role === 'venerable' || role === 'admin';
   const router = useRouter();
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: '',
     type: 'RECEIVABLE',
@@ -69,28 +70,33 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    // No modo edição, a categoria (chartAccountId) não vem pré-carregada no
-    // form — omitir do payload evita apagar por engano o vínculo já existente.
-    const { chartAccountId, ...rest } = form;
-    const payload = {
-      ...rest,
-      ...(editingId ? {} : { chartAccountId }),
-      amount: Number(form.amount),
-      memberId: form.memberId || undefined,
-    };
-    const response = await fetch(editingId ? `/api/accounts/${editingId}` : '/api/accounts', {
-      method: editingId ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    setSubmitting(true);
+    try {
+      // No modo edição, a categoria (chartAccountId) não vem pré-carregada no
+      // form — omitir do payload evita apagar por engano o vínculo já existente.
+      const { chartAccountId, ...rest } = form;
+      const payload = {
+        ...rest,
+        ...(editingId ? {} : { chartAccountId }),
+        amount: Number(form.amount),
+        memberId: form.memberId || undefined,
+      };
+      const response = await fetch(editingId ? `/api/accounts/${editingId}` : '/api/accounts', {
+        method: editingId ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    const data = await response.json();
-    if (response.ok) {
-      setMessage(editingId ? 'Conta atualizada com sucesso.' : 'Conta cadastrada com sucesso.');
-      cancelEdit();
-      router.refresh();
-    } else {
-      setMessage(data.error ?? (editingId ? 'Erro ao atualizar conta.' : 'Erro ao cadastrar conta.'));
+      const data = await response.json();
+      if (response.ok) {
+        setMessage({ kind: 'ok', text: editingId ? 'Conta atualizada com sucesso.' : 'Conta cadastrada com sucesso.' });
+        cancelEdit();
+        router.refresh();
+      } else {
+        setMessage({ kind: 'error', text: data.error ?? (editingId ? 'Erro ao atualizar conta.' : 'Erro ao cadastrar conta.') });
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -103,10 +109,10 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
     const response = await fetch(`/api/accounts/${id}/approve`, { method: 'POST' });
     const data = await response.json();
     if (response.ok) {
-      setMessage('Despesa aprovada.');
+      setMessage({ kind: 'ok', text: 'Despesa aprovada.' });
       router.refresh();
     } else {
-      setMessage(data.error ?? 'Erro ao aprovar despesa.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao aprovar despesa.' });
     }
   }
 
@@ -127,48 +133,59 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
           <p className="mt-1 text-sm text-sand-dark">Registre contas financeiras e acompanhe vencimentos com base no fluxo do MVP.</p>
         </div>
 
-        {message ? <Alert intent="warn">{message}</Alert> : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-sand-light">{editingId ? 'Editar conta' : 'Nova conta'}</h2>
-            {editingId ? <button type="button" onClick={cancelEdit} className="text-xs text-sand-dark hover:text-sand">Cancelar edição</button> : null}
-          </div>
-          <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
-            <select value={form.chartAccountId} onChange={(e) => selectChart(e.target.value)} className={INPUT_CLASS}>
-              <option value="">Categoria (plano de contas)</option>
-              {filteredCharts.map((c) => (
-                <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
-              ))}
-            </select>
-            <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className={INPUT_CLASS} placeholder="Título da conta" required />
-            <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className={INPUT_CLASS}>
-              <option value="RECEIVABLE">Conta a receber</option>
-              <option value="PAYABLE">Conta a pagar</option>
-            </select>
-            <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT_CLASS} placeholder="Valor" required />
-            <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT_CLASS} required />
-            <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
-              <option value="pending">Pendente</option>
-              <option value="paid">Pago</option>
-              <option value="overdue">Vencido</option>
-            </select>
-            <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
-              <option value="">Vincular a um membro (opcional)</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>{member.name}</option>
-              ))}
-            </select>
-            {form.type === 'RECEIVABLE' && form.memberId ? (
-              <label className="flex items-center gap-2 text-sm text-sand-dark md:col-span-2">
-                <input type="checkbox" checked={form.isDues} onChange={(event) => setForm({ ...form, isDues: event.target.checked })} />
-                É mensalidade do membro (conta para a regra do Art. 002 — 60 dias de inadimplência)
-              </label>
-            ) : null}
-            <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Descrição" rows={3} />
-            <Button type="submit" className="md:col-span-2">{editingId ? 'Salvar alterações' : 'Salvar conta'}</Button>
+        <FormCard
+          title={editingId ? 'Editar conta' : 'Nova conta'}
+          headerAction={editingId ? <button type="button" onClick={cancelEdit} className="rounded text-xs text-sand-dark outline-none hover:text-sand focus-visible:ring-2 focus-visible:ring-gold/60">Cancelar edição</button> : undefined}
+        >
+          <form onSubmit={handleSubmit} className="mt-5 space-y-5">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Detalhes</h3>
+              <div className="mt-3 grid gap-4 md:grid-cols-2">
+                <select value={form.chartAccountId} onChange={(e) => selectChart(e.target.value)} className={INPUT_CLASS}>
+                  <option value="">Categoria (plano de contas)</option>
+                  {filteredCharts.map((c) => (
+                    <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
+                  ))}
+                </select>
+                <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className={INPUT_CLASS} placeholder="Título da conta" required />
+                <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className={INPUT_CLASS}>
+                  <option value="RECEIVABLE">Conta a receber</option>
+                  <option value="PAYABLE">Conta a pagar</option>
+                </select>
+                <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT_CLASS} placeholder="Valor" required />
+                <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT_CLASS} required />
+                <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className={INPUT_CLASS}>
+                  <option value="pending">Pendente</option>
+                  <option value="paid">Pago</option>
+                  <option value="overdue">Vencido</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Vínculo e observações</h3>
+              <div className="mt-3 grid gap-4">
+                <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={INPUT_CLASS}>
+                  <option value="">Vincular a um membro (opcional)</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>{member.name}</option>
+                  ))}
+                </select>
+                {form.type === 'RECEIVABLE' && form.memberId ? (
+                  <label className="flex items-center gap-2 text-sm text-sand-dark">
+                    <input type="checkbox" checked={form.isDues} onChange={(event) => setForm({ ...form, isDues: event.target.checked })} />
+                    É mensalidade do membro (conta para a regra do Art. 002 — 60 dias de inadimplência)
+                  </label>
+                ) : null}
+                <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={INPUT_CLASS} placeholder="Descrição" rows={3} />
+              </div>
+            </div>
+
+            <Button type="submit" disabled={submitting}>{submitting ? 'Salvando…' : editingId ? 'Salvar alterações' : 'Salvar conta'}</Button>
           </form>
-        </section>
+        </FormCard>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
