@@ -1,9 +1,9 @@
 import { prismaAdmin } from '@/lib/prisma';
 
-export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns';
+export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns' | 'import';
 export type Action = 'read' | 'write';
 
-export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'];
+export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import'];
 export const ACTIONS: Action[] = ['read', 'write'];
 export const ROLES = ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] as const;
 export type Role = (typeof ROLES)[number];
@@ -12,8 +12,8 @@ export type Role = (typeof ROLES)[number];
 // É a fonte de verdade para semear o RBAC persistido de cada loja.
 const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = {
   admin: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
-    write: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import'],
+    write: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import'],
   },
   venerable: {
     read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
@@ -24,8 +24,8 @@ const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = 
     write: ['messages', 'accounts', 'portal'],
   },
   secretary: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
-    write: ['members', 'documents', 'messages', 'portal'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import'],
+    write: ['members', 'documents', 'messages', 'portal', 'import'],
   },
   member: {
     read: ['portal'],

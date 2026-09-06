@@ -39,7 +39,7 @@ export function parseOfx(content: string): ParsedTransaction[] {
   return out;
 }
 
-function splitCsvLine(line: string): string[] {
+export function splitCsvLine(line: string): string[] {
   // Suporta ; ou , como separador e valores entre aspas.
   const sep = line.includes(';') ? ';' : ',';
   const cells: string[] = [];
@@ -55,7 +55,7 @@ function splitCsvLine(line: string): string[] {
   return cells.map((c) => c.replace(/^"|"$/g, ''));
 }
 
-function parseBrDate(raw: string): Date | null {
+export function parseBrDate(raw: string): Date | null {
   const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
   const br = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
@@ -66,7 +66,7 @@ function parseBrDate(raw: string): Date | null {
   return null;
 }
 
-function parseBrNumber(raw: string): number | null {
+export function parseBrNumber(raw: string): number | null {
   const cleaned = raw.replace(/[^\d,.-]/g, '');
   if (!cleaned) return null;
   // "1.234,56" (BR) vs "1234.56" (US) — se tem vírgula, ela é o decimal.

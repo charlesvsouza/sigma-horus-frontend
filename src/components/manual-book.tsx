@@ -32,6 +32,7 @@ const INDEX: IndexEntry[] = [
       { id: 'admin-permissoes', label: '6.4 Permissões' },
       { id: 'admin-assinatura', label: '6.5 Assinatura' },
       { id: 'admin-comunicacao', label: '6.6 Comunicação (WhatsApp/SMS)' },
+      { id: 'admin-importar', label: '6.7 Importar cadastro de outro sistema' },
     ],
   },
   {
@@ -515,6 +516,46 @@ export function ManualBook() {
                   Enquanto um canal não estiver conectado, as mensagens daquele canal ficam <strong>registradas e
                   enfileiradas</strong> (aparecem no histórico de Comunicação) e saem assim que a loja conectar a conta.
                   As credenciais são guardadas <strong>criptografadas</strong> e isoladas por loja.
+                </Note>
+              </Sub>
+
+              <Sub id="admin-importar" title="6.7 Importar cadastro de outro sistema">
+                <p>
+                  Se sua loja está migrando de outro sistema, é possível trazer o cadastro dos membros (e da família de
+                  cada um) de uma só vez, em vez de digitar obreiro por obreiro. Fica em <UI>Administração → Importar
+                  cadastros</UI>.
+                </p>
+                <Note>
+                  Disponível <strong>apenas uma vez</strong>, e só enquanto a loja ainda <strong>não tem nenhum membro
+                  cadastrado</strong> — assim que o primeiro obreiro entra no sistema (por importação ou cadastro manual),
+                  a opção fica bloqueada, para não haver risco de duplicar ou sobrescrever dados. Se precisar de uma nova
+                  migração depois disso, fale com o suporte da Sigma Horus.
+                </Note>
+                <Steps>
+                  <li>Aceita arquivos <strong>CSV</strong> ou <strong>Excel (.xlsx)</strong> exportados do seu sistema
+                    atual. Para garantir 100% de compatibilidade, clique em <UI>Baixar modelo CSV</UI> e preencha nele.</li>
+                  <li>Escolha o arquivo em <UI>Selecionar arquivo</UI>. O sistema lê as colunas e tenta reconhecer
+                    automaticamente qual campo do Sigma Horus cada uma representa (nome, e-mail, CPF, datas maçônicas,
+                    endereço, rito, potência etc.), mostrando um <strong>percentual de compatibilidade</strong>.</li>
+                  <li>Revise o <UI>Mapeamento das colunas</UI>: para cada coluna do arquivo há um seletor mostrando a que
+                    campo ela foi associada — corrija manualmente qualquer coluna que tenha sido reconhecida errado, ou
+                    marque <UI>Ignorar esta coluna</UI> quando não se aplicar.</li>
+                  <li>Confira os <UI>Pontos para revisar</UI>: linhas com CPF inválido ou data não reconhecida ainda são
+                    importadas (o dado problemático fica em branco ou marcado para revisão manual depois); só a linha
+                    <strong> sem nome</strong> é descartada, já que o nome é o único campo obrigatório.</li>
+                  <li>Clique em <UI>Confirmar importação</UI>. Ao final, o resumo mostra quantos membros entraram, quantas
+                    linhas foram ignoradas e quantos avisos ficaram para conferência manual.</li>
+                </Steps>
+                <p>
+                  Se o arquivo tiver colunas para cônjuge, pai, mãe ou filhos, o sistema já organiza esses dados como
+                  <strong> família e dependentes</strong> de cada membro automaticamente — o mesmo cadastro usado no
+                  detalhe do obreiro. Ritos e potências informados por nome são associados aos já cadastrados na loja;
+                  se um rito ou potência não for encontrado, o campo fica em branco para preenchimento manual depois.
+                </p>
+                <Note>
+                  Se nenhuma coluna do arquivo puder ser reconhecida como o <strong>nome</strong> do membro, a importação
+                  é <strong>interrompida</strong> antes de qualquer gravação, e o sistema pede um arquivo diferente — nada
+                  é criado pela metade.
                 </Note>
               </Sub>
             </Chapter>

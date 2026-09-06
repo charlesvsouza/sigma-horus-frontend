@@ -63,6 +63,7 @@ const NAV: NavGroupDef[] = [
     items: [
       { href: '/dashboard/configuracoes', label: 'Configurações da loja', roles: ['admin'] },
       { href: '/dashboard/configuracoes/usuarios', label: 'Usuários & acessos', roles: ['admin'] },
+      { href: '/dashboard/configuracoes/importar', label: 'Importar cadastros', roles: ['admin', 'secretary'] },
       { href: '/dashboard/assinatura', label: 'Assinatura', roles: ['admin'] },
       { href: '/dashboard/integracoes', label: 'Integrações', roles: ['admin'] },
       { href: '/dashboard/auditoria', label: 'Auditoria', roles: ['admin'] },

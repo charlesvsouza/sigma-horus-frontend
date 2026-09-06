@@ -19,6 +19,8 @@ const RESOURCE_LABELS: Record<string, string> = {
   messages: 'Comunicação',
   accounts: 'Financeiro',
   portal: 'Portal',
+  campaigns: 'Hospitalaria',
+  import: 'Importação de dados',
 };
 
 const ACTION_LABELS: Record<string, string> = { read: 'Ver', write: 'Editar' };

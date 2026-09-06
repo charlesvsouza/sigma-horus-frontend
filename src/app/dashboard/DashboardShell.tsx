@@ -13,7 +13,7 @@ import {
   ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
   MessageSquare, Contact, HeartHandshake, Settings, KeyRound, Gem, Plug, ScrollText,
   PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart,
-  Landmark, ArrowLeftRight, type LucideIcon,
+  Landmark, ArrowLeftRight, Upload, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -47,6 +47,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/hospitalaria/campanhas': HeartHandshake,
   '/dashboard/configuracoes': Settings,
   '/dashboard/configuracoes/usuarios': KeyRound,
+  '/dashboard/configuracoes/importar': Upload,
   '/dashboard/assinatura': Gem,
   '/dashboard/integracoes': Plug,
   '/dashboard/auditoria': ScrollText,
