@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyMapping, detectMapping, resolveByName, scoreMapping } from './member-import.ts';
+import { applyMapping, classifyRows, detectMapping, resolveByName, scoreMapping } from './member-import.ts';
 
 test('detectMapping identifica nome e campos comuns por alias PT/EN', () => {
   const headers = ['Nome Completo', 'E-mail', 'CPF', 'Telefone', 'Coluna Desconhecida'];
@@ -84,6 +84,32 @@ test('detectMapping mapeia Estado e Estado Civil para campos diferentes quando a
   const mapping = detectMapping(['Nome', 'Estado', 'Estado Civil']);
   assert.equal(mapping.fields.state, 1);
   assert.equal(mapping.fields.maritalStatus, 2);
+});
+
+test('classifyRows marca como "duplicate" quando o CPF já está cadastrado na loja', () => {
+  const headers = ['Nome', 'CPF'];
+  const mapping = detectMapping(headers);
+  const applied = applyMapping(headers, [['João da Silva', '529.982.247-25']], mapping);
+  const result = classifyRows(applied.rows, [{ id: 'm1', cpf: '52998224725' }]);
+  assert.equal(result[0].matchStatus, 'duplicate');
+  assert.equal(result[0].matchedMemberId, 'm1');
+});
+
+test('classifyRows marca como "new" quando o CPF não bate com nenhum membro existente', () => {
+  const headers = ['Nome', 'CPF'];
+  const mapping = detectMapping(headers);
+  const applied = applyMapping(headers, [['João da Silva', '529.982.247-25']], mapping);
+  const result = classifyRows(applied.rows, [{ id: 'm1', cpf: '11111111111' }]);
+  assert.equal(result[0].matchStatus, 'new');
+  assert.equal(result[0].matchedMemberId, null);
+});
+
+test('classifyRows marca como "ambiguous" quando a linha não tem CPF — nunca decide sozinho', () => {
+  const headers = ['Nome'];
+  const mapping = detectMapping(headers);
+  const applied = applyMapping(headers, [['João da Silva']], mapping);
+  const result = classifyRows(applied.rows, [{ id: 'm1', cpf: '11111111111' }]);
+  assert.equal(result[0].matchStatus, 'ambiguous');
 });
 
 test('resolveByName casa nome existente ignorando acento/caixa', () => {

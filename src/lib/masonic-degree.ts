@@ -29,12 +29,19 @@ export function symbolicSituation(m: DegreeSource): SymbolicSituation | null {
 // Graus filosóficos válidos do REAA.
 export const PHILOSOPHICAL_DEGREES = Array.from({ length: 30 }, (_, i) => i + 4); // 4..33
 
+// Valida um grau filosófico bruto (string). Range REAA: 4–33. Usado tanto na
+// leitura (philosophicalDegree) quanto na validação de escrita (member-fields,
+// member-import), pra barrar valores fora do range antes de chegarem ao banco.
+export function parsePhilosophicalDegree(raw: string | null | undefined): number | null {
+  const s = (raw ?? '').trim();
+  if (!/^\d+$/.test(s)) return null;
+  const n = Number(s);
+  return n >= 4 && n <= 33 ? n : null;
+}
+
 // Extrai o grau filosófico numérico (4–33) de `currentDegree`, se houver.
 export function philosophicalDegree(m: DegreeSource): number | null {
-  const raw = (m.currentDegree ?? '').trim();
-  if (!/^\d+$/.test(raw)) return null;
-  const n = Number(raw);
-  return n >= 4 && n <= 33 ? n : null;
+  return parsePhilosophicalDegree(m.currentDegree);
 }
 
 // Rótulo curto para listas: grau filosófico se houver, senão a situação simbólica.
@@ -43,8 +50,12 @@ export function degreeShort(m: DegreeSource): string {
   if (phil) return `Grau ${phil}`;
   const sit = symbolicSituation(m);
   if (sit) return sit;
-  // Fallback p/ dados legados (currentDegree textual ou gradeName).
-  return (m.currentDegree && !/^\d+$/.test(m.currentDegree) ? m.currentDegree : null) || m.gradeName || '—';
+  // Fallback p/ dados legados (currentDegree textual) ou grau numérico fora do
+  // range 4–33 (dado inválido que entrou por API/importação, já que o <select>
+  // do form só oferece 4–33) — mostra sinalizado em vez de esconder como '—'.
+  const raw = (m.currentDegree ?? '').trim();
+  if (raw) return /^\d+$/.test(raw) ? `Grau inválido (${raw})` : raw;
+  return m.gradeName || '—';
 }
 
 // ---------- Tempo de Ordem (antiguidade maçônica) ----------

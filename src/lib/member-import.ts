@@ -1,13 +1,15 @@
 import { parseBrDate, splitCsvLine } from './bank-statement';
 import { isValidCPF } from './masks';
 import type { MemberFields } from './member-fields';
+import { parsePhilosophicalDegree } from './masonic-degree';
 
-// Motor de importação de cadastro de membros (wizard de migração, ver
-// dashboard/configuracoes/importar). Lê CSV/XLSX de outro sistema, tenta
+// Motor de importação de cadastro de membros (wizard de migração/sincronização,
+// ver dashboard/configuracoes/importar). Lê CSV/XLSX de outro sistema, tenta
 // mapear as colunas do arquivo aos campos do Member por nome (com aliases
 // PT/EN) e calcula um percentual de compatibilidade ponderado por
 // importância do campo. Não decide sozinho — o admin revisa/ajusta o
-// mapeamento antes de confirmar (ver ImportarClient.tsx).
+// mapeamento e, quando já há membros na loja, também revisa a classificação
+// novo/já existe/ambíguo (classifyRows) antes de confirmar (ImportarClient.tsx).
 
 type ImportableField = Exclude<keyof MemberFields, 'name' | 'riteId' | 'powerId' | 'originPowerId'>;
 
@@ -200,6 +202,16 @@ export function applyMapping(headers: string[], rows: string[][], mapping: Field
         body[tf.field] = d.toISOString();
       } else if (tf.kind === 'boolean') {
         body[tf.field] = /^(sim|yes|true|1|x)$/i.test(raw) ? 'true' : 'false';
+      } else if (tf.field === 'currentDegree') {
+        // Grau filosófico REAA: só 4–33 (mesmo range do <select> do form manual).
+        // Diferente do CPF, deixa em branco em vez de importar mesmo assim — um
+        // grau fora do range fica invisível depois (degreeShort não tinha como
+        // sinalizar), então é melhor barrar aqui do que confiar na exibição.
+        if (!parsePhilosophicalDegree(raw)) {
+          rowIssues.push({ row: rowNum, field: tf.field, severity: 'warning', message: `"${raw}" não é um grau filosófico válido (4–33) para ${tf.label} — campo deixado em branco.` });
+          continue;
+        }
+        body[tf.field] = raw;
       } else {
         body[tf.field] = raw;
         if (tf.field === 'cpf') {
@@ -226,6 +238,45 @@ export function applyMapping(headers: string[], rows: string[][], mapping: Field
   });
 
   return { rows: out, rowIssues, totalRows: rows.length, importableRows: out.length };
+}
+
+export type MatchStatus = 'new' | 'duplicate' | 'ambiguous';
+
+export interface ExistingMemberRef {
+  id: string;
+  cpf: string | null;
+}
+
+export interface ClassifiedRow extends AppliedRow {
+  matchStatus: MatchStatus;
+  matchedMemberId: string | null;
+}
+
+/**
+ * Classifica cada linha contra os membros já cadastrados na loja, para permitir
+ * reimportar/sincronizar sem duplicar (ver dashboard/configuracoes/importar).
+ * CPF é a única chave confiável presente nos dois lados — sem CPF válido na
+ * linha (ou quando ele não bate com nenhum CPF já cadastrado, mas também não
+ * há como confirmar identidade) não dá pra decidir sozinho: a linha fica
+ * "ambiguous" e exige decisão manual do admin na tela de revisão. Nunca
+ * atualiza um membro existente — no máximo cria um novo ou pula.
+ */
+export function classifyRows(rows: AppliedRow[], existingMembers: ExistingMemberRef[]): ClassifiedRow[] {
+  const existingByCpf = new Map<string, string>();
+  for (const m of existingMembers) {
+    const key = (m.cpf ?? '').replace(/\D/g, '');
+    if (key) existingByCpf.set(key, m.id);
+  }
+
+  return rows.map((r) => {
+    const cpfRaw = typeof r.body.cpf === 'string' ? r.body.cpf : '';
+    const key = cpfRaw.replace(/\D/g, '');
+    if (!key) return { ...r, matchStatus: 'ambiguous', matchedMemberId: null };
+    const matchedId = existingByCpf.get(key) ?? null;
+    return matchedId
+      ? { ...r, matchStatus: 'duplicate', matchedMemberId: matchedId }
+      : { ...r, matchStatus: 'new', matchedMemberId: null };
+  });
 }
 
 /** Lê CSV (texto) ou XLSX (binário) e devolve uma grade genérica cabeçalho+linhas. */

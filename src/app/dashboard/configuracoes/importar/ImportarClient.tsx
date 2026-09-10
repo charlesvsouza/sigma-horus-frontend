@@ -8,6 +8,8 @@ import { Alert, Badge, Button, Card, CardDescription, CardTitle, EmptyState, inp
 interface TargetFieldMeta { field: string; label: string; tier: 1 | 2 | 3; }
 interface RowIssue { row: number; field?: string; severity: 'error' | 'warning'; message: string; }
 interface NamedOption { id: string; name: string; }
+interface RowRef { row: number; name: string; }
+interface MatchSummary { new: number; duplicate: number; ambiguous: number; }
 
 interface Mapping {
   nameIndex: number | null;
@@ -33,11 +35,15 @@ interface AnalyzeResult {
   unmatchedRites?: string[];
   unmatchedPowers?: string[];
   targetFields: TargetFieldMeta[];
+  existingMemberCount?: number;
+  matchSummary?: MatchSummary | null;
+  duplicateRows?: RowRef[];
+  ambiguousRows?: RowRef[];
 }
 
 interface CommitResult {
   ok: boolean;
-  stats: { totalRows: number; imported: number; skippedRows: number; warnings: number };
+  stats: { totalRows: number; imported: number; skippedDuplicates: number; pendingAmbiguous: number; skippedRows: number; warnings: number };
   relativesCreated: number;
 }
 
@@ -71,26 +77,27 @@ function scoreIntent(score: number): 'ok' | 'warn' | 'danger' {
   return 'danger';
 }
 
-export default function ImportarClient({ denied, locked }: { denied: boolean; locked: boolean }) {
+export default function ImportarClient({ denied }: { denied: boolean }) {
   const [step, setStep] = useState<'upload' | 'review' | 'done'>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [analysis, setAnalysis] = useState<AnalyzeResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
+  const [approvedAmbiguous, setApprovedAmbiguous] = useState<Set<number>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (denied) {
     return <Alert intent="danger">Sem permissão para acessar a importação de cadastros.</Alert>;
   }
 
-  if (locked) {
-    return (
-      <Alert intent="info">
-        A importação inicial não está mais disponível: esta loja já possui membros cadastrados. Isso evita duplicar ou
-        sobrescrever dados. Para uma nova migração, entre em contato com o suporte da SigmaHorus.
-      </Alert>
-    );
+  function toggleAmbiguous(row: number) {
+    setApprovedAmbiguous((prev) => {
+      const next = new Set(prev);
+      if (next.has(row)) next.delete(row);
+      else next.add(row);
+      return next;
+    });
   }
 
   async function runAnalysis(targetFile: File, mapping?: Mapping) {
@@ -108,6 +115,7 @@ export default function ImportarClient({ denied, locked }: { denied: boolean; lo
         return;
       }
       setAnalysis(data as AnalyzeResult);
+      setApprovedAmbiguous(new Set()); // mapeamento mudou — classificação pode ter mudado, exige nova revisão
       setStep('review');
     } catch {
       setError('Falha ao analisar o arquivo. Tente novamente.');
@@ -139,6 +147,9 @@ export default function ImportarClient({ denied, locked }: { denied: boolean; lo
       const formData = new FormData();
       formData.append('file', file);
       formData.append('mapping', JSON.stringify(analysis.mapping));
+      if (approvedAmbiguous.size > 0) {
+        formData.append('approvedAmbiguousRows', JSON.stringify([...approvedAmbiguous]));
+      }
       const res = await fetch('/api/import/commit', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) {
@@ -161,6 +172,7 @@ export default function ImportarClient({ denied, locked }: { denied: boolean; lo
     setAnalysis(null);
     setCommitResult(null);
     setError(null);
+    setApprovedAmbiguous(new Set());
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
@@ -169,8 +181,8 @@ export default function ImportarClient({ denied, locked }: { denied: boolean; lo
       <Card>
         <CardTitle>Importar cadastro de membros</CardTitle>
         <CardDescription>
-          Migre os membros de outro sistema (planilha CSV ou Excel) para o SigmaHorus. Disponível apenas uma vez, antes
-          do primeiro membro ser cadastrado nesta loja.
+          Migre os membros de outro sistema (planilha CSV ou Excel) para o SigmaHorus. Pode ser usada mais de uma vez —
+          quem já está cadastrado (por CPF) nunca é duplicado.
         </CardDescription>
       </Card>
 
@@ -232,6 +244,60 @@ export default function ImportarClient({ denied, locked }: { denied: boolean; lo
               Nem todos os campos foram reconhecidos. A importação pode prosseguir, mas confira manualmente os dados
               que ficaram de fora depois de concluir.
             </Alert>
+          ) : null}
+
+          {analysis.matchSummary && analysis.existingMemberCount ? (
+            <Card className="space-y-3">
+              <CardTitle>Comparação com o cadastro atual ({analysis.existingMemberCount} membro(s) já na loja)</CardTitle>
+              <CardDescription>
+                Correspondência por CPF — quem já está cadastrado nunca é duplicado nem sobrescrito.
+              </CardDescription>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="success">{analysis.matchSummary.new} nova(s)</Badge>
+                <Badge variant="warning">{analysis.matchSummary.duplicate} já existe(m) — será(ão) ignorada(s)</Badge>
+                <Badge variant="error">{analysis.matchSummary.ambiguous} sem CPF para confirmar — decisão manual abaixo</Badge>
+              </div>
+
+              {analysis.ambiguousRows && analysis.ambiguousRows.length > 0 ? (
+                <div className="space-y-2 border-t border-white/[6%] pt-3">
+                  <p className="text-sm text-sand-light">
+                    Estas linhas não têm CPF (ou o CPF não bateu com nenhum já cadastrado) — não dá para confirmar
+                    automaticamente se já existem. Marque só as que você confirmou serem pessoas novas.
+                  </p>
+                  <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
+                    {analysis.ambiguousRows.map((r) => (
+                      <li key={r.row} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={approvedAmbiguous.has(r.row)}
+                          onChange={() => toggleAmbiguous(r.row)}
+                          disabled={busy}
+                        />
+                        <span>Linha {r.row}: {r.name || '(sem nome)'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-sand-dark">
+                    {approvedAmbiguous.size} de {analysis.ambiguousRows.length} marcada(s) para importar. As demais ficam
+                    de fora desta importação (revise-as manualmente depois, se necessário).
+                  </p>
+                </div>
+              ) : null}
+
+              {analysis.duplicateRows && analysis.duplicateRows.length > 0 ? (
+                <div className="space-y-1 border-t border-white/[6%] pt-3">
+                  <p className="text-sm text-sand-light">Já cadastrados (por CPF) — não serão tocados:</p>
+                  <ul className="max-h-40 space-y-1 overflow-y-auto text-xs text-sand-dark">
+                    {analysis.duplicateRows.slice(0, 30).map((r) => (
+                      <li key={r.row}>Linha {r.row}: {r.name || '(sem nome)'}</li>
+                    ))}
+                  </ul>
+                  {analysis.duplicateRows.length > 30 ? (
+                    <p className="text-xs text-sand-dark">e mais {analysis.duplicateRows.length - 30} linha(s)…</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </Card>
           ) : null}
 
           <Card className="space-y-3">
@@ -321,6 +387,12 @@ export default function ImportarClient({ denied, locked }: { denied: boolean; lo
             <CardTitle>Resumo</CardTitle>
             <ul className="text-sm text-sand-light">
               <li>{commitResult.stats.imported} membro(s) importado(s)</li>
+              {commitResult.stats.skippedDuplicates > 0 ? (
+                <li>{commitResult.stats.skippedDuplicates} já existia(m) (mesmo CPF) — não foram tocados</li>
+              ) : null}
+              {commitResult.stats.pendingAmbiguous > 0 ? (
+                <li>{commitResult.stats.pendingAmbiguous} sem CPF ficaram de fora (não marcados na revisão)</li>
+              ) : null}
               <li>{commitResult.stats.skippedRows} linha(s) ignorada(s) (sem nome)</li>
               <li>{commitResult.stats.warnings} aviso(s) para revisão manual</li>
               <li>{commitResult.relativesCreated} familiar(es) reconhecido(s) automaticamente</li>

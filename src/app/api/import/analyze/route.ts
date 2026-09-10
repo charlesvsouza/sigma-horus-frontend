@@ -4,6 +4,7 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import {
   TARGET_FIELDS,
   applyMapping,
+  classifyRows,
   detectMapping,
   parseSpreadsheet,
   resolveByName,
@@ -15,7 +16,9 @@ import { NextResponse } from 'next/server';
 // Passo 1 do wizard de importação (somente leitura — não grava nada). Recebe o
 // arquivo e, opcionalmente, um mapeamento já ajustado pelo admin (para
 // recalcular a % depois de um ajuste manual). Reaproveitado tanto na 1ª
-// análise (auto-detecção) quanto nas reanálises seguintes.
+// análise (auto-detecção) quanto nas reanálises seguintes. Quando a loja já
+// tem membros, também classifica cada linha (novo/já existe/ambíguo, por CPF —
+// ver classifyRows) para a tela de revisão decidir o que entra.
 function platformAuthorized(request: Request): boolean {
   const token = process.env.PLATFORM_OWNER_TOKEN;
   if (!token) return false;
@@ -50,14 +53,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Envie um arquivo CSV ou Excel (.xlsx).' }, { status: 400 });
   }
 
-  const memberCount = await withTenant(lodgeId, (db) => db.member.count({ where: { lodgeId } }));
-  if (memberCount > 0 && !isPlatform) {
-    return NextResponse.json(
-      { error: 'A importação inicial não está mais disponível: esta loja já possui membros cadastrados.', locked: true },
-      { status: 403 },
-    );
-  }
-
   const buffer = Buffer.from(await file.arrayBuffer());
   const { headers, rows } = await parseSpreadsheet({ name: file.name, type: file.type, buffer });
   if (headers.length === 0) {
@@ -88,10 +83,11 @@ export async function POST(request: Request) {
     });
   }
 
-  const [rites, powers] = await withTenant(lodgeId, (db) =>
+  const [rites, powers, existingMembers] = await withTenant(lodgeId, (db) =>
     Promise.all([
       db.rite.findMany({ where: { lodgeId }, select: { id: true, name: true } }),
       db.power.findMany({ where: { lodgeId }, select: { id: true, name: true } }),
+      db.member.findMany({ where: { lodgeId }, select: { id: true, cpf: true } }),
     ]),
   );
 
@@ -103,6 +99,18 @@ export async function POST(request: Request) {
     if (r.riteName && !resolveByName(r.riteName, rites).matched) unmatchedRites.add(r.riteName);
     if (r.powerName && !resolveByName(r.powerName, powers).matched) unmatchedPowers.add(r.powerName);
   }
+
+  // Loja já tem membros: classifica cada linha por CPF pra tela de revisão
+  // decidir o que é novo, o que já existe (pulado, nunca atualizado) e o que
+  // ficou ambíguo (sem CPF em algum dos lados — exige decisão manual).
+  const classified = existingMembers.length > 0 ? classifyRows(applied.rows, existingMembers) : null;
+  const matchSummary = classified
+    ? {
+        new: classified.filter((r) => r.matchStatus === 'new').length,
+        duplicate: classified.filter((r) => r.matchStatus === 'duplicate').length,
+        ambiguous: classified.filter((r) => r.matchStatus === 'ambiguous').length,
+      }
+    : null;
 
   return NextResponse.json({
     aborted: false,
@@ -120,5 +128,13 @@ export async function POST(request: Request) {
     unmatchedRites: [...unmatchedRites],
     unmatchedPowers: [...unmatchedPowers],
     targetFields: TARGET_FIELDS.map(({ field, label, tier }) => ({ field, label, tier })),
+    existingMemberCount: existingMembers.length,
+    matchSummary,
+    duplicateRows: classified
+      ? classified.filter((r) => r.matchStatus === 'duplicate').map((r) => ({ row: r.row, name: String(r.body.name ?? '') }))
+      : [],
+    ambiguousRows: classified
+      ? classified.filter((r) => r.matchStatus === 'ambiguous').map((r) => ({ row: r.row, name: String(r.body.name ?? '') }))
+      : [],
   });
 }

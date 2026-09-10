@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives } from '@/lib/member-fields';
+import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, validateMemberFields } from '@/lib/member-fields';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -26,8 +26,9 @@ export async function PUT(request: Request, { params }: Ctx) {
   const body = await request.json();
   const fields = parseMemberFields(body);
   const relatives = parseRelatives(body);
-  if (!fields.name) {
-    return NextResponse.json({ error: 'Nome do membro é obrigatório.' }, { status: 400 });
+  const validationError = validateMemberFields(fields);
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   const item = await withTenant(String(lodgeId), async (db) => {

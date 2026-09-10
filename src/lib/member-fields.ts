@@ -1,6 +1,8 @@
 // Mapeamento body → dados do Member, compartilhado por POST (create) e PUT (update).
 // Mantém a paridade de campos entre criação e edição num só lugar.
 
+import { parsePhilosophicalDegree } from './masonic-degree';
+
 type Body = Record<string, unknown>;
 
 const str = (v: unknown) => {
@@ -95,6 +97,18 @@ export function parseMemberFields(body: Body): MemberFields {
     documents: str(body?.documents),
     notes: str(body?.notes),
   };
+}
+
+// Validação compartilhada por POST (create) e PUT (update) — checa os campos
+// que o form já restringe via <select>/máscara, mas que a API aceita como
+// texto livre (ex.: currentDegree só pode chegar aqui fora do range 4–33 por
+// chamada direta à API ou pela importação de CSV).
+export function validateMemberFields(fields: MemberFields): string | null {
+  if (!fields.name) return 'Nome do membro é obrigatório.';
+  if (fields.currentDegree && parsePhilosophicalDegree(fields.currentDegree) == null) {
+    return 'Grau filosófico inválido — deve ser um número entre 4 e 33.';
+  }
+  return null;
 }
 
 // Campos retornados na listagem/edição (inclui tudo que a UI precisa para o form).
