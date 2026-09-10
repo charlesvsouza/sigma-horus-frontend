@@ -527,10 +527,9 @@ export function ManualBook() {
                   cadastros</UI>.
                 </p>
                 <Note>
-                  Disponível <strong>apenas uma vez</strong>, e só enquanto a loja ainda <strong>não tem nenhum membro
-                  cadastrado</strong> — assim que o primeiro obreiro entra no sistema (por importação ou cadastro manual),
-                  a opção fica bloqueada, para não haver risco de duplicar ou sobrescrever dados. Se precisar de uma nova
-                  migração depois disso, fale com o suporte da Sigma Horus.
+                  Pode ser usada <strong>mais de uma vez</strong> — inclusive com a loja já tendo membros cadastrados.
+                  Nesse caso, antes de gravar qualquer coisa, o sistema compara cada linha do arquivo com o cadastro
+                  atual <strong>pelo CPF</strong>: quem já está cadastrado nunca é duplicado nem sobrescrito.
                 </Note>
                 <Steps>
                   <li>Aceita arquivos <strong>CSV</strong> ou <strong>Excel (.xlsx)</strong> exportados do seu sistema
@@ -541,11 +540,19 @@ export function ManualBook() {
                   <li>Revise o <UI>Mapeamento das colunas</UI>: para cada coluna do arquivo há um seletor mostrando a que
                     campo ela foi associada — corrija manualmente qualquer coluna que tenha sido reconhecida errado, ou
                     marque <UI>Ignorar esta coluna</UI> quando não se aplicar.</li>
-                  <li>Confira os <UI>Pontos para revisar</UI>: linhas com CPF inválido ou data não reconhecida ainda são
-                    importadas (o dado problemático fica em branco ou marcado para revisão manual depois); só a linha
-                    <strong> sem nome</strong> é descartada, já que o nome é o único campo obrigatório.</li>
-                  <li>Clique em <UI>Confirmar importação</UI>. Ao final, o resumo mostra quantos membros entraram, quantas
-                    linhas foram ignoradas e quantos avisos ficaram para conferência manual.</li>
+                  <li>Se a loja já tiver membros, confira o card <UI>Comparação com o cadastro atual</UI>: ele mostra
+                    quantas linhas são <strong>novas</strong> (entram automaticamente), quantas <strong>já existem</strong>
+                    (mesmo CPF de um membro já cadastrado — ficam de fora, nunca são tocadas) e quantas ficaram
+                    <strong> sem CPF para confirmar</strong>. Para essas últimas o sistema não arrisca um palpite sozinho:
+                    marque, uma a uma, só as linhas que você confirmou serem pessoas realmente novas — as que ficarem
+                    sem marcar não entram nesta importação.</li>
+                  <li>Confira os <UI>Pontos para revisar</UI>: linhas com CPF inválido, grau filosófico fora do
+                    intervalo 4–33 ou data não reconhecida ainda são importadas (o dado problemático fica em branco ou
+                    marcado para revisão manual depois); só a linha <strong>sem nome</strong> é descartada, já que o
+                    nome é o único campo obrigatório.</li>
+                  <li>Clique em <UI>Confirmar importação</UI>. Ao final, o resumo mostra quantos membros entraram,
+                    quantos já existiam (ignorados), quantos ficaram pendentes sem confirmação, quantas linhas foram
+                    ignoradas e quantos avisos restaram para conferência manual.</li>
                 </Steps>
                 <p>
                   Se o arquivo tiver colunas para cônjuge, pai, mãe ou filhos, o sistema já organiza esses dados como
@@ -556,7 +563,8 @@ export function ManualBook() {
                 <Note>
                   Se nenhuma coluna do arquivo puder ser reconhecida como o <strong>nome</strong> do membro, a importação
                   é <strong>interrompida</strong> antes de qualquer gravação, e o sistema pede um arquivo diferente — nada
-                  é criado pela metade.
+                  é criado pela metade. E sem CPF preenchido em nenhum dos lados (arquivo e cadastro atual), o sistema
+                  também nunca arrisca um palpite por nome — prefere pedir sua confirmação a duplicar ou perder alguém.
                 </Note>
               </Sub>
 
@@ -861,7 +869,7 @@ export function ManualBook() {
                 </Steps>
                 <Bullets>
                   <li><strong>Situação simbólica automática:</strong> o sistema deduz Aprendiz, Companheiro, Mestre ou Mestre Instalado a partir dos marcos preenchidos — não se digita.</li>
-                  <li><strong>Grau Filosófico atual:</strong> opcional, selecione de 4 a 33 (REAA); se vazio, vale a situação simbólica.</li>
+                  <li><strong>Grau Filosófico atual:</strong> opcional, selecione de 4 a 33 (REAA); se vazio, vale a situação simbólica. Um cadastro antigo com valor fora desse intervalo aparece sinalizado como <strong>&quot;Grau inválido&quot;</strong> na lista — abra o membro e corrija.</li>
                   <li><strong>Tempo de Ordem:</strong> calculado da data de iniciação (ex.: &quot;12 anos e 3 meses&quot;).</li>
                   <li><strong>Origem:</strong> potência e loja de origem do irmão (se diferente da atual).</li>
                 </Bullets>
