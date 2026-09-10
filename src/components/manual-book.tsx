@@ -170,6 +170,8 @@ const PRINT_CSS = `
   .manual-print .manual-card span { background: transparent !important; border-color: #999 !important; color: #333 !important; }
   .manual-print .manual-chapter { break-before: page; page-break-before: always; }
   .manual-print .manual-cover { break-after: page; page-break-after: always; }
+  .manual-print .manual-toc { break-after: page; page-break-after: always; }
+  .manual-print .manual-toc li { break-inside: avoid; }
   .manual-print .manual-chapter h2 span { color: #6b551d !important; }
   .manual-print .manual-steps { color: #1b1b1b !important; }
 }
@@ -269,6 +271,25 @@ export function ManualBook() {
               </div>
             </div>
 
+            {/* Sumário (só na impressão — o índice lateral interativo não imprime) */}
+            <div className="manual-toc hidden print:block" aria-hidden="true">
+              <h2 style={{ fontSize: '20pt', marginBottom: '1cm', textAlign: 'center' }}>Sumário</h2>
+              <ul style={{ listStyle: 'none', padding: 0, fontSize: '11.5pt', lineHeight: 1.9 }}>
+                {INDEX.map((entry) => (
+                  <li key={entry.id} style={{ marginBottom: '0.3cm' }}>
+                    <strong>{entry.num}.</strong> {entry.label}
+                    {entry.sub ? (
+                      <ul style={{ listStyle: 'none', padding: 0, paddingLeft: '1.2cm' }}>
+                        {entry.sub.map((s) => (
+                          <li key={s.id} style={{ fontSize: '10.5pt', opacity: 0.85 }}>{s.label}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
             {/* ============== 1. APRESENTAÇÃO ============== */}
             <Chapter id="apresentacao" num="1" title="Apresentação">
               <p>
@@ -312,6 +333,55 @@ export function ManualBook() {
                 No autocadastro, a cobrança é automática ao fim do teste; gerencie ou cancele em <UI>Administração →
                 Assinatura</UI>. Sem assinatura ativa, o acesso é pausado, mas <strong>seus dados permanecem guardados</strong>.
               </Note>
+
+              <Sub id="checklist-config" title="Checklist de configuração inicial (Administrador)">
+                <p>
+                  Um roteiro sugerido para deixar a loja pronta pra operar — cada item leva à seção com o passo a passo
+                  completo. Não é uma ordem obrigatória, só a sequência que costuma fazer mais sentido.
+                </p>
+                <Steps>
+                  <li>
+                    <strong>Configure a loja:</strong> identificação, dados bancários, rito/potência e dias das sessões
+                    — <Link className="text-gold hover:text-gold-light" href="#admin-loja">6.1 Configurações da loja</Link>.
+                  </li>
+                  <li>
+                    <strong>Confira cargos e o período de gestão:</strong> os cargos do rito escolhido já vêm prontos;
+                    ajuste se precisar e vincule os oficiais em <Link className="text-gold hover:text-gold-light" href="#sec-veneralato">Veneralato</Link> (também em <Link className="text-gold hover:text-gold-light" href="#sec-cadastros-mestre">Cadastros mestre e cargos</Link>).
+                  </li>
+                  <li>
+                    <strong>Cadastre os membros:</strong> um a um em <Link className="text-gold hover:text-gold-light" href="#sec-membros">Membros</Link>, ou de uma vez
+                    só se estiver migrando de outro sistema — <Link className="text-gold hover:text-gold-light" href="#admin-importar">6.7 Importar cadastro</Link>.
+                  </li>
+                  <li>
+                    <strong>Conceda acesso aos obreiros</strong> que vão usar o sistema (login por e-mail) —{' '}
+                    <Link className="text-gold hover:text-gold-light" href="#admin-usuarios">6.3 Acesso dos obreiros</Link>.
+                  </li>
+                  <li>
+                    <strong>Ajuste as permissões</strong>, se algum papel precisar de um acesso diferente do padrão —{' '}
+                    <Link className="text-gold hover:text-gold-light" href="#admin-permissoes">6.4 Permissões</Link>.
+                  </li>
+                  <li>
+                    <strong>Conecte o Asaas</strong> para emitir boleto/PIX e receber direto na conta da loja —{' '}
+                    <Link className="text-gold hover:text-gold-light" href="#admin-asaas">6.2 Conectar o Asaas</Link>.
+                  </li>
+                  <li>
+                    <strong>Confira o plano de contas</strong> (já vem com um padrão pronto) e ajuste conforme a
+                    realidade da loja — <Link className="text-gold hover:text-gold-light" href="#tes-plano">7.1 Plano de contas</Link>.
+                  </li>
+                  <li>
+                    <strong>Conecte WhatsApp/SMS</strong>, se quiser esses canais além do e-mail (que já funciona sem
+                    configuração) — <Link className="text-gold hover:text-gold-light" href="#admin-comunicacao">6.6 Comunicação</Link>.
+                  </li>
+                  <li>
+                    <strong>Acompanhe a assinatura:</strong> o teste de 10 dias e o plano contratado depois dele —{' '}
+                    <Link className="text-gold hover:text-gold-light" href="#admin-assinatura">6.5 Assinatura</Link>.
+                  </li>
+                  <li>
+                    <strong>Baixe um backup inicial</strong> dos dados da loja, pra guardar num lugar seu —{' '}
+                    <Link className="text-gold hover:text-gold-light" href="#admin-backup">6.8 Backup dos dados da loja</Link>.
+                  </li>
+                </Steps>
+              </Sub>
             </Chapter>
 
             {/* ============== 3. PAPÉIS ============== */}
@@ -851,7 +921,7 @@ export function ManualBook() {
             {/* ============== 8. SECRETÁRIO ============== */}
             <Chapter id="secretario" num="8" title="Guia do Secretário">
               <p>O Secretário mantém o quadro de obreiros, a estrutura de cargos, as sessões e os documentos.</p>
-              <Sub title="Membros — buscar, cadastrar, editar e excluir">
+              <Sub id="sec-membros" title="Membros — buscar, cadastrar, editar e excluir">
                 <p>
                   Em <UI>Loja &amp; cadastros → Membros</UI>, a tela abre com a <strong>lista de obreiros</strong> em formato
                   de tabela compacta. Use a <UI>busca</UI> (por <strong>nome, CPF ou CIM</strong>) e o filtro de
@@ -887,13 +957,13 @@ export function ManualBook() {
                   A exclusão é bloqueada para quem já tem histórico financeiro ou documentos; nesse caso, <strong>inative</strong> em vez de excluir.
                 </Note>
               </Sub>
-              <Sub title="Cadastros mestre e cargos">
+              <Sub id="sec-cadastros-mestre" title="Cadastros mestre e cargos">
                 <p>
                   Em <UI>Cadastros mestre</UI> você gerencia <UI>Ritos</UI>, <UI>Potências</UI> e o <UI>Plano de contas</UI>
                   (Adicionar/Remover). Em <UI>Cargos</UI>, mantém os cargos da loja conforme o rito.
                 </p>
               </Sub>
-              <Sub title="Veneralato (períodos e vínculos)">
+              <Sub id="sec-veneralato" title="Veneralato (períodos e vínculos)">
                 <p>
                   Em <UI>Veneralato</UI>, crie um <UI>Novo período</UI> (ex.: &quot;Gestão 2025-2026&quot;) e <UI>Vincular</UI> os
                   oficiais aos cargos daquele período.
