@@ -33,7 +33,12 @@ export async function POST(_request: Request, { params }: Ctx) {
   }
 
   // E-mail já usado por outro usuário (de outra pessoa)? Bloqueia.
-  const emailOwner = await prismaAdmin.user.findUnique({ where: { email }, select: { id: true, memberId: true } });
+  const emailOwner = await prismaAdmin.user.findUnique({ where: { email }, select: { id: true, memberId: true, lodgeId: true } });
+  // Usuário de OUTRA loja com esse e-mail: nunca religar (isso religaria memberId sem
+  // atualizar lodgeId, sequestrando a conta e misturando contexto entre tenants).
+  if (emailOwner && emailOwner.lodgeId !== String(lodgeId)) {
+    return NextResponse.json({ error: 'Este e-mail já pertence a um usuário de outra loja.' }, { status: 409 });
+  }
   if (emailOwner && emailOwner.memberId && emailOwner.memberId !== member.id) {
     return NextResponse.json({ error: 'Este e-mail já pertence a outro usuário.' }, { status: 409 });
   }
