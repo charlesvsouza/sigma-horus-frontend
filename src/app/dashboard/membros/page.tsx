@@ -168,9 +168,17 @@ export default function MembrosPage() {
       .catch(() => {});
   }, []);
 
+  // O card do membro (e o botão "Conceder acesso") pode estar bem abaixo na
+  // lista — sem rolar pro topo, o Alert de resultado (sucesso ou erro) fica
+  // fora da tela e parece que "não aconteceu nada" depois de confirmar.
+  function notify(text: string) {
+    setMessage(text);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   async function grantAccess(m: Member) {
     if (!m.email) {
-      setMessage('Cadastre um e-mail no membro antes de conceder acesso.');
+      notify('Cadastre um e-mail no membro antes de conceder acesso.');
       return;
     }
     const verb = m.user ? 'reenviar a senha de acesso para' : 'conceder acesso a';
@@ -181,10 +189,10 @@ export default function MembrosPage() {
     const data = await res.json().catch(() => ({}));
     setGrantingId(null);
     if (!res.ok) {
-      setMessage(data.error ?? 'Não foi possível conceder acesso.');
+      notify(data.error ?? 'Não foi possível conceder acesso.');
       return;
     }
-    setMessage(
+    notify(
       data.emailStatus === 'sent'
         ? `Acesso liberado. Senha provisória enviada para ${m.email}.`
         : `Acesso liberado. E-mail não enviado — senha provisória: ${data.tempPassword} (repasse manualmente).`,
@@ -284,10 +292,10 @@ export default function MembrosPage() {
     const res = await fetch(`/api/members/${m.id}`, { method: 'DELETE' });
     const data = await res.json();
     if (res.ok) {
-      setMessage('Membro excluído.');
+      notify('Membro excluído.');
       await loadData();
     } else {
-      setMessage(data.error ?? 'Erro ao excluir membro.');
+      notify(data.error ?? 'Erro ao excluir membro.');
     }
   }
 
