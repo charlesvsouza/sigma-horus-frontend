@@ -1,7 +1,8 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { prismaAdmin } from '@/lib/prisma';
+import { prismaAdmin, withTenant } from '@/lib/prisma';
+import { logAudit } from '@/lib/audit';
 import type { DefaultSession } from 'next-auth';
 
 declare module 'next-auth' {
@@ -47,6 +48,54 @@ export const authOptions = {
           lodgeId: user.lodgeId,
           memberId: user.memberId,
           mustChangePassword: user.mustChangePassword,
+        };
+      },
+    }),
+    // Entrada do dono da plataforma em qualquer loja ativa, sem senha —
+    // autenticado pelo PLATFORM_OWNER_TOKEN (mesmo segredo de /plataforma/*).
+    // "Loga como" o admin real da loja (sessão de verdade, RBAC normal),
+    // registrando a entrada em AuditLog para haver rastro de quem/quando.
+    Credentials({
+      id: 'platform-impersonate',
+      credentials: {
+        platformToken: { label: 'Token', type: 'password' },
+        lodgeId: { label: 'Loja', type: 'text' },
+      },
+      async authorize(credentials) {
+        const secret = process.env.PLATFORM_OWNER_TOKEN;
+        const token = credentials?.platformToken ? String(credentials.platformToken) : '';
+        if (!secret || !token || token !== secret) return null;
+
+        const lodgeId = credentials?.lodgeId ? String(credentials.lodgeId) : '';
+        if (!lodgeId) return null;
+
+        const lodge = await prismaAdmin.lodge.findFirst({ where: { id: lodgeId, status: 'active' } });
+        if (!lodge) return null;
+
+        const target =
+          (await prismaAdmin.user.findFirst({ where: { lodgeId, role: 'admin', status: 'active' }, orderBy: { createdAt: 'asc' } })) ??
+          (await prismaAdmin.user.findFirst({ where: { lodgeId, status: 'active' }, orderBy: { createdAt: 'asc' } }));
+        if (!target) return null;
+
+        await withTenant(lodgeId, (db) =>
+          logAudit(db, {
+            lodgeId,
+            userId: target.id,
+            action: 'CREATE',
+            entity: 'platform_impersonation',
+            entityId: lodgeId,
+            metadata: { via: 'platform-owner-token', asUserId: target.id },
+          }),
+        );
+
+        return {
+          id: target.id,
+          name: `${target.name} (superadmin)`,
+          email: target.email,
+          role: target.role,
+          lodgeId: target.lodgeId,
+          memberId: target.memberId,
+          mustChangePassword: false,
         };
       },
     }),
