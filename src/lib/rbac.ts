@@ -28,7 +28,7 @@ const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = 
     write: ['members', 'documents', 'messages', 'portal', 'import'],
   },
   member: {
-    read: ['portal'],
+    read: ['portal', 'campaigns'],
     write: ['portal'],
   },
   // Hospitaleiro: contato com irmãos (somente leitura), gestão de campanhas de

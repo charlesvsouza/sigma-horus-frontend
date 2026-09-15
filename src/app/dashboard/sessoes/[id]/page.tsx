@@ -36,7 +36,11 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
 
   return (
     <SessionDetailClient
-      session={{ id: data.item.id, title: data.item.title, date: data.item.date.toISOString(), type: data.item.type, grade: data.item.grade ?? null }}
+      session={{
+        id: data.item.id, title: data.item.title, date: data.item.date.toISOString(), type: data.item.type, grade: data.item.grade ?? null,
+        agenda: data.item.agenda ?? null, minutes: data.item.minutes ?? null,
+        convocationSentAt: data.item.convocationSentAt ? data.item.convocationSentAt.toISOString() : null,
+      }}
       members={data.members}
       initialAttendance={initialAttendance}
     />

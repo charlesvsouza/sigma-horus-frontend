@@ -34,12 +34,13 @@ export async function POST(request: Request) {
   const type = String(body?.type ?? 'ordinary');
   const grade = body?.grade ? String(body.grade) : null;
   const notes = body?.notes ? String(body.notes) : null;
+  const agenda = body?.agenda ? String(body.agenda) : null;
 
   if (!title) return NextResponse.json({ error: 'Título é obrigatório.' }, { status: 400 });
 
   const item = await withTenant(String(lodgeId), async (db) => {
     const created = await db.session.create({
-      data: { lodgeId: String(lodgeId), title, date, type, grade, notes },
+      data: { lodgeId: String(lodgeId), title, date, type, grade, notes, agenda },
     });
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'session', entityId: created.id, metadata: { title, type } });
     return created;

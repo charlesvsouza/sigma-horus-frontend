@@ -12,7 +12,7 @@ export default async function CampanhasPage() {
 
   const data = lodgeId
     ? await withTenant(String(lodgeId), async (db) => {
-        const [campaigns, tronco, lodge] = await Promise.all([
+        const [campaigns, tronco, lodge, requests] = await Promise.all([
           db.campaign.findMany({
             where: { lodgeId: String(lodgeId) },
             include: { donations: { select: { amount: true } } },
@@ -20,6 +20,11 @@ export default async function CampanhasPage() {
           }),
           getTroncoBalance(db, String(lodgeId)),
           db.lodge.findUnique({ where: { id: String(lodgeId) }, select: LODGE_MESSAGING_SELECT }),
+          db.hospitalityRequest.findMany({
+            where: { lodgeId: String(lodgeId) },
+            include: { member: { select: { name: true } } },
+            orderBy: { createdAt: 'desc' },
+          }),
         ]);
         const items = campaigns.map((c) => {
           const raised = c.donations.reduce((s, d) => s + Number(d.amount), 0);
@@ -37,9 +42,17 @@ export default async function CampanhasPage() {
             totalApplied: raised + Number(c.fundAllocated),
           };
         });
-        return { items, tronco, channels: channelsAvailable(buildLodgeChannels(lodge)) };
+        const requestItems = requests.map((r) => ({
+          id: r.id,
+          title: r.title,
+          description: r.description ?? null,
+          status: r.status,
+          createdAt: r.createdAt.toISOString(),
+          memberName: r.member.name,
+        }));
+        return { items, tronco, channels: channelsAvailable(buildLodgeChannels(lodge)), requests: requestItems };
       })
-    : { items: [], tronco: null, channels: { email: false, whatsapp: false, sms: false } };
+    : { items: [], tronco: null, channels: { email: false, whatsapp: false, sms: false }, requests: [] };
 
-  return <CampanhasClient items={data.items} tronco={data.tronco} channels={data.channels} />;
+  return <CampanhasClient items={data.items} tronco={data.tronco} channels={data.channels} requests={data.requests} />;
 }

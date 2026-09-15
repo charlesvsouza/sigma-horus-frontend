@@ -47,6 +47,7 @@ const NAV: NavGroupDef[] = [
     category: 'Atividades',
     items: [
       { href: '/dashboard/sessoes', label: 'Sessões', roles: ['admin', 'venerable', 'secretary'] },
+      { href: '/dashboard/portal/secretaria', label: 'Secretaria', roles: ['member'] },
       { href: '/dashboard/documentos', label: 'Documentos', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
       { href: '/dashboard/comunicacao', label: 'Comunicação', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
     ],
@@ -56,6 +57,7 @@ const NAV: NavGroupDef[] = [
     items: [
       { href: '/dashboard/hospitalaria/irmaos', label: 'Irmãos (consulta)', roles: ['admin', 'venerable', 'hospitaller'] },
       { href: '/dashboard/hospitalaria/campanhas', label: 'Campanhas', roles: ['admin', 'venerable', 'hospitaller', 'treasurer'] },
+      { href: '/dashboard/portal/hospitalaria', label: 'Hospitalaria', roles: ['member'] },
     ],
   },
   {

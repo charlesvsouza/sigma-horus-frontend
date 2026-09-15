@@ -995,12 +995,24 @@ export function ManualBook() {
                   oficiais aos cargos daquele período.
                 </p>
               </Sub>
-              <Sub title="Sessões e presença">
+              <Sub id="sec-sessoes" title="Sessões, ordem do dia e convocação">
                 <p>
-                  Em <UI>Atividades → Sessões</UI>, use <UI>Criar sessão</UI> (título, grau opcional, observações). Em
-                  cada sessão, registre a <strong>presença</strong> dos membros (toggle por obreiro) para acompanhar a
-                  frequência.
+                  Em <UI>Atividades → Sessões</UI>, use <UI>Criar sessão</UI> informando título, data e hora, tipo, grau
+                  opcional e a <UI>Ordem do dia</UI> — o texto que os obreiros verão na Secretaria do portal. As
+                  <UI> Observações internas</UI> ficam só para a diretoria, nunca aparecem para o membro.
                 </p>
+                <p>
+                  Abra a sessão criada para acessar a tela de detalhe, com três blocos:
+                </p>
+                <Bullets>
+                  <li><strong>Convocação (chamado):</strong> clique em <UI>Enviar convocação</UI> para disparar um e-mail a todos os obreiros <strong>ativos</strong>, com título, data/hora e ordem do dia da sessão. Pode ser reenviada quantas vezes precisar (ex.: após atualizar a ordem do dia) — cada envio fica registrado com data e hora.</li>
+                  <li><strong>Ordem do dia / Balaustre:</strong> edite e clique em <UI>Salvar ordem do dia e balaustre</UI> a qualquer momento — inclusive depois da sessão, para publicar o <strong>Balaustre/Ata</strong>. Ambos aparecem para o obreiro na Secretaria do portal assim que salvos.</li>
+                  <li><strong>Registrar presença:</strong> toggle por obreiro (presente/ausente) para acompanhar a frequência.</li>
+                </Bullets>
+                <Note>
+                  A ordem do dia e o balaustre de todas as sessões futuras e passadas formam o <strong>calendário da
+                  Secretaria</strong> que o obreiro vê no portal (capítulo 10) — mantenha-os atualizados.
+                </Note>
               </Sub>
               <Sub title="Documentos e comunicação">
                 <p>
@@ -1054,6 +1066,33 @@ export function ManualBook() {
                   <li><strong>Trocar senha:</strong> a qualquer momento, em <UI>/trocar-senha</UI>, informando a senha atual.</li>
                   <li><strong>Tema Papiro:</strong> prefere a interface clara? Veja a seção Aparência (capítulo 6.1) — a escolha vale para o seu navegador.</li>
                 </Bullets>
+              </Sub>
+              <Sub id="membro-secretaria" title="Secretaria: o calendário de sessões">
+                <p>
+                  Em <UI>Atividades → Secretaria</UI> você vê um <strong>calendário mensal</strong>, como uma agenda de
+                  parede: cada dia com sessão marcada mostra um chip com o horário e o título. No topo, o destaque
+                  <UI> Próxima convocação</UI> traz a data, hora e ordem do dia da <strong>próxima sessão</strong> de
+                  relance, sem precisar procurar no calendário.
+                </p>
+                <p>
+                  Clique em qualquer sessão (passada ou futura) para abrir o detalhe abaixo do calendário, com a
+                  <UI> Ordem do dia</UI> e, depois de realizada, o <UI>Balaustre/Ata</UI> publicado pela Secretaria. Use as
+                  setas <UI>← Mês anterior</UI> / <UI>Mês seguinte →</UI> para navegar entre meses.
+                </p>
+                <Note>Você recebe um e-mail de convocação automaticamente quando a Secretaria envia o chamado da sessão (capítulo 8).</Note>
+              </Sub>
+              <Sub id="membro-hospitalaria" title="Hospitalaria: campanhas e pedidos de auxílio">
+                <p>
+                  Em <UI>Hospitalaria</UI> você acompanha as <strong>campanhas de benemerência ativas</strong> da loja
+                  (título, descrição, beneficiário e progresso da arrecadação) — mesma informação que o Hospitaleiro vê,
+                  em modo leitura.
+                </p>
+                <p>
+                  Para propor uma campanha ou pedir um auxílio, clique em <UI>Propor campanha / solicitar auxílio</UI>,
+                  preencha o <UI>Título</UI> e descreva a situação, e clique em <UI>Enviar pedido</UI>. O pedido
+                  <strong> não vira uma campanha automaticamente</strong> — ele é uma mensagem direta para o Hospitaleiro
+                  e a Administração da loja (chega por e-mail), que decidem se formalizam uma campanha a partir dele.
+                </p>
               </Sub>
             </Chapter>
 
@@ -1130,6 +1169,20 @@ export function ManualBook() {
                   própria conta em <UI>Integrações</UI> (ver 6.6). Até lá, esses ficam <strong>enfileirados</strong> e
                   prontos para sair, no histórico de Comunicação.
                 </Note>
+              </Sub>
+
+              <Sub id="hosp-pedidos" title="11.6 Pedidos dos obreiros">
+                <p>
+                  Na tela de <UI>Campanhas</UI>, o bloco <UI>Pedidos dos obreiros</UI> lista os pedidos de auxílio que os
+                  membros enviaram pela aba Hospitalaria do próprio portal (capítulo 10) — título, descrição, quem pediu
+                  e a data. Um selo mostra quantos ainda estão <strong>pendentes</strong>.
+                </p>
+                <p>
+                  Você recebe um e-mail assim que um pedido chega. Depois de avaliar, clique em <UI>Marcar como
+                  analisado</UI> — o selo de pendentes atualiza e o pedido fica marcado como tratado (é possível
+                  <UI> reabrir</UI> se precisar revisar de novo). Se decidir formalizar o pedido, crie uma campanha
+                  normalmente em <UI>+ Nova campanha</UI> (11.3), usando o pedido como referência.
+                </p>
               </Sub>
             </Chapter>
 

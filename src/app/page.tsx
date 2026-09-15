@@ -14,7 +14,7 @@ const modules = [
     numeral: 'II',
     name: 'Secretaria',
     description:
-      'A administração viva da loja: membros e cargos, períodos de veneralato, convocações, sessões com registro de presença, atas e documentos.',
+      'A administração viva da loja: membros e cargos, períodos de veneralato, sessões com ordem do dia, convocação por e-mail e balaustre — o obreiro acompanha tudo num calendário próprio no portal.',
   },
   {
     numeral: 'III',
@@ -26,7 +26,7 @@ const modules = [
     numeral: 'IV',
     name: 'Hospitalaria',
     description:
-      'O cuidado fraterno: assistência a obreiros e famílias, tronco de beneficência, acompanhamento, aniversários e visitas.',
+      'O cuidado fraterno: campanhas de benemerência, tronco de beneficência, aniversários e visitas — e o obreiro pode propor uma campanha ou pedir auxílio direto pelo portal.',
   },
 ];
 

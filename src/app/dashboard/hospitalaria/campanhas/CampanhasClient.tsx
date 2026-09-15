@@ -11,6 +11,7 @@ interface Campaign {
   raised?: number; totalApplied?: number; donations?: Donation[];
 }
 interface Tronco { revenue: number; expense: number; balance: number; configured: boolean }
+interface HospitalityRequestItem { id: string; title: string; description: string | null; status: string; createdAt: string; memberName: string; }
 
 const BENEFICIARY = [{ v: 'person', l: 'Pessoa física' }, { v: 'company', l: 'Empresa' }, { v: 'institution', l: 'Instituição' }];
 const FUNDING = [{ v: 'donations', l: 'Doação voluntária dos irmãos' }, { v: 'fund', l: 'Tronco de Solidariedade' }, { v: 'mixed', l: 'Tronco + doações' }];
@@ -25,7 +26,7 @@ const TEMPLATES = [
 const STATUS_LABEL: Record<string, string> = { active: 'Ativa', completed: 'Concluída', canceled: 'Cancelada' };
 const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-export default function CampanhasClient({ items, tronco, channels }: { items: Campaign[]; tronco: Tronco | null; channels: Record<string, boolean> }) {
+export default function CampanhasClient({ items, tronco, channels, requests }: { items: Campaign[]; tronco: Tronco | null; channels: Record<string, boolean>; requests: HospitalityRequestItem[] }) {
   const router = useRouter();
   const [message, setMessage] = useState('');
   const [creating, setCreating] = useState(false);
@@ -33,6 +34,18 @@ export default function CampanhasClient({ items, tronco, channels }: { items: Ca
   const [detail, setDetail] = useState<Campaign | null>(null);
   const emptyForm = { title: '', description: '', beneficiaryType: 'person', beneficiaryName: '', goalAmount: '', fundingSource: 'donations' };
   const [form, setForm] = useState(emptyForm);
+  const [requestBusy, setRequestBusy] = useState<string | null>(null);
+
+  async function toggleRequestReviewed(id: string, currentStatus: string) {
+    setRequestBusy(id);
+    await fetch(`/api/hospitality-requests/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: currentStatus === 'pending' ? 'reviewed' : 'pending' }),
+    });
+    setRequestBusy(null);
+    router.refresh();
+  }
 
   async function fetchDetail(id: string) {
     const res = await fetch(`/api/campaigns/${id}`);
@@ -83,6 +96,48 @@ export default function CampanhasClient({ items, tronco, channels }: { items: Ca
             </>
           ) : (
             <p className="mt-2 text-sm text-sand-dark">As contas do Tronco ainda não estão configuradas. Em Cadastros, use <strong>“Atualizar plano de contas”</strong> para habilitar o fundo de solidariedade.</p>
+          )}
+        </section>
+
+        {/* Pedidos dos obreiros */}
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-sand-light">Pedidos dos obreiros</h2>
+            {requests.some((r) => r.status === 'pending') ? (
+              <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-[11px] font-medium text-gold">
+                {requests.filter((r) => r.status === 'pending').length} pendente(s)
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-sm text-sand-dark">Pedidos de auxílio enviados pelos obreiros pela aba Hospitalaria do portal.</p>
+          {requests.length === 0 ? (
+            <p className="mt-4 text-sm text-sand-dark">Nenhum pedido recebido ainda.</p>
+          ) : (
+            <div className="mt-4 space-y-2">
+              {requests.map((r) => (
+                <div key={r.id} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-sand-light">
+                      {r.title} <span className="ml-1 text-xs text-sand-dark">· {r.memberName}</span>
+                    </p>
+                    {r.description ? <p className="mt-1 text-xs text-sand-dark">{r.description}</p> : null}
+                    <p className="mt-1 text-[11px] text-sand-dark/70">{new Date(r.createdAt).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleRequestReviewed(r.id, r.status)}
+                    disabled={requestBusy === r.id}
+                    className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      r.status === 'pending'
+                        ? 'border-gold/40 text-gold hover:border-gold/60'
+                        : 'border-emerald-500/30 text-emerald-300 hover:border-emerald-500/50'
+                    }`}
+                  >
+                    {r.status === 'pending' ? 'Marcar como analisado' : 'Analisado — reabrir'}
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </section>
 

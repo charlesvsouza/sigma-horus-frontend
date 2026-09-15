@@ -3,9 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
+import { Alert, Button, inputClass, useConfirm } from '@/components/ui';
 
 interface Member { id: string; name: string; }
-interface SessionInfo { id: string; title: string; date: string; type: string; grade?: string | null; }
+interface SessionInfo {
+  id: string; title: string; date: string; type: string; grade?: string | null;
+  agenda?: string | null; minutes?: string | null; convocationSentAt?: string | null;
+}
 
 export default function SessionDetailClient({
   session,
@@ -17,7 +21,51 @@ export default function SessionDetailClient({
   initialAttendance: Record<string, string>;
 }) {
   const router = useRouter();
+  const askConfirm = useConfirm();
   const [attendanceMap, setAttendanceMap] = useState<Record<string, string>>(initialAttendance);
+  const [agenda, setAgenda] = useState(session.agenda ?? '');
+  const [minutes, setMinutes] = useState(session.minutes ?? '');
+  const [savingAgenda, setSavingAgenda] = useState(false);
+  const [sendingConvocation, setSendingConvocation] = useState(false);
+  const [convocationSentAt, setConvocationSentAt] = useState(session.convocationSentAt);
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+
+  async function saveAgenda() {
+    setSavingAgenda(true);
+    setMessage(null);
+    const res = await fetch(`/api/sessions/${session.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agenda, minutes }),
+    });
+    setSavingAgenda(false);
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Ordem do dia e balaustre salvos.' });
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao salvar.' });
+    }
+  }
+
+  async function sendConvocation() {
+    const verb = convocationSentAt ? 'reenviar' : 'enviar';
+    if (!(await askConfirm({
+      title: 'Enviar convocação',
+      message: `Deseja ${verb} o chamado desta sessão por e-mail a todos os obreiros ativos?`,
+      confirmLabel: 'Enviar',
+    }))) return;
+    setSendingConvocation(true);
+    setMessage(null);
+    const res = await fetch(`/api/sessions/${session.id}/convocation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+    const data = await res.json().catch(() => ({}));
+    setSendingConvocation(false);
+    if (res.ok) {
+      setConvocationSentAt(new Date().toISOString());
+      setMessage({ kind: 'ok', text: `Convocação enviada: ${data.stats?.sent ?? 0} enviada(s), ${data.stats?.queued ?? 0} na fila, ${data.stats?.failed ?? 0} falhou(aram).` });
+    } else {
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao enviar convocação.' });
+    }
+  }
 
   async function toggleAttendance(memberId: string) {
     const current = attendanceMap[memberId];
@@ -43,6 +91,34 @@ export default function SessionDetailClient({
           </div>
           <button onClick={() => router.push('/dashboard/sessoes')} className="text-sm text-gold hover:text-gold-light">Voltar</button>
         </div>
+
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+
+        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-sand-light">Convocação (chamado)</h2>
+              <p className="mt-1 text-xs text-sand-dark">
+                {convocationSentAt ? `Enviada em ${new Date(convocationSentAt).toLocaleString('pt-BR')}` : 'Ainda não enviada'} — vai por e-mail a todos os obreiros ativos, com data, hora e ordem do dia.
+              </p>
+            </div>
+            <Button type="button" onClick={sendConvocation} disabled={sendingConvocation}>
+              {sendingConvocation ? 'Enviando…' : convocationSentAt ? 'Reenviar convocação' : 'Enviar convocação'}
+            </Button>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Ordem do dia (visível ao obreiro)</label>
+              <textarea value={agenda} onChange={(e) => setAgenda(e.target.value)} className={`${inputClass} mt-2`} rows={5} placeholder="1. Abertura dos trabalhos&#10;2. Leitura do balaustre anterior&#10;3. ..." />
+            </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Balaustre / Ata (visível ao obreiro após publicado)</label>
+              <textarea value={minutes} onChange={(e) => setMinutes(e.target.value)} className={`${inputClass} mt-2`} rows={5} placeholder="Preencha após a sessão." />
+            </div>
+          </div>
+          <Button type="button" onClick={saveAgenda} disabled={savingAgenda} className="mt-4">{savingAgenda ? 'Salvando…' : 'Salvar ordem do dia e balaustre'}</Button>
+        </section>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Registrar presença</h2>
