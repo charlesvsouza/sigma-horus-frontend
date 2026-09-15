@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { degreeShort } from '@/lib/masonic-degree';
 import { fetchCep, maskCEP, maskPhone } from '@/lib/masks';
 import { ACCOUNT_STATUS_LABEL, DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
-import { Alert, Button, CollapsibleCard, inputClass } from '@/components/ui';
+import { Alert, Button, inputClass } from '@/components/ui';
 
 interface MemberSummary {
   id: string;
@@ -56,9 +56,10 @@ interface RelativeData {
   cpf?: string | null;
   email?: string | null;
   phone?: string | null;
+  deceased?: boolean;
 }
 
-const emptyRel = (kind: RelativeKind): RelativeData => ({ kind, name: '', birthDate: '', cpf: '', email: '', phone: '' });
+const emptyRel = (kind: RelativeKind): RelativeData => ({ kind, name: '', birthDate: '', cpf: '', email: '', phone: '', deceased: false });
 const dateVal = (iso?: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
 
 interface EditForm {
@@ -104,10 +105,10 @@ function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; on
   const [dependents, setDependents] = useState<RelativeData[]>(() =>
     initialRelatives.filter((r) => !['mother', 'father', 'spouse'].includes(r.kind)).map((r) => ({ ...r, birthDate: dateVal(r.birthDate) })),
   );
-  const setRel = (setter: React.Dispatch<React.SetStateAction<RelativeData>>) => (field: keyof RelativeData, value: string) =>
-    setter((p) => ({ ...p, [field]: value }));
-  const setDep = (idx: number, field: keyof RelativeData, value: string) =>
-    setDependents((list) => list.map((d, i) => (i === idx ? { ...d, [field]: value } : d)));
+  const setRel = (setter: React.Dispatch<React.SetStateAction<RelativeData>>) => (field: keyof RelativeData, value: string | boolean) =>
+    setter((p) => ({ ...p, [field]: value }) as RelativeData);
+  const setDep = (idx: number, field: keyof RelativeData, value: string | boolean) =>
+    setDependents((list) => list.map((d, i) => (i === idx ? ({ ...d, [field]: value } as RelativeData) : d)));
   const addDependent = () => setDependents((list) => [...list, emptyRel('son')]);
   const removeDependent = (idx: number) => setDependents((list) => list.filter((_, i) => i !== idx));
 
@@ -151,12 +152,16 @@ function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; on
     }
   }
 
-  const relInputs = (rel: RelativeData, setter: (field: keyof RelativeData, value: string) => void, label: string) => (
+  const relInputs = (rel: RelativeData, setter: (field: keyof RelativeData, value: string | boolean) => void, label: string) => (
     <div className="grid gap-3 sm:grid-cols-2">
       <input value={rel.name} onChange={(e) => setter('name', e.target.value)} className={inputClass} placeholder={`Nome (${label})`} />
       <input type="date" value={rel.birthDate ?? ''} onChange={(e) => setter('birthDate', e.target.value)} className={inputClass} />
       <input value={rel.email ?? ''} onChange={(e) => setter('email', e.target.value)} className={inputClass} placeholder="E-mail" />
       <input value={rel.phone ?? ''} onChange={(e) => setter('phone', e.target.value)} className={inputClass} placeholder="Telefone" />
+      <label className="flex items-center gap-2 text-xs text-sand-dark sm:col-span-2" title="Não recebe felicitação de aniversário automática">
+        <input type="checkbox" checked={rel.deceased === true} onChange={(e) => setter('deceased', e.target.checked)} />
+        Falecido(a)
+      </label>
     </div>
   );
 
@@ -249,6 +254,7 @@ export default function PortalPage() {
   const [savedMessage, setSavedMessage] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'RECEIVABLE' | 'PAYABLE'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid' | 'overdue'>('all');
+  const [extratoOpen, setExtratoOpen] = useState(false);
 
   const filteredAccounts = accounts
     .filter((a) => typeFilter === 'all' || a.type === typeFilter)
@@ -351,59 +357,72 @@ export default function PortalPage() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
-          <CollapsibleCard
-            title="Meu extrato"
-            count={accounts.length}
-            defaultOpen={accounts.length > 0 && accounts.length <= 8}
-            headerAction={
-              <div className="flex flex-wrap items-center gap-2">
-                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
-                  <option value="all">Tudo</option>
-                  <option value="RECEIVABLE">A receber</option>
-                  <option value="PAYABLE">A pagar</option>
-                </select>
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
-                  <option value="all">Qualquer status</option>
-                  <option value="pending">Pendente</option>
-                  <option value="paid">Pago</option>
-                  <option value="overdue">Vencido</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  disabled={filteredAccounts.length === 0}
-                  title="Gera um PDF do extrato conforme o filtro atual"
-                  className="rounded-lg border border-gold/40 px-2.5 py-1.5 text-xs font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold disabled:opacity-40"
-                >
-                  Relatório PDF
-                </button>
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+            <button
+              type="button"
+              onClick={() => setExtratoOpen((v) => !v)}
+              className="flex w-full items-center justify-between gap-3 rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+            >
+              <div>
+                <h2 className="text-base font-semibold text-sand-light">Meu extrato</h2>
+                <p className="mt-0.5 text-xs text-sand-dark">{accounts.length} registro{accounts.length !== 1 ? 's' : ''}</p>
               </div>
-            }
-          >
-            <div className="space-y-3">
-              {(() => {
-                if (accounts.length === 0) return <p className="text-sm text-sand-dark">Nenhuma conta vinculada.</p>;
-                if (filteredAccounts.length === 0) return <p className="text-sm text-sand-dark">Nenhum lançamento para este filtro.</p>;
-                return filteredAccounts.map((account) => (
-                  <div key={account.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-sand-light">{account.title}</p>
-                        <p className="text-sand-dark">
-                          {account.type === 'RECEIVABLE' ? 'A receber' : 'A pagar'} • {new Date(account.dueDate).toLocaleDateString('pt-BR')}
-                        </p>
-                        {account.chartAccount ? (
-                          <p className="mt-0.5 text-xs text-gold/80">{account.chartAccount.category ? `${account.chartAccount.category} — ` : ''}{account.chartAccount.name}</p>
-                        ) : null}
+              <svg className={`h-4 w-4 shrink-0 text-sand-dark transition-transform duration-200 ${extratoOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {extratoOpen ? (
+              <>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
+                    <option value="all">Tudo</option>
+                    <option value="RECEIVABLE">A receber</option>
+                    <option value="PAYABLE">A pagar</option>
+                  </select>
+                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
+                    <option value="all">Qualquer status</option>
+                    <option value="pending">Pendente</option>
+                    <option value="paid">Pago</option>
+                    <option value="overdue">Vencido</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    disabled={filteredAccounts.length === 0}
+                    title="Gera um PDF do extrato conforme o filtro atual"
+                    className="rounded-lg border border-gold/40 px-2.5 py-1.5 text-xs font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold disabled:opacity-40"
+                  >
+                    Relatório PDF
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {(() => {
+                    if (accounts.length === 0) return <p className="text-sm text-sand-dark">Nenhuma conta vinculada.</p>;
+                    if (filteredAccounts.length === 0) return <p className="text-sm text-sand-dark">Nenhum lançamento para este filtro.</p>;
+                    return filteredAccounts.map((account) => (
+                      <div key={account.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="font-medium text-sand-light">{account.title}</p>
+                            <p className="text-sand-dark">
+                              {account.type === 'RECEIVABLE' ? 'A receber' : 'A pagar'} • {new Date(account.dueDate).toLocaleDateString('pt-BR')}
+                            </p>
+                            {account.chartAccount ? (
+                              <p className="mt-0.5 text-xs text-gold/80">{account.chartAccount.category ? `${account.chartAccount.category} — ` : ''}{account.chartAccount.name}</p>
+                            ) : null}
+                          </div>
+                          <p className="font-semibold text-sand-light">R$ {Number(account.amount).toFixed(2)}</p>
+                        </div>
+                        <p className="mt-2 text-xs uppercase tracking-[0.25em] text-sand-dark">{ACCOUNT_STATUS_LABEL[account.status] ?? account.status}</p>
                       </div>
-                      <p className="font-semibold text-sand-light">R$ {Number(account.amount).toFixed(2)}</p>
-                    </div>
-                    <p className="mt-2 text-xs uppercase tracking-[0.25em] text-sand-dark">{ACCOUNT_STATUS_LABEL[account.status] ?? account.status}</p>
-                  </div>
-                ));
-              })()}
-            </div>
-          </CollapsibleCard>
+                    ));
+                  })()}
+                </div>
+              </>
+            ) : null}
+          </div>
 
           <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Documentos recentes</h2>

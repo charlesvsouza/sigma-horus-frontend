@@ -26,6 +26,7 @@ export async function GET() {
         riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,
         expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
         autoBalanceteEnabled: true, art002Enabled: true,
+        notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
       },
     }),
   );
@@ -49,6 +50,11 @@ export async function PUT(request: Request) {
   }
   if ('art002Enabled' in body) {
     data.art002Enabled = String(body.art002Enabled) === 'true';
+  }
+  for (const notifyField of ['notifyBirthdaysEnabled', 'notifyMilestonesEnabled', 'notifyBillingRemindersEnabled'] as const) {
+    if (notifyField in body) {
+      data[notifyField] = String(body[notifyField]) === 'true';
+    }
   }
   for (const field of FIELDS) {
     if (field in body) {

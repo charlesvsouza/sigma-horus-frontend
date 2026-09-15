@@ -9,6 +9,7 @@ const EMPTY: Record<string, string> = {
   riteName: '', powerName: '', sessionWeekdays: '', sessionFrequency: 'weekly',
   expenseApprovalThreshold: '', lateFeePercent: '', lateInterestPercentMonth: '',
   autoBalanceteEnabled: 'false', art002Enabled: 'true',
+  notifyBirthdaysEnabled: 'true', notifyMilestonesEnabled: 'true', notifyBillingRemindersEnabled: 'true',
 };
 
 // Server Component: carrega os dados cadastrais da loja para o formulário.
@@ -26,6 +27,7 @@ export default async function ConfiguracoesPage() {
             riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,
             expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
             autoBalanceteEnabled: true, art002Enabled: true,
+            notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
           },
         }),
       )

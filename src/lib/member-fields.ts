@@ -16,6 +16,7 @@ export interface MemberFields {
   email: string | null;
   phone: string | null;
   status: string;
+  deceased: boolean;
   duesExempt: boolean;
   riteId: string | null;
   powerId: string | null;
@@ -60,6 +61,7 @@ export function parseMemberFields(body: Body): MemberFields {
     email: str(body?.email),
     phone: str(body?.phone),
     status: String(body?.status ?? 'active'),
+    deceased: String(body?.deceased) === 'true',
     duesExempt: String(body?.duesExempt) === 'true',
     riteId: str(body?.riteId),
     powerId: str(body?.powerId),
@@ -164,6 +166,7 @@ export interface RelativeInput {
   cpf: string | null;
   email: string | null;
   phone: string | null;
+  deceased: boolean;
   order: number;
 }
 
@@ -189,6 +192,7 @@ export function parseRelatives(body: Body): RelativeInput[] {
         cpf: str(r?.cpf),
         email: str(r?.email),
         phone: str(r?.phone),
+        deceased: r?.deceased === true || String(r?.deceased) === 'true',
         order,
       };
     })

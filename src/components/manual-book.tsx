@@ -577,6 +577,13 @@ export function ManualBook() {
                   configuração. Já <strong>WhatsApp e SMS são conectados pela própria loja</strong> (o custo das mensagens
                   é direto da loja), em <UI>Administração → Integrações</UI>, no cartão <UI>Comunicação (WhatsApp / SMS)</UI>.
                 </p>
+                <p>
+                  Cada categoria de mensagem automática (aniversários, jubileus, lembretes de cobrança) liga/desliga
+                  independente em <UI>Configurações da loja → Mensagens automáticas</UI>. Jubileu cobre iniciação,
+                  elevação e exaltação (tempo de mestre) nos marcos de 1, 5, 10, 15, 20, 25, 30, 40, 50 e 60 anos.
+                  Membro ou familiar marcado como <strong>falecido</strong> (cadastro do membro, seção Família e
+                  dependentes — ver capítulo 8) nunca recebe felicitação, mesmo com a categoria ligada.
+                </p>
                 <p><strong>WhatsApp (Meta Cloud API):</strong></p>
                 <Steps>
                   <li>Crie um app no <strong>Meta for Developers</strong> com o produto WhatsApp e obtenha o <strong>Phone Number ID</strong> e um <strong>token</strong> (de preferência permanente, via Usuário do Sistema).</li>
@@ -951,7 +958,7 @@ export function ManualBook() {
                   <li>Clique em <UI>+ Novo membro</UI>. Só o <strong>nome</strong> é obrigatório; os demais blocos abrem conforme a necessidade.</li>
                   <li><strong>Essencial:</strong> nome, e-mail, telefone, situação, rito e potência atual.</li>
                   <li><strong>Dados pessoais:</strong> nascimento, <strong>CPF</strong>, RG, estado civil, profissão e nacionalidade.</li>
-                  <li><strong>Família e dependentes:</strong> Mãe, Pai e Esposa (com nascimento, e-mail e telefone) e a lista de dependentes (Filho/Filha/Outro, com CPF e contatos). Esses contatos servem às felicitações da Hospitalaria.</li>
+                  <li><strong>Família e dependentes:</strong> Mãe, Pai e Esposa (com nascimento, e-mail e telefone) e a lista de dependentes (Filho/Filha/Outro, com CPF e contatos). Esses contatos servem às felicitações da Hospitalaria. Marque <UI>Falecido(a)</UI> em quem já não estiver entre nós — a pessoa some das felicitações de aniversário automáticas, sem apagar o cadastro.</li>
                   <li><strong>Endereço:</strong> o <UI>CEP</UI> preenche o endereço automaticamente.</li>
                   <li><strong>Evolução maçônica:</strong> os marcos <strong>Iniciação, Elevação, Exaltação e Instalação</strong> (data + loja de cada um).</li>
                   <li>Clique em <UI>Salvar membro</UI>.</li>
@@ -1043,7 +1050,7 @@ export function ManualBook() {
               <Sub title="Seu acesso e seus dados">
                 <Bullets>
                   <li><strong>Primeiro acesso:</strong> entre com o e-mail e a senha provisória recebida por e-mail; o sistema pede para você <strong>definir uma nova senha</strong>.</li>
-                  <li><strong>Editar meus dados:</strong> clique em <UI>Editar meus dados</UI> no topo do Resumo do obreiro para atualizar contato, endereço e família (mãe, pai, cônjuge, dependentes). O seu <strong>papel/cargo</strong>, CPF, rito/potência e evolução maçônica só são alterados pelo Administrador ou Secretaria.</li>
+                  <li><strong>Editar meus dados:</strong> clique em <UI>Editar meus dados</UI> no topo do Resumo do obreiro para atualizar contato, endereço e família (mãe, pai, cônjuge, dependentes) — inclusive marcar <UI>Falecido(a)</UI> um familiar, o que já para as felicitações de aniversário automáticas para ele. O seu <strong>papel/cargo</strong>, CPF, rito/potência e evolução maçônica só são alterados pelo Administrador ou Secretaria.</li>
                   <li><strong>Trocar senha:</strong> a qualquer momento, em <UI>/trocar-senha</UI>, informando a senha atual.</li>
                   <li><strong>Tema Papiro:</strong> prefere a interface clara? Veja a seção Aparência (capítulo 6.1) — a escolha vale para o seu navegador.</li>
                 </Bullets>

@@ -5,9 +5,21 @@ import { channelsAvailable, dispatch, type Channel, type LodgeChannels } from '@
 import { TENURE_MILESTONES } from '@/lib/masonic-degree';
 
 // Gatilhos automáticos diários (Fase 7): aniversariantes (obreiro + família),
-// jubileus/aniversário de iniciação e lembretes de cobrança. Envia pelos canais
-// disponíveis em cada loja (e-mail pela plataforma; WhatsApp/SMS BYO por loja) e
-// registra tudo no MessageLog, deduplicado por dia.
+// jubileus (iniciação/elevação/exaltação — tempo de mestre) e lembretes de
+// cobrança. Envia pelos canais disponíveis em cada loja (e-mail pela
+// plataforma; WhatsApp/SMS BYO por loja) e registra tudo no MessageLog,
+// deduplicado por dia. Cada categoria liga/desliga por loja (Lodge.notify*).
+// Membro/familiar marcado como falecido nunca recebe felicitação de
+// aniversário/jubileu — ver Configurações da loja e cadastro do membro.
+
+// Marcos de evolução maçônica que geram jubileu (nome do campo de data no
+// Member, e como nomear o marco na mensagem). Exaltação = 3º grau = Mestre
+// Maçom, por isso cobre "tempo de mestre" pedido pelo usuário.
+const DEGREE_MILESTONES: { field: 'initiationDate' | 'elevationDate' | 'exaltationDate'; label: string }[] = [
+  { field: 'initiationDate', label: 'iniciação' },
+  { field: 'elevationDate', label: 'elevação' },
+  { field: 'exaltationDate', label: 'exaltação (Mestre Maçom)' },
+];
 
 const REMINDER_DAYS_AHEAD = 3; // cobranças que vencem nos próximos N dias
 
@@ -49,7 +61,12 @@ export async function runDailyNotifications(): Promise<Stats> {
     }
   }
 
-  const lodges = await prismaAdmin.lodge.findMany({ select: { id: true, name: true, ...LODGE_MESSAGING_SELECT } });
+  const lodges = await prismaAdmin.lodge.findMany({
+    select: {
+      id: true, name: true, ...LODGE_MESSAGING_SELECT,
+      notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
+    },
+  });
 
   for (const lodge of lodges) {
     const lodgeChannels = buildLodgeChannels(lodge);
@@ -60,10 +77,11 @@ export async function runDailyNotifications(): Promise<Stats> {
     await withTenant(lodge.id, async (db) => {
       const [members, invoices] = await Promise.all([
         db.member.findMany({
-          where: { lodgeId: lodge.id, status: 'active' },
+          where: { lodgeId: lodge.id, status: 'active', deceased: false },
           select: {
-            id: true, name: true, email: true, phone: true, birthDate: true, initiationDate: true,
-            relatives: { select: { kind: true, name: true, birthDate: true, email: true, phone: true } },
+            id: true, name: true, email: true, phone: true, birthDate: true,
+            initiationDate: true, elevationDate: true, exaltationDate: true,
+            relatives: { select: { kind: true, name: true, birthDate: true, email: true, phone: true, deceased: true } },
           },
         }),
         db.invoice.findMany({
@@ -76,7 +94,7 @@ export async function runDailyNotifications(): Promise<Stats> {
 
       for (const m of members) {
         // 1) Aniversário do obreiro
-        if (m.birthDate && sameDayMonth(m.birthDate, today)) {
+        if (lodge.notifyBirthdaysEnabled && m.birthDate && sameDayMonth(m.birthDate, today)) {
           stats.birthdays++;
           for (const channel of list) {
             await notify(db, lodge.id, [channel], lodgeChannels, m.id, contactFor(channel, m.email, m.phone),
@@ -85,47 +103,56 @@ export async function runDailyNotifications(): Promise<Stats> {
           }
         }
 
-        // 2) Aniversário de familiares (ao próprio familiar, se tiver contato)
-        for (const r of m.relatives) {
-          if (r.birthDate && sameDayMonth(r.birthDate, today) && (r.email || r.phone)) {
-            stats.relativesBirthdays++;
-            for (const channel of list) {
-              const to = contactFor(channel, r.email, r.phone);
-              if (!to) continue;
-              await notify(db, lodge.id, [channel], lodgeChannels, m.id, to,
-                `Aniversário de familiar: ${r.name}`,
-                `Olá ${r.name}, a ${lodge.name}, por meio da Hospitalaria, deseja um feliz aniversário! Com carinho e fraternidade.`);
+        // 2) Aniversário de familiares (ao próprio familiar, se tiver contato) —
+        // pula quem está marcado como falecido.
+        if (lodge.notifyBirthdaysEnabled) {
+          for (const r of m.relatives) {
+            if (r.deceased) continue;
+            if (r.birthDate && sameDayMonth(r.birthDate, today) && (r.email || r.phone)) {
+              stats.relativesBirthdays++;
+              for (const channel of list) {
+                const to = contactFor(channel, r.email, r.phone);
+                if (!to) continue;
+                await notify(db, lodge.id, [channel], lodgeChannels, m.id, to,
+                  `Aniversário de familiar: ${r.name}`,
+                  `Olá ${r.name}, a ${lodge.name}, por meio da Hospitalaria, deseja um feliz aniversário! Com carinho e fraternidade.`);
+              }
             }
           }
         }
 
-        // 3) Jubileu / aniversário de iniciação
-        if (m.initiationDate && sameDayMonth(m.initiationDate, today)) {
-          const years = today.y - partsBR(m.initiationDate).y;
-          if (TENURE_MILESTONES.includes(years)) {
+        // 3) Jubileu: iniciação, elevação ou exaltação (tempo de mestre)
+        if (lodge.notifyMilestonesEnabled) {
+          for (const milestone of DEGREE_MILESTONES) {
+            const d = m[milestone.field];
+            if (!d || !sameDayMonth(d, today)) continue;
+            const years = today.y - partsBR(d).y;
+            if (!TENURE_MILESTONES.includes(years)) continue;
             stats.jubilees++;
             for (const channel of list) {
               await notify(db, lodge.id, [channel], lodgeChannels, m.id, contactFor(channel, m.email, m.phone),
-                `Jubileu maçônico: ${years} anos`,
-                `Caro irmão ${m.name}, a ${lodge.name} celebra com alegria os seus ${years} anos de iniciação na Ordem. Parabéns por essa caminhada! Fraternalmente.`);
+                `Jubileu maçônico: ${years} anos de ${milestone.label}`,
+                `Caro irmão ${m.name}, a ${lodge.name} celebra com alegria os seus ${years} anos de ${milestone.label} na Ordem. Parabéns por essa caminhada! Fraternalmente.`);
             }
           }
         }
       }
 
       // 4) Cobranças a vencer e vencidas
-      for (const inv of invoices) {
-        if (!inv.member) continue;
-        const overdue = inv.dueDate < startOfDay || inv.status === 'overdue';
-        const dueSoon = !overdue && inv.dueDate <= dueLimit;
-        if (!overdue && !dueSoon) continue;
-        if (overdue) stats.overdue++; else stats.dueSoon++;
-        const title = overdue ? 'Aviso de cobrança vencida' : 'Lembrete de cobrança a vencer';
-        const body = overdue
-          ? `Caro irmão ${inv.member.name}, consta a cobrança ${inv.number} no valor de ${brl(inv.amount)}, vencida em ${fmtDate(inv.dueDate)}. Por gentileza, regularize. Fraternalmente, Tesouraria.`
-          : `Caro irmão ${inv.member.name}, lembramos a cobrança ${inv.number} no valor de ${brl(inv.amount)}, com vencimento em ${fmtDate(inv.dueDate)}. Fraternalmente, Tesouraria.`;
-        for (const channel of list) {
-          await notify(db, lodge.id, [channel], lodgeChannels, inv.member.id, contactFor(channel, inv.member.email, inv.member.phone), title, body);
+      if (lodge.notifyBillingRemindersEnabled) {
+        for (const inv of invoices) {
+          if (!inv.member) continue;
+          const overdue = inv.dueDate < startOfDay || inv.status === 'overdue';
+          const dueSoon = !overdue && inv.dueDate <= dueLimit;
+          if (!overdue && !dueSoon) continue;
+          if (overdue) stats.overdue++; else stats.dueSoon++;
+          const title = overdue ? 'Aviso de cobrança vencida' : 'Lembrete de cobrança a vencer';
+          const body = overdue
+            ? `Caro irmão ${inv.member.name}, consta a cobrança ${inv.number} no valor de ${brl(inv.amount)}, vencida em ${fmtDate(inv.dueDate)}. Por gentileza, regularize. Fraternalmente, Tesouraria.`
+            : `Caro irmão ${inv.member.name}, lembramos a cobrança ${inv.number} no valor de ${brl(inv.amount)}, com vencimento em ${fmtDate(inv.dueDate)}. Fraternalmente, Tesouraria.`;
+          for (const channel of list) {
+            await notify(db, lodge.id, [channel], lodgeChannels, inv.member.id, contactFor(channel, inv.member.email, inv.member.phone), title, body);
+          }
         }
       }
     });

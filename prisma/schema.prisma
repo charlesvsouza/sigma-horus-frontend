@@ -48,6 +48,12 @@ model Lodge {
   // atraso > 60 dias). Default true preserva o comportamento de hoje; o
   // relatório de inadimplência continua disponível mesmo com o flag desligado.
   art002Enabled            Boolean @default(true)
+  // Mensagens automáticas diárias (cron daily-notifications) — cada categoria
+  // liga/desliga independente. Default true preserva o comportamento de hoje
+  // (loja com canal ativo já recebia tudo, sem opção de desligar por categoria).
+  notifyBirthdaysEnabled      Boolean @default(true) // aniversário do obreiro e de familiares (mãe/pai/cônjuge/dependentes)
+  notifyMilestonesEnabled     Boolean @default(true) // jubileus: iniciação, elevação, exaltação e tempo de mestre (anos de Ordem)
+  notifyBillingRemindersEnabled Boolean @default(true) // lembrete de cobrança a vencer/vencida
   // Asaas (BYO-key): cada loja conecta a própria conta. Chave criptografada (AES-256-GCM).
   asaasApiKeyEnc    String?
   asaasEnv          String?  @default("sandbox") // sandbox | production
@@ -119,6 +125,7 @@ model Member {
   email              String?
   phone              String?
   status             String   @default("active")
+  deceased           Boolean  @default(false) // falecido — exclui de felicitações de aniversário/jubileu automáticas
   duesExempt         Boolean  @default(false) // isento de mensalidade (ex.: Maçom Remido) — fora da cobrança em massa e do Art. 002
   riteId             String?
   powerId            String?
@@ -189,6 +196,7 @@ model Relative {
   cpf       String?
   email     String?
   phone     String?
+  deceased  Boolean   @default(false) // falecido — exclui de felicitações de aniversário automáticas
   order     Int       @default(0) // ordem de exibição (mãe→pai→esposa→dependentes)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

@@ -272,6 +272,28 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             </p>
           </section>
 
+          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+            <h2 className="text-base font-semibold text-sand-light">Mensagens automáticas</h2>
+            <p className="mt-1 text-sm text-sand-dark">
+              Disparos diários por e-mail (e WhatsApp/SMS, se a loja tiver conectado) — ver capítulo 6.6 do manual.
+              Membro ou familiar marcado como falecido nunca recebe felicitação, mesmo com a categoria ligada.
+            </p>
+            <div className="mt-5 space-y-3">
+              <label className="flex items-center gap-2 text-sm text-sand">
+                <input type="checkbox" checked={form.notifyBirthdaysEnabled === 'true'} onChange={(e) => set('notifyBirthdaysEnabled', String(e.target.checked))} />
+                Aniversário do obreiro e de familiares (mãe, pai, cônjuge, dependentes)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-sand">
+                <input type="checkbox" checked={form.notifyMilestonesEnabled === 'true'} onChange={(e) => set('notifyMilestonesEnabled', String(e.target.checked))} />
+                Jubileus (iniciação, elevação e exaltação — tempo de mestre), em 1, 5, 10, 15, 20, 25, 30, 40, 50 e 60 anos
+              </label>
+              <label className="flex items-center gap-2 text-sm text-sand">
+                <input type="checkbox" checked={form.notifyBillingRemindersEnabled === 'true'} onChange={(e) => set('notifyBillingRemindersEnabled', String(e.target.checked))} />
+                Lembrete de cobrança a vencer (3 dias antes) e vencida
+              </label>
+            </div>
+          </section>
+
           <Button type="submit" disabled={saving}>
             {saving ? 'Salvando…' : 'Salvar dados da loja'}
           </Button>

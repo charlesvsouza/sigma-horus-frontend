@@ -16,6 +16,7 @@ interface RelativeData {
   cpf?: string | null;
   email?: string | null;
   phone?: string | null;
+  deceased?: boolean;
 }
 interface Member {
   id: string;
@@ -24,6 +25,7 @@ interface Member {
   phone?: string | null;
   status: string;
   duesExempt?: boolean;
+  deceased?: boolean;
   gradeName?: string | null;
   riteId?: string | null;
   powerId?: string | null;
@@ -73,7 +75,7 @@ type FormState = Record<string, string>;
 const INPUT = inputClass; // fonte única do design system (src/components/ui/field-styles)
 
 const emptyForm: FormState = {
-  name: '', email: '', phone: '', status: 'active', duesExempt: 'false', riteId: '', powerId: '', originPowerId: '',
+  name: '', email: '', phone: '', status: 'active', duesExempt: 'false', deceased: 'false', riteId: '', powerId: '', originPowerId: '',
   birthDate: '', cpf: '', rg: '', maritalStatus: '', occupation: '', nationality: '',
   addressLine: '', addressNumber: '', complement: '', neighborhood: '', city: '', state: '',
   zipCode: '', country: '', initiationDate: '', elevationDate: '', exaltationDate: '',
@@ -426,6 +428,7 @@ export default function MembrosPage() {
                                       <span className="text-sand-dark">{KIND_LABEL[r.kind]}:</span> {r.name}
                                       {r.birthDate ? ` · ${fmtDate(r.birthDate)}` : ''}
                                       {r.phone ? ` · ${r.phone}` : ''}
+                                      {r.deceased ? <span className="ml-1.5 text-sand-dark/70">(falecido(a))</span> : ''}
                                     </li>
                                   ))}
                                 </ul>
@@ -495,7 +498,7 @@ function Detail({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-const emptyRel = (kind: RelativeKind): RelativeData => ({ kind, name: '', birthDate: '', cpf: '', email: '', phone: '' });
+const emptyRel = (kind: RelativeKind): RelativeData => ({ kind, name: '', birthDate: '', cpf: '', email: '', phone: '', deceased: false });
 const dateVal = (iso?: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
 
 // Seção colapsável do formulário (disclosure progressivo): núcleo fica aberto,
@@ -562,10 +565,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
       .map((r) => ({ ...r, birthDate: dateVal(r.birthDate) })),
   );
 
-  const setRel = (setter: React.Dispatch<React.SetStateAction<RelativeData>>) => (field: keyof RelativeData, value: string) =>
-    setter((p) => ({ ...p, [field]: value }));
-  const setDep = (idx: number, field: keyof RelativeData, value: string) =>
-    setDependents((list) => list.map((d, i) => (i === idx ? { ...d, [field]: value } : d)));
+  const setRel = (setter: React.Dispatch<React.SetStateAction<RelativeData>>) => (field: keyof RelativeData, value: string | boolean) =>
+    setter((p) => ({ ...p, [field]: value }) as RelativeData);
+  const setDep = (idx: number, field: keyof RelativeData, value: string | boolean) =>
+    setDependents((list) => list.map((d, i) => (i === idx ? ({ ...d, [field]: value } as RelativeData) : d)));
   const addDependent = () => setDependents((list) => [...list, emptyRel('son')]);
   const removeDependent = (idx: number) => setDependents((list) => list.filter((_, i) => i !== idx));
 
@@ -613,6 +616,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
         <select value={form.status} onChange={(e) => set('status', e.target.value)} className={INPUT}>
           {MEMBER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
+        <label className={`${INPUT} flex items-center gap-2 text-sand`}>
+          <input type="checkbox" checked={form.deceased === 'true'} onChange={(e) => set('deceased', String(e.target.checked))} />
+          Falecido (para de receber felicitações automáticas)
+        </label>
         <select value={form.riteId} onChange={(e) => set('riteId', e.target.value)} className={INPUT}>
           <option value="">Selecione um rito</option>
           {rites.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -647,12 +654,16 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
         <p className="text-xs text-sand-dark/70">Contatos próprios (e-mail e telefone) para felicitações de aniversário pela Secretária/Hospitalária.</p>
         <div className="mt-4 space-y-3">
           {([['Mãe', mother, setMother], ['Pai', father, setFather], ['Esposa', spouse, setSpouse]] as const).map(([label, rel, setter]) => (
-            <div key={label} className="grid gap-2 md:grid-cols-[90px_1.6fr_1fr_1.4fr_1.2fr] md:items-center">
+            <div key={label} className="grid gap-2 md:grid-cols-[90px_1.4fr_1fr_1.2fr_1.1fr_auto] md:items-center">
               <span className="text-xs font-medium text-sand">{label}</span>
               <input value={rel.name ?? ''} onChange={(e) => setRel(setter)('name', e.target.value)} className={INPUT} placeholder="Nome" />
               <input type="date" value={rel.birthDate ?? ''} onChange={(e) => setRel(setter)('birthDate', e.target.value)} className={INPUT} />
               <input value={rel.email ?? ''} onChange={(e) => setRel(setter)('email', e.target.value)} className={INPUT} placeholder="E-mail" />
               <input value={rel.phone ?? ''} onChange={(e) => setRel(setter)('phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
+              <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-sand-dark" title="Não recebe felicitação de aniversário automática">
+                <input type="checkbox" checked={rel.deceased === true} onChange={(e) => setRel(setter)('deceased', e.target.checked)} />
+                Falecido(a)
+              </label>
             </div>
           ))}
         </div>
@@ -667,7 +678,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
           ) : (
             <div className="mt-3 space-y-3">
               {dependents.map((d, i) => (
-                <div key={i} className="grid gap-2 md:grid-cols-[110px_1.4fr_1fr_1fr_1.2fr_1.2fr_auto] md:items-center">
+                <div key={i} className="grid gap-2 md:grid-cols-[110px_1.3fr_1fr_1fr_1.1fr_1.1fr_auto_auto] md:items-center">
                   <select value={d.kind} onChange={(e) => setDep(i, 'kind', e.target.value)} className={INPUT}>
                     <option value="son">Filho</option>
                     <option value="daughter">Filha</option>
@@ -678,6 +689,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
                   <input value={d.cpf ?? ''} onChange={(e) => setDep(i, 'cpf', maskCPF(e.target.value))} inputMode="numeric" className={INPUT} placeholder="CPF" />
                   <input value={d.email ?? ''} onChange={(e) => setDep(i, 'email', e.target.value)} className={INPUT} placeholder="E-mail" />
                   <input value={d.phone ?? ''} onChange={(e) => setDep(i, 'phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
+                  <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-sand-dark" title="Não recebe felicitação de aniversário automática">
+                    <input type="checkbox" checked={d.deceased === true} onChange={(e) => setDep(i, 'deceased', e.target.checked)} />
+                    Falecido(a)
+                  </label>
                   <button type="button" onClick={() => removeDependent(i)} aria-label="Remover dependente" className="justify-self-start rounded-full border border-rose-500/40 px-3 py-1.5 text-xs text-rose-300 transition-all hover:border-rose-500/60 hover:text-rose-200 md:justify-self-center">✕</button>
                 </div>
               ))}
