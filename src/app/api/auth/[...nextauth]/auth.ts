@@ -13,6 +13,10 @@ declare module 'next-auth' {
       lodgeId?: string;
       memberId?: string | null;
       mustChangePassword?: boolean;
+      /** Sessão aberta via /plataforma/entrar (dono da plataforma logado como
+       * este admin) — usado por logAudit() para marcar as ações feitas nela
+       * sem precisar tocar em cada rota que já chama logAudit. */
+      viaSuperadmin?: boolean;
     };
   }
 }
@@ -96,6 +100,7 @@ export const authOptions = {
           lodgeId: target.lodgeId,
           memberId: target.memberId,
           mustChangePassword: false,
+          viaSuperadmin: true,
         };
       },
     }),
@@ -112,6 +117,7 @@ export const authOptions = {
         token.lodgeId = user.lodgeId;
         token.memberId = user.memberId ?? null;
         token.mustChangePassword = Boolean(user.mustChangePassword);
+        token.viaSuperadmin = Boolean(user.viaSuperadmin);
       } else if (token.id && token.memberId === undefined) {
         // Sessão emitida antes do campo memberId existir neste callback (ou
         // seja, antes de 2026-06-28) nunca teve essa propriedade preenchida —
@@ -135,6 +141,7 @@ export const authOptions = {
         session.user.lodgeId = token.lodgeId as string;
         session.user.memberId = (token.memberId as string | null) ?? null;
         session.user.mustChangePassword = Boolean(token.mustChangePassword);
+        session.user.viaSuperadmin = Boolean(token.viaSuperadmin);
       }
       return session;
     },

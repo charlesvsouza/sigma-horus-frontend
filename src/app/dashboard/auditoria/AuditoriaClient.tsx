@@ -10,6 +10,8 @@ interface AuditEntry {
   after?: string | null;
   createdAt: string;
   userId: string | null;
+  userName?: string | null;
+  viaSuperadmin?: boolean;
 }
 
 const entityLabels: Record<string, string> = {
@@ -61,6 +63,7 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
             <thead className="border-b border-white/[6%] bg-sigma-card">
               <tr>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Data</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Quem</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Ação</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Entidade</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Detalhes</th>
@@ -70,6 +73,17 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
               {filtered.map((e) => (
                 <tr key={e.id} className="border-b border-white/[5%] transition-colors hover:bg-white/[3%]">
                   <td className="whitespace-nowrap px-4 py-3 text-sand-dark">{new Date(e.createdAt).toLocaleString('pt-BR')}</td>
+                  <td className="px-4 py-3 text-sand-dark">
+                    {e.userName ?? '—'}
+                    {e.viaSuperadmin ? (
+                      <span
+                        title="Ação feita por alguém logado como esta pessoa via login de superadmin da plataforma, não pela própria pessoa"
+                        className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300"
+                      >
+                        via superadmin
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${e.action === 'CREATE' ? 'bg-emerald-500/12 text-emerald-300 border border-emerald-500/20' : e.action === 'DELETE' ? 'bg-rose-500/12 text-rose-300 border border-rose-500/20' : 'bg-gold/12 text-gold border border-gold/15'}`}>
                       {actionLabels[e.action] ?? e.action}
@@ -81,7 +95,7 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-12 text-center text-sand-dark">
+                  <td colSpan={5} className="px-4 py-12 text-center text-sand-dark">
                     Nenhum registro encontrado.
                   </td>
                 </tr>
