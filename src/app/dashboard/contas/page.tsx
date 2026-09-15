@@ -12,7 +12,10 @@ export default async function ContasPage() {
     ? await withTenant(String(lodgeId), async (db) => ({
         accounts: await db.account.findMany({
           where: { lodgeId: String(lodgeId) },
-          include: { member: { select: { id: true, name: true } } },
+          include: {
+            member: { select: { id: true, name: true } },
+            counterparty: { select: { id: true, name: true, kind: true } },
+          },
           orderBy: { dueDate: 'asc' },
         }),
         members: await db.member.findMany({
@@ -25,8 +28,13 @@ export default async function ContasPage() {
           select: { id: true, code: true, name: true, type: true },
           orderBy: { code: 'asc' },
         }),
+        counterparties: await db.counterparty.findMany({
+          where: { lodgeId: String(lodgeId), active: true },
+          select: { id: true, name: true, kind: true },
+          orderBy: { name: 'asc' },
+        }),
       }))
-    : { accounts: [], members: [], chartAccounts: [] };
+    : { accounts: [], members: [], chartAccounts: [], counterparties: [] };
 
   const accounts = data.accounts.map((a) => ({
     id: a.id,
@@ -39,7 +47,8 @@ export default async function ContasPage() {
     isDues: a.isDues,
     approvalStatus: a.approvalStatus,
     member: a.member ? { id: a.member.id, name: a.member.name } : null,
+    counterparty: a.counterparty ? { id: a.counterparty.id, name: a.counterparty.name, kind: a.counterparty.kind } : null,
   }));
 
-  return <ContasClient accounts={accounts} members={data.members} chartAccounts={data.chartAccounts} role={role} />;
+  return <ContasClient accounts={accounts} members={data.members} chartAccounts={data.chartAccounts} counterparties={data.counterparties} role={role} />;
 }

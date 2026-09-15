@@ -24,6 +24,7 @@ export async function GET() {
       where: { lodgeId: String(lodgeId) },
       include: {
         member: { select: { id: true, name: true } },
+        counterparty: { select: { id: true, name: true, kind: true } },
         chartAccount: { select: { id: true, code: true, name: true, category: true } },
       },
       orderBy: { dueDate: 'asc' },
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
   const status = String(body?.status ?? 'pending').trim();
   const description = String(body?.description ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
+  const counterpartyId = body?.counterpartyId ? String(body.counterpartyId) : null;
   const chartAccountId = body?.chartAccountId ? String(body.chartAccountId) : null;
   const isDues = Boolean(body?.isDues);
 
@@ -72,6 +74,13 @@ export async function POST(request: Request) {
     if (chartAccountId) {
       const chart = await db.chartAccount.findFirst({ where: { id: chartAccountId, lodgeId: String(lodgeId) }, select: { id: true } });
       validChartId = chart?.id ?? null;
+    }
+
+    // Garante que a contraparte informada pertence à loja.
+    let validCounterpartyId: string | null = null;
+    if (counterpartyId) {
+      const cp = await db.counterparty.findFirst({ where: { id: counterpartyId, lodgeId: String(lodgeId) }, select: { id: true } });
+      validCounterpartyId = cp?.id ?? null;
     }
 
     // Visto do Venerável: despesa acima do limite configurado nasce "pending"
@@ -93,12 +102,14 @@ export async function POST(request: Request) {
         status,
         description: description || null,
         memberId,
+        counterpartyId: validCounterpartyId,
         chartAccountId: validChartId,
         isDues,
         approvalStatus,
       },
       include: {
         member: { select: { id: true, name: true } },
+        counterparty: { select: { id: true, name: true, kind: true } },
         chartAccount: { select: { id: true, code: true, name: true, category: true } },
       },
     });

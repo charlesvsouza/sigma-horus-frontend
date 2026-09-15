@@ -11,12 +11,17 @@ export default async function CadastrosPage() {
         rites: await db.rite.findMany({ where: { lodgeId: String(lodgeId) }, orderBy: { order: 'asc' } }),
         powers: await db.power.findMany({ where: { lodgeId: String(lodgeId) }, orderBy: { order: 'asc' } }),
         chartAccounts: await db.chartAccount.findMany({ where: { lodgeId: String(lodgeId) }, orderBy: { code: 'asc' } }),
+        counterparties: await db.counterparty.findMany({ where: { lodgeId: String(lodgeId) }, orderBy: { name: 'asc' } }),
       }))
-    : { rites: [], powers: [], chartAccounts: [] };
+    : { rites: [], powers: [], chartAccounts: [], counterparties: [] };
 
   const rites = data.rites.map((r) => ({ id: r.id, name: r.name, order: r.order }));
   const powers = data.powers.map((p) => ({ id: p.id, name: p.name, order: p.order }));
   const chartAccounts = data.chartAccounts.map((c) => ({ id: c.id, code: c.code, name: c.name, type: c.type, category: c.category ?? null }));
+  const counterparties = data.counterparties.map((c) => ({
+    id: c.id, kind: c.kind, name: c.name, legalName: c.legalName ?? null, document: c.document ?? null,
+    isCompany: c.isCompany, email: c.email ?? null, phone: c.phone ?? null, city: c.city ?? null, state: c.state ?? null,
+  }));
 
-  return <CadastrosClient rites={rites} powers={powers} chartAccounts={chartAccounts} />;
+  return <CadastrosClient rites={rites} powers={powers} chartAccounts={chartAccounts} counterparties={counterparties} />;
 }

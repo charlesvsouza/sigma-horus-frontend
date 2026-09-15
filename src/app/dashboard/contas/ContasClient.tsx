@@ -6,6 +6,7 @@ import { Button, CollapsibleCard, EmptyState, FormCard, inputClass, Alert } from
 
 interface ChartAccountOption { id: string; code: string; name: string; type: string; }
 interface MemberOption { id: string; name: string; }
+interface CounterpartyOption { id: string; name: string; kind: string; }
 interface AccountItem {
   id: string;
   title: string;
@@ -17,11 +18,12 @@ interface AccountItem {
   isDues: boolean;
   approvalStatus: string;
   member?: MemberOption | null;
+  counterparty?: CounterpartyOption | null;
 }
 
 const INPUT_CLASS = inputClass; // fonte única do design system
 
-export default function ContasClient({ accounts, members, chartAccounts, role }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; role: string }) {
+export default function ContasClient({ accounts, members, chartAccounts, counterparties, role }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; role: string }) {
   const canApprove = role === 'venerable' || role === 'admin';
   const router = useRouter();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -35,6 +37,7 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
     status: 'pending',
     description: '',
     memberId: '',
+    counterpartyId: '',
     isDues: false,
   });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -51,6 +54,7 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
       status: account.status,
       description: account.description ?? '',
       memberId: account.member?.id ?? '',
+      counterpartyId: account.counterparty?.id ?? '',
       isDues: account.isDues,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -58,7 +62,7 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
 
   function cancelEdit() {
     setEditingId(null);
-    setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', isDues: false });
+    setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', isDues: false });
   }
 
   function selectChart(id: string) {
@@ -80,6 +84,7 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
         ...(editingId ? {} : { chartAccountId }),
         amount: Number(form.amount),
         memberId: form.memberId || undefined,
+        counterpartyId: form.counterpartyId || undefined,
       };
       const response = await fetch(editingId ? `/api/accounts/${editingId}` : '/api/accounts', {
         method: editingId ? 'PATCH' : 'POST',
@@ -122,7 +127,7 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
 
   const q = search.trim().toLowerCase();
   const filteredAccounts = q
-    ? accounts.filter((a) => a.title.toLowerCase().includes(q) || a.member?.name.toLowerCase().includes(q) || a.status.toLowerCase().includes(q))
+    ? accounts.filter((a) => a.title.toLowerCase().includes(q) || a.member?.name.toLowerCase().includes(q) || a.counterparty?.name.toLowerCase().includes(q) || a.status.toLowerCase().includes(q))
     : accounts;
 
   return (
@@ -167,10 +172,16 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Vínculo e observações</h3>
               <div className="mt-3 grid gap-4">
-                <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={INPUT_CLASS}>
+                <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value, counterpartyId: event.target.value ? '' : form.counterpartyId })} className={INPUT_CLASS}>
                   <option value="">Vincular a um membro (opcional)</option>
                   {members.map((member) => (
                     <option key={member.id} value={member.id}>{member.name}</option>
+                  ))}
+                </select>
+                <select value={form.counterpartyId} onChange={(event) => setForm({ ...form, counterpartyId: event.target.value, memberId: event.target.value ? '' : form.memberId })} className={INPUT_CLASS}>
+                  <option value="">Vincular a um cliente/fornecedor (opcional)</option>
+                  {counterparties.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
                 {form.type === 'RECEIVABLE' && form.memberId ? (
@@ -206,7 +217,9 @@ export default function ContasClient({ accounts, members, chartAccounts, role }:
                     {account.isDues ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">Mensalidade</span> : null}
                     {account.approvalStatus === 'pending' ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300">Aguardando aprovação</span> : null}
                   </p>
-                  <p className="mt-1 text-xs text-sand-dark">{account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} • {account.member?.name ?? 'Sem vínculo'}</p>
+                  <p className="mt-1 text-xs text-sand-dark">
+                    {account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} • {account.member?.name ?? account.counterparty?.name ?? 'Sem vínculo'}
+                  </p>
                 </div>
                 <div className="text-right text-xs text-sand-dark">
                   <p className="tabular-nums">R$ {account.amount.toFixed(2)}</p>

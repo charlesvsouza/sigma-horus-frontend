@@ -6,6 +6,12 @@ import { useRouter } from 'next/navigation';
 
 interface Item { id: string; name: string; order: number; }
 interface ChartAccountItem { id: string; code: string; name: string; type: string; category?: string | null; }
+interface CounterpartyItem {
+  id: string; kind: string; name: string; legalName: string | null; document: string | null;
+  isCompany: boolean; email: string | null; phone: string | null; city: string | null; state: string | null;
+}
+
+const KIND_LABEL: Record<string, string> = { client: 'Cliente', supplier: 'Fornecedor', both: 'Cliente e fornecedor' };
 
 function InlineEdit({ value, onSave, onCancel }: { value: string; onSave: (v: string) => Promise<void>; onCancel: () => void }) {
   const [edit, setEdit] = useState(value);
@@ -41,7 +47,7 @@ function CollapsibleCard({ title, count, defaultOpen, children }: { title: strin
   );
 }
 
-export default function CadastrosClient({ rites, powers, chartAccounts }: { rites: Item[]; powers: Item[]; chartAccounts: ChartAccountItem[] }) {
+export default function CadastrosClient({ rites, powers, chartAccounts, counterparties }: { rites: Item[]; powers: Item[]; chartAccounts: ChartAccountItem[]; counterparties: CounterpartyItem[] }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [riteName, setRiteName] = useState('');
@@ -54,6 +60,45 @@ export default function CadastrosClient({ rites, powers, chartAccounts }: { rite
   const [message, setMessage] = useState('');
   const [seeding, setSeeding] = useState(false);
   const [linking, setLinking] = useState(false);
+
+  const EMPTY_CP_FORM = { kind: 'supplier', name: '', document: '', phone: '', city: '', state: '' };
+  const [cpForm, setCpForm] = useState(EMPTY_CP_FORM);
+  const [showCpForm, setShowCpForm] = useState(false);
+  const [editingCp, setEditingCp] = useState<string | null>(null);
+  const [cpFilter, setCpFilter] = useState<'all' | 'client' | 'supplier'>('all');
+  const [cpSaving, setCpSaving] = useState(false);
+
+  async function createCounterparty(event: React.FormEvent) {
+    event.preventDefault();
+    setCpSaving(true);
+    const res = await fetch('/api/counterparties', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...cpForm, document: cpForm.document || null }),
+    });
+    const data = await res.json();
+    setCpSaving(false);
+    if (res.ok) {
+      setMessage('Contraparte criada com sucesso.');
+      setCpForm(EMPTY_CP_FORM);
+      setShowCpForm(false);
+      router.refresh();
+    } else {
+      setMessage(data.error ?? 'Erro ao criar contraparte.');
+    }
+  }
+
+  async function updateCounterparty(id: string, data: Partial<CounterpartyItem>) {
+    await fetch(`/api/counterparties/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    setEditingCp(null);
+    router.refresh();
+  }
+
+  async function removeCounterparty(id: string) {
+    if (!(await askConfirm({ title: 'Remover contraparte', message: 'Remover este cliente/fornecedor? Contas já lançadas mantêm o nome, só perdem o vínculo com o cadastro.', confirmLabel: 'Remover', intent: 'danger' }))) return;
+    await fetch(`/api/counterparties/${id}`, { method: 'DELETE' });
+    router.refresh();
+  }
 
   async function seedDefaults() {
     setSeeding(true);
@@ -344,6 +389,93 @@ export default function CadastrosClient({ rites, powers, chartAccounts }: { rite
                 </div>
               ))}
             </div>
+          )}
+        </CollapsibleCard>
+
+        <CollapsibleCard title="Clientes e fornecedores" count={counterparties.length} defaultOpen={false}>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <p className="text-sm text-sand-dark">Contrapartes de contas a pagar/receber que não são membros da loja.</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <select value={cpFilter} onChange={(e) => setCpFilter(e.target.value as typeof cpFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
+                <option value="all">Todos</option>
+                <option value="client">Clientes</option>
+                <option value="supplier">Fornecedores</option>
+              </select>
+              <button
+                onClick={() => setShowCpForm(true)}
+                className="rounded-full border border-gold/40 px-4 py-1.5 text-xs font-medium text-gold/80 hover:border-gold/60 hover:text-gold"
+              >
+                + Novo cadastro
+              </button>
+            </div>
+          </div>
+
+          {showCpForm ? (
+            <form onSubmit={createCounterparty} className="mb-4 flex flex-wrap gap-3 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4">
+              <input value={cpForm.name} onChange={(e) => setCpForm({ ...cpForm, name: e.target.value })} className={INPUT} placeholder="Nome" required />
+              <select value={cpForm.kind} onChange={(e) => setCpForm({ ...cpForm, kind: e.target.value })} className={INPUT}>
+                <option value="supplier">Fornecedor</option>
+                <option value="client">Cliente</option>
+                <option value="both">Cliente e fornecedor</option>
+              </select>
+              <input value={cpForm.document} onChange={(e) => setCpForm({ ...cpForm, document: e.target.value })} className={INPUT} placeholder="CPF/CNPJ (opcional)" />
+              <input value={cpForm.phone} onChange={(e) => setCpForm({ ...cpForm, phone: e.target.value })} className={INPUT} placeholder="Telefone (opcional)" />
+              <input value={cpForm.city} onChange={(e) => setCpForm({ ...cpForm, city: e.target.value })} className={INPUT} placeholder="Cidade (opcional)" />
+              <button type="submit" disabled={cpSaving} className={ADD_BTN}>{cpSaving ? '…' : 'Criar'}</button>
+              <button type="button" onClick={() => setShowCpForm(false)} className="rounded-full border border-white/15 px-4 py-2.5 text-sm text-sand-dark hover:text-sand">Cancelar</button>
+            </form>
+          ) : null}
+
+          {counterparties.filter((c) => cpFilter === 'all' || c.kind === cpFilter || c.kind === 'both').length === 0 ? (
+            <p className="mt-4 text-sm text-sand-dark">Nenhum cadastro ainda.</p>
+          ) : (
+            <ul className="space-y-2">
+              {counterparties
+                .filter((c) => cpFilter === 'all' || c.kind === cpFilter || c.kind === 'both')
+                .map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand">
+                    {editingCp === c.id ? (
+                      <div className="flex w-full flex-wrap gap-2">
+                        <input defaultValue={c.name} id={`cp-name-${c.id}`} className="flex-1 min-w-[10rem] rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <select defaultValue={c.kind} id={`cp-kind-${c.id}`} className="rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50">
+                          <option value="supplier">Fornecedor</option>
+                          <option value="client">Cliente</option>
+                          <option value="both">Cliente e fornecedor</option>
+                        </select>
+                        <input defaultValue={c.document ?? ''} id={`cp-doc-${c.id}`} placeholder="CPF/CNPJ" className="w-32 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <input defaultValue={c.phone ?? ''} id={`cp-phone-${c.id}`} placeholder="Telefone" className="w-32 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <button
+                          onClick={() => updateCounterparty(c.id, {
+                            name: (document.getElementById(`cp-name-${c.id}`) as HTMLInputElement).value,
+                            kind: (document.getElementById(`cp-kind-${c.id}`) as HTMLSelectElement).value,
+                            document: (document.getElementById(`cp-doc-${c.id}`) as HTMLInputElement).value || null,
+                            phone: (document.getElementById(`cp-phone-${c.id}`) as HTMLInputElement).value || null,
+                          } as Partial<CounterpartyItem>)}
+                          className="text-xs text-gold"
+                        >
+                          Salvar
+                        </button>
+                        <button onClick={() => setEditingCp(null)} className="text-xs text-sand-dark">Cancelar</button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="flex-1 min-w-0">
+                          <span className="truncate">{c.name}</span>
+                          {c.document ? <span className="ml-2 text-xs text-sand-dark">{c.document}</span> : null}
+                          {c.phone ? <span className="ml-2 text-xs text-sand-dark">{c.phone}</span> : null}
+                        </span>
+                        <span className="flex items-center gap-2 shrink-0">
+                          <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-medium ${c.kind === 'client' ? 'bg-emerald-500/10 text-emerald-300' : c.kind === 'supplier' ? 'bg-rose-500/10 text-rose-300' : 'bg-gold/10 text-gold'}`}>
+                            {KIND_LABEL[c.kind] ?? c.kind}
+                          </span>
+                          <button onClick={() => setEditingCp(c.id)} className="text-xs text-sand-dark hover:text-gold">Editar</button>
+                          <button onClick={() => removeCounterparty(c.id)} className="text-xs text-rose-300/70 hover:text-rose-300">Remover</button>
+                        </span>
+                      </>
+                    )}
+                  </li>
+                ))}
+            </ul>
           )}
         </CollapsibleCard>
       </div>

@@ -42,6 +42,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
     }
 
+    let counterpartyId = existing.counterpartyId;
+    if (body?.counterpartyId !== undefined) {
+      counterpartyId = body.counterpartyId ? String(body.counterpartyId) : null;
+      if (counterpartyId) {
+        const cp = await db.counterparty.findFirst({ where: { id: counterpartyId, lodgeId: String(lodgeId) }, select: { id: true } });
+        counterpartyId = cp?.id ?? null;
+      }
+    }
+
     // Recalcula o visto do Venerável quando valor ou tipo mudam — sem isso,
     // dava pra criar uma despesa pequena (aprovada automaticamente) e depois
     // editar o valor pra algo grande sem nunca passar pela aprovação.
@@ -68,12 +77,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         status: body?.status !== undefined ? String(body.status).trim() : undefined,
         description: body?.description !== undefined ? (String(body.description).trim() || null) : undefined,
         memberId: body?.memberId !== undefined ? (body.memberId ? String(body.memberId) : null) : undefined,
+        counterpartyId: body?.counterpartyId !== undefined ? counterpartyId : undefined,
         isDues: body?.isDues !== undefined ? Boolean(body.isDues) : undefined,
         chartAccountId: body?.chartAccountId !== undefined ? chartAccountId : undefined,
         approvalStatus,
       },
       include: {
         member: { select: { id: true, name: true } },
+        counterparty: { select: { id: true, name: true, kind: true } },
         chartAccount: { select: { id: true, code: true, name: true, category: true } },
       },
     });

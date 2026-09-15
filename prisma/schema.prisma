@@ -91,6 +91,7 @@ model Lodge {
   relatives     Relative[]
   campaigns     Campaign[]
   campaignDonations CampaignDonation[]
+  counterparties Counterparty[]
 }
 
 model User {
@@ -239,6 +240,7 @@ model Account {
   lodgeId        String
   memberId       String?
   chartAccountId String?  // vínculo ao plano de contas (livro caixa / balancete)
+  counterpartyId String?  // vínculo ao cadastro de cliente/fornecedor (quando não é membro)
   type           String   // RECEIVABLE | PAYABLE
   title          String
   amount         Float
@@ -247,16 +249,57 @@ model Account {
   isDues         Boolean  @default(false) // mensalidade do membro (base da regra dos 60 dias / Art. 002)
   approvalStatus String   @default("approved") // approved | pending | rejected — visto do Venerável (despesas acima do limite)
   description    String?
+  // Snapshot do nome/documento da contraparte no momento do lançamento —
+  // sobrevive mesmo se o cadastro em Counterparty for editado/removido depois
+  // (mesmo padrão de `title` guardar o nome da ChartAccount na hora do lançamento).
+  counterpartyName String?
+  counterpartyDoc   String? // CPF/CNPJ, quando disponível
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   lodge        Lodge        @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
   chartAccount ChartAccount? @relation(fields: [chartAccountId], references: [id], onDelete: SetNull)
+  counterparty Counterparty? @relation(fields: [counterpartyId], references: [id], onDelete: SetNull)
   payments     Payment[]
   invoices     Invoice[]
 
   @@index([chartAccountId])
+  @@index([counterpartyId])
+}
+
+// Cadastro de clientes/fornecedores — contrapartes de Account que não são
+// membros da loja (fornecedor de evento, entidade paramaçônica, doador
+// avulso, etc.). Um único modelo para os dois papéis (kind), no mesmo
+// espírito de ChartAccount.type separar REVENUE/EXPENSE numa tabela só —
+// evita duplicar campos idênticos (nome, documento, contato, endereço) em
+// duas tabelas quando a única diferença real é o lado da conta (a pagar ou
+// a receber). Pensado para ser reaproveitado por qualquer loja.
+model Counterparty {
+  id          String   @id @default(cuid())
+  lodgeId     String
+  kind        String   @default("supplier") // client | supplier | both
+  name        String                        // nome / nome fantasia
+  legalName   String?                       // razão social
+  document    String?                       // CPF ou CNPJ
+  isCompany   Boolean  @default(false)       // pessoa jurídica (J) vs física (F)
+  email       String?
+  phone       String?
+  addressLine String?
+  city        String?
+  state       String?
+  zipCode     String?
+  category    String?                       // categoria livre (ex.: ramo de atividade)
+  notes       String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lodge    Lodge     @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  accounts Account[]
+
+  @@unique([lodgeId, document])
+  @@index([lodgeId, name])
 }
 
 model Invoice {
