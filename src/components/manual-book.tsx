@@ -1025,7 +1025,7 @@ export function ManualBook() {
               <Bullets>
                 <li><strong>Resumo do obreiro:</strong> seus dados — nome, e-mail, telefone, <strong>grau atual</strong> e loja de origem.</li>
                 <li><strong>Resumo financeiro:</strong> três indicadores — <UI>A receber</UI>, <UI>A pagar</UI> e <UI>Pendentes</UI> (valores em aberto).</li>
-                <li><strong>Meu extrato (a receber e a pagar):</strong> cada conta vinculada a você — tipo, categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status para achar rápido um lançamento específico.</li>
+                <li><strong>Meu extrato:</strong> cada conta vinculada a você — tipo (a receber/a pagar), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado.</li>
                 <li><strong>Documentos recentes:</strong> os arquivos disponibilizados a você pela loja.</li>
               </Bullets>
               <p>

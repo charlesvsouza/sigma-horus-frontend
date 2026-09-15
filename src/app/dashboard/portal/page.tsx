@@ -216,6 +216,29 @@ function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; on
   );
 }
 
+// Relatório do extrato: visível apenas na impressão (Salvar como PDF),
+// reflete o filtro de tipo/status selecionado no card — mesmo padrão do
+// relatório de membros (dashboard/membros) e do recibo de pagamento.
+const EXTRATO_PRINT_CSS = `
+.extrato-report { display: none; }
+@media print {
+  @page { size: A4 portrait; margin: 16mm 14mm; }
+  body * { visibility: hidden !important; }
+  .extrato-report { display: block !important; position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; }
+  .extrato-report, .extrato-report * { visibility: visible !important; }
+  .extrato-report h1 { font-size: 15pt; margin: 0 0 2mm; letter-spacing: 0.02em; border-bottom: 2px solid #C9A227; padding-bottom: 2.5mm; }
+  .extrato-report .sub { color: #444 !important; font-size: 9pt; margin: 2mm 0 5mm; }
+  .extrato-report table { width: 100%; border-collapse: collapse; }
+  .extrato-report th { border-bottom: 1.5px solid #333; text-transform: uppercase; font-size: 8pt; text-align: left; padding: 3px 6px; }
+  .extrato-report td { border-bottom: 1px solid #ccc; font-size: 9pt; text-align: left; padding: 3px 6px; }
+  .extrato-report tr { break-inside: avoid; page-break-inside: avoid; }
+  .extrato-report .total { text-align: right; font-weight: bold; margin-top: 3mm; font-size: 10pt; }
+}
+`;
+
+const TYPE_FILTER_LABEL: Record<string, string> = { all: 'Tudo', RECEIVABLE: 'A receber', PAYABLE: 'A pagar' };
+const STATUS_FILTER_LABEL: Record<string, string> = { all: 'Qualquer status', pending: 'Pendente', paid: 'Pago', overdue: 'Vencido' };
+
 export default function PortalPage() {
   const [member, setMember] = useState<MemberSummary | null>(null);
   const [accounts, setAccounts] = useState<AccountItem[]>([]);
@@ -226,6 +249,11 @@ export default function PortalPage() {
   const [savedMessage, setSavedMessage] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'RECEIVABLE' | 'PAYABLE'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid' | 'overdue'>('all');
+
+  const filteredAccounts = accounts
+    .filter((a) => typeFilter === 'all' || a.type === typeFilter)
+    .filter((a) => statusFilter === 'all' || a.status === statusFilter);
+  const filteredTotal = filteredAccounts.reduce((sum, a) => sum + (a.type === 'RECEIVABLE' ? Number(a.amount) : -Number(a.amount)), 0);
 
   async function load() {
     const response = await fetch('/api/portal');
@@ -324,7 +352,7 @@ export default function PortalPage() {
 
         <section className="grid gap-6 lg:grid-cols-2">
           <CollapsibleCard
-            title="Meu extrato (a receber e a pagar)"
+            title="Meu extrato"
             count={accounts.length}
             defaultOpen={accounts.length > 0 && accounts.length <= 8}
             headerAction={
@@ -340,17 +368,23 @@ export default function PortalPage() {
                   <option value="paid">Pago</option>
                   <option value="overdue">Vencido</option>
                 </select>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  disabled={filteredAccounts.length === 0}
+                  title="Gera um PDF do extrato conforme o filtro atual"
+                  className="rounded-lg border border-gold/40 px-2.5 py-1.5 text-xs font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold disabled:opacity-40"
+                >
+                  Relatório PDF
+                </button>
               </div>
             }
           >
             <div className="space-y-3">
               {(() => {
-                const filtered = accounts
-                  .filter((a) => typeFilter === 'all' || a.type === typeFilter)
-                  .filter((a) => statusFilter === 'all' || a.status === statusFilter);
                 if (accounts.length === 0) return <p className="text-sm text-sand-dark">Nenhuma conta vinculada.</p>;
-                if (filtered.length === 0) return <p className="text-sm text-sand-dark">Nenhum lançamento para este filtro.</p>;
-                return filtered.map((account) => (
+                if (filteredAccounts.length === 0) return <p className="text-sm text-sand-dark">Nenhum lançamento para este filtro.</p>;
+                return filteredAccounts.map((account) => (
                   <div key={account.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                     <div className="flex items-center justify-between gap-3">
                       <div>
@@ -383,6 +417,34 @@ export default function PortalPage() {
             </div>
           </div>
         </section>
+      </div>
+
+      {/* Relatório imprimível (Salvar como PDF) — reflete o filtro atual */}
+      <style>{EXTRATO_PRINT_CSS}</style>
+      <div className="extrato-report">
+        <h1>Meu extrato — {member?.name ?? ''}</h1>
+        <p className="sub">
+          {TYPE_FILTER_LABEL[typeFilter]} · {STATUS_FILTER_LABEL[statusFilter]}
+          {' · '}{filteredAccounts.length} lançamento(s) · Emitido em {new Date().toLocaleDateString('pt-BR')}
+        </p>
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Status</th><th>Valor</th></tr>
+          </thead>
+          <tbody>
+            {filteredAccounts.map((account) => (
+              <tr key={account.id}>
+                <td>{new Date(account.dueDate).toLocaleDateString('pt-BR')}</td>
+                <td>{account.title}</td>
+                <td>{account.chartAccount ? `${account.chartAccount.category ? account.chartAccount.category + ' — ' : ''}${account.chartAccount.name}` : '—'}</td>
+                <td>{account.type === 'RECEIVABLE' ? 'A receber' : 'A pagar'}</td>
+                <td>{ACCOUNT_STATUS_LABEL[account.status] ?? account.status}</td>
+                <td>R$ {Number(account.amount).toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="total">Saldo do filtro (a receber − a pagar): R$ {filteredTotal.toFixed(2)}</p>
       </div>
     </main>
   );
