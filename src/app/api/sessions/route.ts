@@ -1,12 +1,15 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ items: [] });
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'members', 'read');
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const items = await withTenant(String(lodgeId), (db) =>
     db.session.findMany({
@@ -22,6 +25,8 @@ export async function POST(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'members', 'write');
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const body = await request.json();
   const title = String(body?.title ?? '').trim();

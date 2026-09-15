@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 /**
@@ -43,9 +44,15 @@ function addInterval(date: Date, interval: string) {
 export async function GET() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
+  const role = session?.user?.role;
 
   if (!lodgeId) {
     return NextResponse.json({ items: [] });
+  }
+
+  const access = await requireLodgeAccess(String(lodgeId), role, 'accounts', 'read');
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   const items = await withTenant(String(lodgeId), (db) =>
@@ -65,9 +72,15 @@ export async function GET() {
 export async function POST(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
+  const role = session?.user?.role;
 
   if (!lodgeId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const access = await requireLodgeAccess(String(lodgeId), role, 'accounts', 'write');
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   const body = await request.json();

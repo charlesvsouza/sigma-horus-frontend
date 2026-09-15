@@ -1,11 +1,21 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import { canLodgeAccess } from '@/lib/rbac';
 import { MiniBar } from '@/components/mini-bar';
 
 export default async function DashboardPage() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
+
+  // Esta tela mostra o resumo financeiro CONSOLIDADO da loja (saldo, a
+  // receber/pagar) — vazava pra qualquer papel logado, inclusive Membro, que
+  // pelo RBAC só tem acesso a "portal" (não a "accounts"). Quem não pode ler
+  // accounts cai direto no próprio portal em vez de ver os números da loja.
+  if (lodgeId && !(await canLodgeAccess(String(lodgeId), session?.user?.role, 'accounts', 'read'))) {
+    redirect('/dashboard/portal');
+  }
 
   if (!lodgeId) {
     return (

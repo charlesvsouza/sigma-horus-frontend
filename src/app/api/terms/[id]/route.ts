@@ -1,12 +1,15 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const readAccess = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'members', 'read');
+  if (!readAccess.ok) return NextResponse.json({ error: readAccess.error }, { status: readAccess.status });
   const { id } = await params;
   const item = await withTenant(String(lodgeId), (db) =>
     db.term.findFirst({
@@ -25,6 +28,8 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'members', 'write');
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
   const { id } = await params;
 
   const result = await withTenant(String(lodgeId), async (db) => {
