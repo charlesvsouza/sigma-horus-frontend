@@ -41,19 +41,31 @@ export async function GET() {
           exaltationDate: true,
           installationDate: true,
           gradeName: true,
+          addressLine: true,
+          addressNumber: true,
+          complement: true,
+          neighborhood: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          country: true,
+          relatives: { orderBy: { order: 'asc' } },
         },
       }),
     ),
     withTenant(String(lodgeId), (db) =>
       db.account.findMany({
         where: { lodgeId: String(lodgeId), memberId: String(memberId) },
-        select: { id: true, title: true, type: true, amount: true, dueDate: true, status: true },
+        select: {
+          id: true, title: true, type: true, amount: true, dueDate: true, status: true,
+          chartAccount: { select: { name: true, category: true } },
+        },
         orderBy: { dueDate: 'asc' },
       }),
     ),
     withTenant(String(lodgeId), (db) =>
       db.document.findMany({
-        where: { lodgeId: String(lodgeId) },
+        where: { lodgeId: String(lodgeId), memberId: String(memberId) },
         select: { id: true, title: true, kind: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 5,

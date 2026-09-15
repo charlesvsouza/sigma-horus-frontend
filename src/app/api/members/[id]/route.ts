@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, validateMemberFields } from '@/lib/member-fields';
+import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, parseSelfEditFields, validateMemberFields } from '@/lib/member-fields';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -14,9 +14,14 @@ export async function PUT(request: Request, { params }: Ctx) {
   const role = session?.user?.role;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Self-edit: o obreiro pode editar o PRÓPRIO cadastro (dados/contato/família),
-  // mesmo sem permissão geral de members:write. O papel (cargo de permissão) e o
-  // cargo maçônico não são campos do cadastro de membro, então ficam intocados.
+  // Self-edit: o obreiro pode editar o PRÓPRIO cadastro, mesmo sem permissão
+  // geral de members:write — mas só contato/endereço/família
+  // (parseSelfEditFields), nunca os campos completos de parseMemberFields:
+  // esse último sempre preenche TODAS as chaves (inclusive com default/null
+  // quando ausentes do body), o que sob o ramo self-edit apagaria nome, CPF,
+  // rito/potência, grau e status do próprio membro — ou pior, um body
+  // malicioso poderia setar esses campos de propósito. O papel/cargo de
+  // permissão e o cargo maçônico só são definidos pelo Administrador.
   const isSelf = session?.user?.memberId === id;
   if (!isSelf) {
     const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'write');
@@ -24,8 +29,29 @@ export async function PUT(request: Request, { params }: Ctx) {
   }
 
   const body = await request.json();
-  const fields = parseMemberFields(body);
   const relatives = parseRelatives(body);
+
+  if (isSelf) {
+    const fields = parseSelfEditFields(body);
+    const item = await withTenant(String(lodgeId), async (db) => {
+      const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true } });
+      if (!existing) return null;
+      const updated = await db.member.update({
+        where: { id },
+        data: {
+          ...fields,
+          relatives: { deleteMany: {}, create: relatives.map((r) => ({ lodgeId: String(lodgeId), ...r })) },
+        },
+        include: MEMBER_LIST_INCLUDE,
+      });
+      await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { selfEdit: true } });
+      return updated;
+    });
+    if (!item) return NextResponse.json({ error: 'Membro não encontrado.' }, { status: 404 });
+    return NextResponse.json({ item });
+  }
+
+  const fields = parseMemberFields(body);
   const validationError = validateMemberFields(fields);
   if (validationError) {
     return NextResponse.json({ error: validationError }, { status: 400 });

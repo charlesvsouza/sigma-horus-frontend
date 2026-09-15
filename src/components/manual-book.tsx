@@ -1025,12 +1025,12 @@ export function ManualBook() {
               <Bullets>
                 <li><strong>Resumo do obreiro:</strong> seus dados — nome, e-mail, telefone, <strong>grau atual</strong> e loja de origem.</li>
                 <li><strong>Resumo financeiro:</strong> três indicadores — <UI>A receber</UI>, <UI>A pagar</UI> e <UI>Pendentes</UI> (valores em aberto).</li>
-                <li><strong>Últimas contas:</strong> cada conta vinculada a você, com tipo (Receber/Pagar), vencimento, valor e status.</li>
+                <li><strong>Meu extrato (a receber e a pagar):</strong> cada conta vinculada a você — tipo, categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status para achar rápido um lançamento específico.</li>
                 <li><strong>Documentos recentes:</strong> os arquivos disponibilizados a você pela loja.</li>
               </Bullets>
               <p>
-                Assim você confere, a qualquer momento, <strong>o que pagou, o que está em aberto e o que vence</strong> —
-                sem precisar pedir à tesouraria.
+                Assim você confere, a qualquer momento, <strong>o que pagou, o que está em aberto, do que se trata e o que
+                vence</strong> — sem precisar pedir à tesouraria.
               </p>
               <Note>
                 Se a sua mensalidade ficar em aberto por mais de <strong>60 dias</strong>, um aviso vermelho aparece por
@@ -1043,7 +1043,7 @@ export function ManualBook() {
               <Sub title="Seu acesso e seus dados">
                 <Bullets>
                   <li><strong>Primeiro acesso:</strong> entre com o e-mail e a senha provisória recebida por e-mail; o sistema pede para você <strong>definir uma nova senha</strong>.</li>
-                  <li><strong>Editar meus dados:</strong> você pode atualizar o próprio cadastro (contato, endereço, família). O seu <strong>papel/cargo</strong> só é definido pelo Administrador.</li>
+                  <li><strong>Editar meus dados:</strong> clique em <UI>Editar meus dados</UI> no topo do Resumo do obreiro para atualizar contato, endereço e família (mãe, pai, cônjuge, dependentes). O seu <strong>papel/cargo</strong>, CPF, rito/potência e evolução maçônica só são alterados pelo Administrador ou Secretaria.</li>
                   <li><strong>Trocar senha:</strong> a qualquer momento, em <UI>/trocar-senha</UI>, informando a senha atual.</li>
                   <li><strong>Tema Papiro:</strong> prefere a interface clara? Veja a seção Aparência (capítulo 6.1) — a escolha vale para o seu navegador.</li>
                 </Bullets>

@@ -99,6 +99,41 @@ export function parseMemberFields(body: Body): MemberFields {
   };
 }
 
+export interface SelfEditFields {
+  email?: string | null;
+  phone?: string | null;
+  addressLine?: string | null;
+  addressNumber?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+  country?: string | null;
+}
+
+// Campos que o PRÓPRIO obreiro pode editar via "Meu Portal" (contato +
+// endereço — ver PUT /api/members/[id], ramo isSelf). Deliberadamente NÃO
+// inclui nome, CPF/RG, rito/potência, grau, datas maçônicas ou status —
+// isso é papel do Administrador/Secretaria. Diferente de parseMemberFields,
+// só retorna as chaves que edita: usado direto em `data`, então uma chave
+// ausente não é tocada (parseMemberFields sempre preenche tudo, inclusive
+// com default/null, o que apagaria os demais campos do membro se usado aqui).
+export function parseSelfEditFields(body: Body): SelfEditFields {
+  return {
+    email: str(body?.email),
+    phone: str(body?.phone),
+    addressLine: str(body?.addressLine),
+    addressNumber: str(body?.addressNumber),
+    complement: str(body?.complement),
+    neighborhood: str(body?.neighborhood),
+    city: str(body?.city),
+    state: str(body?.state),
+    zipCode: str(body?.zipCode),
+    country: str(body?.country),
+  };
+}
+
 // Validação compartilhada por POST (create) e PUT (update) — checa os campos
 // que o form já restringe via <select>/máscara, mas que a API aceita como
 // texto livre (ex.: currentDegree só pode chegar aqui fora do range 4–33 por
