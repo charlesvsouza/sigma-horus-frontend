@@ -53,6 +53,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-balancetes', label: '7.10 Balancetes periódicos' },
       { id: 'tes-gerencial', label: '7.11 Fluxo de caixa, orçamento e patrimônio' },
       { id: 'tes-conciliacao', label: '7.12 Conciliação (Asaas e extrato bancário)' },
+      { id: 'tes-clientes-fornecedores', label: '7.13 Clientes e fornecedores' },
     ],
   },
   { id: 'secretario', num: '8', label: 'Guia do Secretário' },
@@ -267,7 +268,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <h1 style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm' }}>Manual do Usuário</h1>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.1 — 27 de junho de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.2 — 15 de setembro de 2026</p>
               </div>
             </div>
 
@@ -689,7 +690,7 @@ export function ManualBook() {
                   <li>Confira o <UI>Título da conta</UI> e o tipo: <strong>Conta a receber</strong> ou <strong>Conta a pagar</strong>.</li>
                   <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> de vencimento.</li>
                   <li>Defina o <UI>Status</UI> (Pendente, Pago ou Vencido).</li>
-                  <li>Opcional: <UI>Vincular a um membro</UI> e escrever uma <UI>Descrição</UI>.</li>
+                  <li>Opcional: <UI>Vincular a um membro</UI> ou <UI>Vincular a um cliente/fornecedor</UI> (cadastro de quem não é membro — ver 7.13), e escrever uma <UI>Descrição</UI>.</li>
                   <li>Clique em <UI>Salvar conta</UI>. A conta aparece na lista <UI>Contas cadastradas</UI>; use <UI>Remover</UI> para excluir.</li>
                 </Steps>
                 <Bullets>
@@ -915,6 +916,24 @@ export function ManualBook() {
                   <li><strong>Verificar pagamentos no Asaas</strong> (em <UI>Integrações</UI>, se o Asaas estiver conectado): confere no Asaas cobranças emitidas que ainda não baixaram no sistema — cobre o caso raro de o aviso automático (webhook) falhar ou atrasar.</li>
                   <li><strong>Conciliação bancária</strong> (<UI>Financeiro → Conciliação bancária</UI>): importe o extrato do seu banco (arquivo <strong>OFX</strong>, exportado pelo internet banking, ou <strong>CSV</strong> com colunas Data/Descrição/Valor). O sistema tenta casar cada linha com um pagamento já registrado (mesmo valor, data próxima, mesma direção — receber ou pagar); o que não casar sozinho fica disponível para <UI>Vincular manualmente</UI> ou <UI>Ignorar</UI>.</li>
                 </Bullets>
+              </Sub>
+
+              <Sub id="tes-clientes-fornecedores" title="7.13 Clientes e fornecedores">
+                <p>
+                  Cadastro de quem <strong>não é membro</strong> da loja, mas aparece em contas a pagar ou a receber —
+                  fornecedor de evento, buffet, entidade paramaçônica, contribuição à Grande Loja, doador avulso, etc.
+                  Em <UI>Cadastros mestre → Clientes e fornecedores</UI>:
+                </p>
+                <Steps>
+                  <li>Clique em <UI>+ Novo cadastro</UI> e informe o <UI>Nome</UI>.</li>
+                  <li>Escolha o tipo: <strong>Cliente</strong> (quem paga a loja), <strong>Fornecedor</strong> (quem a loja paga) ou <strong>Cliente e fornecedor</strong>, quando os dois casos acontecem com a mesma contraparte.</li>
+                  <li>Opcional: <UI>CPF/CNPJ</UI>, <UI>Telefone</UI> e <UI>Cidade</UI>.</li>
+                  <li>Ao lançar uma conta (7.2), use <UI>Vincular a um cliente/fornecedor</UI> em vez de membro — o nome passa a aparecer na lista de <UI>Contas cadastradas</UI> e nos relatórios, em vez de &ldquo;Sem vínculo&rdquo;.</li>
+                </Steps>
+                <p>
+                  Filtre a lista por <UI>Clientes</UI> ou <UI>Fornecedores</UI> no seletor acima dela. Remover um cadastro
+                  não apaga as contas já lançadas — elas mantêm o nome guardado, só perdem o vínculo com o cadastro.
+                </p>
               </Sub>
             </Chapter>
 
