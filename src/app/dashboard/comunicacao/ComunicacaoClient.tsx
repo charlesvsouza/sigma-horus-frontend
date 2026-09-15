@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard } from '@/components/ui';
+import { MESSAGE_STATUS_LABEL } from '@/lib/status-labels';
 
 interface MessageItem {
   id: string;
@@ -90,7 +91,7 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
                     <p className="text-sm font-medium text-sand-light">{item.title}</p>
                     <p className="mt-1 text-xs text-sand-dark">{item.channel} • {item.member?.name ?? 'Todos'}</p>
                   </div>
-                  <p className="text-sm text-sand-dark">{item.status}</p>
+                  <p className="text-sm text-sand-dark">{MESSAGE_STATUS_LABEL[item.status] ?? item.status}</p>
                 </div>
                 <p className="mt-2 text-sm text-sand">{item.content}</p>
               </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
 
 interface Member { id: string; name: string; }
 interface SessionInfo { id: string; title: string; date: string; type: string; grade?: string | null; }
@@ -36,7 +37,7 @@ export default function SessionDetailClient({
           <div>
             <h1 className="text-2xl font-bold text-sand-light">{session.title}</h1>
             <p className="mt-1 text-sm text-sand-dark">
-              {new Date(session.date).toLocaleDateString('pt-BR')} • {session.type}
+              {new Date(session.date).toLocaleDateString('pt-BR')} • {SESSION_TYPE_LABEL[session.type] ?? session.type}
               {session.grade ? ` • Grau: ${session.grade}` : ''}
             </p>
           </div>

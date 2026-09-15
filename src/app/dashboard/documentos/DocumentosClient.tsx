@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard } from '@/components/ui';
+import { DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 
 interface DocumentItem {
   id: string;
@@ -107,7 +108,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-sand-light">{item.title}</p>
-                    <p className="mt-1 text-xs text-sand-dark">{item.kind} • {item.member?.name ?? 'Sem vínculo'}</p>
+                    <p className="mt-1 text-xs text-sand-dark">{DOCUMENT_KIND_LABEL[item.kind] ?? item.kind} • {item.member?.name ?? 'Sem vínculo'}</p>
                     {item.storageKey ? <a href={`/api/documents/${item.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-sm text-gold hover:text-gold-light">Abrir arquivo</a> : null}
                   </div>
                   <p className="max-w-2xl text-sm text-sand-dark">{item.content ?? 'Sem resumo.'}</p>

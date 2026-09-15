@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { FiltrosRelatorios } from './filtros';
 import { BotaoExportar } from './exportar';
+import { INVOICE_STATUS_LABEL } from '@/lib/status-labels';
 
 function parseDate(value: string | undefined): Date | undefined {
   if (!value) return undefined;
@@ -163,7 +164,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
                 <span>Cobrança {invoice.number}</span>
                 <span>R$ {Number(invoice.amount).toFixed(2)}</span>
                 <span>{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span>
-                <span>{invoice.status}</span>
+                <span>{INVOICE_STATUS_LABEL[invoice.status] ?? invoice.status}</span>
               </div>
             ))}
           </div>

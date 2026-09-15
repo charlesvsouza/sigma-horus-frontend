@@ -1,4 +1,5 @@
 import type { Closing } from './types';
+import { INVOICE_STATUS_LABEL } from '@/lib/status-labels';
 
 // Componentes de seção do relatório de fechamento — extraídos para serem
 // reusados tanto no relatório completo (impressão/PDF, formato AMORIO) quanto
@@ -116,7 +117,7 @@ export function CobrancasSection({ data, breakBefore }: { data: Closing['cobranc
         <thead><tr><th className={TH}>Nº</th><th className={TH}>Destinatário</th><th className={`${TH} text-right`}>Valor</th><th className={TH}>Vencimento</th><th className={TH}>Situação</th></tr></thead>
         <tbody>
           {data.items.map((c, i) => (
-            <tr key={i}><td className={TD}>{c.number}</td><td className={TD}>{c.member}</td><td className={`${TD} text-right tabular-nums`}>{money(c.amount)}</td><td className={TD}>{fmtDate(c.dueDate)}</td><td className={TD}>{c.status}</td></tr>
+            <tr key={i}><td className={TD}>{c.number}</td><td className={TD}>{c.member}</td><td className={`${TD} text-right tabular-nums`}>{money(c.amount)}</td><td className={TD}>{fmtDate(c.dueDate)}</td><td className={TD}>{INVOICE_STATUS_LABEL[c.status] ?? c.status}</td></tr>
           ))}
           {data.items.length === 0 ? <tr><td className={TD} colSpan={5}>Sem cobranças no período.</td></tr> : null}
         </tbody>
