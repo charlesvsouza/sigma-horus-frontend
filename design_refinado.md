@@ -269,7 +269,7 @@ P1. [ ] Confirmação em ações destrutivas/financeiras que ainda não passaram
 P1. [ ] Feedback de sucesso/erro inconsistente e mutações silenciosas. `membros/page.tsx`
     e `CadastrosClient.tsx` usam uma `string` só pra mensagem (tudo vira
     `intent="warn"`, sucesso incluso); ~10 mutações em `CadastrosClient` nunca checam
-    `response.ok`. `ConfiguracoesClient.tsx` usa uma `&lt;div&gt;` crua em vez do `&lt;Alert&gt;`
+    `response.ok`. `ConfiguracoesClient.tsx` usa uma `<div>` crua em vez do `<Alert>`
     já importado (perde o override de contraste do Papiro e o `role` de acessibilidade —
     o mesmo tipo de bug que a Onda 1 de 30/06 já matou pra outras 18 telas, voltou aqui
     isoladamente). Direção: adotar o shape `{kind:'ok'|'error'}` de `ContasClient.tsx`
@@ -323,8 +323,8 @@ P3. [ ] Landing: contraste de texto sépia (`#2D281E`) sobre seções escuras me
     prováveis falsos positivos — já documentados como decisão intencional no histórico
     do projeto — e não entram neste backlog.)
 
-P3. [ ] `/manual` tem dois `&lt;h1&gt;` na mesma página (achado da varredura de DOM);
-    `/manual` e `/sobre` não têm marco `&lt;main&gt;`. Ajuste pontual de semântica, sem
+P3. [ ] `/manual` tem dois `<h1>` na mesma página (achado da varredura de DOM);
+    `/manual` e `/sobre` não têm marco `<main>`. Ajuste pontual de semântica, sem
     risco visual.
 
 Fora do backlog (observações registradas, não priorizadas por ora): toggle de tema só
