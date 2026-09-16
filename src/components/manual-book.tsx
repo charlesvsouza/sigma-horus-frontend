@@ -207,7 +207,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 16 de setembro de 2026 · versão 1.3</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 16 de setembro de 2026 · versão 1.4</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -269,7 +269,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <h1 style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm' }}>Manual do Usuário</h1>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.3 — 16 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.4 — 16 de setembro de 2026</p>
               </div>
             </div>
 
@@ -401,7 +401,7 @@ export function ManualBook() {
                 <li><strong>Administrador:</strong> conta, usuários, assinatura, integrações e configurações.</li>
                 <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações (despesas, prestação de contas e transferências entre contas bancárias); não lança baixas financeiras.</li>
                 <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, fecha o caixa, solicita transferências entre contas bancárias/Caixa e vê relatórios financeiros.</li>
-                <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença; relatórios não financeiros.</li>
+                <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença, materiais e patrimônio da loja, documentos institucionais; relatórios não financeiros.</li>
                 <li><strong>Hospitaleiro:</strong> consulta os irmãos (somente leitura, para contato), gerencia campanhas de benemerência e acompanha o Tronco de Solidariedade.</li>
                 <li><strong>Membro (obreiro):</strong> o próprio portal — extrato, débitos, histórico e documentos pertinentes.</li>
               </Bullets>
@@ -420,8 +420,8 @@ export function ManualBook() {
               </p>
               <Bullets>
                 <li><strong>Visão geral:</strong> <UI>Visão geral</UI> (indicadores), <UI>Meu portal</UI> e <UI>Manual &amp; ajuda</UI>.</li>
-                <li><strong>Loja &amp; cadastros:</strong> <UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Cargos</UI>, <UI>Veneralato</UI>.</li>
-                <li><strong>Financeiro:</strong> <UI>Contas</UI>, <UI>Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Relatórios</UI>.</li>
+                <li><strong>Loja &amp; cadastros:</strong> <UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>, <UI>Veneralato</UI>.</li>
+                <li><strong>Financeiro:</strong> <UI>Contas</UI>, <UI>Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Conciliação bancária</UI>, <UI>Patrimônio</UI>, <UI>Relatórios</UI>.</li>
                 <li><strong>Atividades:</strong> <UI>Sessões</UI>, <UI>Documentos</UI>, <UI>Comunicação</UI>.</li>
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI> e <UI>Campanhas</UI> de benemerência.</li>
                 <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
@@ -466,10 +466,11 @@ export function ManualBook() {
                 <Office name="1º Vigilante" light tradition="Segunda Luz, dirige a Coluna dos Companheiros e substitui o Venerável em seus impedimentos." system="Em geral papel Membro (com portal próprio) ou ampliado, conforme a loja decidir." />
                 <Office name="2º Vigilante" light tradition="Terceira Luz, dirige a Coluna dos Aprendizes e zela pela instrução dos obreiros mais novos." system="Normalmente papel Membro; apoia o acompanhamento de presença e frequência." />
                 <Office name="Orador" tradition="Guardião da lei e da justiça nos trabalhos; zela pelo cumprimento dos estatutos." system="Papel Membro, com leitura do que lhe couber; apoia-se na auditoria e nos relatórios." />
-                <Office name="Secretário" tradition="A administração viva da loja: convocações, atas, correspondência e o quadro de obreiros." system="Recebe o papel Secretário: cadastra membros, cargos, períodos e sessões; registra presença; organiza o Centro de Documentos." />
+                <Office name="Secretário" tradition="A administração viva da loja: convocações, atas, correspondência e o quadro de obreiros." system="Recebe o papel Secretário: cadastra membros, cargos, períodos e sessões; registra presença; organiza o Centro de Documentos e o inventário de materiais e patrimônio." />
                 <Office name="Tesoureiro" tradition="O coração financeiro: arrecada mensalidades, paga despesas e presta contas do caixa." system="Recebe o papel Tesoureiro: emite cobranças (boleto/PIX), dá baixas, lança contas e fecha o caixa do veneralato." />
                 <Office name="Chanceler" tradition="Cuida das relações externas, diplomas, certificados e correspondência com a Potência." system="Papel Secretário ou Membro; usa o Centro de Documentos e os cadastros de membros." />
                 <Office name="Hospitaleiro" tradition="O cuidado fraterno: assistência a obreiros e famílias, tronco de beneficência, visitas e aniversários." system="Recebe o papel Hospitaleiro: consulta os irmãos e a família para contato, gerencia campanhas de benemerência e acompanha o saldo do Tronco de Solidariedade (ver capítulo 11)." />
+                <Office name="Arquiteto" tradition="Zela pela ordem material do templo: alfaias, aventais, rituais e demais paramentos e mobiliário da loja." system="Não tem papel de acesso próprio — recebe o papel Secretário ou Administrador para usar a tela Materiais e patrimônio (ver capítulo 8)." />
               </div>
               <p className="text-sm text-sand-dark">
                 A nomenclatura varia conforme o rito; sua loja já nasce com os cargos corretos e pode editá-los em
@@ -1067,11 +1068,41 @@ export function ManualBook() {
                   Secretaria</strong> que o obreiro vê no portal (capítulo 10) — mantenha-os atualizados.
                 </Note>
               </Sub>
+              <Sub id="sec-materiais" title="Materiais e patrimônio">
+                <p>
+                  Em <UI>Loja &amp; cadastros → Materiais e patrimônio</UI>, mantenha o inventário de tudo que a loja usa
+                  no dia a dia — não só alfaias e indumentária: colunas, altar, malhetes, espadas, tapete, urna,
+                  estandarte, placa constitutiva, tábua de delinear, aventais, punhos, joias de cargo e rituais, tudo
+                  num só lugar.
+                </p>
+                <Steps>
+                  <li>Clique em <UI>Cadastrar material</UI> e informe nome, categoria, quantidade em estoque e, se fizer sentido, o <UI>grau exigido</UI> pra fornecer o item (ex.: um ritual só pode ir pra quem já tem aquele grau).</li>
+                  <li>Ou clique em <UI>Carregar lista padrão</UI> pra já preencher o catálogo com um checklist de ~30 itens comuns — não duplica o que você já cadastrou.</li>
+                </Steps>
+                <p>
+                  <strong>Fornecimento de materiais:</strong> no bloco de mesmo nome, escolha o material, o membro e a
+                  quantidade, e clique em <UI>Registrar fornecimento</UI>. Se o material exigir um grau (ex.: Ritual de
+                  Companheiro) e o membro ainda não o tiver alcançado, o sistema recusa — um Mestre continua elegível a
+                  material de um grau que já passou, só não dá pra pular pra frente. Quando o item voltar, use
+                  <UI> Marcar como devolvido</UI> (ou <UI>extraviado</UI>, se for o caso).
+                </p>
+                <Note>
+                  Um material com fornecimento já registrado não pode ser excluído (preserva o histórico) — use
+                  <UI> Inativar</UI> pra tirá-lo das opções de novos cadastros/fornecimentos sem perder o registro.
+                </Note>
+              </Sub>
               <Sub title="Documentos e comunicação">
                 <p>
                   Em <UI>Documentos</UI>, use <UI>Enviar e salvar documento</UI> (título + arquivo) para guardar atas,
-                  comprovantes e certificados em armazenamento privado; o download é por link seguro temporário. Em
-                  <UI>Comunicação</UI>, registre avisos aos membros (recurso em evolução).
+                  comprovantes e certificados em armazenamento privado; o download é por link seguro temporário.
+                </p>
+                <p>
+                  <strong>Documentos institucionais:</strong> deixe o campo <UI>Vincular a um membro</UI> em branco pra
+                  publicar o arquivo pra <strong>toda a loja</strong> em vez de uma pessoa só — é assim que se
+                  disponibiliza o Regimento Interno (da loja e da Potência), o Regulamento Geral e a Constituição da
+                  Potência: o Secretário sobe o arquivo uma vez e todo obreiro passa a ver e baixar em <UI>Meu portal →
+                  Documentos da Loja</UI> (capítulo 10). Use o campo <UI>Categoria</UI> (ex.: &quot;Institucional&quot;)
+                  pra organizar a lista. Em <UI>Comunicação</UI>, registre avisos aos membros (recurso em evolução).
                 </p>
               </Sub>
             </Chapter>
@@ -1099,6 +1130,7 @@ export function ManualBook() {
                 <li><strong>Resumo financeiro:</strong> três indicadores — <UI>A receber</UI>, <UI>A pagar</UI> e <UI>Pendentes</UI> (valores em aberto).</li>
                 <li><strong>Meu extrato:</strong> cada conta vinculada a você — tipo (a receber/a pagar), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado.</li>
                 <li><strong>Documentos recentes:</strong> os arquivos disponibilizados a você pela loja.</li>
+                <li><strong>Documentos da Loja:</strong> regimento interno, regulamento geral, constituição da Potência e outros documentos institucionais, publicados pela Secretaria pra todos os obreiros — abra ou baixe direto por aqui.</li>
               </Bullets>
               <p>
                 Assim você confere, a qualquer momento, <strong>o que pagou, o que está em aberto, do que se trata e o que
@@ -1314,6 +1346,8 @@ export function ManualBook() {
                 <li><strong>Quero o manual em PDF.</strong> Use o botão <strong>Salvar como PDF</strong> no topo desta página.</li>
                 <li><strong>Não consigo registrar um pagamento.</strong> Desde a versão 1.3, todo pagamento exige escolher a <UI>Conta bancária/caixa</UI> que recebeu ou pagou o valor — cadastre pelo menos uma em <UI>Cadastros mestre → Contas bancárias e Caixa</UI> (7.14) antes de registrar.</li>
                 <li><strong>A transferência entre contas não mudou o saldo.</strong> Toda transferência nasce pendente e só afeta o saldo depois que o Venerável Mestre (ou o Administrador) aprovar, no <UI>Histórico</UI> da tela de Transferências (7.14).</li>
+                <li><strong>Não consigo fornecer um ritual/material a um membro.</strong> O material tem um grau exigido e o membro ainda não chegou lá (ex.: Companheiro pedindo Ritual de Mestre) — ou não há quantidade disponível em estoque. Veja Materiais e patrimônio (capítulo 8).</li>
+                <li><strong>Onde encontro o Regimento Interno / Constituição da Potência?</strong> Em <UI>Meu portal → Documentos da Loja</UI>, se a Secretaria já tiver publicado (capítulo 10).</li>
               </Bullets>
             </Chapter>
           </article>

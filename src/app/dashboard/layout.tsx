@@ -23,9 +23,9 @@ const NAV: NavGroupDef[] = [
     items: [
       { href: '/dashboard/membros', label: 'Membros', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
       { href: '/dashboard/cadastros', label: 'Cadastros mestre', roles: ['admin', 'venerable', 'secretary'] },
+      { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: ['admin', 'secretary'] },
       { href: '/dashboard/cargos', label: 'Cargos', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/veneralato', label: 'Veneralato', roles: ['admin', 'venerable', 'secretary'] },
-      { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: ['admin', 'secretary'] },
     ],
   },
   {
@@ -35,8 +35,8 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/cobrancas', label: 'Cobranças', roles: ['admin', 'treasurer'] },
       { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
       { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
-      { href: '/dashboard/patrimonio', label: 'Patrimônio', roles: ['admin', 'venerable', 'treasurer'] },
       { href: '/dashboard/conciliacao-bancaria', label: 'Conciliação bancária', roles: ['admin', 'treasurer'] },
+      { href: '/dashboard/patrimonio', label: 'Patrimônio', roles: ['admin', 'venerable', 'treasurer'] },
       { href: '/dashboard/relatorios', label: 'Relatórios', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
       { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
       { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },

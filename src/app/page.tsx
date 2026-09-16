@@ -8,19 +8,19 @@ const modules = [
     numeral: 'I',
     name: 'Tesouraria',
     description:
-      'O coração financeiro: cobranças e mensalidades, boletos e PIX com baixa automática, contas a pagar e a receber com cadastro de clientes e fornecedores, conciliação bancária, fechamento de caixa e balancetes, com análise preditiva de inadimplência.',
+      'O coração financeiro: cobranças e mensalidades, boletos e PIX com baixa automática, contas a pagar e a receber com cadastro de clientes e fornecedores, contas bancárias e transferências entre elas, conciliação bancária, fechamento de caixa e balancetes, com análise preditiva de inadimplência.',
   },
   {
     numeral: 'II',
     name: 'Secretaria',
     description:
-      'A administração viva da loja: membros e cargos, períodos de veneralato, sessões com ordem do dia, convocação por e-mail e balaustre — o obreiro acompanha tudo num calendário próprio no portal.',
+      'A administração viva da loja: membros e cargos, períodos de veneralato, sessões com ordem do dia, convocação por e-mail e balaustre, documentos institucionais sempre à mão de todos — o obreiro acompanha tudo num calendário próprio no portal.',
   },
   {
     numeral: 'III',
     name: 'Chancelaria',
     description:
-      'A ordem e a memória: ritos e graus, quadro de obreiros, correspondência oficial, prontuários e emissão de certificados.',
+      'A ordem e a memória: ritos e graus, quadro de obreiros, inventário de materiais e alfaias com fornecimento por grau, correspondência oficial, prontuários e emissão de certificados.',
   },
   {
     numeral: 'IV',
