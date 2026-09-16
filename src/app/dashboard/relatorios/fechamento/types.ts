@@ -1,5 +1,5 @@
 export interface Closing {
-  meta: { lodge: string; rite: string | null; power: string | null; from: string; to: string };
+  meta: { lodge: string; rite: string | null; power: string | null; crestUrl: string | null; from: string; to: string };
   balanco: {
     receitas: { code: string; name: string; value: number; pct: number }[];
     despesas: { code: string; name: string; value: number; pct: number }[];

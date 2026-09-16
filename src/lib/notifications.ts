@@ -63,7 +63,7 @@ export async function runDailyNotifications(): Promise<Stats> {
 
   const lodges = await prismaAdmin.lodge.findMany({
     select: {
-      id: true, name: true, ...LODGE_MESSAGING_SELECT,
+      id: true, ...LODGE_MESSAGING_SELECT,
       notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
     },
   });

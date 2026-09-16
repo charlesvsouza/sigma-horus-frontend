@@ -39,6 +39,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
   const [cepStatus, setCepStatus] = useState('');
   const [backingUp, setBackingUp] = useState(false);
   const [backupError, setBackupError] = useState('');
+  const [crestUploading, setCrestUploading] = useState(false);
 
   async function handleDownloadBackup() {
     setBackingUp(true);
@@ -72,6 +73,36 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
 
   function set(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function uploadCrest(file: File) {
+    setCrestUploading(true);
+    setMessage(null);
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/lodges/crest', { method: 'POST', body: formData });
+    const data = await res.json().catch(() => ({}));
+    setCrestUploading(false);
+    if (res.ok) {
+      set('crestUrl', data.crestUrl ?? '');
+      setMessage({ kind: 'ok', text: 'Brasão atualizado.' });
+    } else {
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao enviar o brasão.' });
+    }
+  }
+
+  async function removeCrest() {
+    setCrestUploading(true);
+    setMessage(null);
+    const res = await fetch('/api/lodges/crest', { method: 'DELETE' });
+    setCrestUploading(false);
+    if (res.ok) {
+      set('crestUrl', '');
+      setMessage({ kind: 'ok', text: 'Brasão removido.' });
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao remover o brasão.' });
+    }
   }
 
   function toggleWeekday(idx: number) {
@@ -157,6 +188,33 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
               <Field label="CNPJ" value={form.cnpj} onChange={(v) => set('cnpj', maskCNPJ(v))} inputMode="numeric" placeholder="00.000.000/0000-00" />
               <Field label="E-mail" value={form.email} onChange={(v) => set('email', v)} type="email" />
               <Field label="Telefone" value={form.phone} onChange={(v) => set('phone', maskPhone(v))} inputMode="tel" />
+            </div>
+            <div className="mt-5">
+              <span className="text-xs uppercase tracking-wide text-sand-dark/70">Brasão da loja</span>
+              <p className="mt-1 text-xs text-sand-dark">Aparece em relatórios, recibos e demais documentos gerados, e no cabeçalho dos e-mails automáticos.</p>
+              <div className="mt-2.5 flex flex-wrap items-center gap-4">
+                {form.crestUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={form.crestUrl} alt="Brasão da loja" className="h-16 w-16 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 object-contain p-1" />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-white/[15%] text-[10px] text-sand-dark">Sem brasão</div>
+                )}
+                <div className="flex items-center gap-3">
+                  <label className="cursor-pointer rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold">
+                    {crestUploading ? 'Enviando…' : form.crestUrl ? 'Trocar imagem' : 'Enviar imagem'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={crestUploading}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadCrest(f); e.target.value = ''; }}
+                    />
+                  </label>
+                  {form.crestUrl ? (
+                    <button type="button" onClick={() => void removeCrest()} disabled={crestUploading} className="text-sm text-rose-300/70 transition hover:text-rose-300 disabled:opacity-40">Remover</button>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </section>
 

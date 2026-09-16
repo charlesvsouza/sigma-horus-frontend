@@ -13,7 +13,7 @@ const PRINT_CSS = `
 }
 `;
 
-interface Lodge { name: string; cnpj?: string | null; addressLine?: string | null; addressNumber?: string | null; city?: string | null; state?: string | null; }
+interface Lodge { name: string; cnpj?: string | null; addressLine?: string | null; addressNumber?: string | null; city?: string | null; state?: string | null; crestUrl?: string | null; }
 interface Payment {
   id: string;
   amount: number;
@@ -43,6 +43,10 @@ export default function ReciboClient({ payment }: { payment: Payment }) {
 
         <div className="recibo-print rounded-xl border border-white/[6%] bg-sigma-card p-8 text-sm text-sand">
           <header className="border-b border-white/10 pb-4 text-center">
+            {payment.lodge.crestUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={payment.lodge.crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
+            ) : null}
             <h2 className="text-xl font-bold text-sand-light">{payment.lodge.name}</h2>
             {payment.lodge.cnpj ? <p className="mt-1 text-xs text-sand-dark">CNPJ: {payment.lodge.cnpj}</p> : null}
             {lodgeAddress ? <p className="text-xs text-sand-dark">{lodgeAddress}</p> : null}

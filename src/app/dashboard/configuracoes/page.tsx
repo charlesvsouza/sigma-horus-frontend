@@ -3,7 +3,7 @@ import { withTenant } from '@/lib/prisma';
 import ConfiguracoesClient from './ConfiguracoesClient';
 
 const EMPTY: Record<string, string> = {
-  name: '', legalName: '', tradeName: '', cnpj: '', email: '', phone: '',
+  name: '', legalName: '', tradeName: '', cnpj: '', email: '', phone: '', crestUrl: '',
   addressLine: '', addressNumber: '', neighborhood: '', city: '', state: '', zipCode: '',
   bankName: '', bankAgency: '', bankAccount: '', pixKey: '',
   riteName: '', powerName: '', sessionWeekdays: '', sessionFrequency: 'weekly',
@@ -21,7 +21,7 @@ export default async function ConfiguracoesPage() {
         db.lodge.findUnique({
           where: { id: String(lodgeId) },
           select: {
-            name: true, legalName: true, tradeName: true, cnpj: true, email: true, phone: true,
+            name: true, legalName: true, tradeName: true, cnpj: true, email: true, phone: true, crestUrl: true,
             addressLine: true, addressNumber: true, neighborhood: true, city: true, state: true, zipCode: true,
             bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
             riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,

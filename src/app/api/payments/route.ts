@@ -4,7 +4,8 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
-import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
+import { dispatch } from '@/lib/messaging';
+import { buildLodgeChannels } from '@/lib/lodge-channels';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -137,12 +138,14 @@ export async function POST(request: Request) {
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method } });
 
     let lodgeName = 'Sua loja';
+    let lodgeChannels = buildLodgeChannels(null);
     if (created.account?.type === 'RECEIVABLE' && created.member?.email) {
-      const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true } });
+      const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } });
       lodgeName = lodge?.name ?? lodgeName;
+      lodgeChannels = buildLodgeChannels(lodge);
     }
 
-    return { payment: created, lodgeName };
+    return { payment: created, lodgeName, lodgeChannels };
   });
 
   if ('locked' in result && result.locked) {
@@ -166,7 +169,7 @@ export async function POST(request: Request) {
 
   // Confirmação por e-mail ao membro (recibo simples). Best-effort: falha de
   // envio não deve derrubar o registro do pagamento, que já está salvo.
-  const { payment, lodgeName } = result;
+  const { payment, lodgeName, lodgeChannels } = result;
   if (payment.account?.type === 'RECEIVABLE' && payment.member?.email) {
     const valor = Number(payment.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const data = new Date(payment.paidAt).toLocaleDateString('pt-BR');
@@ -175,7 +178,7 @@ export async function POST(request: Request) {
       payment.member.email,
       `Pagamento confirmado — ${lodgeName}`,
       `Olá, ${payment.member.name}.\n\nConfirmamos o recebimento do seu pagamento de ${valor} em ${data}, referente a "${payment.account.title}".\n\nAtenciosamente,\n${lodgeName}`,
-      EMPTY_CHANNELS,
+      lodgeChannels,
     ).catch(() => {});
   }
 

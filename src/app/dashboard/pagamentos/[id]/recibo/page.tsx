@@ -22,7 +22,7 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
       include: {
         account: { select: { title: true, type: true } },
         member: { select: { name: true, cpf: true } },
-        lodge: { select: { name: true, cnpj: true, addressLine: true, addressNumber: true, city: true, state: true } },
+        lodge: { select: { name: true, cnpj: true, addressLine: true, addressNumber: true, city: true, state: true, crestUrl: true } },
       },
     }),
   );

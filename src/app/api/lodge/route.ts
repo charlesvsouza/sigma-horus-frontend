@@ -20,7 +20,7 @@ export async function GET() {
     db.lodge.findUnique({
       where: { id: String(lodgeId) },
       select: {
-        name: true, legalName: true, tradeName: true, cnpj: true, email: true, phone: true,
+        name: true, legalName: true, tradeName: true, cnpj: true, email: true, phone: true, crestUrl: true,
         addressLine: true, addressNumber: true, neighborhood: true, city: true, state: true, zipCode: true,
         bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
         riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,

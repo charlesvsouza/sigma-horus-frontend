@@ -21,10 +21,10 @@ export async function GET() {
   // Sem vínculo User→Member (ex.: admin criado sem cadastro de membro), não há
   // "meu portal" a mostrar — evita expor o primeiro membro da loja por engano.
   if (!memberId) {
-    return NextResponse.json({ member: null, accounts: [], documents: [], institutionalDocuments: [], summary: { totalReceivables: 0, totalPayables: 0, pending: 0 } });
+    return NextResponse.json({ member: null, lodge: null, accounts: [], documents: [], institutionalDocuments: [], summary: { totalReceivables: 0, totalPayables: 0, pending: 0 } });
   }
 
-  const [member, accounts, documents, institutionalDocuments] = await Promise.all([
+  const [member, lodge, accounts, documents, institutionalDocuments] = await Promise.all([
     withTenant(String(lodgeId), (db) =>
       db.member.findFirst({
         where: { id: String(memberId), lodgeId: String(lodgeId) },
@@ -52,6 +52,9 @@ export async function GET() {
           relatives: { orderBy: { order: 'asc' } },
         },
       }),
+    ),
+    withTenant(String(lodgeId), (db) =>
+      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
     ),
     withTenant(String(lodgeId), (db) =>
       db.account.findMany({
@@ -84,5 +87,5 @@ export async function GET() {
   const totalPayables = accounts.filter((item) => item.type === 'PAYABLE').reduce((sum, item) => sum + Number(item.amount), 0);
   const pending = accounts.filter((item) => item.status === 'pending').reduce((sum, item) => sum + Number(item.amount), 0);
 
-  return NextResponse.json({ member, accounts, documents, institutionalDocuments, summary: { totalReceivables, totalPayables, pending } });
+  return NextResponse.json({ member, lodge, accounts, documents, institutionalDocuments, summary: { totalReceivables, totalPayables, pending } });
 }

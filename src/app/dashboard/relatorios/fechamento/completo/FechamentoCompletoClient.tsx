@@ -56,6 +56,10 @@ export default function FechamentoCompletoClient({ data, initialFrom, initialTo 
 
         <div className="report-print space-y-6">
           <header className="report-section text-center">
+            {data.meta.crestUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={data.meta.crestUrl} alt="" className="mx-auto mb-2 h-16 w-16 object-contain" />
+            ) : null}
             <h2 className="text-xl font-bold text-sand-light">{data.meta.lodge}</h2>
             <p className="text-sm text-sand-dark">Relatório Financeiro — Fechamento do Veneralato</p>
             <p className="text-xs text-sand-dark">

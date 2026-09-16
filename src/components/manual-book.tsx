@@ -207,7 +207,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 16 de setembro de 2026 · versão 1.4</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 16 de setembro de 2026 · versão 1.5</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -269,7 +269,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <h1 style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm' }}>Manual do Usuário</h1>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.4 — 16 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.5 — 16 de setembro de 2026</p>
               </div>
             </div>
 
@@ -485,7 +485,7 @@ export function ManualBook() {
               <Sub id="admin-loja" title="6.1 Configurações da loja">
                 <p>Acesse <UI>Administração → Configurações da loja</UI> e preencha:</p>
                 <Bullets>
-                  <li><strong>Identificação:</strong> nome, razão social, nome fantasia, CNPJ, contato e endereço (o CEP preenche o endereço).</li>
+                  <li><strong>Identificação:</strong> nome, razão social, nome fantasia, CNPJ, contato, endereço (o CEP preenche o endereço) e o <UI>Brasão da loja</UI> (imagem — envie em <UI>Enviar imagem</UI>).</li>
                   <li><strong>Dados bancários</strong> e <strong>chave PIX</strong> (úteis para conferência e conciliação).</li>
                   <li><strong>Loja maçônica:</strong> o <UI>Rito</UI> praticado e a <UI>Potência</UI> (obediência). O rito define os cargos da loja.</li>
                   <li><strong>Sessões:</strong> marque os <UI>dias da semana</UI> e a <UI>periodicidade</UI> (semanal, quinzenal ou mensal) das sessões.</li>
@@ -495,6 +495,12 @@ export function ManualBook() {
                   (a ação só adiciona o que falta — não remove os cargos existentes).
                 </p>
                 <Note>Mantenha o CNPJ e os dados bancários corretos: eles aparecem em relatórios e ajudam na conciliação financeira.</Note>
+                <p>
+                  <strong>Brasão da loja:</strong> depois de enviado, aparece automaticamente em todo documento gerado
+                  pela loja — relatório de Fechamento, recibo de pagamento, relatório de membros, extrato do obreiro —
+                  e no cabeçalho dos e-mails automáticos (aniversários, jubileus, cobranças, convocações). Use
+                  <UI> Trocar imagem</UI> para substituir ou <UI>Remover</UI> para tirar o brasão de tudo isso.
+                </p>
                 <p>
                   <strong>Aparência:</strong> na própria página de Configurações há a seção <UI>Aparência</UI>, onde você
                   escolhe o tema <strong>Escuro</strong> (padrão), <strong>Papiro</strong> (pergaminho suave) ou
@@ -1348,6 +1354,7 @@ export function ManualBook() {
                 <li><strong>A transferência entre contas não mudou o saldo.</strong> Toda transferência nasce pendente e só afeta o saldo depois que o Venerável Mestre (ou o Administrador) aprovar, no <UI>Histórico</UI> da tela de Transferências (7.14).</li>
                 <li><strong>Não consigo fornecer um ritual/material a um membro.</strong> O material tem um grau exigido e o membro ainda não chegou lá (ex.: Companheiro pedindo Ritual de Mestre) — ou não há quantidade disponível em estoque. Veja Materiais e patrimônio (capítulo 8).</li>
                 <li><strong>Onde encontro o Regimento Interno / Constituição da Potência?</strong> Em <UI>Meu portal → Documentos da Loja</UI>, se a Secretaria já tiver publicado (capítulo 10).</li>
+                <li><strong>O brasão não aparece nos documentos.</strong> Envie a imagem em <UI>Administração → Configurações da loja → Identificação → Enviar imagem</UI> (6.1). Documentos já gerados antes do envio não são retroativos.</li>
               </Bullets>
             </Chapter>
           </article>

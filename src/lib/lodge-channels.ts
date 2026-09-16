@@ -1,8 +1,11 @@
 import { decryptSecret } from '@/lib/crypto';
 import type { LodgeChannels } from '@/lib/messaging';
 
-// Campos de mensageria da loja (BYO WhatsApp/SMS).
+// Campos de mensageria da loja (BYO WhatsApp/SMS) + identidade visual (nome e
+// brasão), usados pra montar o cabeçalho HTML do e-mail em lib/messaging.ts.
 export interface LodgeMessagingRow {
+  name?: string | null;
+  crestUrl?: string | null;
   whatsappPhoneId?: string | null;
   whatsappTokenEnc?: string | null;
   whatsappTemplate?: string | null;
@@ -13,6 +16,8 @@ export interface LodgeMessagingRow {
 }
 
 export const LODGE_MESSAGING_SELECT = {
+  name: true,
+  crestUrl: true,
   whatsappPhoneId: true,
   whatsappTokenEnc: true,
   whatsappTemplate: true,
@@ -33,5 +38,7 @@ export function buildLodgeChannels(lodge: LodgeMessagingRow | null): LodgeChanne
     sms: smsToken && lodge?.smsAccountSid && lodge?.smsFrom
       ? { sid: lodge.smsAccountSid, token: smsToken, from: lodge.smsFrom }
       : null,
+    lodgeName: lodge?.name ?? null,
+    crestUrl: lodge?.crestUrl ?? null,
   };
 }

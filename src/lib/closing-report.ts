@@ -12,7 +12,7 @@ export async function getClosingReport(lodgeId: string, fromParam: string | null
 
   const data = await withTenant(lodgeId, async (db) => {
     const [lodge, payments, accounts, invoices] = await Promise.all([
-      db.lodge.findUnique({ where: { id: lodgeId }, select: { name: true, riteName: true, powerName: true } }),
+      db.lodge.findUnique({ where: { id: lodgeId }, select: { name: true, riteName: true, powerName: true, crestUrl: true } }),
       db.payment.findMany({
         where: { lodgeId },
         include: {
@@ -142,6 +142,7 @@ export async function getClosingReport(lodgeId: string, fromParam: string | null
       lodge: data.lodge?.name ?? 'Loja',
       rite: data.lodge?.riteName ?? null,
       power: data.lodge?.powerName ?? null,
+      crestUrl: data.lodge?.crestUrl ?? null,
       from: from.toISOString().slice(0, 10),
       to: to.toISOString().slice(0, 10),
     },

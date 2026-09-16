@@ -16,6 +16,10 @@ model Lodge {
   legalName    String?  // Razão Social
   tradeName    String?  // Nome Fantasia
   cnpj         String?
+  // Identidade visual: brasão da loja, exibido em relatórios, recibos e
+  // demais documentos gerados/enviados (e no cabeçalho HTML dos e-mails).
+  crestUrl        String?
+  crestStorageKey String?
   email        String?
   phone        String?
   addressLine  String?

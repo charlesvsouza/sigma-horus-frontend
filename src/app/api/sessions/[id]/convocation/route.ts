@@ -34,7 +34,7 @@ export async function POST(request: Request, { params }: Ctx) {
     const meeting = await db.session.findFirst({ where: { id, lodgeId: String(lodgeId) } });
     if (!meeting) return { error: 'not_found' as const };
 
-    const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, ...LODGE_MESSAGING_SELECT } });
+    const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { ...LODGE_MESSAGING_SELECT } });
     const lodgeChannels = buildLodgeChannels(lodge);
 
     const members = await db.member.findMany({

@@ -250,6 +250,7 @@ export default function PortalPage() {
   const [accounts, setAccounts] = useState<AccountItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [institutionalDocuments, setInstitutionalDocuments] = useState<DocumentItem[]>([]);
+  const [lodge, setLodge] = useState<{ name: string; crestUrl: string | null } | null>(null);
   const [summary, setSummary] = useState({ totalReceivables: 0, totalPayables: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -270,6 +271,7 @@ export default function PortalPage() {
     setAccounts(data.accounts ?? []);
     setDocuments(data.documents ?? []);
     setInstitutionalDocuments(data.institutionalDocuments ?? []);
+    setLodge(data.lodge ?? null);
     setSummary(data.summary ?? { totalReceivables: 0, totalPayables: 0, pending: 0 });
     setLoading(false);
   }
@@ -459,7 +461,11 @@ export default function PortalPage() {
       {/* Relatório imprimível (Salvar como PDF) — reflete o filtro atual */}
       <style>{EXTRATO_PRINT_CSS}</style>
       <div className="extrato-report">
-        <h1>Meu extrato — {member?.name ?? ''}</h1>
+        {lodge?.crestUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={lodge.crestUrl} alt="" style={{ display: 'block', height: 56, width: 56, objectFit: 'contain', margin: '0 auto 6px' }} />
+        ) : null}
+        <h1>{lodge?.name ? `${lodge.name} — ` : ''}Meu extrato — {member?.name ?? ''}</h1>
         <p className="sub">
           {TYPE_FILTER_LABEL[typeFilter]} · {STATUS_FILTER_LABEL[statusFilter]}
           {' · '}{filteredAccounts.length} lançamento(s) · Emitido em {new Date().toLocaleDateString('pt-BR')}

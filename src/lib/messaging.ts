@@ -12,7 +12,15 @@ export interface SendResult { status: SendStatus; detail?: string }
 
 export interface WhatsAppCfg { token: string; phoneId: string; template?: string | null; lang?: string | null }
 export interface SmsCfg { sid: string; token: string; from: string }
-export interface LodgeChannels { whatsapp: WhatsAppCfg | null; sms: SmsCfg | null }
+export interface LodgeChannels {
+  whatsapp: WhatsAppCfg | null;
+  sms: SmsCfg | null;
+  // Identidade visual da loja (nome + brasão) — usados só pelo e-mail, pra
+  // montar um cabeçalho HTML simples. Ausentes = e-mail sai só em texto puro,
+  // como sempre saiu (nenhum call site quebra ao não informar).
+  lodgeName?: string | null;
+  crestUrl?: string | null;
+}
 
 export const EMPTY_CHANNELS: LodgeChannels = { whatsapp: null, sms: null };
 
@@ -31,15 +39,41 @@ function emailConfigured() {
   return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM);
 }
 
-async function sendEmail(to: string, subject: string, body: string): Promise<SendResult> {
+function escapeHtml(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * Cabeçalho HTML simples com a identidade visual da loja (brasão + nome),
+ * quando a loja cadastrou um brasão em Configurações. Sem brasão, o e-mail
+ * sai só com o texto (nenhuma mudança visual pro que já existia). O `text`
+ * plano continua sempre enviado junto, como fallback pra clientes sem HTML.
+ */
+function buildEmailHtml(body: string, branding?: { lodgeName?: string | null; crestUrl?: string | null }): string | undefined {
+  if (!branding?.crestUrl && !branding?.lodgeName) return undefined;
+  const header = [
+    branding.crestUrl ? `<img src="${escapeHtml(branding.crestUrl)}" alt="${escapeHtml(branding.lodgeName ?? '')}" style="max-height:72px;display:block;margin:0 auto 12px" />` : '',
+    branding.lodgeName ? `<h2 style="margin:0;text-align:center;font-family:Georgia,serif;color:#1b1b1b">${escapeHtml(branding.lodgeName)}</h2>` : '',
+  ].filter(Boolean).join('\n');
+  const bodyHtml = escapeHtml(body).replace(/\n/g, '<br>');
+  return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#1b1b1b;background:#f4f1e8;padding:24px">
+    <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2ddc8;border-radius:8px;padding:24px 28px">
+      ${header ? `<div style="border-bottom:1px solid #e2ddc8;padding-bottom:16px;margin-bottom:16px">${header}</div>` : ''}
+      <div style="font-size:14px;line-height:1.7">${bodyHtml}</div>
+    </div>
+  </body></html>`;
+}
+
+async function sendEmail(to: string, subject: string, body: string, branding?: { lodgeName?: string | null; crestUrl?: string | null }): Promise<SendResult> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
   if (!key || !from) return { status: 'queued', detail: 'E-mail não configurado na plataforma.' };
   try {
+    const html = buildEmailHtml(body, branding);
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, subject, text: body }),
+      body: JSON.stringify({ from, to, subject, text: body, ...(html ? { html } : {}) }),
     });
     if (!res.ok) return { status: 'failed', detail: `Resend ${res.status}` };
     return { status: 'sent' };
@@ -96,7 +130,7 @@ async function sendSms(to: string, body: string, cfg: SmsCfg): Promise<SendResul
 /** Envia por um canal. `to` = e-mail (email) ou telefone (whatsapp/sms). WhatsApp/SMS usam as credenciais da loja. */
 export async function dispatch(channel: Channel, to: string, subject: string, body: string, ch: LodgeChannels): Promise<SendResult> {
   if (!to) return { status: 'failed', detail: 'Destinatário sem contato.' };
-  if (channel === 'email') return sendEmail(to, subject, body);
+  if (channel === 'email') return sendEmail(to, subject, body, { lodgeName: ch.lodgeName, crestUrl: ch.crestUrl });
   if (channel === 'whatsapp') return ch.whatsapp ? sendWhatsApp(to, body, ch.whatsapp) : { status: 'queued', detail: 'WhatsApp não conectado nesta loja.' };
   return ch.sms ? sendSms(to, body, ch.sms) : { status: 'queued', detail: 'SMS não conectado nesta loja.' };
 }

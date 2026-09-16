@@ -156,6 +156,7 @@ export default function MembrosPage() {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [lodgeName, setLodgeName] = useState('');
+  const [lodgeCrestUrl, setLodgeCrestUrl] = useState('');
   const [creating, setCreating] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -218,6 +219,7 @@ export default function MembrosPage() {
     setRites(ritesData.items ?? []);
     setPowers(powersData.items ?? []);
     setLodgeName(lodgeData?.lodge?.name ?? '');
+    setLodgeCrestUrl(lodgeData?.lodge?.crestUrl ?? '');
     setLoading(false);
   }
 
@@ -464,6 +466,10 @@ export default function MembrosPage() {
       {/* Relatório imprimível (Salvar como PDF) — reflete o filtro atual */}
       <style>{REPORT_PRINT_CSS}</style>
       <div className="members-report">
+        {lodgeCrestUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={lodgeCrestUrl} alt="" style={{ display: 'block', height: 56, width: 56, objectFit: 'contain', margin: '0 auto 6px' }} />
+        ) : null}
         <h1>{lodgeName || 'Relatório de Membros'}</h1>
         <p className="sub">
           Relatório de Membros — {statusFilter === 'all' ? 'Todas as situações' : memberStatusFull(statusFilter)}
