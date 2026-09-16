@@ -13,7 +13,7 @@ import {
   ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
   MessageSquare, Contact, HeartHandshake, Settings, KeyRound, Gem, Plug, ScrollText,
   PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart,
-  Landmark, ArrowLeftRight, Upload, type LucideIcon,
+  Landmark, ArrowLeftRight, Upload, Repeat, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -32,6 +32,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/contas': Wallet,
   '/dashboard/cobrancas': ReceiptText,
   '/dashboard/pagamentos': CreditCard,
+  '/dashboard/transferencias': Repeat,
   '/dashboard/patrimonio': Landmark,
   '/dashboard/conciliacao-bancaria': ArrowLeftRight,
   '/dashboard/relatorios': ChartColumn,

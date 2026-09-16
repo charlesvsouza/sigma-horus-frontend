@@ -99,6 +99,8 @@ model Lodge {
   campaignDonations CampaignDonation[]
   counterparties Counterparty[]
   hospitalityRequests HospitalityRequest[]
+  financialAccounts FinancialAccount[]
+  accountTransfers  AccountTransfer[]
 }
 
 model User {
@@ -251,6 +253,7 @@ model Account {
   memberId       String?
   chartAccountId String?  // vínculo ao plano de contas (livro caixa / balancete)
   counterpartyId String?  // vínculo ao cadastro de cliente/fornecedor (quando não é membro)
+  bankAccountId  String?  // conta bancária/caixa PREVISTA (só pré-preenche o pagamento; não é obrigatória)
   type           String   // RECEIVABLE | PAYABLE
   title          String
   amount         Float
@@ -271,11 +274,13 @@ model Account {
   member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
   chartAccount ChartAccount? @relation(fields: [chartAccountId], references: [id], onDelete: SetNull)
   counterparty Counterparty? @relation(fields: [counterpartyId], references: [id], onDelete: SetNull)
+  bankAccount  FinancialAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   payments     Payment[]
   invoices     Invoice[]
 
   @@index([chartAccountId])
   @@index([counterpartyId])
+  @@index([bankAccountId])
 }
 
 // Cadastro de clientes/fornecedores — contrapartes de Account que não são
@@ -342,6 +347,7 @@ model Payment {
   lodgeId      String
   accountId    String
   memberId     String?
+  bankAccountId String? // conta bancária/caixa que efetivamente recebeu/pagou (obrigatório na API p/ pagamentos novos; histórico antigo fica null)
   amount       Float
   paidAt       DateTime @default(now())
   method       String   @default("manual")
@@ -350,7 +356,69 @@ model Payment {
   lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   member       Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  bankAccount  FinancialAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   bankTransactions BankTransaction[]
+
+  @@index([bankAccountId])
+}
+
+// Cadastro das "contas financeiras" da loja — cada banco (com agência/conta,
+// podendo ser marcado como conta de investimento) ou o Caixa físico. Permite
+// vincular cada pagamento/recebimento a um "bolso" específico da loja (hoje
+// tudo cai num pool único) e apurar saldo por conta. Não confundir com
+// ChartAccount (categoria contábil receita/despesa) nem com ContaCorrente
+// comercial da loja em Lodge.bankName/bankAgency/bankAccount (dado cadastral
+// único, não transacional).
+model FinancialAccount {
+  id             String   @id @default(cuid())
+  lodgeId        String
+  name           String              // rótulo livre, ex. "Santander CC", "Caixa da Loja"
+  kind           String              // bank | cash
+  bankName       String?             // nome do banco (lista fixa), só quando kind=bank
+  isInvestment   Boolean  @default(false)
+  agency         String?
+  accountNumber  String?
+  openingBalance Float    @default(0)
+  isDefault      Boolean  @default(false)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  lodge         Lodge              @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  accounts      Account[]
+  payments      Payment[]
+  transfersFrom AccountTransfer[]  @relation("TransferFrom")
+  transfersTo   AccountTransfer[]  @relation("TransferTo")
+
+  @@index([lodgeId])
+}
+
+// Movimentação de saldo entre duas FinancialAccount da mesma loja (ex.: sacar
+// do banco pro caixa). Dupla assinatura: o Tesoureiro cria (status=pending) e
+// só entra no cálculo de saldo depois que o Venerável (ou Admin) aprova —
+// mesmo modelo de aprovação de Account.approvalStatus (despesas) e
+// CashClose.approved (fechamento de veneralato).
+model AccountTransfer {
+  id           String    @id @default(cuid())
+  lodgeId      String
+  fromId       String
+  toId         String
+  amount       Float
+  date         DateTime  @default(now())
+  note         String?
+  status       String    @default("pending") // pending | approved | rejected
+  createdById  String?
+  approvedById String?
+  approvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  lodge Lodge            @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  from  FinancialAccount @relation("TransferFrom", fields: [fromId], references: [id], onDelete: Restrict)
+  to    FinancialAccount @relation("TransferTo", fields: [toId], references: [id], onDelete: Restrict)
+
+  @@index([lodgeId])
+  @@index([fromId])
+  @@index([toId])
 }
 
 // Patrimônio/inventário da loja — cadastro simples de bens (móveis, insígnias,

@@ -15,6 +15,7 @@ export default async function ContasPage() {
           include: {
             member: { select: { id: true, name: true } },
             counterparty: { select: { id: true, name: true, kind: true } },
+            bankAccount: { select: { id: true, name: true, kind: true } },
           },
           orderBy: { dueDate: 'asc' },
         }),
@@ -33,8 +34,13 @@ export default async function ContasPage() {
           select: { id: true, name: true, kind: true },
           orderBy: { name: 'asc' },
         }),
+        financialAccounts: await db.financialAccount.findMany({
+          where: { lodgeId: String(lodgeId), active: true },
+          select: { id: true, name: true, kind: true },
+          orderBy: { name: 'asc' },
+        }),
       }))
-    : { accounts: [], members: [], chartAccounts: [], counterparties: [] };
+    : { accounts: [], members: [], chartAccounts: [], counterparties: [], financialAccounts: [] };
 
   const accounts = data.accounts.map((a) => ({
     id: a.id,
@@ -48,7 +54,8 @@ export default async function ContasPage() {
     approvalStatus: a.approvalStatus,
     member: a.member ? { id: a.member.id, name: a.member.name } : null,
     counterparty: a.counterparty ? { id: a.counterparty.id, name: a.counterparty.name, kind: a.counterparty.kind } : null,
+    bankAccount: a.bankAccount ? { id: a.bankAccount.id, name: a.bankAccount.name, kind: a.bankAccount.kind } : null,
   }));
 
-  return <ContasClient accounts={accounts} members={data.members} chartAccounts={data.chartAccounts} counterparties={data.counterparties} role={role} />;
+  return <ContasClient accounts={accounts} members={data.members} chartAccounts={data.chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} />;
 }

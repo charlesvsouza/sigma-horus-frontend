@@ -10,7 +10,7 @@ export default async function PagamentosPage() {
     ? await withTenant(String(lodgeId), async (db) => ({
         accounts: await db.account.findMany({
           where: { lodgeId: String(lodgeId) },
-          select: { id: true, title: true, type: true, amount: true },
+          select: { id: true, title: true, type: true, amount: true, bankAccountId: true },
           orderBy: { dueDate: 'asc' },
         }),
         members: await db.member.findMany({
@@ -23,13 +23,19 @@ export default async function PagamentosPage() {
           include: {
             account: { select: { id: true, title: true, type: true } },
             member: { select: { id: true, name: true } },
+            bankAccount: { select: { id: true, name: true, kind: true } },
           },
           orderBy: { paidAt: 'desc' },
         }),
+        financialAccounts: await db.financialAccount.findMany({
+          where: { lodgeId: String(lodgeId), active: true },
+          select: { id: true, name: true, kind: true },
+          orderBy: { name: 'asc' },
+        }),
       }))
-    : { accounts: [], members: [], payments: [] };
+    : { accounts: [], members: [], payments: [], financialAccounts: [] };
 
-  const accounts = data.accounts.map((a) => ({ id: a.id, title: a.title, type: a.type, amount: Number(a.amount) }));
+  const accounts = data.accounts.map((a) => ({ id: a.id, title: a.title, type: a.type, amount: Number(a.amount), bankAccountId: a.bankAccountId ?? null }));
   const payments = data.payments.map((p) => ({
     id: p.id,
     amount: Number(p.amount),
@@ -38,7 +44,8 @@ export default async function PagamentosPage() {
     note: p.note ?? null,
     account: p.account ? { id: p.account.id, title: p.account.title, type: p.account.type } : null,
     member: p.member ? { id: p.member.id, name: p.member.name } : null,
+    bankAccount: p.bankAccount ? { id: p.bankAccount.id, name: p.bankAccount.name, kind: p.bankAccount.kind } : null,
   }));
 
-  return <PagamentosClient accounts={accounts} members={data.members} payments={payments} />;
+  return <PagamentosClient accounts={accounts} members={data.members} payments={payments} financialAccounts={data.financialAccounts} />;
 }

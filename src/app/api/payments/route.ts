@@ -27,6 +27,7 @@ export async function GET() {
       include: {
         account: { select: { id: true, title: true, type: true } },
         member: { select: { id: true, name: true } },
+        bankAccount: { select: { id: true, name: true, kind: true } },
       },
       orderBy: { paidAt: 'desc' },
     }),
@@ -56,9 +57,13 @@ export async function POST(request: Request) {
   const paidAt = body?.paidAt ? new Date(body.paidAt) : new Date();
   const method = String(body?.method ?? 'manual').trim();
   const note = String(body?.note ?? '').trim();
+  const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
 
   if (!accountId || Number.isNaN(amount) || amount <= 0) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
+  }
+  if (!bankAccountId) {
+    return NextResponse.json({ error: 'Selecione a conta bancária/caixa que recebeu ou pagou este valor.' }, { status: 400 });
   }
 
   const result = await withTenant(String(lodgeId), async (db) => {
@@ -77,11 +82,17 @@ export async function POST(request: Request) {
       return { pendingApproval: true as const };
     }
 
+    const bank = await db.financialAccount.findFirst({ where: { id: bankAccountId, lodgeId: String(lodgeId), active: true }, select: { id: true } });
+    if (!bank) {
+      return { invalidBank: true as const };
+    }
+
     const created = await db.payment.create({
       data: {
         lodgeId: String(lodgeId),
         accountId,
         memberId,
+        bankAccountId: bank.id,
         amount,
         paidAt,
         method: method || 'manual',
@@ -90,6 +101,7 @@ export async function POST(request: Request) {
       include: {
         account: { select: { id: true, title: true, type: true } },
         member: { select: { id: true, name: true, email: true } },
+        bankAccount: { select: { id: true, name: true, kind: true } },
       },
     });
 
@@ -146,6 +158,10 @@ export async function POST(request: Request) {
 
   if ('pendingApproval' in result) {
     return NextResponse.json({ error: 'Esta despesa está aguardando aprovação do Venerável Mestre antes de ser paga.' }, { status: 409 });
+  }
+
+  if ('invalidBank' in result) {
+    return NextResponse.json({ error: 'Conta bancária/caixa inválida ou inativa.' }, { status: 400 });
   }
 
   // Confirmação por e-mail ao membro (recibo simples). Best-effort: falha de

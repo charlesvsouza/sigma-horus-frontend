@@ -51,6 +51,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
     }
 
+    let bankAccountId = existing.bankAccountId;
+    if (body?.bankAccountId !== undefined) {
+      bankAccountId = body.bankAccountId ? String(body.bankAccountId) : null;
+      if (bankAccountId) {
+        const ba = await db.financialAccount.findFirst({ where: { id: bankAccountId, lodgeId: String(lodgeId) }, select: { id: true } });
+        bankAccountId = ba?.id ?? null;
+      }
+    }
+
     // Recalcula o visto do Venerável quando valor ou tipo mudam — sem isso,
     // dava pra criar uma despesa pequena (aprovada automaticamente) e depois
     // editar o valor pra algo grande sem nunca passar pela aprovação.
@@ -80,12 +89,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         counterpartyId: body?.counterpartyId !== undefined ? counterpartyId : undefined,
         isDues: body?.isDues !== undefined ? Boolean(body.isDues) : undefined,
         chartAccountId: body?.chartAccountId !== undefined ? chartAccountId : undefined,
+        bankAccountId: body?.bankAccountId !== undefined ? bankAccountId : undefined,
         approvalStatus,
       },
       include: {
         member: { select: { id: true, name: true } },
         counterparty: { select: { id: true, name: true, kind: true } },
         chartAccount: { select: { id: true, code: true, name: true, category: true } },
+        bankAccount: { select: { id: true, name: true, kind: true } },
       },
     });
 

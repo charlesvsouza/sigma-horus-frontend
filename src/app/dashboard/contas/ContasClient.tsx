@@ -7,6 +7,7 @@ import { Button, CollapsibleCard, EmptyState, FormCard, inputClass, Alert } from
 interface ChartAccountOption { id: string; code: string; name: string; type: string; }
 interface MemberOption { id: string; name: string; }
 interface CounterpartyOption { id: string; name: string; kind: string; }
+interface FinancialAccountOption { id: string; name: string; kind: string; }
 interface AccountItem {
   id: string;
   title: string;
@@ -19,11 +20,12 @@ interface AccountItem {
   approvalStatus: string;
   member?: MemberOption | null;
   counterparty?: CounterpartyOption | null;
+  bankAccount?: FinancialAccountOption | null;
 }
 
 const INPUT_CLASS = inputClass; // fonte única do design system
 
-export default function ContasClient({ accounts, members, chartAccounts, counterparties, role }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; role: string }) {
+export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, role }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string }) {
   const canApprove = role === 'venerable' || role === 'admin';
   const router = useRouter();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -38,6 +40,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
     description: '',
     memberId: '',
     counterpartyId: '',
+    bankAccountId: '',
     isDues: false,
   });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -55,6 +58,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
       description: account.description ?? '',
       memberId: account.member?.id ?? '',
       counterpartyId: account.counterparty?.id ?? '',
+      bankAccountId: account.bankAccount?.id ?? '',
       isDues: account.isDues,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -62,7 +66,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
 
   function cancelEdit() {
     setEditingId(null);
-    setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', isDues: false });
+    setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', bankAccountId: '', isDues: false });
   }
 
   function selectChart(id: string) {
@@ -85,6 +89,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
         amount: Number(form.amount),
         memberId: form.memberId || undefined,
         counterpartyId: form.counterpartyId || undefined,
+        bankAccountId: form.bankAccountId || undefined,
       };
       const response = await fetch(editingId ? `/api/accounts/${editingId}` : '/api/accounts', {
         method: editingId ? 'PATCH' : 'POST',
@@ -182,6 +187,12 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                   <option value="">Vincular a um cliente/fornecedor (opcional)</option>
                   {counterparties.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <select value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT_CLASS}>
+                  <option value="">Conta bancária/caixa prevista (opcional)</option>
+                  {financialAccounts.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
                   ))}
                 </select>
                 {form.type === 'RECEIVABLE' && form.memberId ? (

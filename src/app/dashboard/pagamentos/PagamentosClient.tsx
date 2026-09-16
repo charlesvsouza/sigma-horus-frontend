@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface MemberOption { id: string; name: string; }
-interface AccountOption { id: string; title: string; type: string; amount: number; }
+interface AccountOption { id: string; title: string; type: string; amount: number; bankAccountId: string | null; }
+interface FinancialAccountOption { id: string; name: string; kind: string; }
 interface PaymentItem {
   id: string;
   amount: number;
@@ -15,13 +16,19 @@ interface PaymentItem {
   note?: string | null;
   account?: { id: string; title: string; type: string } | null;
   member?: { id: string; name: string } | null;
+  bankAccount?: { id: string; name: string; kind: string } | null;
 }
 
-export default function PagamentosClient({ accounts, members, payments }: { accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[] }) {
+export default function PagamentosClient({ accounts, members, payments, financialAccounts }: { accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[] }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
-  const [form, setForm] = useState({ accountId: '', memberId: '', amount: '', paidAt: '', method: 'manual', note: '' });
+  const [form, setForm] = useState({ accountId: '', memberId: '', bankAccountId: '', amount: '', paidAt: '', method: 'manual', note: '' });
+
+  function selectAccount(id: string) {
+    const account = accounts.find((a) => a.id === id);
+    setForm((prev) => ({ ...prev, accountId: id, bankAccountId: account?.bankAccountId ?? prev.bankAccountId }));
+  }
   const [consent, setConsent] = useState(false);
   const [search, setSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -65,7 +72,7 @@ export default function PagamentosClient({ accounts, members, payments }: { acco
       const data = await response.json();
       if (response.ok) {
         setMessage({ kind: 'ok', text: 'Pagamento registrado com sucesso.' });
-        setForm({ accountId: '', memberId: '', amount: '', paidAt: '', method: 'manual', note: '' });
+        setForm({ accountId: '', memberId: '', bankAccountId: '', amount: '', paidAt: '', method: 'manual', note: '' });
         setConsent(false);
         router.refresh();
       } else {
@@ -97,7 +104,7 @@ export default function PagamentosClient({ accounts, members, payments }: { acco
         <FormCard title="Novo pagamento">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })} className={INPUT} required>
+              <select value={form.accountId} onChange={(event) => selectAccount(event.target.value)} className={INPUT} required>
                 <option value="">Selecione uma conta</option>
                 {accounts.map((account) => <option key={account.id} value={account.id}>{account.title}</option>)}
               </select>
@@ -107,11 +114,15 @@ export default function PagamentosClient({ accounts, members, payments }: { acco
               </select>
               <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT} placeholder="Valor" required />
               <input type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className={INPUT} required />
-              <select value={form.method} onChange={(event) => setForm({ ...form, method: event.target.value })} className={`${INPUT} md:col-span-2`}>
+              <select value={form.method} onChange={(event) => setForm({ ...form, method: event.target.value })} className={INPUT}>
                 <option value="manual">Manual</option>
                 <option value="pix">PIX</option>
                 <option value="cash">Dinheiro</option>
                 <option value="card">Cartão</option>
+              </select>
+              <select value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT} required>
+                <option value="">Conta bancária/caixa que recebeu ou pagou</option>
+                {financialAccounts.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
               <textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observação" rows={3} />
             </div>
@@ -141,7 +152,7 @@ export default function PagamentosClient({ accounts, members, payments }: { acco
               <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{payment.account?.title ?? 'Conta removida'}</p>
-                  <p className="mt-1 text-xs text-sand-dark">{payment.member?.name ?? 'Sem vínculo'} • {payment.method}</p>
+                  <p className="mt-1 text-xs text-sand-dark">{payment.member?.name ?? 'Sem vínculo'} • {payment.method}{payment.bankAccount ? ` • ${payment.bankAccount.name}` : ''}</p>
                 </div>
                 <div className="text-right text-xs text-sand-dark">
                   <p className="tabular-nums">Valor: R$ {payment.amount.toFixed(2)}</p>

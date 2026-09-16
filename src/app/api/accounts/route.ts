@@ -26,6 +26,7 @@ export async function GET() {
         member: { select: { id: true, name: true } },
         counterparty: { select: { id: true, name: true, kind: true } },
         chartAccount: { select: { id: true, code: true, name: true, category: true } },
+        bankAccount: { select: { id: true, name: true, kind: true } },
       },
       orderBy: { dueDate: 'asc' },
     }),
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
   const memberId = body?.memberId ? String(body.memberId) : null;
   const counterpartyId = body?.counterpartyId ? String(body.counterpartyId) : null;
   const chartAccountId = body?.chartAccountId ? String(body.chartAccountId) : null;
+  const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
   const isDues = Boolean(body?.isDues);
 
   if (!title || !['RECEIVABLE', 'PAYABLE'].includes(type) || Number.isNaN(amount)) {
@@ -83,6 +85,13 @@ export async function POST(request: Request) {
       validCounterpartyId = cp?.id ?? null;
     }
 
+    // Garante que a conta bancária/caixa prevista pertence à loja.
+    let validBankAccountId: string | null = null;
+    if (bankAccountId) {
+      const ba = await db.financialAccount.findFirst({ where: { id: bankAccountId, lodgeId: String(lodgeId) }, select: { id: true } });
+      validBankAccountId = ba?.id ?? null;
+    }
+
     // Visto do Venerável: despesa acima do limite configurado nasce "pending"
     // e só pode ser paga depois de aprovada (ver POST /api/accounts/[id]/approve).
     let approvalStatus = 'approved';
@@ -104,6 +113,7 @@ export async function POST(request: Request) {
         memberId,
         counterpartyId: validCounterpartyId,
         chartAccountId: validChartId,
+        bankAccountId: validBankAccountId,
         isDues,
         approvalStatus,
       },
@@ -111,6 +121,7 @@ export async function POST(request: Request) {
         member: { select: { id: true, name: true } },
         counterparty: { select: { id: true, name: true, kind: true } },
         chartAccount: { select: { id: true, code: true, name: true, category: true } },
+        bankAccount: { select: { id: true, name: true, kind: true } },
       },
     });
 
