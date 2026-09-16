@@ -5,6 +5,7 @@ import { Prisma } from '@/generated/prisma/client';
 import { FiltrosRelatorios } from './filtros';
 import { BotaoExportar } from './exportar';
 import { INVOICE_STATUS_LABEL } from '@/lib/status-labels';
+import { brl } from '@/lib/currency';
 
 function parseDate(value: string | undefined): Date | undefined {
   if (!value) return undefined;
@@ -98,19 +99,19 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">A receber</p>
-            <p className="mt-3 text-2xl font-semibold text-emerald-300">R$ {totalReceivables.toFixed(2)}</p>
+            <p className="mt-3 text-2xl font-semibold text-emerald-300">{brl(totalReceivables)}</p>
           </div>
           <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">A pagar</p>
-            <p className="mt-3 text-2xl font-semibold text-rose-300">R$ {totalPayables.toFixed(2)}</p>
+            <p className="mt-3 text-2xl font-semibold text-rose-300">{brl(totalPayables)}</p>
           </div>
           <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Pagamentos registrados</p>
-            <p className="mt-3 text-2xl font-semibold text-gold">R$ {totalPayments.toFixed(2)}</p>
+            <p className="mt-3 text-2xl font-semibold text-gold">{brl(totalPayments)}</p>
           </div>
           <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Fluxo líquido</p>
-            <p className={`mt-3 text-2xl font-semibold ${netFlow >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>R$ {netFlow.toFixed(2)}</p>
+            <p className={`mt-3 text-2xl font-semibold ${netFlow >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{brl(netFlow)}</p>
           </div>
         </section>
 
@@ -154,7 +155,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
             {payments.slice(0, 6).map((payment) => (
               <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                 <span>Pagamento registrado</span>
-                <span>R$ {Number(payment.amount).toFixed(2)}</span>
+                <span>{brl(payment.amount)}</span>
                 <span>{new Date(payment.paidAt).toLocaleDateString('pt-BR')}</span>
                 <span>{payment.method}</span>
               </div>
@@ -162,7 +163,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
             {invoices.slice(0, 6).map((invoice) => (
               <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                 <span>Cobrança {invoice.number}</span>
-                <span>R$ {Number(invoice.amount).toFixed(2)}</span>
+                <span>{brl(invoice.amount)}</span>
                 <span>{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span>
                 <span>{INVOICE_STATUS_LABEL[invoice.status] ?? invoice.status}</span>
               </div>

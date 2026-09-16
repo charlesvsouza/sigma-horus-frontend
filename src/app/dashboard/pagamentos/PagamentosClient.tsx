@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { brl } from '@/lib/currency';
 
 interface MemberOption { id: string; name: string; }
 interface AccountOption { id: string; title: string; type: string; amount: number; bankAccountId: string | null; }
@@ -155,7 +156,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
                   <p className="mt-1 text-xs text-sand-dark">{payment.member?.name ?? 'Sem vínculo'} • {payment.method}{payment.bankAccount ? ` • ${payment.bankAccount.name}` : ''}</p>
                 </div>
                 <div className="text-right text-xs text-sand-dark">
-                  <p className="tabular-nums">Valor: R$ {payment.amount.toFixed(2)}</p>
+                  <p className="tabular-nums">Valor: {brl(payment.amount)}</p>
                   <p className="mt-0.5">Data: {new Date(payment.paidAt).toLocaleDateString('pt-BR')}</p>
                   <div className="mt-1 flex items-center justify-end gap-3">
                     <Link href={`/dashboard/pagamentos/${payment.id}/recibo`} target="_blank" className="text-xs text-gold/70 transition hover:text-gold">Recibo</Link>

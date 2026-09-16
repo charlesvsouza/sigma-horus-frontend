@@ -6,6 +6,7 @@ import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
 import { dispatch } from '@/lib/messaging';
 import { buildLodgeChannels } from '@/lib/lodge-channels';
+import { brl } from '@/lib/currency';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -171,7 +172,7 @@ export async function POST(request: Request) {
   // envio não deve derrubar o registro do pagamento, que já está salvo.
   const { payment, lodgeName, lodgeChannels } = result;
   if (payment.account?.type === 'RECEIVABLE' && payment.member?.email) {
-    const valor = Number(payment.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const valor = brl(payment.amount);
     const data = new Date(payment.paidAt).toLocaleDateString('pt-BR');
     dispatch(
       'email',

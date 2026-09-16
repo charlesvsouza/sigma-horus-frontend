@@ -309,19 +309,29 @@ P2. [x] Acessibilidade de formulário: `placeholder` como único rótulo é o pa
     local de Cadastros, no acordeão de categorias da sidebar (`DashboardShell.tsx`), na
     linha expansível de Membros e no "Meu extrato" do Portal.
 
-P3. [ ] Portal do obreiro fala a língua errada pra audiência errada. "A receber"/"A
+P3. [x] Portal do obreiro fala a língua errada pra audiência errada. "A receber"/"A
     pagar" são sinais do livro-caixa da loja, entregues ao membro que é o outro lado
     do lançamento — pra ele, "A receber: R$ 450,00" lê como dinheiro vindo, quando é
     dívida dele. Card financeiro também não tem gate de `loading` (mostra R$ 0,00 antes
     do valor real). Direção: rótulos do ponto de vista do obreiro ("O que devo" / "O
     que já paguei" / "Pendências"), gate de loading no card, "Meu extrato" aberto por
-    padrão (é o motivo dele estar ali).
+    padrão (é o motivo dele estar ali). Corrigido (2026-09-16): `RECEIVABLE`/`PAYABLE`
+    relabelados "Devo"/"A Loja me deve" (card, filtro, lista e relatório impresso),
+    card financeiro ganhou o mesmo gate de `loading` do card de cadastro, "Meu
+    extrato" abre por padrão.
 
-P3. [ ] Moeda em dois formatos. 19 pontos usam `.toFixed(2)` ("R$ 1250.00", inclusive no
+P3. [x] Moeda em dois formatos. 19 pontos usam `.toFixed(2)` ("R$ 1250.00", inclusive no
     extrato impresso do obreiro em `portal/page.tsx`); 12 usam
     `toLocaleString('pt-BR', {style:'currency'})` correto. Extrair um `brl()` único
     (já existe, duplicado, em 4 arquivos) e trocar os 19 pontos. Enquanto mexer,
     aplicar `font-mono` nos valores por DESIGN.md (hoje só usado no hint do ⌘K).
+    Corrigido (2026-09-16): `src/lib/currency.ts` com `brl()` único; os 19 pontos
+    trocados (mini-bar, veneralato, relatórios, cobranças, contas, pagamentos, portal,
+    portal/hospitalaria, campanha); as ~15 cópias locais já corretas (`notifications.ts`,
+    rotas do Asaas/convocação/lembrete, Orçamento/Inadimplência/Patrimônio/Conciliação/
+    Campanhas/Recibo/Balancetes/dashboard/Transferências/fechamento) migradas pra
+    importar a mesma fonte. `font-mono` nos valores fica de fora — é acabamento
+    tipográfico visual, não formatação, e o tema está travado.
 
 P3. [ ] Landing: contraste de texto sépia (`#2D281E`) sobre seções escuras mede 1.2:1
     (mínimo 4.5:1) — a cor foi pensada pro fundo papiro dos cards de plano
@@ -329,11 +339,26 @@ P3. [ ] Landing: contraste de texto sépia (`#2D281E`) sobre seções escuras me
     onde esse par de cores aparece fora do card de papiro. (Achados de `kicker-above-
     heading`, `dark-glow` e "geist 78% do texto" no mesmo scan foram lidos como
     prováveis falsos positivos — já documentados como decisão intencional no histórico
-    do projeto — e não entram neste backlog.)
+    do projeto — e não entram neste backlog.) Investigado (2026-09-16): no código, o
+    par sépia (`text-[#2D281E]`/`text-[#4A4035]` etc.) só aparece dentro do
+    `.scroll-card`/`.scroll-card-featured` (`plans-section.tsx`), nunca fora dele — não
+    é texto solto no lugar errado. O contraste baixo vem do próprio card: o papiro é
+    `rgba(245,237,214,0.60)` — 60% opaco por design (deixa o fundo egípcio aparecer,
+    decisão registrada no histórico de 2026-07-01) — então o tom final depende de
+    quão escuro está o pixel de fundo por trás de cada card naquele ponto da imagem.
+    Consertar de verdade significa subir a opacidade do papiro ou escurecer menos o
+    texto — as duas são mudanças visuais na própria identidade do card, não um
+    refinamento de baixo risco, e ficam fora do escopo desta rodada (tema travado).
+    Fica registrado para decisão do dono: subir a opacidade do papiro (perde parte do
+    efeito "fundo aparece através") ou aceitar o contraste variável do efeito.
 
-P3. [ ] `/manual` tem dois `<h1>` na mesma página (achado da varredura de DOM);
+P3. [x] `/manual` tem dois `<h1>` na mesma página (achado da varredura de DOM);
     `/manual` e `/sobre` não têm marco `<main>`. Ajuste pontual de semântica, sem
-    risco visual.
+    risco visual. Corrigido (2026-09-16): o `<h1>` da capa de impressão do manual
+    (`manual-book.tsx`, visível só em `@media print`) virou `<p>` com o mesmo estilo
+    inline — a página só tem um `<h1>` de verdade agora. `(institucional)/layout.tsx`
+    ganhou `<main>` envolvendo `{children}`, corrigindo não só `/manual` e `/sobre`
+    como também `/termos`, `/privacidade` e `/compliance` (mesmo layout).
 
 Fora do backlog (observações registradas, não priorizadas por ora): toggle de tema só
 alcançável pelo Admin (Configurações é `roles:['admin']` — os outros 5 papéis não

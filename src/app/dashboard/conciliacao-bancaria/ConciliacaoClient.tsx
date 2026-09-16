@@ -3,12 +3,12 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyState, FormCard, Alert } from '@/components/ui';
+import { brl } from '@/lib/currency';
 
 interface MatchedPayment { id: string; amount: number; paidAt: string; accountTitle: string | null; }
 interface BankTx { id: string; date: string; description: string; amount: number; status: string; matchedPayment: MatchedPayment | null; }
 interface Candidate { id: string; amount: number; paidAt: string; account: { title: string } | null; member: { name: string } | null; }
 
-const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmt = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 
 function MatchPicker({ bankTxId, onDone }: { bankTxId: string; onDone: () => void }) {

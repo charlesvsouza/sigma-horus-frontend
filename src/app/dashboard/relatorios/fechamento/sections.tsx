@@ -1,11 +1,12 @@
 import type { Closing } from './types';
 import { INVOICE_STATUS_LABEL } from '@/lib/status-labels';
+import { brl } from '@/lib/currency';
 
 // Componentes de seção do relatório de fechamento — extraídos para serem
 // reusados tanto no relatório completo (impressão/PDF, formato AMORIO) quanto
 // nas telas individuais de cada seção (dashboard, ver page.tsx e [secao]/).
 
-export const money = (n: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n || 0);
+export const money = brl;
 export const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 
 export const TH = 'border-b border-white/10 px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-sand-dark';

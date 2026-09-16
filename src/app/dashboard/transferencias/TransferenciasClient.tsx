@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, FormCard, EmptyState, inputClass, Alert, useConfirm } from '@/components/ui';
+import { brl as money } from '@/lib/currency';
 
 interface FinancialAccountOption { id: string; name: string; kind: string; isInvestment: boolean; active: boolean; saldo: number; }
 interface TransferItem {
@@ -21,8 +22,6 @@ const STATUS_CLASS: Record<string, string> = {
   approved: 'bg-emerald-500/10 text-emerald-300',
   rejected: 'bg-rose-500/10 text-rose-300',
 };
-
-const money = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function TransferenciasClient({ financialAccounts, transfers, role }: { financialAccounts: FinancialAccountOption[]; transfers: TransferItem[]; role: string }) {
   const router = useRouter();

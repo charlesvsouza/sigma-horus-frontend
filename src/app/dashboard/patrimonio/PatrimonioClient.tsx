@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { brl } from '@/lib/currency';
 
 interface ChartAccountOption { id: string; code: string; name: string; }
 interface AssetItem {
@@ -21,7 +22,6 @@ interface AssetItem {
 const STATUS_LABEL: Record<string, string> = { active: 'Em uso', disposed: 'Baixado/alienado', lost: 'Perdido/sinistrado' };
 const CATEGORIES = ['Móveis', 'Insígnias', 'Equipamentos', 'Imóveis', 'Outros'];
 const INPUT_CLASS = inputClass;
-const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function PatrimonioClient({ assets, chartAccounts }: { assets: AssetItem[]; chartAccounts: ChartAccountOption[] }) {
   const router = useRouter();

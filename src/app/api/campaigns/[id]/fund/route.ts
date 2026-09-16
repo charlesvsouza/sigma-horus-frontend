@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
+import { brl } from '@/lib/currency';
 import { getTroncoBalance } from '@/lib/hospitalaria';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -65,7 +66,7 @@ export async function POST(request: Request, { params }: Ctx) {
 
   if ('error' in result) {
     if (result.error === 'not_found') return NextResponse.json({ error: 'Campanha não encontrada.' }, { status: 404 });
-    if (result.error === 'insufficient') return NextResponse.json({ error: `Saldo do Tronco insuficiente (disponível: R$ ${result.balance.toFixed(2)}).` }, { status: 400 });
+    if (result.error === 'insufficient') return NextResponse.json({ error: `Saldo do Tronco insuficiente (disponível: ${brl(result.balance)}).` }, { status: 400 });
     return NextResponse.json({ error: 'Configure a conta do Tronco de Solidariedade: use "Atualizar plano de contas" em Cadastros.' }, { status: 400 });
   }
   return NextResponse.json({ item: result.campaign });

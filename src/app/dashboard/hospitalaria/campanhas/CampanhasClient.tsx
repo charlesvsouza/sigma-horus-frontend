@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, Skeleton, inputClass, Alert } from '@/components/ui';
+import { brl } from '@/lib/currency';
 
 interface Donation { id: string; donorName?: string | null; anonymous: boolean; amount: number; receivedAt: string; note?: string | null; }
 interface Campaign {
@@ -24,7 +25,6 @@ const TEMPLATES = [
   { title: 'Doação a instituição', description: 'Doação a entidade assistencial (asilo, abrigo, etc.).' },
 ];
 const STATUS_LABEL: Record<string, string> = { active: 'Ativa', completed: 'Concluída', canceled: 'Cancelada' };
-const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function CampanhasClient({ items, tronco, channels, requests }: { items: Campaign[]; tronco: Tronco | null; channels: Record<string, boolean>; requests: HospitalityRequestItem[] }) {
   const router = useRouter();

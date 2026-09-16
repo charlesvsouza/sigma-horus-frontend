@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, EmptyState, inputClass } from '@/components/ui';
+import { brl } from '@/lib/currency';
 import { memberStatusLabel } from '@/lib/member-status';
 
 interface LateCharge { fee: number; interest: number; total: number; }
@@ -18,7 +19,6 @@ interface Row {
   lateCharge: LateCharge;
 }
 
-const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function RenegotiateForm({ memberId, onDone }: { memberId: string; onDone: () => void }) {
   const [firstDueDate, setFirstDueDate] = useState('');

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Alert, Button, inputClass } from '@/components/ui';
+import { brl } from '@/lib/currency';
 
 interface CampaignItem {
   id: string;
@@ -108,7 +109,7 @@ export default function HospitalariaPortalPage() {
                   {c.beneficiaryName ? <p className="mt-1 text-xs text-sand-dark">Beneficiário: {c.beneficiaryName}</p> : null}
                   {c.goalAmount ? (
                     <p className="mt-2 text-xs text-sand-dark">
-                      Arrecadado: R$ {c.raised.toFixed(2)} de R$ {Number(c.goalAmount).toFixed(2)}
+                      Arrecadado: {brl(c.raised)} de {brl(c.goalAmount)}
                     </p>
                   ) : null}
                 </div>

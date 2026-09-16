@@ -1,3 +1,5 @@
+import { brl } from '@/lib/currency';
+
 interface MiniBarProps {
   value: number;
   total: number;
@@ -17,7 +19,7 @@ export function MiniBar({ value, total, color = 'var(--sigma-gold)', label }: Mi
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <span className="w-24 text-xs tabular-nums text-right text-sand">{value.toFixed(2)}</span>
+      <span className="w-24 text-xs tabular-nums text-right text-sand">{brl(value)}</span>
     </div>
   );
 }

@@ -20,7 +20,7 @@ export default function InstitucionalLayout({ children }: { children: ReactNode 
           </Link>
         </nav>
       </header>
-      {children}
+      <main>{children}</main>
     </div>
   );
 }

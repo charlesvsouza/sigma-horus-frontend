@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
 import { dispatch, type Channel } from '@/lib/messaging';
+import { brl } from '@/lib/currency';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -43,7 +44,7 @@ export async function POST(request: Request, { params }: Ctx) {
     });
 
     const subject = `Campanha de benemerência: ${campaign.title}`;
-    const meta = campaign.goalAmount ? ` Meta: ${Number(campaign.goalAmount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.` : '';
+    const meta = campaign.goalAmount ? ` Meta: ${brl(campaign.goalAmount)}.` : '';
     const text = custom || `Meus irmãos, a Hospitalaria abriu a campanha "${campaign.title}"${campaign.beneficiaryName ? ` em favor de ${campaign.beneficiaryName}` : ''}.${campaign.description ? ` ${campaign.description}` : ''}${meta} Contamos com a participação de todos. Fraternalmente.`;
 
     for (const m of members) {

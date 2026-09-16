@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, inputClass } from '@/components/ui';
+import { brl } from '@/lib/currency';
 
 interface Row {
   chartAccountId: string;
@@ -15,7 +16,6 @@ interface Row {
   variance: number;
 }
 
-const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const sum = (rows: Row[], key: 'planned' | 'realized') => rows.reduce((s, r) => s + r[key], 0);
 
 function EditableCell({ value, onSave, disabled }: { value: number; onSave: (v: number) => void; disabled: boolean }) {

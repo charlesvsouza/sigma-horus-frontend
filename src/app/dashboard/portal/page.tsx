@@ -5,6 +5,7 @@ import { degreeShort } from '@/lib/masonic-degree';
 import { fetchCep, maskCEP, maskPhone } from '@/lib/masks';
 import { ACCOUNT_STATUS_LABEL, DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 import { Alert, Button, inputClass } from '@/components/ui';
+import { brl } from '@/lib/currency';
 
 interface MemberSummary {
   id: string;
@@ -242,7 +243,7 @@ const EXTRATO_PRINT_CSS = `
 }
 `;
 
-const TYPE_FILTER_LABEL: Record<string, string> = { all: 'Tudo', RECEIVABLE: 'A receber', PAYABLE: 'A pagar' };
+const TYPE_FILTER_LABEL: Record<string, string> = { all: 'Tudo', RECEIVABLE: 'Devo', PAYABLE: 'A Loja me deve' };
 const STATUS_FILTER_LABEL: Record<string, string> = { all: 'Qualquer status', pending: 'Pendente', paid: 'Pago', overdue: 'Vencido' };
 
 export default function PortalPage() {
@@ -257,7 +258,7 @@ export default function PortalPage() {
   const [savedMessage, setSavedMessage] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'RECEIVABLE' | 'PAYABLE'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid' | 'overdue'>('all');
-  const [extratoOpen, setExtratoOpen] = useState(false);
+  const [extratoOpen, setExtratoOpen] = useState(true);
   const [loadError, setLoadError] = useState('');
 
   const filteredAccounts = accounts
@@ -358,20 +359,24 @@ export default function PortalPage() {
 
           <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Resumo financeiro</h2>
-            <div className="mt-5 space-y-3 text-sm text-sand">
-              <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">A receber</p>
-                <p className="mt-2 text-xl font-semibold text-sand-light">R$ {summary.totalReceivables.toFixed(2)}</p>
+            {loading ? (
+              <p className="mt-6 text-sm text-sand-dark">Carregando...</p>
+            ) : (
+              <div className="mt-5 space-y-3 text-sm text-sand">
+                <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.25em] text-gold">O que devo</p>
+                  <p className="mt-2 text-xl font-semibold text-sand-light">{brl(summary.totalReceivables)}</p>
+                </div>
+                <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.25em] text-gold">A Loja me deve</p>
+                  <p className="mt-2 text-xl font-semibold text-sand-light">{brl(summary.totalPayables)}</p>
+                </div>
+                <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.25em] text-gold">Pendências</p>
+                  <p className="mt-2 text-xl font-semibold text-sand-light">{brl(summary.pending)}</p>
+                </div>
               </div>
-              <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">A pagar</p>
-                <p className="mt-2 text-xl font-semibold text-sand-light">R$ {summary.totalPayables.toFixed(2)}</p>
-              </div>
-              <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
-                <p className="text-xs uppercase tracking-[0.25em] text-gold">Pendentes</p>
-                <p className="mt-2 text-xl font-semibold text-sand-light">R$ {summary.pending.toFixed(2)}</p>
-              </div>
-            </div>
+            )}
           </div>
         </section>
 
@@ -398,8 +403,8 @@ export default function PortalPage() {
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
                     <option value="all">Tudo</option>
-                    <option value="RECEIVABLE">A receber</option>
-                    <option value="PAYABLE">A pagar</option>
+                    <option value="RECEIVABLE">Devo</option>
+                    <option value="PAYABLE">A Loja me deve</option>
                   </select>
                   <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
                     <option value="all">Qualquer status</option>
@@ -428,13 +433,13 @@ export default function PortalPage() {
                           <div>
                             <p className="font-medium text-sand-light">{account.title}</p>
                             <p className="text-sand-dark">
-                              {account.type === 'RECEIVABLE' ? 'A receber' : 'A pagar'} • {new Date(account.dueDate).toLocaleDateString('pt-BR')}
+                              {account.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'} • {new Date(account.dueDate).toLocaleDateString('pt-BR')}
                             </p>
                             {account.chartAccount ? (
                               <p className="mt-0.5 text-xs text-gold/80">{account.chartAccount.category ? `${account.chartAccount.category} — ` : ''}{account.chartAccount.name}</p>
                             ) : null}
                           </div>
-                          <p className="font-semibold text-sand-light">R$ {Number(account.amount).toFixed(2)}</p>
+                          <p className="font-semibold text-sand-light">{brl(account.amount)}</p>
                         </div>
                         <p className="mt-2 text-xs uppercase tracking-[0.25em] text-sand-dark">{ACCOUNT_STATUS_LABEL[account.status] ?? account.status}</p>
                       </div>
@@ -496,14 +501,14 @@ export default function PortalPage() {
                 <td>{new Date(account.dueDate).toLocaleDateString('pt-BR')}</td>
                 <td>{account.title}</td>
                 <td>{account.chartAccount ? `${account.chartAccount.category ? account.chartAccount.category + ' — ' : ''}${account.chartAccount.name}` : '—'}</td>
-                <td>{account.type === 'RECEIVABLE' ? 'A receber' : 'A pagar'}</td>
+                <td>{account.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'}</td>
                 <td>{ACCOUNT_STATUS_LABEL[account.status] ?? account.status}</td>
-                <td>R$ {Number(account.amount).toFixed(2)}</td>
+                <td>{brl(account.amount)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <p className="total">Saldo do filtro (a receber − a pagar): R$ {filteredTotal.toFixed(2)}</p>
+        <p className="total">Saldo do filtro (o que devo − o que a Loja me deve): {brl(filteredTotal)}</p>
       </div>
     </main>
   );

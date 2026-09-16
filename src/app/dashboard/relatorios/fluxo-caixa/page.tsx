@@ -2,8 +2,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { getProjectedCashFlow } from '@/lib/cashflow';
-
-const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+import { brl } from '@/lib/currency';
 const fmt = (d: Date) => d.toLocaleDateString('pt-BR');
 
 // Server Component: fluxo de caixa projetado, direto do que já está lançado

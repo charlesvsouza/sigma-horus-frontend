@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { brl } from '@/lib/currency';
 
 interface MemberOption { id: string; name: string; }
 interface AccountOption { id: string; title: string; }
@@ -247,7 +248,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
                   </span>
                 </div>
                 <div className="text-right text-xs text-sand-dark">
-                  <p className="tabular-nums">R$ {invoice.amount.toFixed(2)}</p>
+                  <p className="tabular-nums">{brl(invoice.amount)}</p>
                   <p className="mt-0.5">{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</p>
                   {invoice.isRecurring ? (
                     <p className="mt-1 text-xs text-gold/70">Recorrente • {invoice.recurringInterval === 'quarterly' ? 'trimestral' : invoice.recurringInterval === 'yearly' ? 'anual' : 'mensal'}</p>

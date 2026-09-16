@@ -267,7 +267,7 @@ export function ManualBook() {
             <div className="manual-cover hidden print:block" aria-hidden="true">
               <div style={{ paddingTop: '6cm', textAlign: 'center' }}>
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
-                <h1 style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm' }}>Manual do Usuário</h1>
+                <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
                 <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.5 — 16 de setembro de 2026</p>
               </div>

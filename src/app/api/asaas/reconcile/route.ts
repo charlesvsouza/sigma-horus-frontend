@@ -5,6 +5,7 @@ import { settleAsaasInvoicePayment } from '@/lib/asaas-settlement';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
+import { brl } from '@/lib/currency';
 import { NextResponse } from 'next/server';
 
 // Estados do Asaas que significam "dinheiro recebido" (mesmo critério do webhook).
@@ -62,7 +63,7 @@ export async function POST() {
       reconciled++;
 
       if (invoice.member?.email) {
-        const valor = Number(remote.value ?? invoice.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const valor = brl(remote.value ?? invoice.amount);
         dispatch(
           'email',
           invoice.member.email,

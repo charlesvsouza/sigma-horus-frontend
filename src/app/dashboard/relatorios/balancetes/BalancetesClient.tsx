@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { brl } from '@/lib/currency';
 
 interface BalanceteItem {
   id: string;
@@ -18,7 +19,6 @@ interface BalanceteItem {
   notes?: string | null;
 }
 
-const brl = (n: number) => Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmt = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 
 // Datas de veneralato/balancete só carregam dia/mês/ano (sem hora) — tudo em

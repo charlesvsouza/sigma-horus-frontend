@@ -3,6 +3,7 @@ import type { Prisma } from '@/generated/prisma/client';
 import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
 import { channelsAvailable, dispatch, type Channel, type LodgeChannels } from '@/lib/messaging';
 import { TENURE_MILESTONES } from '@/lib/masonic-degree';
+import { brl } from '@/lib/currency';
 
 // Gatilhos automáticos diários (Fase 7): aniversariantes (obreiro + família),
 // jubileus (iniciação/elevação/exaltação — tempo de mestre) e lembretes de
@@ -32,7 +33,6 @@ const sameDayMonth = (a: Date, ref: { m: number; day: number }) => {
   const p = partsBR(a);
   return p.m === ref.m && p.day === ref.day;
 };
-const brl = (n: number) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmtDate = (d: Date) => d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
 interface Stats { birthdays: number; relativesBirthdays: number; jubilees: number; dueSoon: number; overdue: number; sent: number; queued: number; failed: number; skipped: number }

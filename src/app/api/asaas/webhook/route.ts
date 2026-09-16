@@ -3,6 +3,7 @@ import { prismaAdmin } from '@/lib/prisma';
 import { syncMemberArt002Status } from '@/lib/overdue';
 import { settleAsaasInvoicePayment } from '@/lib/asaas-settlement';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
+import { brl } from '@/lib/currency';
 import { NextResponse } from 'next/server';
 
 // Eventos do Asaas que significam "dinheiro recebido" → baixa automática.
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
     );
 
     if (invoice.member?.email) {
-      const valor = Number(payment.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const valor = brl(payment.value);
       dispatch(
         'email',
         invoice.member.email,

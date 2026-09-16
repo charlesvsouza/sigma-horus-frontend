@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
+import { brl } from '@/lib/currency';
 import { NextResponse } from 'next/server';
 
 // Lembrete manual de uma cobrança específica — complementa o lembrete
@@ -30,7 +31,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   if (data.status === 'paid') return NextResponse.json({ error: 'Esta cobrança já está paga.' }, { status: 409 });
   if (!data.member?.email) return NextResponse.json({ error: 'O membro desta cobrança não tem e-mail cadastrado.' }, { status: 400 });
 
-  const valor = Number(data.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const valor = brl(data.amount);
   const vencimento = new Date(data.dueDate).toLocaleDateString('pt-BR');
   const result = await dispatch(
     'email',

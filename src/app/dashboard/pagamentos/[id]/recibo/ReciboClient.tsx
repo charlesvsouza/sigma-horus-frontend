@@ -1,7 +1,8 @@
 'use client';
 
+import { brl } from '@/lib/currency';
+
 const METHOD_LABEL: Record<string, string> = { manual: 'Manual', pix: 'PIX', cash: 'Dinheiro', card: 'Cartão', asaas: 'Asaas' };
-const brl = (n: number) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const PRINT_CSS = `
 @media print {

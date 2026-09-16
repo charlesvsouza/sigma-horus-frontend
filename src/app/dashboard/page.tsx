@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess } from '@/lib/rbac';
 import { MiniBar } from '@/components/mini-bar';
+import { brl } from '@/lib/currency';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -67,7 +68,6 @@ export default async function DashboardPage() {
   const overdueAccounts = accounts.filter((a) => a.status === 'overdue').length;
   const pendingInvoices = invoices.filter((i) => i.status === 'pending').length;
   const netBalance = receivableTotal - payableTotal;
-  const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const attention = [
     { href: '/dashboard/contas', label: 'Contas vencidas', value: overdueAccounts, tone: 'rose' as const },

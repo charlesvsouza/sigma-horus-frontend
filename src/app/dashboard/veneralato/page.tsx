@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { brl } from '@/lib/currency';
 
 interface TermItem { id: string; title: string; startDate: string; endDate?: string | null; status: string; _count: { memberOffices: number }; }
 interface MemberOfficeItem { id: string; office: { id: string; name: string }; member: { id: string; name: string }; }
@@ -152,13 +153,11 @@ export default function VeneralatoPage() {
     const res = await fetch(`/api/terms/${termId}/close`, { method: 'POST' });
     const data = await res.json();
     setMessage(res.ok
-      ? { kind: 'ok', text: `Veneralato encerrado. Saldo final R$ ${Number(data.closingBalance ?? 0).toFixed(2)} será herdado pela próxima gestão.` }
+      ? { kind: 'ok', text: `Veneralato encerrado. Saldo final ${brl(data.closingBalance)} será herdado pela próxima gestão.` }
       : { kind: 'error', text: data.error ?? 'Erro.' });
     await loadTermDetail(termId);
     await loadTerms();
   }
-
-  const brl = (n: number) => `R$ ${Number(n ?? 0).toFixed(2)}`;
 
   const INPUT = inputClass; // fonte única do design system
 
