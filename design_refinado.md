@@ -257,24 +257,23 @@ o backend já permitia (`treasurer` tem `accounts:write`), só faltava o menu.
 P0. [x] Tesoureiro sem rota até Cadastros mestre (bloqueava a tarefa mais frequente do
     produto). Corrigido: `treasurer` adicionado aos `roles` de `/dashboard/cadastros`.
 
-P1. [ ] Confirmação em ações destrutivas/financeiras que ainda não passaram pelo
-    `useConfirm` (regressão do próprio padrão que o checklist da seção 7 já dava como
-    resolvido em 2026-07-01, mas telas novas não herdaram): `ContasClient.tsx` (excluir
-    conta a pagar/receber), `TransferenciasClient.tsx` (aprovar/rejeitar transferência —
-    não importa `useConfirm`; reapresentar o valor no diálogo, é a ação com mais risco
-    do produto), `MaterialsClient.tsx` (marcar material extraviado), `CadastrosClient.tsx`
-    (backfill em massa de contas ao plano). Direção: mesmo padrão de
-    `PagamentosClient.tsx` (`askConfirm` nomeando a consequência, não só "tem certeza?").
+P1. [x] Confirmação em ações destrutivas/financeiras que ainda não passaram pelo
+    `useConfirm`. Corrigido (2026-09-16): `ContasClient.tsx` (excluir conta, com o
+    título/valor no diálogo), `TransferenciasClient.tsx` (aprovar/rejeitar transferência,
+    reapresentando `de/para/valor` no diálogo), `MaterialsClient.tsx` (marcar extraviado,
+    nomeando material/quantidade/membro), `CadastrosClient.tsx` (backfill em massa de
+    contas ao plano). Mesmo padrão de `PagamentosClient.tsx` (`askConfirm` nomeando a
+    consequência).
 
-P1. [ ] Feedback de sucesso/erro inconsistente e mutações silenciosas. `membros/page.tsx`
-    e `CadastrosClient.tsx` usam uma `string` só pra mensagem (tudo vira
-    `intent="warn"`, sucesso incluso); ~10 mutações em `CadastrosClient` nunca checam
-    `response.ok`. `ConfiguracoesClient.tsx` usa uma `<div>` crua em vez do `<Alert>`
-    já importado (perde o override de contraste do Papiro e o `role` de acessibilidade —
-    o mesmo tipo de bug que a Onda 1 de 30/06 já matou pra outras 18 telas, voltou aqui
-    isoladamente). Direção: adotar o shape `{kind:'ok'|'error'}` de `ContasClient.tsx`
-    em todo lugar; `try/catch` + `finally { setLoading(false) }` em `membros/page.tsx`
-    e `portal/page.tsx` (hoje sem isso — tela trava "Carregando..." pra sempre num 500).
+P1. [x] Feedback de sucesso/erro inconsistente e mutações silenciosas. Corrigido
+    (2026-09-16): `membros/page.tsx` e `CadastrosClient.tsx` agora usam o shape
+    `{kind:'ok'|'error'}` (mesmo de `ContasClient.tsx`) em toda mutação, com `response.ok`
+    checado nas ~10 mutações de `CadastrosClient` que antes eram silenciosas.
+    `ConfiguracoesClient.tsx` trocou a `<div>` crua pelo `<Alert>` já importado (recupera
+    o override de contraste do Papiro e o `role` de acessibilidade). `membros/page.tsx` e
+    `portal/page.tsx` ganharam `try/catch` + `finally { setLoading(false) }` no
+    carregamento, com `Alert` de erro + botão "Tentar de novo" (antes, um 500 travava
+    "Carregando..." pra sempre).
 
 P2. [ ] Voz cerimonial dos estados vazios (DESIGN.md já escrita, nunca implementada).
     Trocar os 16 `EmptyState` de "Nenhum(a) X cadastrado" pelas frases por ofício já

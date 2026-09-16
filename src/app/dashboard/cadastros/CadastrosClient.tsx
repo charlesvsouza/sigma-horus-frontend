@@ -63,7 +63,7 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
   const [editingChart, setEditingChart] = useState<string | null>(null);
   const [chartForm, setChartForm] = useState({ code: '', name: '', type: 'REVENUE' });
   const [showChartForm, setShowChartForm] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [linking, setLinking] = useState(false);
 
@@ -85,25 +85,37 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
     const data = await res.json();
     setCpSaving(false);
     if (res.ok) {
-      setMessage('Contraparte criada com sucesso.');
+      setMessage({ kind: 'ok', text: 'Contraparte criada com sucesso.' });
       setCpForm(EMPTY_CP_FORM);
       setShowCpForm(false);
       router.refresh();
     } else {
-      setMessage(data.error ?? 'Erro ao criar contraparte.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao criar contraparte.' });
     }
   }
 
   async function updateCounterparty(id: string, data: Partial<CounterpartyItem>) {
-    await fetch(`/api/counterparties/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    const res = await fetch(`/api/counterparties/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     setEditingCp(null);
-    router.refresh();
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Contraparte atualizada.' });
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: d.error ?? 'Erro ao atualizar contraparte.' });
+    }
   }
 
   async function removeCounterparty(id: string) {
     if (!(await askConfirm({ title: 'Remover contraparte', message: 'Remover este cliente/fornecedor? Contas já lançadas mantêm o nome, só perdem o vínculo com o cadastro.', confirmLabel: 'Remover', intent: 'danger' }))) return;
-    await fetch(`/api/counterparties/${id}`, { method: 'DELETE' });
-    router.refresh();
+    const res = await fetch(`/api/counterparties/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Contraparte removida.' });
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: d.error ?? 'Erro ao remover contraparte.' });
+    }
   }
 
   const EMPTY_FA_FORM = { kind: 'bank', name: '', bankName: BRAZILIAN_BANKS[0], isInvestment: false, agency: '', accountNumber: '' };
@@ -125,19 +137,25 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
     const data = await res.json();
     setFaSaving(false);
     if (res.ok) {
-      setMessage('Conta financeira criada com sucesso.');
+      setMessage({ kind: 'ok', text: 'Conta financeira criada com sucesso.' });
       setFaForm(EMPTY_FA_FORM);
       setShowFaForm(false);
       router.refresh();
     } else {
-      setMessage(data.error ?? 'Erro ao criar conta financeira.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao criar conta financeira.' });
     }
   }
 
   async function updateFinancialAccount(id: string, data: Partial<FinancialAccountItem>) {
-    await fetch(`/api/financial-accounts/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    const res = await fetch(`/api/financial-accounts/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     setEditingFa(null);
-    router.refresh();
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Conta financeira atualizada.' });
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: d.error ?? 'Erro ao atualizar conta financeira.' });
+    }
   }
 
   async function toggleFinancialAccountActive(item: FinancialAccountItem) {
@@ -146,46 +164,47 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
 
   async function seedDefaults() {
     setSeeding(true);
-    setMessage('');
+    setMessage(null);
     const res = await fetch('/api/lodges/seed-defaults', { method: 'POST' });
     const data = await res.json();
     setSeeding(false);
     if (res.ok) {
       const s = data.seeded ?? {};
-      setMessage(`Dados padrão populados: ${s.rites ?? 0} ritos, ${s.powers ?? 0} potências, ${s.chartAccounts ?? 0} contas do plano.`);
+      setMessage({ kind: 'ok', text: `Dados padrão populados: ${s.rites ?? 0} ritos, ${s.powers ?? 0} potências, ${s.chartAccounts ?? 0} contas do plano.` });
       router.refresh();
     } else {
-      setMessage(data.error ?? 'Erro ao popular dados padrão.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao popular dados padrão.' });
     }
   }
 
   async function syncChart() {
     if (!(await askConfirm({ title: 'Atualizar plano de contas', message: 'Adiciona as contas que faltam e remove as contas padrão antigas que não estão em uso. Continuar?', confirmLabel: 'Atualizar' }))) return;
     setLinking(true);
-    setMessage('');
+    setMessage(null);
     const res = await fetch('/api/chart-accounts/sync', { method: 'POST' });
     const data = await res.json();
     setLinking(false);
     if (res.ok) {
       const s = data.stats ?? {};
-      setMessage(`Plano de contas atualizado: ${s.added ?? 0} adicionadas, ${s.removed ?? 0} antigas removidas, ${s.kept ?? 0} mantidas.`);
+      setMessage({ kind: 'ok', text: `Plano de contas atualizado: ${s.added ?? 0} adicionadas, ${s.removed ?? 0} antigas removidas, ${s.kept ?? 0} mantidas.` });
       router.refresh();
     } else {
-      setMessage(data.error ?? 'Erro ao atualizar o plano de contas.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao atualizar o plano de contas.' });
     }
   }
 
   async function backfillChart() {
+    if (!(await askConfirm({ title: 'Vincular contas ao plano', message: 'Tenta vincular automaticamente, pelo título, todas as contas a pagar/receber ainda sem categoria do plano de contas. Continuar?', confirmLabel: 'Vincular' }))) return;
     setLinking(true);
-    setMessage('');
+    setMessage(null);
     const res = await fetch('/api/accounts/backfill-chart', { method: 'POST' });
     const data = await res.json();
     setLinking(false);
     if (res.ok) {
       const s = data.stats ?? {};
-      setMessage(`Vínculo ao plano de contas: ${s.matched ?? 0} contas vinculadas, ${s.skipped ?? 0} sem correspondência (de ${s.processed ?? 0} sem vínculo).`);
+      setMessage({ kind: 'ok', text: `Vínculo ao plano de contas: ${s.matched ?? 0} contas vinculadas, ${s.skipped ?? 0} sem correspondência (de ${s.processed ?? 0} sem vínculo).` });
     } else {
-      setMessage(data.error ?? 'Erro ao vincular contas ao plano.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao vincular contas ao plano.' });
     }
   }
 
@@ -198,11 +217,11 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
     });
     const data = await response.json();
     if (response.ok) {
-      setMessage('Rito criado com sucesso.');
+      setMessage({ kind: 'ok', text: 'Rito criado com sucesso.' });
       setRiteName('');
       router.refresh();
     } else {
-      setMessage(data.error ?? 'Erro ao criar rito.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao criar rito.' });
     }
   }
 
@@ -215,48 +234,84 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
     });
     const data = await response.json();
     if (response.ok) {
-      setMessage('Potência criada com sucesso.');
+      setMessage({ kind: 'ok', text: 'Potência criada com sucesso.' });
       setPowerName('');
       router.refresh();
     } else {
-      setMessage(data.error ?? 'Erro ao criar potência.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao criar potência.' });
     }
   }
 
   async function renameRite(id: string, name: string) {
-    await fetch(`/api/rites/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    const res = await fetch(`/api/rites/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
     setEditingRite(null);
-    router.refresh();
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Rito atualizado.' });
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: d.error ?? 'Erro ao renomear rito.' });
+    }
   }
 
   async function renamePower(id: string, name: string) {
-    await fetch(`/api/powers/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    const res = await fetch(`/api/powers/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
     setEditingPower(null);
-    router.refresh();
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Potência atualizada.' });
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: d.error ?? 'Erro ao renomear potência.' });
+    }
   }
 
   async function renameChart(id: string, data: { code?: string; name?: string }) {
-    await fetch(`/api/chart-accounts/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    const res = await fetch(`/api/chart-accounts/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     setEditingChart(null);
-    router.refresh();
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Conta atualizada.' });
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: d.error ?? 'Erro ao atualizar conta.' });
+    }
   }
 
   async function removeRite(id: string) {
     if (!(await askConfirm({ title: 'Remover rito', message: 'Remover este rito?', confirmLabel: 'Remover', intent: 'danger' }))) return;
-    await fetch(`/api/rites/${id}`, { method: 'DELETE' });
-    router.refresh();
+    const res = await fetch(`/api/rites/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Rito removido.' });
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: d.error ?? 'Erro ao remover rito.' });
+    }
   }
 
   async function removePower(id: string) {
     if (!(await askConfirm({ title: 'Remover potência', message: 'Remover esta potência?', confirmLabel: 'Remover', intent: 'danger' }))) return;
-    await fetch(`/api/powers/${id}`, { method: 'DELETE' });
-    router.refresh();
+    const res = await fetch(`/api/powers/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Potência removida.' });
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: d.error ?? 'Erro ao remover potência.' });
+    }
   }
 
   async function removeChartAccount(id: string) {
     if (!(await askConfirm({ title: 'Remover conta', message: 'Remover esta conta do plano de contas?', confirmLabel: 'Remover', intent: 'danger' }))) return;
-    await fetch(`/api/chart-accounts/${id}`, { method: 'DELETE' });
-    router.refresh();
+    const res = await fetch(`/api/chart-accounts/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Conta removida.' });
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: d.error ?? 'Erro ao remover conta.' });
+    }
   }
 
   async function createChartAccount(event: React.FormEvent) {
@@ -267,13 +322,13 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
       body: JSON.stringify(chartForm),
     });
     if (res.ok) {
-      setMessage('Conta criada com sucesso.');
+      setMessage({ kind: 'ok', text: 'Conta criada com sucesso.' });
       setChartForm({ code: '', name: '', type: 'REVENUE' });
       setShowChartForm(false);
       router.refresh();
     } else {
       const data = await res.json();
-      setMessage(data.error ?? 'Erro ao criar conta.');
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao criar conta.' });
     }
   }
 
@@ -298,7 +353,7 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
           </button>
         </div>
 
-        {message ? <Alert intent="warn">{message}</Alert> : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
         <div className="grid gap-6 lg:grid-cols-2">
           <CollapsibleCard title="Ritos" count={rites.length} defaultOpen={rites.length <= 10}>

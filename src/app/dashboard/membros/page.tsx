@@ -151,7 +151,8 @@ export default function MembrosPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [rites, setRites] = useState<Option[]>([]);
   const [powers, setPowers] = useState<Option[]>([]);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -174,28 +175,29 @@ export default function MembrosPage() {
   // O card do membro (e o botão "Conceder acesso") pode estar bem abaixo na
   // lista — sem rolar pro topo, o Alert de resultado (sucesso ou erro) fica
   // fora da tela e parece que "não aconteceu nada" depois de confirmar.
-  function notify(text: string) {
-    setMessage(text);
+  function notify(kind: 'ok' | 'error', text: string) {
+    setMessage({ kind, text });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function grantAccess(m: Member) {
     if (!m.email) {
-      notify('Cadastre um e-mail no membro antes de conceder acesso.');
+      notify('error', 'Cadastre um e-mail no membro antes de conceder acesso.');
       return;
     }
     const verb = m.user ? 'reenviar a senha de acesso para' : 'conceder acesso a';
     if (!(await askConfirm({ title: 'Acesso do obreiro', message: `Deseja ${verb} ${m.name}? Uma senha provisória será enviada para ${m.email}.`, confirmLabel: 'Confirmar' }))) return;
     setGrantingId(m.id);
-    setMessage('');
+    setMessage(null);
     const res = await fetch(`/api/members/${m.id}/grant-access`, { method: 'POST' });
     const data = await res.json().catch(() => ({}));
     setGrantingId(null);
     if (!res.ok) {
-      notify(data.error ?? 'Não foi possível conceder acesso.');
+      notify('error', data.error ?? 'Não foi possível conceder acesso.');
       return;
     }
     notify(
+      'ok',
       data.emailStatus === 'sent'
         ? `Acesso liberado. Senha provisória enviada para ${m.email}.`
         : `Acesso liberado. E-mail não enviado — senha provisória: ${data.tempPassword} (repasse manualmente).`,
@@ -205,22 +207,31 @@ export default function MembrosPage() {
 
   async function loadData() {
     setLoading(true);
-    const [membersResponse, ritesResponse, powersResponse, lodgeResponse] = await Promise.all([
-      fetch('/api/members'),
-      fetch('/api/rites'),
-      fetch('/api/powers'),
-      fetch('/api/lodge'),
-    ]);
-    const membersData = await membersResponse.json();
-    const ritesData = await ritesResponse.json();
-    const powersData = await powersResponse.json();
-    const lodgeData = await lodgeResponse.json().catch(() => ({}));
-    setMembers(membersData.items ?? []);
-    setRites(ritesData.items ?? []);
-    setPowers(powersData.items ?? []);
-    setLodgeName(lodgeData?.lodge?.name ?? '');
-    setLodgeCrestUrl(lodgeData?.lodge?.crestUrl ?? '');
-    setLoading(false);
+    setLoadError('');
+    try {
+      const [membersResponse, ritesResponse, powersResponse, lodgeResponse] = await Promise.all([
+        fetch('/api/members'),
+        fetch('/api/rites'),
+        fetch('/api/powers'),
+        fetch('/api/lodge'),
+      ]);
+      if (!membersResponse.ok || !ritesResponse.ok || !powersResponse.ok) {
+        throw new Error('Falha ao carregar dados.');
+      }
+      const membersData = await membersResponse.json();
+      const ritesData = await ritesResponse.json();
+      const powersData = await powersResponse.json();
+      const lodgeData = await lodgeResponse.json().catch(() => ({}));
+      setMembers(membersData.items ?? []);
+      setRites(ritesData.items ?? []);
+      setPowers(powersData.items ?? []);
+      setLodgeName(lodgeData?.lodge?.name ?? '');
+      setLodgeCrestUrl(lodgeData?.lodge?.crestUrl ?? '');
+    } catch {
+      setLoadError('Não foi possível carregar os membros. Verifique sua conexão e tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { loadData(); }, []);
@@ -240,7 +251,7 @@ export default function MembrosPage() {
 
   async function createMember(form: FormState, relatives: RelativeData[]) {
     setSaving(true);
-    setMessage('');
+    setMessage(null);
     const res = await fetch('/api/members', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -249,17 +260,17 @@ export default function MembrosPage() {
     const data = await res.json();
     setSaving(false);
     if (res.ok) {
-      setMessage('Membro cadastrado com sucesso.');
+      notify('ok', 'Membro cadastrado com sucesso.');
       setCreating(false);
       await loadData();
     } else {
-      setMessage(data.error ?? 'Erro ao cadastrar membro.');
+      notify('error', data.error ?? 'Erro ao cadastrar membro.');
     }
   }
 
   async function updateMember(id: string, form: FormState, relatives: RelativeData[]) {
     setSaving(true);
-    setMessage('');
+    setMessage(null);
     const res = await fetch(`/api/members/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -268,38 +279,38 @@ export default function MembrosPage() {
     const data = await res.json();
     setSaving(false);
     if (res.ok) {
-      setMessage('Membro atualizado.');
+      notify('ok', 'Membro atualizado.');
       setEditingId(null);
       await loadData();
     } else {
-      setMessage(data.error ?? 'Erro ao atualizar membro.');
+      notify('error', data.error ?? 'Erro ao atualizar membro.');
     }
   }
 
   async function backfillRelatives() {
     if (!(await askConfirm({ title: 'Migrar família antiga', message: 'Migrar os campos antigos de família (mãe/pai/esposa/filhos) para a nova ficha de dependentes? Só afeta membros que ainda não têm familiares cadastrados.', confirmLabel: 'Migrar' }))) return;
-    setMessage('');
+    setMessage(null);
     const res = await fetch('/api/members/backfill-relatives', { method: 'POST' });
     const data = await res.json();
     if (res.ok) {
       const s = data.stats ?? {};
-      setMessage(`Família migrada: ${s.migrated ?? 0} membro(s), ${s.relativesCreated ?? 0} familiar(es) criado(s).`);
+      notify('ok', `Família migrada: ${s.migrated ?? 0} membro(s), ${s.relativesCreated ?? 0} familiar(es) criado(s).`);
       await loadData();
     } else {
-      setMessage(data.error ?? 'Erro ao migrar família.');
+      notify('error', data.error ?? 'Erro ao migrar família.');
     }
   }
 
   async function deleteMember(m: Member) {
     if (!(await askConfirm({ title: 'Excluir membro', message: `Excluir definitivamente o cadastro de "${m.name}"? Esta ação não pode ser desfeita.`, confirmLabel: 'Excluir', intent: 'danger' }))) return;
-    setMessage('');
+    setMessage(null);
     const res = await fetch(`/api/members/${m.id}`, { method: 'DELETE' });
     const data = await res.json();
     if (res.ok) {
-      notify('Membro excluído.');
+      notify('ok', 'Membro excluído.');
       await loadData();
     } else {
-      notify(data.error ?? 'Erro ao excluir membro.');
+      notify('error', data.error ?? 'Erro ao excluir membro.');
     }
   }
 
@@ -319,7 +330,13 @@ export default function MembrosPage() {
           </button>
         </div>
 
-        {message ? <Alert intent="warn">{message}</Alert> : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        {loadError ? (
+          <Alert intent="danger">
+            {loadError}{' '}
+            <button onClick={() => void loadData()} className="underline hover:no-underline">Tentar de novo</button>
+          </Alert>
+        ) : null}
 
         {creating ? (
           <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">

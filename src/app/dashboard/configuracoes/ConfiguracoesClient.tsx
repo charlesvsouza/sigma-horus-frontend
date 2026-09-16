@@ -174,9 +174,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
           </Link>
         </div>
 
-        {message ? (
-          <div className={`rounded-xl border px-4 py-3 text-sm ${message.kind === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/30 bg-rose-500/10 text-rose-200'}`}>{message.text}</div>
-        ) : null}
+        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
         <form onSubmit={save} className="space-y-6">
           <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">

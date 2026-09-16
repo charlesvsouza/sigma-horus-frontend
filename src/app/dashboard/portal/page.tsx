@@ -258,6 +258,7 @@ export default function PortalPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'RECEIVABLE' | 'PAYABLE'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid' | 'overdue'>('all');
   const [extratoOpen, setExtratoOpen] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   const filteredAccounts = accounts
     .filter((a) => typeFilter === 'all' || a.type === typeFilter)
@@ -265,15 +266,22 @@ export default function PortalPage() {
   const filteredTotal = filteredAccounts.reduce((sum, a) => sum + (a.type === 'RECEIVABLE' ? Number(a.amount) : -Number(a.amount)), 0);
 
   async function load() {
-    const response = await fetch('/api/portal');
-    const data = await response.json();
-    setMember(data.member ?? null);
-    setAccounts(data.accounts ?? []);
-    setDocuments(data.documents ?? []);
-    setInstitutionalDocuments(data.institutionalDocuments ?? []);
-    setLodge(data.lodge ?? null);
-    setSummary(data.summary ?? { totalReceivables: 0, totalPayables: 0, pending: 0 });
-    setLoading(false);
+    setLoadError('');
+    try {
+      const response = await fetch('/api/portal');
+      if (!response.ok) throw new Error('Falha ao carregar o portal.');
+      const data = await response.json();
+      setMember(data.member ?? null);
+      setAccounts(data.accounts ?? []);
+      setDocuments(data.documents ?? []);
+      setInstitutionalDocuments(data.institutionalDocuments ?? []);
+      setLodge(data.lodge ?? null);
+      setSummary(data.summary ?? { totalReceivables: 0, totalPayables: 0, pending: 0 });
+    } catch {
+      setLoadError('Não foi possível carregar seus dados. Verifique sua conexão e tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -290,6 +298,12 @@ export default function PortalPage() {
         </div>
 
         {savedMessage ? <Alert intent="ok">{savedMessage}</Alert> : null}
+        {loadError ? (
+          <Alert intent="danger">
+            {loadError}{' '}
+            <button onClick={() => void load()} className="underline hover:no-underline">Tentar de novo</button>
+          </Alert>
+        ) : null}
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">

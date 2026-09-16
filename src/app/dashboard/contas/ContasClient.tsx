@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, CollapsibleCard, EmptyState, FormCard, inputClass, Alert } from '@/components/ui';
+import { Button, CollapsibleCard, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface ChartAccountOption { id: string; code: string; name: string; type: string; }
 interface MemberOption { id: string; name: string; }
@@ -28,6 +28,7 @@ const INPUT_CLASS = inputClass; // fonte única do design system
 export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, role }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string }) {
   const canApprove = role === 'venerable' || role === 'admin';
   const router = useRouter();
+  const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -111,8 +112,23 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   }
 
   async function handleDelete(id: string) {
+    const account = accounts.find((a) => a.id === id);
+    const ok = await askConfirm({
+      title: 'Remover conta',
+      message: account ? `Remover "${account.title}" (${account.type === 'RECEIVABLE' ? 'a receber' : 'a pagar'}, R$ ${account.amount.toFixed(2)})? Esta ação não pode ser desfeita.` : 'Remover esta conta? Esta ação não pode ser desfeita.',
+      confirmLabel: 'Remover',
+      intent: 'danger',
+    });
+    if (!ok) return;
+
     const response = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
-    if (response.ok) router.refresh();
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) {
+      setMessage({ kind: 'ok', text: 'Conta removida.' });
+      router.refresh();
+    } else {
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao remover conta.' });
+    }
   }
 
   async function handleApprove(id: string) {

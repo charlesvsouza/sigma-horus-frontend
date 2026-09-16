@@ -161,6 +161,16 @@ export default function MaterialsClient({ materials, loans, members, rites }: { 
   }
 
   async function decideLoan(id: string, status: 'returned' | 'lost') {
+    if (status === 'lost') {
+      const loan = loans.find((l) => l.id === id);
+      const ok = await askConfirm({
+        title: 'Marcar como extraviado',
+        message: loan ? `Marcar "${loan.material.name}" (${loan.quantity}) fornecido a ${loan.member.name} como extraviado? O item sai do controle de fornecimento ativo.` : 'Marcar este fornecimento como extraviado?',
+        confirmLabel: 'Marcar como extraviado',
+        intent: 'danger',
+      });
+      if (!ok) return;
+    }
     setDecidingId(id);
     try {
       const response = await fetch(`/api/material-loans/${id}`, {

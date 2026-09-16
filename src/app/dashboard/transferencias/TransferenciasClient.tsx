@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, FormCard, EmptyState, inputClass, Alert } from '@/components/ui';
+import { Button, FormCard, EmptyState, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface FinancialAccountOption { id: string; name: string; kind: string; isInvestment: boolean; active: boolean; saldo: number; }
 interface TransferItem {
@@ -26,6 +26,7 @@ const money = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', curr
 
 export default function TransferenciasClient({ financialAccounts, transfers, role }: { financialAccounts: FinancialAccountOption[]; transfers: TransferItem[]; role: string }) {
   const router = useRouter();
+  const askConfirm = useConfirm();
   const canApprove = role === 'venerable' || role === 'admin';
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [form, setForm] = useState({ fromId: '', toId: '', amount: '', date: '', note: '' });
@@ -57,6 +58,19 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
   }
 
   async function decide(id: string, action: 'approve' | 'reject') {
+    const t = transfers.find((item) => item.id === id);
+    const valueLine = t ? `${money(t.amount)} de ${t.from.name} para ${t.to.name}` : 'esta transferência';
+    const ok = await askConfirm({
+      title: action === 'approve' ? 'Aprovar transferência' : 'Rejeitar transferência',
+      message:
+        action === 'approve'
+          ? `Aprovar ${valueLine}? O saldo das duas contas muda imediatamente.`
+          : `Rejeitar ${valueLine}? Ela não afetará o saldo de nenhuma conta.`,
+      confirmLabel: action === 'approve' ? 'Aprovar' : 'Rejeitar',
+      intent: action === 'approve' ? 'default' : 'danger',
+    });
+    if (!ok) return;
+
     setDecidingId(id);
     try {
       const response = await fetch(`/api/financial-accounts/transfer/${id}`, {
