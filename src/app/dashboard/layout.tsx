@@ -25,6 +25,7 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/cadastros', label: 'Cadastros mestre', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/cargos', label: 'Cargos', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/veneralato', label: 'Veneralato', roles: ['admin', 'venerable', 'secretary'] },
+      { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: ['admin', 'secretary'] },
     ],
   },
   {

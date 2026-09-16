@@ -25,6 +25,7 @@ export default async function DocumentosPage() {
     id: d.id,
     title: d.title,
     kind: d.kind,
+    category: d.category ?? null,
     content: d.content ?? null,
     storageKey: d.storageKey ?? null,
     member: d.member ? { name: d.member.name } : null,

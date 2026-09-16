@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     db.document.create({
       data: {
         lodgeId: String(lodgeId),
-        memberId: memberId ?? '',
+        memberId,
         title,
         kind,
         category,

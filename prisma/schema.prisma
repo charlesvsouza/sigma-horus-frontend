@@ -101,6 +101,8 @@ model Lodge {
   hospitalityRequests HospitalityRequest[]
   financialAccounts FinancialAccount[]
   accountTransfers  AccountTransfer[]
+  materials     Material[]
+  materialLoans MaterialLoan[]
 }
 
 model User {
@@ -185,6 +187,7 @@ model Member {
   relatives          Relative[]
   user               User?
   hospitalityRequests HospitalityRequest[]
+  materialLoans      MaterialLoan[]
 }
 
 // Família e dependentes do membro (mãe, pai, esposa, filhos, outros dependentes).
@@ -215,7 +218,7 @@ model Relative {
 model Document {
   id           String   @id @default(cuid())
   lodgeId      String
-  memberId     String
+  memberId     String?  // null = documento institucional da loja (Regimento, Regulamento, Constituição), visível a todos os membros
   title        String
   kind         String   @default("document")
   category     String?  @default("general")
@@ -230,7 +233,7 @@ model Document {
   updatedAt    DateTime @updatedAt
 
   lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
-  member       Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member       Member?  @relation(fields: [memberId], references: [id], onDelete: Cascade)
 }
 
 model MessageLog {
@@ -445,6 +448,60 @@ model Asset {
   @@index([lodgeId])
 }
 
+// Inventário patrimonial de uso geral da loja (mobiliário, ornamentos,
+// indumentária, alfaias, rituais) — cadastro operacional por QUANTIDADE em
+// estoque. Distinto do Asset acima (registro financeiro/depreciação por
+// unidade, usado pelo Tesoureiro) — um item pode existir nos dois cadastros
+// sem relação entre eles; este aqui é do Secretário/Arquiteto, sem viés
+// contábil.
+model Material {
+  id             String    @id @default(cuid())
+  lodgeId        String
+  riteId         String?   // opcional: item específico de um rito; null = genérico/qualquer rito
+  name           String
+  category       String?   // livre, sugerida por datalist (ver MATERIAL_CATEGORIES)
+  requiredDegree String?   // 'Aprendiz'|'Companheiro'|'Mestre'|'Mestre Instalado'; null = sem exigência de grau
+  quantity       Int       @default(1)
+  notes          String?
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  lodge          Lodge          @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  rite           Rite?          @relation(fields: [riteId], references: [id], onDelete: SetNull)
+  loans          MaterialLoan[]
+
+  @@unique([lodgeId, name])
+  @@index([lodgeId, category])
+}
+
+// Fornecimento/empréstimo de um Material a um Membro (ex.: "Fornecimento de
+// Rituais — Irmão Fulano"). Genérico: serve para rituais, aventais, joias
+// etc. Disponível = Material.quantity − soma dos empréstimos com status
+// 'issued' (calculado em runtime, não armazenado).
+model MaterialLoan {
+  id           String    @id @default(cuid())
+  lodgeId      String
+  materialId   String
+  memberId     String
+  quantity     Int       @default(1)
+  status       String    @default("issued") // issued | returned | lost
+  issuedAt     DateTime  @default(now())
+  returnedAt   DateTime?
+  notes        String?
+  createdById  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  lodge    Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  member   Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([lodgeId, materialId])
+  @@index([lodgeId, memberId])
+  @@index([lodgeId, status])
+}
+
 // Linha importada de extrato bancário (OFX/CSV), pra conciliar com os
 // Payments já lançados no sistema. amount > 0 = crédito (entrada), < 0 =
 // débito (saída) — segue a convenção do próprio extrato.
@@ -621,6 +678,7 @@ model Rite {
   lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   members   Member[]
   offices   Office[]
+  materials Material[]
 }
 
 model Term {

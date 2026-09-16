@@ -7,6 +7,12 @@ export interface RiteSeed { name: string; order: number; }
 export interface PowerSeed { name: string; order: number; }
 export interface ChartAccountSeed { code: string; name: string; type: 'REVENUE' | 'EXPENSE'; category: string; solidarity?: boolean; }
 export interface OfficeSeed { name: string; order: number; }
+export interface MaterialSeed {
+  name: string;
+  category: string;
+  quantity: number;
+  requiredDegree?: 'Aprendiz' | 'Companheiro' | 'Mestre' | 'Mestre Instalado';
+}
 
 // Dicionário de cargos maçônicos por rito.
 // Cada entrada mapeia o nome do rito (conforme BRAZILIAN_RITES) à sua lista
@@ -263,4 +269,58 @@ export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   { code: '8.9.04', name: 'Manutenção Preventiva/Corretiva', type: 'EXPENSE', category: 'Assistência e Manutenção' },
   { code: '8.9.05', name: 'Estorno de Receita', type: 'EXPENSE', category: 'Assistência e Manutenção' },
   { code: '8.9.06', name: 'Material Ritualístico e Paramentos', type: 'EXPENSE', category: 'Assistência e Manutenção' },
+];
+
+// Categorias sugeridas para o datalist do cadastro de materiais (dashboard/materiais).
+export const MATERIAL_CATEGORIES = [
+  'Mobiliário e Ornamentos',
+  'Indumentária',
+  'Alfaias e Joias',
+  'Rituais e Livros',
+  'Diversos',
+];
+
+// Checklist canônico e genérico de materiais de uso geral da Loja. As
+// diferenças de nomenclatura/detalhe entre ritos (REAA, York, Adonhiramita
+// etc.) são majoritariamente cosméticas para fins de inventário — por isso
+// não há uma lista por rito; esta é carregada manualmente (botão "Carregar
+// lista padrão" em Materiais), como ponto de partida opcional, complementar
+// ao cadastro manual item a item.
+export const DEFAULT_MATERIALS: MaterialSeed[] = [
+  // Mobiliário e Ornamentos
+  { name: 'Coluna Jaquim', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Coluna Boaz', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Altar dos Juramentos', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Malhete do Venerável Mestre', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Malhete do Primeiro Vigilante', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Malhete do Segundo Vigilante', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Espada do Guarda-Templo (Cobridor)', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Castiçal/vela do Oriente', category: 'Mobiliário e Ornamentos', quantity: 3 },
+  { name: 'Tapete/piso em mosaico', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Urna de votação (balotário)', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Quadro de Loja', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Estandarte da Loja', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Placa constitutiva', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  { name: 'Tábua de delinear', category: 'Mobiliário e Ornamentos', quantity: 1 },
+  // Indumentária
+  { name: 'Avental de Aprendiz', category: 'Indumentária', quantity: 20, requiredDegree: 'Aprendiz' },
+  { name: 'Avental de Companheiro', category: 'Indumentária', quantity: 15, requiredDegree: 'Companheiro' },
+  { name: 'Avental de Mestre', category: 'Indumentária', quantity: 15, requiredDegree: 'Mestre' },
+  { name: 'Par de punhos de Aprendiz', category: 'Indumentária', quantity: 20, requiredDegree: 'Aprendiz' },
+  { name: 'Par de punhos de Companheiro/Mestre', category: 'Indumentária', quantity: 20, requiredDegree: 'Companheiro' },
+  { name: 'Par de luvas brancas', category: 'Indumentária', quantity: 30 },
+  // Alfaias e Joias (por cargo)
+  { name: 'Joia/colar do Venerável Mestre', category: 'Alfaias e Joias', quantity: 1 },
+  { name: 'Joia/colar do Primeiro Vigilante', category: 'Alfaias e Joias', quantity: 1 },
+  { name: 'Joia/colar do Segundo Vigilante', category: 'Alfaias e Joias', quantity: 1 },
+  { name: 'Joia/colar do Orador', category: 'Alfaias e Joias', quantity: 1 },
+  { name: 'Joia/colar do Secretário', category: 'Alfaias e Joias', quantity: 1 },
+  { name: 'Joia/colar do Tesoureiro', category: 'Alfaias e Joias', quantity: 1 },
+  { name: 'Joia/colar do Hospitaleiro', category: 'Alfaias e Joias', quantity: 1 },
+  { name: 'Joia/colar do Mestre de Cerimônias', category: 'Alfaias e Joias', quantity: 1 },
+  { name: 'Espada/joia do Cobridor', category: 'Alfaias e Joias', quantity: 1 },
+  // Rituais e Livros
+  { name: 'Ritual de Aprendiz', category: 'Rituais e Livros', quantity: 20, requiredDegree: 'Aprendiz' },
+  { name: 'Ritual de Companheiro', category: 'Rituais e Livros', quantity: 15, requiredDegree: 'Companheiro' },
+  { name: 'Ritual de Mestre', category: 'Rituais e Livros', quantity: 15, requiredDegree: 'Mestre' },
 ];

@@ -44,6 +44,7 @@ interface DocumentItem {
   id: string;
   title: string;
   kind: string;
+  category?: string | null;
   createdAt: string;
 }
 
@@ -248,6 +249,7 @@ export default function PortalPage() {
   const [member, setMember] = useState<MemberSummary | null>(null);
   const [accounts, setAccounts] = useState<AccountItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [institutionalDocuments, setInstitutionalDocuments] = useState<DocumentItem[]>([]);
   const [summary, setSummary] = useState({ totalReceivables: 0, totalPayables: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -267,6 +269,7 @@ export default function PortalPage() {
     setMember(data.member ?? null);
     setAccounts(data.accounts ?? []);
     setDocuments(data.documents ?? []);
+    setInstitutionalDocuments(data.institutionalDocuments ?? []);
     setSummary(data.summary ?? { totalReceivables: 0, totalPayables: 0, pending: 0 });
     setLoading(false);
   }
@@ -431,6 +434,21 @@ export default function PortalPage() {
                 <div key={document.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                   <p className="font-medium text-sand-light">{document.title}</p>
                   <p className="mt-1 text-sand-dark">{DOCUMENT_KIND_LABEL[document.kind] ?? document.kind} • {new Date(document.createdAt).toLocaleDateString('pt-BR')}</p>
+                  <a href={`/api/documents/${document.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-gold hover:text-gold-light">Abrir arquivo</a>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+            <h2 className="text-base font-semibold text-sand-light">Documentos da Loja</h2>
+            <p className="mt-0.5 text-xs text-sand-dark">Regimento, regulamento, constituição e outros documentos institucionais.</p>
+            <div className="mt-5 space-y-3">
+              {institutionalDocuments.length === 0 ? <p className="text-sm text-sand-dark">Nenhum documento institucional publicado ainda.</p> : institutionalDocuments.map((document) => (
+                <div key={document.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
+                  <p className="font-medium text-sand-light">{document.title}</p>
+                  <p className="mt-1 text-sand-dark">{document.category || (DOCUMENT_KIND_LABEL[document.kind] ?? document.kind)} • {new Date(document.createdAt).toLocaleDateString('pt-BR')}</p>
+                  <a href={`/api/documents/${document.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-gold hover:text-gold-light">Abrir arquivo</a>
                 </div>
               ))}
             </div>

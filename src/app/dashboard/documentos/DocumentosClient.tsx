@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard } from '@/components/ui';
+import { Badge, Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard } from '@/components/ui';
 import { DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
+
+const DOCUMENT_CATEGORIES = ['Institucional', 'Ata', 'Financeiro', 'Geral'];
 
 interface DocumentItem {
   id: string;
   title: string;
   kind: string;
+  category?: string | null;
   content?: string | null;
   storageKey?: string | null;
   member?: { name: string } | null;
@@ -18,6 +21,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [kind, setKind] = useState('document');
+  const [category, setCategory] = useState('');
   const [content, setContent] = useState('');
   const [memberId, setMemberId] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -37,6 +41,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
       const formData = new FormData();
       formData.append('title', title);
       formData.append('kind', kind);
+      if (category) formData.append('category', category);
       formData.append('content', content);
       if (memberId) formData.append('memberId', memberId);
       formData.append('file', file);
@@ -50,6 +55,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
         setMessage({ kind: 'ok', text: 'Documento enviado e registrado com sucesso.' });
         setTitle('');
         setKind('document');
+        setCategory('');
         setContent('');
         setMemberId('');
         setFile(null);
@@ -85,8 +91,12 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
                 <option value="certificate">Certificado</option>
                 <option value="receipt">Comprovante</option>
               </select>
-              <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={`${INPUT} md:col-span-2`}>
-                <option value="">Vincular a um membro</option>
+              <input value={category} onChange={(event) => setCategory(event.target.value)} className={INPUT} placeholder="Categoria (opcional)" list="document-categories" />
+              <datalist id="document-categories">
+                {DOCUMENT_CATEGORIES.map((c) => <option key={c} value={c} />)}
+              </datalist>
+              <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={INPUT}>
+                <option value="">Vincular a um membro (deixe em branco para documento institucional — visível a todos)</option>
                 {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
               </select>
               <label className="rounded-lg border border-dashed border-white/[8%] bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand md:col-span-2">
@@ -107,8 +117,15 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
               <div key={item.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-sand-light">{item.title}</p>
-                    <p className="mt-1 text-xs text-sand-dark">{DOCUMENT_KIND_LABEL[item.kind] ?? item.kind} • {item.member?.name ?? 'Sem vínculo'}</p>
+                    <p className="flex items-center gap-2 text-sm font-medium text-sand-light">
+                      {item.title}
+                      {!item.member ? <Badge variant="info">Institucional</Badge> : null}
+                    </p>
+                    <p className="mt-1 text-xs text-sand-dark">
+                      {DOCUMENT_KIND_LABEL[item.kind] ?? item.kind}
+                      {item.category ? ` • ${item.category}` : ''}
+                      {item.member ? ` • ${item.member.name}` : ''}
+                    </p>
                     {item.storageKey ? <a href={`/api/documents/${item.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-sm text-gold hover:text-gold-light">Abrir arquivo</a> : null}
                   </div>
                   <p className="max-w-2xl text-sm text-sand-dark">{item.content ?? 'Sem resumo.'}</p>

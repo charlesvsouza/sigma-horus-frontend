@@ -22,6 +22,7 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const title = String(formData.get('title') ?? '').trim();
   const memberId = formData.get('memberId') ? String(formData.get('memberId')) : null;
+  const category = formData.get('category') ? String(formData.get('category')) : 'general';
   const file = formData.get('file');
 
   if (!title || !(file instanceof File) || !file.size) {
@@ -61,10 +62,10 @@ export async function POST(request: Request) {
     db.document.create({
       data: {
         lodgeId: String(lodgeId),
-        memberId: memberId ?? '',
+        memberId,
         title,
         kind: 'document',
-        category: 'general',
+        category,
         status: 'uploaded',
         content: null,
         fileUrl: storage.fileUrl,

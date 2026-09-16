@@ -1,5 +1,5 @@
 import type { Prisma } from '@/generated/prisma/client';
-import { BRAZILIAN_POWERS, BRAZILIAN_RITES, MASONIC_CHART_OF_ACCOUNTS, OFFICES_BY_RITE } from '@/lib/masonic-reference';
+import { BRAZILIAN_POWERS, BRAZILIAN_RITES, DEFAULT_MATERIALS, MASONIC_CHART_OF_ACCOUNTS, OFFICES_BY_RITE } from '@/lib/masonic-reference';
 
 /**
  * Semeia uma loja com os dados de referência da Maçonaria brasileira:
@@ -148,4 +148,35 @@ export async function seedOfficesForRite(
   }
 
   return { created: toCreate.length, skipped: officesData.length - toCreate.length, rite: riteName };
+}
+
+/**
+ * Semeia (ou completa) o checklist padrão de materiais da loja. Não apaga
+ * nem sobrescreve materiais existentes: só cria os que ainda não existem
+ * (dedupe por nome, case-insensitive, dentro da loja) — mesmo padrão de
+ * seedOfficesForRite. Disparado manualmente pelo botão "Carregar lista
+ * padrão" em /dashboard/materiais, nunca automático na criação da loja
+ * (catálogo mais pesado/opcional que nem toda loja quer de cara).
+ */
+export async function seedDefaultMaterials(
+  db: Prisma.TransactionClient,
+  lodgeId: string,
+): Promise<{ created: number; skipped: number }> {
+  const existing = await db.material.findMany({ where: { lodgeId }, select: { name: true } });
+  const have = new Set(existing.map((m) => m.name.trim().toLowerCase()));
+  const toCreate = DEFAULT_MATERIALS.filter((m) => !have.has(m.name.trim().toLowerCase()));
+
+  if (toCreate.length > 0) {
+    await db.material.createMany({
+      data: toCreate.map((m) => ({
+        lodgeId,
+        name: m.name,
+        category: m.category,
+        quantity: m.quantity,
+        requiredDegree: m.requiredDegree ?? null,
+      })),
+    });
+  }
+
+  return { created: toCreate.length, skipped: DEFAULT_MATERIALS.length - toCreate.length };
 }

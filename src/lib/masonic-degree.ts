@@ -26,6 +26,31 @@ export function symbolicSituation(m: DegreeSource): SymbolicSituation | null {
   return null;
 }
 
+// Ordem hierárquica das situações simbólicas — usada para checagens "grau
+// mínimo exigido" (ex.: fornecimento de materiais/rituais por grau, ver
+// dashboard/materiais). Mestre Instalado fica acima de Mestre, mas ambos
+// satisfazem qualquer exigência até Mestre.
+const DEGREE_RANK: Record<SymbolicSituation, number> = {
+  'Aprendiz': 1,
+  'Companheiro': 2,
+  'Mestre': 3,
+  'Mestre Instalado': 4,
+};
+
+export function degreeRank(situation: SymbolicSituation | string | null | undefined): number {
+  if (!situation) return 0;
+  return DEGREE_RANK[situation as SymbolicSituation] ?? 0;
+}
+
+// Elegibilidade de fornecimento por grau: o membro precisa ter alcançado (ou
+// superado) o grau exigido pelo material — não precisa ser exatamente aquele
+// grau (um Mestre continua elegível a material de Aprendiz/Companheiro que
+// já cursou). Sem grau exigido, todo mundo é elegível.
+export function isEligibleForDegree(memberSituation: SymbolicSituation | null, requiredDegree: string | null | undefined): boolean {
+  if (!requiredDegree) return true;
+  return degreeRank(memberSituation) >= degreeRank(requiredDegree);
+}
+
 // Graus filosóficos válidos do REAA.
 export const PHILOSOPHICAL_DEGREES = Array.from({ length: 30 }, (_, i) => i + 4); // 4..33
 

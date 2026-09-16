@@ -21,6 +21,7 @@ const RESOURCE_LABELS: Record<string, string> = {
   portal: 'Portal',
   campaigns: 'Hospitalaria',
   import: 'Importação de dados',
+  materials: 'Materiais e patrimônio',
 };
 
 const ACTION_LABELS: Record<string, string> = { read: 'Ver', write: 'Editar' };

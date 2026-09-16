@@ -1,9 +1,16 @@
 import { prismaAdmin } from '@/lib/prisma';
 
-export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns' | 'import';
+export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns' | 'import' | 'materials';
 export type Action = 'read' | 'write';
 
-export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import'];
+// IMPORTANTE: ao adicionar um novo Resource aqui, lojas que já customizaram a
+// matriz em Configurações → Permissões (têm linhas em RolePermission) NÃO
+// ganham o novo recurso automaticamente — loadLodgePolicy só cai no
+// DEFAULT_POLICY quando a loja não tem NENHUMA linha persistida. É preciso
+// rodar um backfill (ver scripts/backfill-role-permissions.ts) inserindo as
+// linhas padrão do novo recurso pra essas lojas, ou o Admin delas fica sem
+// acesso até reabrir e salvar a tela de Permissões de novo.
+export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials'];
 export const ACTIONS: Action[] = ['read', 'write'];
 export const ROLES = ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] as const;
 export type Role = (typeof ROLES)[number];
@@ -12,11 +19,11 @@ export type Role = (typeof ROLES)[number];
 // É a fonte de verdade para semear o RBAC persistido de cada loja.
 const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = {
   admin: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import'],
-    write: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials'],
+    write: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials'],
   },
   venerable: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'materials'],
     write: ['documents', 'messages', 'portal', 'campaigns'],
   },
   treasurer: {
@@ -24,17 +31,17 @@ const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = 
     write: ['messages', 'accounts', 'portal'],
   },
   secretary: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import'],
-    write: ['members', 'documents', 'messages', 'portal', 'import'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials'],
+    write: ['members', 'documents', 'messages', 'portal', 'import', 'materials'],
   },
   member: {
-    read: ['portal', 'campaigns'],
+    read: ['portal', 'campaigns', 'documents'],
     write: ['portal'],
   },
   // Hospitaleiro: contato com irmãos (somente leitura), gestão de campanhas de
   // benemerência, leitura do Tronco (accounts) e envio de convocações (messages).
   hospitaller: {
-    read: ['members', 'accounts', 'portal', 'campaigns', 'messages'],
+    read: ['members', 'accounts', 'portal', 'campaigns', 'messages', 'documents'],
     write: ['campaigns', 'messages', 'portal'],
   },
 };
