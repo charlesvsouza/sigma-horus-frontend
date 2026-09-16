@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 // Card recolhível para listas — evita mostrar uma seção cheia de espaço vazio
 // (EmptyState) sempre aberta. Abre sozinho na transição de 0 → 1+ registros
@@ -18,6 +18,7 @@ interface CollapsibleCardProps {
 export function CollapsibleCard({ title, count, defaultOpen = false, headerAction, children, className = '' }: CollapsibleCardProps) {
   const [open, setOpen] = useState(defaultOpen);
   const wasEmpty = useRef(count === 0);
+  const contentId = useId();
 
   useEffect(() => {
     if (wasEmpty.current && count > 0) setOpen(true);
@@ -30,6 +31,8 @@ export function CollapsibleCard({ title, count, defaultOpen = false, headerActio
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls={contentId}
           className="flex flex-1 items-center justify-between gap-3 rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
         >
           <div>
@@ -42,7 +45,7 @@ export function CollapsibleCard({ title, count, defaultOpen = false, headerActio
         </button>
         {headerAction}
       </div>
-      {open ? <div className="mt-4">{children}</div> : null}
+      {open ? <div id={contentId} className="mt-4">{children}</div> : null}
     </section>
   );
 }

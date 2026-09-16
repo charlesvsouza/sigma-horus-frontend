@@ -234,7 +234,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
           </div>
           <div className="mt-5 space-y-3">
             {invoices.length === 0 ? (
-              <EmptyState title="Nenhuma cobrança cadastrada" description="Crie uma cobrança individual ou use a cobrança em massa para gerar as mensalidades de todos os irmãos." />
+              <EmptyState title="Ainda não soou o malhete da arrecadação." description="Crie uma cobrança individual ou use a cobrança em massa para gerar as mensalidades de todos os irmãos." />
             ) : filteredInvoices.length === 0 ? (
               <p className="text-sm text-sand-dark">Nenhuma cobrança encontrada para &quot;{search}&quot;.</p>
             ) : filteredInvoices.map((invoice) => (

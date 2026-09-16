@@ -134,7 +134,7 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
           </div>
           <div className="mt-5 space-y-3">
             {items.length === 0 ? (
-              <EmptyState title="Nenhum extrato importado" description="Importe um arquivo OFX ou CSV para começar a conciliar." />
+              <EmptyState title="A prova dos nove ainda não começou." description="Importe um arquivo OFX ou CSV para começar a conciliar." />
             ) : items.map((tx) => (
               <div key={tx.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">

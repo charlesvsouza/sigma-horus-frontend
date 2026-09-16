@@ -124,17 +124,17 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
           <FormCard title="Nova transferência">
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <select value={form.fromId} onChange={(e) => setForm({ ...form, fromId: e.target.value })} className={INPUT} required>
+                <select aria-label="De (origem)" value={form.fromId} onChange={(e) => setForm({ ...form, fromId: e.target.value })} className={INPUT} required>
                   <option value="">De (origem)</option>
                   {activeAccounts.map((f) => <option key={f.id} value={f.id} disabled={f.id === form.toId}>{f.name}</option>)}
                 </select>
-                <select value={form.toId} onChange={(e) => setForm({ ...form, toId: e.target.value })} className={INPUT} required>
+                <select aria-label="Para (destino)" value={form.toId} onChange={(e) => setForm({ ...form, toId: e.target.value })} className={INPUT} required>
                   <option value="">Para (destino)</option>
                   {activeAccounts.map((f) => <option key={f.id} value={f.id} disabled={f.id === form.fromId}>{f.name}</option>)}
                 </select>
-                <input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={INPUT} placeholder="Valor" required />
-                <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={INPUT} required />
-                <textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observação (opcional)" rows={2} />
+                <input aria-label="Valor" type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={INPUT} placeholder="Valor" required />
+                <input aria-label="Data" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={INPUT} required />
+                <textarea aria-label="Observação" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observação (opcional)" rows={2} />
               </div>
               <Button type="submit" disabled={submitting || activeAccounts.length < 2}>{submitting ? 'Enviando…' : 'Solicitar transferência'}</Button>
               {activeAccounts.length < 2 ? <p className="text-xs text-sand-dark">Cadastre pelo menos duas contas ativas em Cadastros mestre para transferir entre elas.</p> : null}
@@ -145,7 +145,7 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
             <h2 className="text-base font-semibold text-sand-light">Histórico</h2>
             <div className="mt-4 space-y-3">
               {transfers.length === 0 ? (
-                <EmptyState title="Nenhuma transferência ainda" description="As transferências solicitadas pelo Tesoureiro aparecem aqui, aguardando aprovação do Venerável Mestre." />
+                <EmptyState title="O saldo repousa onde está." description="As transferências solicitadas pelo Tesoureiro aparecem aqui, aguardando aprovação do Venerável Mestre." />
               ) : transfers.map((t) => (
                 <div key={t.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">

@@ -380,6 +380,8 @@ export default function PortalPage() {
             <button
               type="button"
               onClick={() => setExtratoOpen((v) => !v)}
+              aria-expanded={extratoOpen}
+              aria-controls="extrato-content"
               className="flex w-full items-center justify-between gap-3 rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
             >
               <div>
@@ -392,7 +394,7 @@ export default function PortalPage() {
             </button>
 
             {extratoOpen ? (
-              <>
+              <div id="extrato-content">
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
                     <option value="all">Tudo</option>
@@ -439,7 +441,7 @@ export default function PortalPage() {
                     ));
                   })()}
                 </div>
-              </>
+              </div>
             ) : null}
           </div>
 

@@ -104,27 +104,27 @@ export default function PagamentosClient({ accounts, members, payments, financia
         <FormCard title="Novo pagamento">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <select value={form.accountId} onChange={(event) => selectAccount(event.target.value)} className={INPUT} required>
+              <select aria-label="Selecione uma conta" value={form.accountId} onChange={(event) => selectAccount(event.target.value)} className={INPUT} required>
                 <option value="">Selecione uma conta</option>
                 {accounts.map((account) => <option key={account.id} value={account.id}>{account.title}</option>)}
               </select>
-              <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={INPUT}>
+              <select aria-label="Vincular a um membro" value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={INPUT}>
                 <option value="">Vincular a um membro</option>
                 {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
               </select>
-              <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT} placeholder="Valor" required />
-              <input type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className={INPUT} required />
-              <select value={form.method} onChange={(event) => setForm({ ...form, method: event.target.value })} className={INPUT}>
+              <input aria-label="Valor" type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT} placeholder="Valor" required />
+              <input aria-label="Data do pagamento" type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className={INPUT} required />
+              <select aria-label="Método de pagamento" value={form.method} onChange={(event) => setForm({ ...form, method: event.target.value })} className={INPUT}>
                 <option value="manual">Manual</option>
                 <option value="pix">PIX</option>
                 <option value="cash">Dinheiro</option>
                 <option value="card">Cartão</option>
               </select>
-              <select value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT} required>
+              <select aria-label="Conta bancária/caixa que recebeu ou pagou" value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT} required>
                 <option value="">Conta bancária/caixa que recebeu ou pagou</option>
                 {financialAccounts.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
-              <textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observação" rows={3} />
+              <textarea aria-label="Observação" value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observação" rows={3} />
             </div>
             <label className="flex items-start gap-3 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-3">
               <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 h-4 w-4 accent-gold" />
@@ -145,7 +145,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
           </div>
           <div className="mt-5 space-y-3">
             {payments.length === 0 ? (
-              <EmptyState title="Nenhum pagamento registrado" description="Registre baixas manuais aqui; as baixas automáticas do Asaas aparecem assim que o webhook confirma o pagamento." />
+              <EmptyState title="O caixa aguarda o primeiro giro." description="Registre baixas manuais aqui; as baixas automáticas do Asaas aparecem assim que o webhook confirma o pagamento." />
             ) : filteredPayments.length === 0 ? (
               <p className="text-sm text-sand-dark">Nenhum pagamento encontrado para &quot;{search}&quot;.</p>
             ) : filteredPayments.map((payment) => (

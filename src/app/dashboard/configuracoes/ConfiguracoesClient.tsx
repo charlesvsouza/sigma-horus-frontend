@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { Alert, Button, inputClass } from '@/components/ui';
+import { useEffect, useState } from 'react';
+import { Alert, Button, inputClass, useConfirm } from '@/components/ui';
 import ThemeToggle from '@/components/theme-toggle';
 import { fetchCep, maskCEP, maskCNPJ, maskPhone } from '@/lib/masks';
 import { BRAZILIAN_RITES, BRAZILIAN_POWERS } from '@/lib/masonic-reference';
@@ -32,7 +32,13 @@ function Field({ label, value, onChange, ...rest }: { label: string; value: stri
 }
 
 export default function ConfiguracoesClient({ initialForm }: { initialForm: LodgeForm }) {
+  const askConfirm = useConfirm();
   const [form, setForm] = useState<LodgeForm>(initialForm);
+  // "Última versão salva" — não é o mesmo que `initialForm` (que não muda sem
+  // recarregar a página): atualiza a cada salvamento bem-sucedido, pra saber
+  // se há alteração pendente sem depender de um refresh do servidor.
+  const [savedSnapshot, setSavedSnapshot] = useState<LodgeForm>(initialForm);
+  const isDirty = JSON.stringify(form) !== JSON.stringify(savedSnapshot);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
@@ -40,6 +46,26 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
   const [backingUp, setBackingUp] = useState(false);
   const [backupError, setBackupError] = useState('');
   const [crestUploading, setCrestUploading] = useState(false);
+
+  // Avisa antes de fechar/recarregar a aba com alterações não salvas — hoje
+  // um formulário desse tamanho (7 seções) some em silêncio numa navegação
+  // ou recarga acidental.
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (!isDirty) return;
+      e.preventDefault();
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // O card de resultado fica no topo da página, mas o botão Salvar está bem
+  // mais abaixo (~7 seções depois) — sem rolar, o feedback parece "não
+  // aconteceu nada". Mesmo padrão já usado em Membros.
+  function notify(kind: 'ok' | 'error', text: string) {
+    setMessage({ kind, text });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   async function handleDownloadBackup() {
     setBackingUp(true);
@@ -84,10 +110,12 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
     const data = await res.json().catch(() => ({}));
     setCrestUploading(false);
     if (res.ok) {
-      set('crestUrl', data.crestUrl ?? '');
-      setMessage({ kind: 'ok', text: 'Brasão atualizado.' });
+      const crestUrl = data.crestUrl ?? '';
+      set('crestUrl', crestUrl);
+      setSavedSnapshot((prev) => ({ ...prev, crestUrl })); // já persistido nesta chamada, não é "alteração pendente"
+      notify('ok', 'Brasão atualizado.');
     } else {
-      setMessage({ kind: 'error', text: data.error ?? 'Erro ao enviar o brasão.' });
+      notify('error', data.error ?? 'Erro ao enviar o brasão.');
     }
   }
 
@@ -98,10 +126,11 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
     setCrestUploading(false);
     if (res.ok) {
       set('crestUrl', '');
-      setMessage({ kind: 'ok', text: 'Brasão removido.' });
+      setSavedSnapshot((prev) => ({ ...prev, crestUrl: '' }));
+      notify('ok', 'Brasão removido.');
     } else {
       const data = await res.json().catch(() => ({}));
-      setMessage({ kind: 'error', text: data.error ?? 'Erro ao remover o brasão.' });
+      notify('error', data.error ?? 'Erro ao remover o brasão.');
     }
   }
 
@@ -115,13 +144,24 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
 
   async function seedOffices() {
     if (!form.riteName) {
-      setMessage({ kind: 'error', text: 'Escolha o rito antes de aplicar os cargos.' });
+      notify('error', 'Escolha o rito antes de aplicar os cargos.');
       return;
+    }
+    // Isto salva o formulário inteiro (não só o rito) antes de semear os
+    // cargos — se houver outras alterações pendentes na tela, o usuário
+    // precisa saber que elas também vão ser gravadas agora.
+    if (isDirty) {
+      const ok = await askConfirm({
+        title: 'Aplicar cargos deste rito',
+        message: 'Isto também salva as demais alterações não salvas nesta página, além de aplicar os cargos do rito. Continuar?',
+        confirmLabel: 'Salvar e aplicar',
+      });
+      if (!ok) return;
     }
     setSeeding(true);
     setMessage(null);
-    // Garante o rito salvo antes de semear os cargos.
-    await fetch('/api/lodge', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    const saveRes = await fetch('/api/lodge', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    if (saveRes.ok) setSavedSnapshot(form);
     const res = await fetch('/api/lodges/seed-offices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -130,9 +170,9 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
     const data = await res.json();
     setSeeding(false);
     if (res.ok) {
-      setMessage({ kind: 'ok', text: `Cargos do rito aplicados: ${data.seeded.created} criados, ${data.seeded.skipped} já existiam.` });
+      notify('ok', `Cargos do rito aplicados: ${data.seeded.created} criados, ${data.seeded.skipped} já existiam.`);
     } else {
-      setMessage({ kind: 'error', text: data.error ?? 'Erro ao aplicar os cargos.' });
+      notify('error', data.error ?? 'Erro ao aplicar os cargos.');
     }
   }
 
@@ -158,7 +198,12 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
     const res = await fetch('/api/lodge', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
     const data = await res.json();
     setSaving(false);
-    setMessage(res.ok ? { kind: 'ok', text: 'Dados da loja salvos.' } : { kind: 'error', text: data.error ?? 'Erro ao salvar.' });
+    if (res.ok) {
+      setSavedSnapshot(form);
+      notify('ok', 'Dados da loja salvos.');
+    } else {
+      notify('error', data.error ?? 'Erro ao salvar.');
+    }
   }
 
   return (
@@ -350,9 +395,12 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             </div>
           </section>
 
-          <Button type="submit" disabled={saving}>
-            {saving ? 'Salvando…' : 'Salvar dados da loja'}
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Salvando…' : 'Salvar dados da loja'}
+            </Button>
+            {isDirty && !saving ? <span className="text-xs text-gold/80">Você tem alterações não salvas.</span> : null}
+          </div>
         </form>
 
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">

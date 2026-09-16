@@ -169,20 +169,20 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Detalhes</h3>
               <div className="mt-3 grid gap-4 md:grid-cols-2">
-                <select value={form.chartAccountId} onChange={(e) => selectChart(e.target.value)} className={INPUT_CLASS}>
+                <select aria-label="Categoria (plano de contas)" value={form.chartAccountId} onChange={(e) => selectChart(e.target.value)} className={INPUT_CLASS}>
                   <option value="">Categoria (plano de contas)</option>
                   {filteredCharts.map((c) => (
                     <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
                   ))}
                 </select>
-                <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className={INPUT_CLASS} placeholder="Título da conta" required />
-                <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className={INPUT_CLASS}>
+                <input aria-label="Título da conta" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className={INPUT_CLASS} placeholder="Título da conta" required />
+                <select aria-label="Tipo da conta" value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className={INPUT_CLASS}>
                   <option value="RECEIVABLE">Conta a receber</option>
                   <option value="PAYABLE">Conta a pagar</option>
                 </select>
-                <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT_CLASS} placeholder="Valor" required />
-                <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT_CLASS} required />
-                <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className={INPUT_CLASS}>
+                <input aria-label="Valor" type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT_CLASS} placeholder="Valor" required />
+                <input aria-label="Data de vencimento" type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT_CLASS} required />
+                <select aria-label="Status" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className={INPUT_CLASS}>
                   <option value="pending">Pendente</option>
                   <option value="paid">Pago</option>
                   <option value="overdue">Vencido</option>
@@ -193,19 +193,19 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Vínculo e observações</h3>
               <div className="mt-3 grid gap-4">
-                <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value, counterpartyId: event.target.value ? '' : form.counterpartyId })} className={INPUT_CLASS}>
+                <select aria-label="Vincular a um membro" value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value, counterpartyId: event.target.value ? '' : form.counterpartyId })} className={INPUT_CLASS}>
                   <option value="">Vincular a um membro (opcional)</option>
                   {members.map((member) => (
                     <option key={member.id} value={member.id}>{member.name}</option>
                   ))}
                 </select>
-                <select value={form.counterpartyId} onChange={(event) => setForm({ ...form, counterpartyId: event.target.value, memberId: event.target.value ? '' : form.memberId })} className={INPUT_CLASS}>
+                <select aria-label="Vincular a um cliente/fornecedor" value={form.counterpartyId} onChange={(event) => setForm({ ...form, counterpartyId: event.target.value, memberId: event.target.value ? '' : form.memberId })} className={INPUT_CLASS}>
                   <option value="">Vincular a um cliente/fornecedor (opcional)</option>
                   {counterparties.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
-                <select value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT_CLASS}>
+                <select aria-label="Conta bancária/caixa prevista" value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT_CLASS}>
                   <option value="">Conta bancária/caixa prevista (opcional)</option>
                   {financialAccounts.map((f) => (
                     <option key={f.id} value={f.id}>{f.name}</option>
@@ -217,7 +217,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                     É mensalidade do membro (conta para a regra do Art. 002 — 60 dias de inadimplência)
                   </label>
                 ) : null}
-                <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={INPUT_CLASS} placeholder="Descrição" rows={3} />
+                <textarea aria-label="Descrição" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={INPUT_CLASS} placeholder="Descrição" rows={3} />
               </div>
             </div>
 
@@ -233,7 +233,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
         >
           <div className="space-y-3">
             {accounts.length === 0 ? (
-              <EmptyState title="Nenhuma conta cadastrada" description="Lance a primeira conta a receber ou a pagar para acompanhar vencimentos e o fluxo de caixa." />
+              <EmptyState title="Nenhum lançamento. O Livro está limpo." description="Lance a primeira conta a receber ou a pagar para acompanhar vencimentos e o fluxo de caixa." />
             ) : filteredAccounts.length === 0 ? (
               <p className="text-sm text-sand-dark">Nenhuma conta encontrada para &quot;{search}&quot;.</p>
             ) : filteredAccounts.map((account) => (

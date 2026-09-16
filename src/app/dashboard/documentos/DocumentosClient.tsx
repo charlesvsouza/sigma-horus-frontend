@@ -112,7 +112,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
         <CollapsibleCard title="Arquivos e atas" count={items.length}>
           <div className="space-y-3">
             {items.length === 0 ? (
-              <EmptyState title="Nenhum documento registrado" description="Envie atas, comprovantes e certificados; ficam guardados com segurança e acesso por papel." />
+              <EmptyState title="Nenhum documento. O arquivo aguarda." description="Envie atas, comprovantes e certificados; ficam guardados com segurança e acesso por papel." />
             ) : items.map((item) => (
               <div key={item.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div className="flex flex-wrap items-center justify-between gap-3">

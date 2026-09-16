@@ -83,7 +83,7 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
         <CollapsibleCard title="Histórico" count={items.length}>
           <div className="space-y-3">
             {items.length === 0 ? (
-              <EmptyState title="Nenhuma comunicação registrada" description="As mensagens enviadas aos membros aparecem aqui. O envio externo (WhatsApp/e-mail) chega na Fase 7." />
+              <EmptyState title="Os arautos ainda não partiram." description="As mensagens enviadas aos membros aparecem aqui. O envio externo (WhatsApp/e-mail) chega na Fase 7." />
             ) : items.map((item) => (
               <div key={item.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div className="flex flex-wrap items-center justify-between gap-3">

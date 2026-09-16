@@ -146,7 +146,7 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
           </div>
           <div className="mt-5 space-y-3">
             {assets.length === 0 ? (
-              <EmptyState title="Nenhum bem cadastrado" description="Registre o primeiro item do patrimônio da loja." />
+              <EmptyState title="O inventário da Loja está por escrever." description="Registre o primeiro item do patrimônio da loja." />
             ) : filtered.length === 0 ? (
               <p className="text-sm text-sand-dark">Nenhum bem encontrado para &quot;{search}&quot;.</p>
             ) : filtered.map((asset) => (

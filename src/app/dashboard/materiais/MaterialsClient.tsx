@@ -224,19 +224,19 @@ export default function MaterialsClient({ materials, loans, members, rites }: { 
           >
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={INPUT_CLASS} placeholder="Nome do material" required />
-                <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={INPUT_CLASS} placeholder="Categoria" list="material-categories" />
+                <input aria-label="Nome do material" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={INPUT_CLASS} placeholder="Nome do material" required />
+                <input aria-label="Categoria" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={INPUT_CLASS} placeholder="Categoria" list="material-categories" />
                 <datalist id="material-categories">{MATERIAL_CATEGORIES.map((c) => <option key={c} value={c} />)}</datalist>
-                <input type="number" min="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className={INPUT_CLASS} placeholder="Quantidade" required />
-                <select value={form.requiredDegree} onChange={(e) => setForm({ ...form, requiredDegree: e.target.value })} className={INPUT_CLASS}>
+                <input aria-label="Quantidade" type="number" min="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className={INPUT_CLASS} placeholder="Quantidade" required />
+                <select aria-label="Grau exigido" value={form.requiredDegree} onChange={(e) => setForm({ ...form, requiredDegree: e.target.value })} className={INPUT_CLASS}>
                   <option value="">Sem grau exigido</option>
                   {DEGREE_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
-                <select value={form.riteId} onChange={(e) => setForm({ ...form, riteId: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
+                <select aria-label="Rito" value={form.riteId} onChange={(e) => setForm({ ...form, riteId: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
                   <option value="">Genérico (qualquer rito)</option>
                   {rites.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
-                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Observações" rows={2} />
+                <textarea aria-label="Observações" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Observações" rows={2} />
               </div>
               <Button type="submit" disabled={submitting}>{submitting ? 'Salvando…' : editingId ? 'Salvar alterações' : 'Cadastrar material'}</Button>
             </form>
@@ -250,7 +250,7 @@ export default function MaterialsClient({ materials, loans, members, rites }: { 
           >
             <div className="space-y-3">
               {materials.length === 0 ? (
-                <EmptyState title="Nenhum material cadastrado" description="Cadastre manualmente ou clique em Carregar lista padrão." />
+                <EmptyState title="O inventário e as alfaias da Loja aguardam registro." description="Cadastre manualmente ou clique em Carregar lista padrão." />
               ) : filtered.length === 0 ? (
                 <p className="text-sm text-sand-dark">Nenhum material encontrado para &quot;{search}&quot;.</p>
               ) : filtered.map((material) => (
@@ -279,16 +279,16 @@ export default function MaterialsClient({ materials, loans, members, rites }: { 
 
         <CollapsibleCard title="Fornecimento de materiais" count={loans.length} defaultOpen={loans.length > 0}>
           <form onSubmit={handleLoanSubmit} className="mb-5 grid gap-4 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4 md:grid-cols-2">
-            <select value={loanForm.materialId} onChange={(e) => setLoanForm({ ...loanForm, materialId: e.target.value })} className={INPUT_CLASS} required>
+            <select aria-label="Material" value={loanForm.materialId} onChange={(e) => setLoanForm({ ...loanForm, materialId: e.target.value })} className={INPUT_CLASS} required>
               <option value="">Material</option>
               {availableForLoan.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.availableQuantity} disponível)</option>)}
             </select>
-            <select value={loanForm.memberId} onChange={(e) => setLoanForm({ ...loanForm, memberId: e.target.value })} className={INPUT_CLASS} required>
+            <select aria-label="Membro" value={loanForm.memberId} onChange={(e) => setLoanForm({ ...loanForm, memberId: e.target.value })} className={INPUT_CLASS} required>
               <option value="">Membro</option>
               {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
-            <input type="number" min="1" value={loanForm.quantity} onChange={(e) => setLoanForm({ ...loanForm, quantity: e.target.value })} className={INPUT_CLASS} placeholder="Quantidade" required />
-            <input value={loanForm.notes} onChange={(e) => setLoanForm({ ...loanForm, notes: e.target.value })} className={INPUT_CLASS} placeholder="Observação (opcional)" />
+            <input aria-label="Quantidade" type="number" min="1" value={loanForm.quantity} onChange={(e) => setLoanForm({ ...loanForm, quantity: e.target.value })} className={INPUT_CLASS} placeholder="Quantidade" required />
+            <input aria-label="Observação" value={loanForm.notes} onChange={(e) => setLoanForm({ ...loanForm, notes: e.target.value })} className={INPUT_CLASS} placeholder="Observação (opcional)" />
             {!loanEligibility ? (
               <p className="text-xs text-rose-300 md:col-span-2">
                 Este membro ainda não atingiu o grau exigido ({selectedLoanMaterial?.requiredDegree}) para este material.
@@ -301,7 +301,7 @@ export default function MaterialsClient({ materials, loans, members, rites }: { 
 
           <div className="space-y-3">
             {loans.length === 0 ? (
-              <EmptyState title="Nenhum fornecimento ativo" description="Materiais emitidos a membros (ex.: rituais) aparecem aqui até serem devolvidos." />
+              <EmptyState title="Nada saiu do inventário ainda." description="Materiais emitidos a membros (ex.: rituais) aparecem aqui até serem devolvidos." />
             ) : loans.map((loan) => (
               <div key={loan.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
                 <div>

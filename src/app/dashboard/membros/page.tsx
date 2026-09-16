@@ -388,7 +388,7 @@ export default function MembrosPage() {
               </div>
             ) : members.length === 0 ? (
               <EmptyState
-                title="Nenhum membro cadastrado"
+                title="Nenhum membro cadastrado. A Loja espera seu quadro."
                 description="Cadastre o primeiro obreiro para gerir contribuições, presença e evolução maçônica."
                 action={<Button onClick={() => { setCreating(true); setEditingId(null); }}>+ Novo membro</Button>}
               />
@@ -397,11 +397,14 @@ export default function MembrosPage() {
             ) : (
               filtered.map((m) => {
                 const open = expandedId === m.id;
+                const detailId = `member-detail-${m.id}`;
                 return (
                   <div key={m.id} className="border-b border-white/[5%] last:border-b-0">
                     {/* Linha compacta */}
                     <button
                       onClick={() => { setExpandedId(open ? null : m.id); setEditingId(null); }}
+                      aria-expanded={open}
+                      aria-controls={detailId}
                       className="grid w-full grid-cols-1 gap-1 px-4 py-3 text-left transition-colors hover:bg-sigma-blue-deep/40 md:grid-cols-[1.6fr_0.9fr_0.7fr_0.9fr_1fr_auto] md:items-center md:gap-3"
                     >
                       <span className="flex items-center gap-2 text-sm font-medium text-sand-light">
@@ -417,7 +420,7 @@ export default function MembrosPage() {
 
                     {/* Painel expandido */}
                     {open ? (
-                      <div className="border-t border-white/[5%] bg-sigma-blue-deep/30 px-4 py-5">
+                      <div id={detailId} className="border-t border-white/[5%] bg-sigma-blue-deep/30 px-4 py-5">
                         {editingId === m.id ? (
                           <MemberForm initial={memberToForm(m)} initialRelatives={m.relatives ?? []} rites={rites} powers={powers} saving={saving} submitLabel="Salvar alterações" onSubmit={(form, rels) => updateMember(m.id, form, rels)} onCancel={() => setEditingId(null)} />
                         ) : (

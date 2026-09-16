@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Alert, useConfirm } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { BRAZILIAN_BANKS } from '@/lib/banks';
@@ -37,9 +37,10 @@ function InlineEdit({ value, onSave, onCancel }: { value: string; onSave: (v: st
 
 function CollapsibleCard({ title, count, defaultOpen, children }: { title: string; count: number; defaultOpen: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen || count <= 10);
+  const contentId = useId();
   return (
     <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between gap-3 text-left">
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={contentId} className="flex w-full items-center justify-between gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-gold/60">
         <div>
           <h2 className="text-base font-semibold text-sand-light">{title}</h2>
           <p className="mt-0.5 text-xs text-sand-dark">{count} registro{count !== 1 ? 's' : ''}</p>
@@ -48,7 +49,7 @@ function CollapsibleCard({ title, count, defaultOpen, children }: { title: strin
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {open ? <div className="mt-4">{children}</div> : null}
+      {open ? <div id={contentId} className="mt-4">{children}</div> : null}
     </section>
   );
 }

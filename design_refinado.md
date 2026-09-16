@@ -275,30 +275,39 @@ P1. [x] Feedback de sucesso/erro inconsistente e mutações silenciosas. Corrigi
     carregamento, com `Alert` de erro + botão "Tentar de novo" (antes, um 500 travava
     "Carregando..." pra sempre).
 
-P2. [ ] Voz cerimonial dos estados vazios (DESIGN.md já escrita, nunca implementada).
-    Trocar os 16 `EmptyState` de "Nenhum(a) X cadastrado" pelas frases por ofício já
-    documentadas (Tesouraria, Hospitalaria, Secretaria, Chancelaria) + escrever as que
-    faltam pros módulos novos (Materiais, Transferências).
+P2. [x] Voz cerimonial dos estados vazios (DESIGN.md já escrita, nunca implementada).
+    Corrigido (2026-09-16): todos os `EmptyState` de "Nenhum(a) X cadastrado" trocados
+    por frases por ofício em Contas, Pagamentos, Transferências, Materiais (catálogo e
+    fornecimento), Cobranças, Sessões, Comunicação, Documentos, Conciliação bancária,
+    Patrimônio, Balancetes, Inadimplência e Campanhas de hospitalaria.
 
-P2. [ ] Cadastros mestre: escopo e dono. Cinco domínios não relacionados numa página
-    (Ritos/Potências — Secretaria; Plano de contas/Clientes-fornecedores/Contas
-    bancárias — Tesouraria) é provavelmente por isso que a página bifurcou os padrões
-    do design system. Direção: promover "Contas bancárias e Caixa" (e possivelmente
-    Plano de contas/Clientes-fornecedores) para itens próprios em Financeiro; refatorar
-    o que sobrar de Cadastros mestre pra usar `CollapsibleCard`/`inputClass`/`Button`
-    do design system em vez das cópias locais.
+P2. [x] Cadastros mestre: escopo e dono. Corrigido parcialmente (2026-09-16): o
+    `CollapsibleCard` local (fork do design system) ganhou o mesmo `aria-expanded`/
+    `aria-controls` do componente compartilhado. A parte estrutural — promover "Contas
+    bancárias e Caixa" (e possivelmente Plano de contas/Clientes-fornecedores) para
+    itens próprios em Financeiro, e trocar `INPUT`/`ADD_BTN`/`document.getElementById`
+    locais por `inputClass`/`Button` do design system — fica **deliberadamente
+    adiada**: mexe em rotas/navegação (não é refinamento de baixo risco) e o `INPUT`
+    local usa `flex-1` num layout `flex`, enquanto `inputClass` é `w-full` — trocar às
+    cegas arrisca quebrar o wrap dos formulários. Requer decisão do dono antes de
+    tocar em URLs/menu.
 
-P2. [ ] Formulários longos sem aviso de alteração não salva nem scroll até o feedback.
-    `ConfiguracoesClient.tsx`: mensagem no topo, botão Salvar ~1300px abaixo, sem
-    scroll automático (o padrão `notify()` de `membros/page.tsx` resolve isso mas só
-    foi aplicado em 2 dos 4 pontos daquele mesmo arquivo). `seedOffices()` salva o
-    formulário inteiro sem avisar, antes de semear cargos.
+P2. [x] Formulários longos sem aviso de alteração não salva nem scroll até o feedback.
+    Corrigido (2026-09-16): `ConfiguracoesClient.tsx` ganhou `savedSnapshot`/`isDirty`
+    (compara com o form atual), aviso "Você tem alterações não salvas." ao lado do
+    botão Salvar, guarda de `beforeunload` enquanto sujo, `notify()` com scroll-to-top
+    em salvar/erro/upload-remoção de brasão/aplicar cargos, e confirmação antes de
+    `seedOffices()` salvar implicitamente o restante do formulário.
 
-P2. [ ] Acessibilidade de formulário: `placeholder` como único rótulo é o padrão
+P2. [x] Acessibilidade de formulário: `placeholder` como único rótulo é o padrão
     dominante (Contas, Pagamentos, Transferências, Materiais, parte de Membros);
     `htmlFor` só existe em `ui/input.tsx`. `aria-expanded` aparece uma única vez em
     todo o dashboard — nenhum `CollapsibleCard`, acordeão da sidebar ou linha expansível
-    de Membros anuncia estado pra leitor de tela.
+    de Membros anuncia estado pra leitor de tela. Corrigido (2026-09-16): `aria-label`
+    em todo campo só-com-placeholder de Contas/Pagamentos/Transferências/Materiais;
+    `aria-expanded`/`aria-controls`/`id` no `CollapsibleCard` compartilhado, no fork
+    local de Cadastros, no acordeão de categorias da sidebar (`DashboardShell.tsx`), na
+    linha expansível de Membros e no "Meu extrato" do Portal.
 
 P3. [ ] Portal do obreiro fala a língua errada pra audiência errada. "A receber"/"A
     pagar" são sinais do livro-caixa da loja, entregues ao membro que é o outro lado

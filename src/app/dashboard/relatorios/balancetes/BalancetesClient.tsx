@@ -203,7 +203,7 @@ export default function BalancetesClient({
           <h2 className="text-base font-semibold text-sand-light">Histórico</h2>
           <div className="mt-5 space-y-3">
             {items.length === 0 ? (
-              <EmptyState title="Nenhum balancete gerado" description="Gere o balancete do trimestre/semestre para apresentar em sessão." />
+              <EmptyState title="A prestação de contas aguarda a primeira pedra." description="Gere o balancete do trimestre/semestre para apresentar em sessão." />
             ) : items.map((b) => (
               <div key={b.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">

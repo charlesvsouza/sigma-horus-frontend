@@ -175,7 +175,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
           <h2 className="text-base font-semibold text-sand-light">Campanhas</h2>
           <div className="mt-4 space-y-3">
             {items.length === 0 ? (
-              <EmptyState title="Nenhuma campanha" description="Crie a primeira campanha de benemerência para mobilizar o Tronco ou os irmãos." action={<Button onClick={() => setCreating(true)}>+ Nova campanha</Button>} />
+              <EmptyState title="Nenhuma campanha de benemerência. Que tal semear a primeira?" description="Crie a primeira campanha para mobilizar o Tronco ou os irmãos." action={<Button onClick={() => setCreating(true)}>+ Nova campanha</Button>} />
             ) : (
               items.map((c) => {
                 const raised = (c.raised ?? 0) + Number(c.fundAllocated);

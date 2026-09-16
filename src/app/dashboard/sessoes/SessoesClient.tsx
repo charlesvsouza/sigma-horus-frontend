@@ -76,7 +76,7 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
         <CollapsibleCard title="Sessões cadastradas" count={sessions.length}>
           <div className="space-y-3">
             {sessions.length === 0 ? (
-              <EmptyState title="Nenhuma sessão cadastrada" description="Cadastre as sessões da loja para registrar presença e acompanhar a frequência dos obreiros." />
+              <EmptyState title="O templo aguarda a primeira convocação." description="Cadastre as sessões da loja para registrar presença e acompanhar a frequência dos obreiros." />
             ) : sessions.map((s) => (
               <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
                 <div>

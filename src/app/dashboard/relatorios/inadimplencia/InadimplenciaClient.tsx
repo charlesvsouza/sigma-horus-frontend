@@ -99,7 +99,7 @@ export default function InadimplenciaClient({ rows, canRenegotiate }: { rows: Ro
           <h2 className="text-base font-semibold text-sand-light">Membros em aberto</h2>
           <div className="mt-5 space-y-3">
             {rows.length === 0 ? (
-              <EmptyState title="Nenhuma mensalidade em aberto" description="Todos os membros estão em dia com a mensalidade." />
+              <EmptyState title="Tudo em dia. Nenhum irmão em atraso." description="Todos os membros estão em dia com a mensalidade." />
             ) : rows.map((row) => {
               const hasCharge = row.lateCharge.fee > 0 || row.lateCharge.interest > 0;
               return (

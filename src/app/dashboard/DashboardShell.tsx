@@ -221,10 +221,13 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
           <nav className={`flex-1 space-y-5 overflow-y-auto py-6 ${rail ? 'px-4 lg:px-2' : 'px-4'}`}>
             {groups.map((group) => {
               const isOpen = openCategory === group.category;
+              const groupId = `nav-group-${group.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
               return (
                 <div key={group.category}>
                   <button
                     onClick={() => toggleCategory(group.category)}
+                    aria-expanded={isOpen}
+                    aria-controls={groupId}
                     className={`flex w-full items-center justify-between px-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-sand-dark/70 transition hover:text-sand ${rail ? 'lg:hidden' : ''}`}
                   >
                     {group.category}
@@ -235,7 +238,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                  <div className={`mt-2 space-y-0.5 ${isOpen ? '' : 'hidden'} ${rail ? 'lg:block! lg:mt-0' : ''}`}>
+                  <div id={groupId} className={`mt-2 space-y-0.5 ${isOpen ? '' : 'hidden'} ${rail ? 'lg:block! lg:mt-0' : ''}`}>
                       {group.items.map((item) => {
                         const active = pathname === item.href;
                         const Icon = NAV_ICONS[item.href] ?? Circle;
