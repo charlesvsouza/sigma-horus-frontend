@@ -54,6 +54,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-gerencial', label: '7.11 Fluxo de caixa, orçamento e patrimônio' },
       { id: 'tes-conciliacao', label: '7.12 Conciliação (Asaas e extrato bancário)' },
       { id: 'tes-clientes-fornecedores', label: '7.13 Clientes e fornecedores' },
+      { id: 'tes-contas-bancarias', label: '7.14 Contas bancárias, Caixa e transferências' },
     ],
   },
   { id: 'secretario', num: '8', label: 'Guia do Secretário' },
@@ -206,7 +207,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 30 de junho de 2026 · versão 1.2</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 16 de setembro de 2026 · versão 1.3</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -268,7 +269,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <h1 style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm' }}>Manual do Usuário</h1>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.2 — 15 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.3 — 16 de setembro de 2026</p>
               </div>
             </div>
 
@@ -370,6 +371,10 @@ export function ManualBook() {
                     realidade da loja — <Link className="text-gold hover:text-gold-light" href="#tes-plano">7.1 Plano de contas</Link>.
                   </li>
                   <li>
+                    <strong>Cadastre os bancos e o Caixa</strong> que a loja usa de verdade, para saber o saldo de cada
+                    um e poder transferir entre eles — <Link className="text-gold hover:text-gold-light" href="#tes-contas-bancarias">7.14 Contas bancárias, Caixa e transferências</Link>.
+                  </li>
+                  <li>
                     <strong>Conecte WhatsApp/SMS</strong>, se quiser esses canais além do e-mail (que já funciona sem
                     configuração) — <Link className="text-gold hover:text-gold-light" href="#admin-comunicacao">6.6 Comunicação</Link>.
                   </li>
@@ -394,8 +399,8 @@ export function ManualBook() {
               </p>
               <Bullets>
                 <li><strong>Administrador:</strong> conta, usuários, assinatura, integrações e configurações.</li>
-                <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações; não lança baixas financeiras.</li>
-                <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, fecha o caixa e vê relatórios financeiros.</li>
+                <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações (despesas, prestação de contas e transferências entre contas bancárias); não lança baixas financeiras.</li>
+                <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, fecha o caixa, solicita transferências entre contas bancárias/Caixa e vê relatórios financeiros.</li>
                 <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença; relatórios não financeiros.</li>
                 <li><strong>Hospitaleiro:</strong> consulta os irmãos (somente leitura, para contato), gerencia campanhas de benemerência e acompanha o Tronco de Solidariedade.</li>
                 <li><strong>Membro (obreiro):</strong> o próprio portal — extrato, débitos, histórico e documentos pertinentes.</li>
@@ -416,7 +421,7 @@ export function ManualBook() {
               <Bullets>
                 <li><strong>Visão geral:</strong> <UI>Visão geral</UI> (indicadores), <UI>Meu portal</UI> e <UI>Manual &amp; ajuda</UI>.</li>
                 <li><strong>Loja &amp; cadastros:</strong> <UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Cargos</UI>, <UI>Veneralato</UI>.</li>
-                <li><strong>Financeiro:</strong> <UI>Contas</UI>, <UI>Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Relatórios</UI>.</li>
+                <li><strong>Financeiro:</strong> <UI>Contas</UI>, <UI>Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Relatórios</UI>.</li>
                 <li><strong>Atividades:</strong> <UI>Sessões</UI>, <UI>Documentos</UI>, <UI>Comunicação</UI>.</li>
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI> e <UI>Campanhas</UI> de benemerência.</li>
                 <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
@@ -697,7 +702,7 @@ export function ManualBook() {
                   <li>Confira o <UI>Título da conta</UI> e o tipo: <strong>Conta a receber</strong> ou <strong>Conta a pagar</strong>.</li>
                   <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> de vencimento.</li>
                   <li>Defina o <UI>Status</UI> (Pendente, Pago ou Vencido).</li>
-                  <li>Opcional: <UI>Vincular a um membro</UI> ou <UI>Vincular a um cliente/fornecedor</UI> (cadastro de quem não é membro — ver 7.13), e escrever uma <UI>Descrição</UI>.</li>
+                  <li>Opcional: <UI>Vincular a um membro</UI> ou <UI>Vincular a um cliente/fornecedor</UI> (cadastro de quem não é membro — ver 7.13), escolher a <UI>Conta bancária/caixa prevista</UI> (ver 7.14) e escrever uma <UI>Descrição</UI>.</li>
                   <li>Clique em <UI>Salvar conta</UI>. A conta aparece na lista <UI>Contas cadastradas</UI>; use <UI>Remover</UI> para excluir.</li>
                 </Steps>
                 <Bullets>
@@ -761,6 +766,10 @@ export function ManualBook() {
                   <li>Selecione a <UI>conta</UI> correspondente e, se quiser, <UI>vincule a um membro</UI>.</li>
                   <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> do pagamento.</li>
                   <li>Escolha o <UI>método</UI>: Manual, PIX, Dinheiro ou Cartão.</li>
+                  <li>Escolha a <UI>Conta bancária/caixa que recebeu ou pagou</UI> — obrigatório em todo pagamento novo,
+                    para saber exatamente onde o dinheiro entrou ou saiu (ver 7.14). Se a conta a receber/pagar já tinha
+                    uma <UI>conta bancária prevista</UI> (7.2), o campo já vem preenchido sozinho; pode trocar se o
+                    dinheiro foi de fato para outro lugar.</li>
                   <li>Opcional: <UI>Observação</UI>.</li>
                   <li>Marque a <strong>declaração de ciência</strong> (confirma a veracidade e o aceite dos Termos) — obrigatória.</li>
                   <li>Clique em <UI>Registrar pagamento</UI>. Ele aparece em <UI>Pagamentos recentes</UI>.</li>
@@ -942,6 +951,49 @@ export function ManualBook() {
                   não apaga as contas já lançadas — elas mantêm o nome guardado, só perdem o vínculo com o cadastro.
                 </p>
               </Sub>
+
+              <Sub id="tes-contas-bancarias" title="7.14 Contas bancárias, Caixa e transferências">
+                <p>
+                  Antes do Sigma Horus separar isso, todo pagamento caía num único bolo de caixa da loja, sem registrar
+                  se o dinheiro estava no banco, numa aplicação ou em espécie. Agora cada loja cadastra os
+                  <strong> &quot;bolsos&quot;</strong> que usa de verdade — um ou mais bancos, uma conta de investimento,
+                  o Caixa físico — e vincula cada pagamento a um deles, além de poder <strong>transferir saldo entre
+                  eles</strong> com aprovação em dois passos.
+                </p>
+                <p><strong>Cadastrar as contas</strong> — em <UI>Cadastros mestre → Contas bancárias e Caixa</UI>:</p>
+                <Steps>
+                  <li>Clique em <UI>+ Nova conta</UI> e escolha o tipo: <strong>Banco</strong> ou <strong>Caixa</strong>.</li>
+                  <li>
+                    Para <strong>Banco</strong>: escolha o nome na lista (os bancos mais usados no Brasil — não existe
+                    uma lista &quot;só do Rio de Janeiro&quot;, pois bancos operam no país inteiro; escolha
+                    <UI> Outro</UI> se o seu não estiver lá), dê um <UI>rótulo</UI> pra diferenciar contas do mesmo banco
+                    (ex.: &quot;Santander CC&quot; e &quot;Santander Investimento&quot;), informe <UI>Agência</UI> e
+                    <UI> Conta</UI> (opcionais) e marque <UI>Conta de investimento</UI> quando for o caso.
+                  </li>
+                  <li>Para <strong>Caixa</strong>: só o nome (ex.: &quot;Caixa da Loja&quot;) — representa o dinheiro em espécie guardado fisicamente.</li>
+                  <li>Clique em <UI>Criar</UI>. Uma conta que já tem lançamentos não pode ser excluída — use <UI>Desativar</UI> para tirá-la das opções de novos lançamentos sem perder o histórico.</li>
+                </Steps>
+                <p>
+                  <strong>Usar nos lançamentos:</strong> ao lançar uma conta a receber/pagar (7.2), a <UI>Conta bancária/
+                  caixa prevista</UI> é opcional — serve só para já vir sugerida na hora de dar baixa. Ao registrar o
+                  pagamento de verdade (7.5), escolher a conta é <strong>obrigatório</strong>: é isso que dá o saldo real
+                  de cada banco/caixa.
+                </p>
+                <p>
+                  <strong>Transferir entre contas</strong> — em <UI>Financeiro → Transferências entre contas</UI>:
+                </p>
+                <Steps>
+                  <li>No topo da tela, confira o <strong>saldo atual</strong> de cada conta cadastrada.</li>
+                  <li>No bloco <UI>Nova transferência</UI>, escolha <UI>De (origem)</UI> e <UI>Para (destino)</UI>, o <UI>Valor</UI>, a <UI>Data</UI> e, se quiser, uma <UI>Observação</UI> — e clique em <UI>Solicitar transferência</UI>.</li>
+                  <li>A transferência nasce <strong>Pendente</strong> e ainda <strong>não muda saldo nenhum</strong>.</li>
+                  <li>O <strong>Venerável Mestre</strong> (ou o Administrador) revisa no <UI>Histórico</UI> e clica em <UI>Aprovar</UI> — só então o valor sai da origem e entra no destino — ou em <UI>Rejeitar</UI>, se não for o caso.</li>
+                </Steps>
+                <Note>
+                  Essa dupla conferência (quem pede não é quem libera) existe para o mesmo cuidado de uma despesa acima
+                  do limite (7.9): nenhuma movimentação de saldo entre contas acontece sem duas pessoas envolvidas. Uma
+                  transferência com data dentro de um veneralato já encerrado é bloqueada, como qualquer outro lançamento (7.7).
+                </Note>
+              </Sub>
             </Chapter>
 
             {/* ============== 8. SECRETÁRIO ============== */}
@@ -985,8 +1037,9 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-cadastros-mestre" title="Cadastros mestre e cargos">
                 <p>
-                  Em <UI>Cadastros mestre</UI> você gerencia <UI>Ritos</UI>, <UI>Potências</UI> e o <UI>Plano de contas</UI>
-                  (Adicionar/Remover). Em <UI>Cargos</UI>, mantém os cargos da loja conforme o rito.
+                  Em <UI>Cadastros mestre</UI> você gerencia <UI>Ritos</UI>, <UI>Potências</UI>, o <UI>Plano de
+                  contas</UI> (Adicionar/Remover), <UI>Clientes e fornecedores</UI> (ver 7.13) e <UI>Contas bancárias e
+                  Caixa</UI> (ver 7.14). Em <UI>Cargos</UI>, mantém os cargos da loja conforme o rito.
                 </p>
               </Sub>
               <Sub id="sec-veneralato" title="Veneralato (períodos e vínculos)">
@@ -1259,6 +1312,8 @@ export function ManualBook() {
                 <li><strong>O saldo do Tronco aparece indisponível.</strong> Em Cadastros, clique em <UI>Atualizar plano de contas</UI> (7.1) para habilitar as contas do Tronco de Solidariedade.</li>
                 <li><strong>A convocação não chegou aos irmãos.</strong> O e-mail sai pela plataforma; WhatsApp/SMS exigem a loja conectar a própria conta em <UI>Integrações</UI> (6.6). Até lá, ficam registrados e enfileirados.</li>
                 <li><strong>Quero o manual em PDF.</strong> Use o botão <strong>Salvar como PDF</strong> no topo desta página.</li>
+                <li><strong>Não consigo registrar um pagamento.</strong> Desde a versão 1.3, todo pagamento exige escolher a <UI>Conta bancária/caixa</UI> que recebeu ou pagou o valor — cadastre pelo menos uma em <UI>Cadastros mestre → Contas bancárias e Caixa</UI> (7.14) antes de registrar.</li>
+                <li><strong>A transferência entre contas não mudou o saldo.</strong> Toda transferência nasce pendente e só afeta o saldo depois que o Venerável Mestre (ou o Administrador) aprovar, no <UI>Histórico</UI> da tela de Transferências (7.14).</li>
               </Bullets>
             </Chapter>
           </article>
