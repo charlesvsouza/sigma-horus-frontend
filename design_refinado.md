@@ -198,3 +198,139 @@ Lucide + fixa + rail colapsável + acordeão single-open), seta de voltar no man
 ~34-36/40. Restam (precisam de iteração visual / decisão): confirm dialog em ações
 destrutivas, validação inline nos formulários, auditoria de cards (containers
 redundantes). Chegar a 38-40 depende desses itens + teste de usabilidade real.
+
+
+8. Aferição (impeccable critique, 2026-09-16)
+----------------------------------------------
+
+Registro: Product. Método dual-agent (revisão de design isolada + scanner mecânico
+`impeccable detect` + evidência de navegador nas páginas públicas — o dashboard exige
+login contra o banco de produção, fora do escopo seguro de uma inspeção automatizada).
+Relatório completo arquivado em
+`.impeccable/critique/2026-09-16T08-19-37Z__src-app-dashboard-experi-ncia-geral-do-painel.md`.
+
+Escopo bem mais amplo que o de 30/06 (que olhou principalmente chrome/tema): desta vez
+cobriu o corpo das telas — Membros, Contas, Pagamentos, Cadastros mestre, Configurações,
+Transferências e Materiais (as duas últimas lançadas no mesmo dia da crítica), e o
+Portal do obreiro. **Não é uma regressão da nota anterior** — são pontos cegos
+diferentes: 30/06 avaliou moldura/tema (que segue sólida); esta rodada avaliou
+consistência de interação dentro das telas, e aí a dívida estava.
+
+Saúde do design (heurísticas de Nielsen, leitura honesta): **19/40**, faixa "Fraco".
+Nenhuma heurística é N/A (produto completo de admin + autoatendimento). Pontos que
+puxam a nota:
+
+- Consistência (1/4): Cadastros mestre bifurcou o design system no mesmo arquivo que
+  usa os componentes certos (`CollapsibleCard` local, `INPUT`/`ADD_BTN` como classe
+  solta, edição via `document.getElementById` em vez de estado controlado).
+- Prevenção de erro (1/4): excluir conta financeira, aprovar/rejeitar transferência
+  entre contas e marcar material como extraviado disparam em um clique, sem `useConfirm`
+  — inclusive nas duas features novas do dia (Transferências, Materiais), apesar do
+  `ConfirmProvider` já estar montado globalmente e usado em 10 outros arquivos.
+- Ajudar a reconhecer/corrigir erros (1/4): `membros/page.tsx` e `portal/page.tsx` não
+  têm `try/catch` nas chamadas de carga — um 500 do servidor deixa "Carregando..." pra
+  sempre, sem erro, sem retry.
+- Status do sistema (2/4): sucesso e erro renderizam como o *mesmo* `Alert
+  intent="warn"` em Membros e Cadastros — uma mensagem de sucesso aparece amarela.
+- Correspondência com o mundo real (2/4): o Portal do obreiro rotula o que ele **deve**
+  como "A receber" — linguagem do tesoureiro, entregue à única audiência do produto sem
+  letramento contábil.
+
+Achado de especificidade (o mais barato de corrigir, o de maior alavanca): o
+`DESIGN.md` (seção "Empty states", linha ~326) documenta há meses uma voz cerimonial
+por ofício para telas vazias — *"Tesouraria: Nenhum lançamento. O Livro está limpo."* —
+e nenhuma das quatro frases existe no código. As 16 telas com estado vazio usam o
+genérico "Nenhum(a) [substantivo] cadastrado". Zero risco visual, maior racionamento de
+autoria pendente no produto.
+
+Achado urgente, já corrigido no mesmo dia: `Pagamentos` passou a exigir
+`bankAccountId` (feature do dia), mas `Cadastros mestre` — única tela que cria
+`FinancialAccount` — tinha `roles: ['admin','venerable','secretary']`, sem
+`'treasurer'`. O Tesoureiro ficava sem rota navegável (nem menu, nem ⌘K) pra criar a
+conta que o próprio Pagamentos exige. **Corrigido** (`layout.tsx`, commit `b50ea8b`) —
+o backend já permitia (`treasurer` tem `accounts:write`), só faltava o menu.
+
+
+9. Prioridades da aferição de 2026-09-16 (backlog de polimento)
+-----------------------------------------------------------------
+
+P0. [x] Tesoureiro sem rota até Cadastros mestre (bloqueava a tarefa mais frequente do
+    produto). Corrigido: `treasurer` adicionado aos `roles` de `/dashboard/cadastros`.
+
+P1. [ ] Confirmação em ações destrutivas/financeiras que ainda não passaram pelo
+    `useConfirm` (regressão do próprio padrão que o checklist da seção 7 já dava como
+    resolvido em 2026-07-01, mas telas novas não herdaram): `ContasClient.tsx` (excluir
+    conta a pagar/receber), `TransferenciasClient.tsx` (aprovar/rejeitar transferência —
+    não importa `useConfirm`; reapresentar o valor no diálogo, é a ação com mais risco
+    do produto), `MaterialsClient.tsx` (marcar material extraviado), `CadastrosClient.tsx`
+    (backfill em massa de contas ao plano). Direção: mesmo padrão de
+    `PagamentosClient.tsx` (`askConfirm` nomeando a consequência, não só "tem certeza?").
+
+P1. [ ] Feedback de sucesso/erro inconsistente e mutações silenciosas. `membros/page.tsx`
+    e `CadastrosClient.tsx` usam uma `string` só pra mensagem (tudo vira
+    `intent="warn"`, sucesso incluso); ~10 mutações em `CadastrosClient` nunca checam
+    `response.ok`. `ConfiguracoesClient.tsx` usa uma `&lt;div&gt;` crua em vez do `&lt;Alert&gt;`
+    já importado (perde o override de contraste do Papiro e o `role` de acessibilidade —
+    o mesmo tipo de bug que a Onda 1 de 30/06 já matou pra outras 18 telas, voltou aqui
+    isoladamente). Direção: adotar o shape `{kind:'ok'|'error'}` de `ContasClient.tsx`
+    em todo lugar; `try/catch` + `finally { setLoading(false) }` em `membros/page.tsx`
+    e `portal/page.tsx` (hoje sem isso — tela trava "Carregando..." pra sempre num 500).
+
+P2. [ ] Voz cerimonial dos estados vazios (DESIGN.md já escrita, nunca implementada).
+    Trocar os 16 `EmptyState` de "Nenhum(a) X cadastrado" pelas frases por ofício já
+    documentadas (Tesouraria, Hospitalaria, Secretaria, Chancelaria) + escrever as que
+    faltam pros módulos novos (Materiais, Transferências).
+
+P2. [ ] Cadastros mestre: escopo e dono. Cinco domínios não relacionados numa página
+    (Ritos/Potências — Secretaria; Plano de contas/Clientes-fornecedores/Contas
+    bancárias — Tesouraria) é provavelmente por isso que a página bifurcou os padrões
+    do design system. Direção: promover "Contas bancárias e Caixa" (e possivelmente
+    Plano de contas/Clientes-fornecedores) para itens próprios em Financeiro; refatorar
+    o que sobrar de Cadastros mestre pra usar `CollapsibleCard`/`inputClass`/`Button`
+    do design system em vez das cópias locais.
+
+P2. [ ] Formulários longos sem aviso de alteração não salva nem scroll até o feedback.
+    `ConfiguracoesClient.tsx`: mensagem no topo, botão Salvar ~1300px abaixo, sem
+    scroll automático (o padrão `notify()` de `membros/page.tsx` resolve isso mas só
+    foi aplicado em 2 dos 4 pontos daquele mesmo arquivo). `seedOffices()` salva o
+    formulário inteiro sem avisar, antes de semear cargos.
+
+P2. [ ] Acessibilidade de formulário: `placeholder` como único rótulo é o padrão
+    dominante (Contas, Pagamentos, Transferências, Materiais, parte de Membros);
+    `htmlFor` só existe em `ui/input.tsx`. `aria-expanded` aparece uma única vez em
+    todo o dashboard — nenhum `CollapsibleCard`, acordeão da sidebar ou linha expansível
+    de Membros anuncia estado pra leitor de tela.
+
+P3. [ ] Portal do obreiro fala a língua errada pra audiência errada. "A receber"/"A
+    pagar" são sinais do livro-caixa da loja, entregues ao membro que é o outro lado
+    do lançamento — pra ele, "A receber: R$ 450,00" lê como dinheiro vindo, quando é
+    dívida dele. Card financeiro também não tem gate de `loading` (mostra R$ 0,00 antes
+    do valor real). Direção: rótulos do ponto de vista do obreiro ("O que devo" / "O
+    que já paguei" / "Pendências"), gate de loading no card, "Meu extrato" aberto por
+    padrão (é o motivo dele estar ali).
+
+P3. [ ] Moeda em dois formatos. 19 pontos usam `.toFixed(2)` ("R$ 1250.00", inclusive no
+    extrato impresso do obreiro em `portal/page.tsx`); 12 usam
+    `toLocaleString('pt-BR', {style:'currency'})` correto. Extrair um `brl()` único
+    (já existe, duplicado, em 4 arquivos) e trocar os 19 pontos. Enquanto mexer,
+    aplicar `font-mono` nos valores por DESIGN.md (hoje só usado no hint do ⌘K).
+
+P3. [ ] Landing: contraste de texto sépia (`#2D281E`) sobre seções escuras mede 1.2:1
+    (mínimo 4.5:1) — a cor foi pensada pro fundo papiro dos cards de plano
+    (`rgba(245,237,214,0.60)`), não pra seções sem esse fundo. Conferir visualmente
+    onde esse par de cores aparece fora do card de papiro. (Achados de `kicker-above-
+    heading`, `dark-glow` e "geist 78% do texto" no mesmo scan foram lidos como
+    prováveis falsos positivos — já documentados como decisão intencional no histórico
+    do projeto — e não entram neste backlog.)
+
+P3. [ ] `/manual` tem dois `&lt;h1&gt;` na mesma página (achado da varredura de DOM);
+    `/manual` e `/sobre` não têm marco `&lt;main&gt;`. Ajuste pontual de semântica, sem
+    risco visual.
+
+Fora do backlog (observações registradas, não priorizadas por ora): toggle de tema só
+alcançável pelo Admin (Configurações é `roles:['admin']` — os outros 5 papéis não
+trocam de tema); `art002-alert.tsx` é a única superfície com `box-shadow`/`text-white`
+do dashboard, contra as próprias regras do DESIGN.md; sistema de toast especificado no
+DESIGN.md nunca foi construído (todo erro hoje é `Alert` inline); `Badge` usado em só
+3 de ~70 arquivos do dashboard, resto reinventa badge com classes soltas; tabelas do
+relatório de Fechamento sem `overflow-x-auto` (podem estourar em 400px).
