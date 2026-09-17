@@ -14,7 +14,7 @@ import {
   MessageSquare, Contact, HeartHandshake, Settings, KeyRound, Gem, Plug, ScrollText,
   PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart,
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
-  Scale, Users2, type LucideIcon,
+  Scale, Users2, Images, LayoutGrid, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -36,6 +36,8 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/manual': BookOpen,
   '/dashboard/membros': Users,
   '/dashboard/membros/quadro-social': Users2,
+  '/dashboard/galeria-veneraveis': Images,
+  '/dashboard/quadro-gestao': LayoutGrid,
   '/dashboard/cadastros': Database,
   '/dashboard/cargos': Briefcase,
   '/dashboard/veneralato': Crown,

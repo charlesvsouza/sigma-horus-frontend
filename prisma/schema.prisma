@@ -107,6 +107,7 @@ model Lodge {
   accountTransfers  AccountTransfer[]
   materials     Material[]
   materialLoans MaterialLoan[]
+  venerableGalleryEntries VenerableGalleryEntry[]
 }
 
 model User {
@@ -174,6 +175,10 @@ model Member {
   documents          String?
   notes              String?
   asaasCustomerId    String?  // id do cliente no Asaas da loja (evita recriar a cada cobrança)
+  // Foto do irmão: usada na Galeria de Veneráveis (entrada automática) e no
+  // Quadro da Gestão. Bucket R2 público dedicado (nunca o de Documentos).
+  photoUrl           String?
+  photoStorageKey    String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -723,6 +728,26 @@ model MemberOffice {
   term      Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
 
   @@unique([memberId, officeId, termId])
+  @@index([lodgeId])
+}
+
+// Entradas manuais da Galeria de Veneráveis — cobre Veneráveis históricos que a
+// loja não tem cadastrados como Member (atas antigas, placas na parede). As
+// entradas "automáticas" (a partir de MemberOffice/Term) não usam este model.
+model VenerableGalleryEntry {
+  id              String   @id @default(cuid())
+  lodgeId         String
+  name            String
+  photoUrl        String?
+  photoStorageKey String?
+  periodLabel     String   // texto livre: "1985–1987", "1998 a 2000" etc.
+  sortDate        DateTime // só para ordenar a linha do tempo (ex.: 1º jan do ano de início)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  lodge Lodge @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+
   @@index([lodgeId])
 }
 

@@ -23,11 +23,18 @@ const NAV: NavGroupDef[] = [
     category: 'Loja & cadastros',
     items: [
       { href: '/dashboard/membros', label: 'Membros', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
-      { href: '/dashboard/membros/quadro-social', label: 'Quadro social', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/cadastros', label: 'Cadastros mestre', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: ['admin', 'secretary'] },
       { href: '/dashboard/cargos', label: 'Cargos', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/veneralato', label: 'Veneralato', roles: ['admin', 'venerable', 'secretary'] },
+    ],
+  },
+  {
+    category: 'Social',
+    items: [
+      { href: '/dashboard/membros/quadro-social', label: 'Quadro social', roles: ['admin', 'venerable', 'secretary'] },
+      { href: '/dashboard/galeria-veneraveis', label: 'Galeria de Veneráveis', roles: ['admin', 'venerable', 'secretary'] },
+      { href: '/dashboard/quadro-gestao', label: 'Quadro da Gestão', roles: ['admin', 'venerable', 'secretary'] },
     ],
   },
   {

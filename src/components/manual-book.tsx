@@ -209,7 +209,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.12</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.13</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -271,7 +271,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.12 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.13 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -422,7 +422,8 @@ export function ManualBook() {
               </p>
               <Bullets>
                 <li><strong>Visão geral:</strong> <UI>Visão geral</UI> (indicadores), <UI>Meu portal</UI> e <UI>Manual &amp; ajuda</UI>.</li>
-                <li><strong>Loja &amp; cadastros:</strong> <UI>Membros</UI>, <UI>Quadro social</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>, <UI>Veneralato</UI>.</li>
+                <li><strong>Loja &amp; cadastros:</strong> <UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>, <UI>Veneralato</UI>.</li>
+                <li><strong>Social:</strong> <UI>Quadro social</UI>, <UI>Galeria de Veneráveis</UI> e <UI>Quadro da Gestão</UI> — as três telas de fotografia/histórico do quadro de membros e da gestão.</li>
                 <li>
                   <strong>Financeiro:</strong> dividido em três grupos — <UI>Entradas e Saídas</UI> (<UI>Contas</UI>,
                   <UI> Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de
@@ -1063,6 +1064,12 @@ export function ManualBook() {
                   <UI> situação</UI> para encontrar rapidamente. Clique numa linha para <strong>expandir</strong> os detalhes,
                   onde ficam os botões <UI>Editar</UI> e <UI>Excluir cadastro</UI>.
                 </p>
+                <p>
+                  No painel expandido de um membro já cadastrado, o Secretário, o Venerável ou o Administrador podem
+                  enviar a <UI>Foto</UI> do irmão (<UI>Enviar foto</UI>/<UI>Trocar foto</UI>/<UI>Remover</UI>). Essa
+                  foto alimenta automaticamente a <Link className="text-gold hover:text-gold-light" href="#sec-galeria-veneraveis">Galeria de Veneráveis</Link> (quando o
+                  irmão serviu como Venerável Mestre) e o <Link className="text-gold hover:text-gold-light" href="#sec-quadro-gestao">Quadro da Gestão</Link> do período em exercício.
+                </p>
                 <Steps>
                   <li>Clique em <UI>+ Novo membro</UI>. Só o <strong>nome</strong> é obrigatório; os demais blocos abrem conforme a necessidade.</li>
                   <li><strong>Essencial:</strong> nome, e-mail, telefone, situação, rito e potência atual.</li>
@@ -1091,10 +1098,15 @@ export function ManualBook() {
                   Preencha o <strong>CPF</strong> de quem terá cobrança via Asaas — é obrigatório para emitir boleto/PIX (ver 7.4).
                   A exclusão é bloqueada para quem já tem histórico financeiro ou documentos; nesse caso, <strong>inative</strong> em vez de excluir.
                 </Note>
+                <Note>
+                  Recomenda-se orientar os irmãos a enviarem uma foto em <strong>traje de rigor maçônico</strong>
+                  (paramentos da Loja) — é a foto que vai compor o Quadro da Gestão e a Galeria de Veneráveis, exibidos
+                  publicamente no mural e em documentos impressos.
+                </Note>
               </Sub>
               <Sub id="sec-quadro-social" title="Quadro social">
                 <p>
-                  Em <UI>Loja &amp; cadastros → Quadro social</UI>, veja a fotografia atual do quadro agrupada por
+                  Em <UI>Social → Quadro social</UI>, veja a fotografia atual do quadro agrupada por
                   <strong> grau simbólico</strong> (Aprendiz, Companheiro, Mestre, Mestre Instalado) — formato pensado
                   pra prestar contas à Potência.
                 </p>
@@ -1107,6 +1119,29 @@ export function ManualBook() {
                   É uma fotografia de <strong>hoje</strong>, não um relatório de admissões/desligamentos no ano — o
                   sistema não guarda a data de cada mudança de situação, só o valor atual.
                 </Note>
+              </Sub>
+              <Sub id="sec-galeria-veneraveis" title="Galeria de Veneráveis">
+                <p>
+                  Em <UI>Social → Galeria de Veneráveis</UI>, veja o mural com todos os Veneráveis da história da
+                  loja, organizado pela <strong>linha do tempo</strong>.
+                </p>
+                <Bullets>
+                  <li><strong>Entradas automáticas:</strong> qualquer irmão vinculado ao cargo de <UI>Venerável Mestre</UI> em algum período (em <UI>Veneralato</UI>) aparece aqui sozinho, com a foto cadastrada em Membros (se houver) e o período do veneralato.</li>
+                  <li><strong>Entradas manuais:</strong> pra Veneráveis antigos que a loja não tem cadastrados como membro (atas antigas, placas na parede), o Secretário, o Venerável ou o Administrador clicam em <UI>+ Adicionar Venerável antigo</UI> — nome, período em texto livre (ex.: &quot;1985–1987&quot;) e uma foto opcional (enviada depois de criar a entrada).</li>
+                  <li>Entradas automáticas não são editáveis aqui — pra corrigir, ajuste o cargo em <UI>Veneralato</UI>. Entradas manuais têm <UI>Trocar foto</UI> e <UI>Remover</UI>.</li>
+                  <li><UI>Salvar como PDF</UI> imprime o mural com o timbre da loja.</li>
+                </Bullets>
+              </Sub>
+              <Sub id="sec-quadro-gestao" title="Quadro da Gestão">
+                <p>
+                  Em <UI>Social → Quadro da Gestão</UI>, veja os cargos do <strong>período em exercício</strong>,
+                  com foto — pronto pra mural, apresentações ou prestação de contas.
+                </p>
+                <Bullets>
+                  <li>Só existe depois que um veneralato foi criado e teve cargos vinculados em <UI>Veneralato</UI> — antes disso, a tela orienta a ir lá primeiro.</li>
+                  <li>Os cargos aparecem na ordem cerimonial do rito (Venerável Mestre primeiro), cada um com a foto do irmão cadastrada em Membros (ou um espaço reservado, se ainda não houver foto).</li>
+                  <li><UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
+                </Bullets>
               </Sub>
               <Sub id="sec-cadastros-mestre" title="Cadastros mestre e cargos">
                 <p>
@@ -1129,6 +1164,12 @@ export function ManualBook() {
                   pra responder &quot;quem já foi Venerável Mestre&quot; ou &quot;quantas vezes fulano ocupou tal cargo&quot; sem abrir
                   período por período.
                 </p>
+                <Note>
+                  Assim que o período em exercício tiver cargos vinculados, ele aparece automaticamente com fotos em
+                  <Link className="text-gold hover:text-gold-light" href="#sec-quadro-gestao"> Social → Quadro da Gestão</Link>;
+                  quem ocupou o cargo de Venerável Mestre em qualquer período entra na
+                  <Link className="text-gold hover:text-gold-light" href="#sec-galeria-veneraveis"> Galeria de Veneráveis</Link>.
+                </Note>
               </Sub>
               <Sub id="sec-sessoes" title="Sessões, ordem do dia e convocação">
                 <p>

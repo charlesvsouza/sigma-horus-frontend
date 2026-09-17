@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { UserRound } from 'lucide-react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel, remidoEligibility } from '@/lib/masonic-degree';
 import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
@@ -63,6 +64,7 @@ interface Member {
   masonicNumber?: string | null;
   documents?: string | null;
   notes?: string | null;
+  photoUrl?: string | null;
   rite?: Option | null;
   power?: Option | null;
   originPower?: Option | null;
@@ -164,11 +166,19 @@ export default function MembrosPage() {
   const [saving, setSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [grantingId, setGrantingId] = useState<string | null>(null);
+  const [canManagePhoto, setCanManagePhoto] = useState(false);
+  const [photoUploadingId, setPhotoUploadingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/session')
       .then((r) => r.json())
-      .then((s) => setIsAdmin(String(s?.user?.role ?? '').toLowerCase() === 'admin'))
+      .then((s) => {
+        const role = String(s?.user?.role ?? '').toLowerCase();
+        setIsAdmin(role === 'admin');
+        // Foto do irmão (Galeria de Veneráveis/Quadro da Gestão): prerrogativa
+        // do Secretário, Venerável e Administrador.
+        setCanManagePhoto(['admin', 'secretary', 'venerable'].includes(role));
+      })
       .catch(() => {});
   }, []);
 
@@ -202,6 +212,36 @@ export default function MembrosPage() {
         ? `Acesso liberado. Senha provisória enviada para ${m.email}.`
         : `Acesso liberado. E-mail não enviado — senha provisória: ${data.tempPassword} (repasse manualmente).`,
     );
+    loadData();
+  }
+
+  async function uploadMemberPhoto(m: Member, file: File) {
+    setPhotoUploadingId(m.id);
+    setMessage(null);
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`/api/members/${m.id}/photo`, { method: 'POST', body: formData });
+    const data = await res.json().catch(() => ({}));
+    setPhotoUploadingId(null);
+    if (!res.ok) {
+      notify('error', data.error ?? 'Erro ao enviar a foto.');
+      return;
+    }
+    notify('ok', 'Foto atualizada.');
+    loadData();
+  }
+
+  async function removeMemberPhoto(m: Member) {
+    setPhotoUploadingId(m.id);
+    setMessage(null);
+    const res = await fetch(`/api/members/${m.id}/photo`, { method: 'DELETE' });
+    setPhotoUploadingId(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      notify('error', data.error ?? 'Erro ao remover a foto.');
+      return;
+    }
+    notify('ok', 'Foto removida.');
     loadData();
   }
 
@@ -425,6 +465,33 @@ export default function MembrosPage() {
                           <MemberForm initial={memberToForm(m)} initialRelatives={m.relatives ?? []} rites={rites} powers={powers} saving={saving} submitLabel="Salvar alterações" onSubmit={(form, rels) => updateMember(m.id, form, rels)} onCancel={() => setEditingId(null)} />
                         ) : (
                           <div className="space-y-4 text-sm">
+                            <div className="flex flex-wrap items-center gap-4">
+                              {m.photoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={m.photoUrl} alt={`Foto de ${m.name}`} className="h-16 w-16 rounded-full border border-white/8 bg-sigma-blue-deep/60 object-cover" />
+                              ) : (
+                                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-white/15 text-sand-dark/50">
+                                  <UserRound className="h-7 w-7" />
+                                </div>
+                              )}
+                              {canManagePhoto ? (
+                                <div className="flex items-center gap-3">
+                                  <label className="cursor-pointer rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold">
+                                    {photoUploadingId === m.id ? 'Enviando…' : m.photoUrl ? 'Trocar foto' : 'Enviar foto'}
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      disabled={photoUploadingId === m.id}
+                                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMemberPhoto(m, f); e.target.value = ''; }}
+                                    />
+                                  </label>
+                                  {m.photoUrl ? (
+                                    <button type="button" onClick={() => void removeMemberPhoto(m)} disabled={photoUploadingId === m.id} className="text-xs text-rose-300/70 transition hover:text-rose-300 disabled:opacity-40">Remover</button>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                            </div>
                             <div className="grid gap-3 md:grid-cols-2">
                               <Detail label="E-mail" value={m.email} />
                               <Detail label="Telefone" value={m.phone} />
