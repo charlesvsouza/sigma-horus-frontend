@@ -209,7 +209,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.16</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.17</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -271,7 +271,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.16 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.17 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1065,9 +1065,11 @@ export function ManualBook() {
                   onde ficam os botões <UI>Editar</UI> e <UI>Excluir cadastro</UI>.
                 </p>
                 <p>
-                  No painel expandido de um membro já cadastrado, o Secretário, o Venerável ou o Administrador podem
-                  enviar a <UI>Foto</UI> do irmão (<UI>Enviar foto</UI>/<UI>Trocar foto</UI>/<UI>Remover</UI>). Essa
-                  foto alimenta automaticamente a <Link className="text-gold hover:text-gold-light" href="#sec-galeria-veneraveis">Galeria de Veneráveis</Link> (quando o
+                  Com um membro já cadastrado expandido (em modo de visualização ou já em <UI>Editar</UI>), o
+                  Secretário, o Venerável ou o Administrador podem enviar a <UI>Foto</UI> do irmão (<UI>Enviar
+                  foto</UI>/<UI>Trocar foto</UI>/<UI>Remover</UI>) — o botão fica logo acima dos dados do membro,
+                  independente do modo. Essa foto alimenta automaticamente a
+                  <Link className="text-gold hover:text-gold-light" href="#sec-galeria-veneraveis"> Galeria de Veneráveis</Link> (quando o
                   irmão serviu como Venerável Mestre) e o <Link className="text-gold hover:text-gold-light" href="#sec-quadro-gestao">Quadro da Gestão</Link> do período em exercício.
                 </p>
                 <Steps>
@@ -1084,6 +1086,7 @@ export function ManualBook() {
                   <li><strong>Grau Filosófico atual:</strong> opcional, selecione de 4 a 33 (REAA); se vazio, vale a situação simbólica. Um cadastro antigo com valor fora desse intervalo aparece sinalizado como <strong>&quot;Grau inválido&quot;</strong> na lista — abra o membro e corrija.</li>
                   <li><strong>Tempo de Ordem:</strong> calculado da data de iniciação (ex.: &quot;12 anos e 3 meses&quot;).</li>
                   <li><strong>Origem:</strong> potência e loja de origem do irmão (se diferente da atual).</li>
+                  <li><strong>Esta loja:</strong> em cada campo de nome de loja (Iniciação/Elevação/Exaltação/Instalação/Origem), marque <UI>Esta loja</UI> pra preencher automaticamente com o nome já cadastrado da própria loja, em vez de digitar — evita inconsistência de grafia entre cadastros (é o que a coluna Origem do Quadro social usa pra decidir &quot;Iniciado nesta loja&quot; vs &quot;Filiado&quot;).</li>
                 </Bullets>
                 <p>
                   <strong>Situações (afastamentos):</strong> além de Ativo, Suspenso e Inativo, há os afastamentos maçônicos —
@@ -1193,6 +1196,15 @@ export function ManualBook() {
                   <li><strong>Balaustre / Ata:</strong> <strong>não é digitado no sistema</strong> — importe o arquivo (PDF ou Word) em <UI>Enviar arquivo</UI>. Depois de enviado, qualquer membro pode baixá-lo ao revisitar a sessão na Secretaria do portal (<UI>Baixar</UI>). <UI>Trocar arquivo</UI> substitui a versão anterior; <UI>Remover</UI> tira o arquivo da sessão.</li>
                   <li><strong>Registrar presença:</strong> toggle por obreiro (presente/ausente) — <strong>só libera depois do horário de término da sessão</strong> (campo <UI>Término</UI> da criação); antes disso os botões ficam desabilitados. Sessões criadas antes deste recurso (sem término definido) não são bloqueadas.</li>
                 </Bullets>
+                <Note>
+                  O horário digitado em <UI>Início</UI>/<UI>Término</UI> é sempre interpretado como <strong>horário
+                  de Brasília</strong>, e é assim que aparece de volta em toda a tela e no e-mail de convocação —
+                  não precisa se preocupar com fuso horário do navegador.
+                </Note>
+                <Note>
+                  <UI>Remover</UI> na lista de sessões pede confirmação antes de excluir (perde-se convocações,
+                  presenças e o balaustre vinculados — ação sem volta) e fica registrado na Auditoria.
+                </Note>
                 <Note>
                   A ordem do dia e o balaustre de todas as sessões futuras e passadas formam o <strong>calendário da
                   Secretaria</strong> que o obreiro vê no portal (capítulo 10) — mantenha-os atualizados.

@@ -381,7 +381,7 @@ export default function MembrosPage() {
         {creating ? (
           <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Novo membro</h2>
-            <MemberForm initial={emptyForm} initialRelatives={[]} rites={rites} powers={powers} saving={saving} submitLabel="Salvar membro" onSubmit={createMember} onCancel={() => setCreating(false)} />
+            <MemberForm initial={emptyForm} initialRelatives={[]} rites={rites} powers={powers} lodgeName={lodgeName} saving={saving} submitLabel="Salvar membro" onSubmit={createMember} onCancel={() => setCreating(false)} />
           </section>
         ) : null}
 
@@ -461,37 +461,40 @@ export default function MembrosPage() {
                     {/* Painel expandido */}
                     {open ? (
                       <div id={detailId} className="border-t border-white/5 bg-sigma-blue-deep/30 px-4 py-5">
-                        {editingId === m.id ? (
-                          <MemberForm initial={memberToForm(m)} initialRelatives={m.relatives ?? []} rites={rites} powers={powers} saving={saving} submitLabel="Salvar alterações" onSubmit={(form, rels) => updateMember(m.id, form, rels)} onCancel={() => setEditingId(null)} />
-                        ) : (
-                          <div className="space-y-4 text-sm">
-                            <div className="flex flex-wrap items-center gap-4">
+                        {/* Foto: visível em edição e em visualização — não é um campo do
+                            formulário (o upload já persiste sozinho), mas precisa aparecer
+                            nos dois modos pra não sumir quando o usuário clica em "Editar". */}
+                        <div className="mb-4 flex flex-wrap items-center gap-4">
+                          {m.photoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={m.photoUrl} alt={`Foto de ${m.name}`} className="h-16 w-16 rounded-full border border-white/8 bg-sigma-blue-deep/60 object-cover" />
+                          ) : (
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-white/15 text-sand-dark/50">
+                              <UserRound className="h-7 w-7" />
+                            </div>
+                          )}
+                          {canManagePhoto ? (
+                            <div className="flex items-center gap-3">
+                              <label className="cursor-pointer rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold">
+                                {photoUploadingId === m.id ? 'Enviando…' : m.photoUrl ? 'Trocar foto' : 'Enviar foto'}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  disabled={photoUploadingId === m.id}
+                                  onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMemberPhoto(m, f); e.target.value = ''; }}
+                                />
+                              </label>
                               {m.photoUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={m.photoUrl} alt={`Foto de ${m.name}`} className="h-16 w-16 rounded-full border border-white/8 bg-sigma-blue-deep/60 object-cover" />
-                              ) : (
-                                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-white/15 text-sand-dark/50">
-                                  <UserRound className="h-7 w-7" />
-                                </div>
-                              )}
-                              {canManagePhoto ? (
-                                <div className="flex items-center gap-3">
-                                  <label className="cursor-pointer rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold">
-                                    {photoUploadingId === m.id ? 'Enviando…' : m.photoUrl ? 'Trocar foto' : 'Enviar foto'}
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      disabled={photoUploadingId === m.id}
-                                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMemberPhoto(m, f); e.target.value = ''; }}
-                                    />
-                                  </label>
-                                  {m.photoUrl ? (
-                                    <button type="button" onClick={() => void removeMemberPhoto(m)} disabled={photoUploadingId === m.id} className="text-xs text-rose-300/70 transition hover:text-rose-300 disabled:opacity-40">Remover</button>
-                                  ) : null}
-                                </div>
+                                <button type="button" onClick={() => void removeMemberPhoto(m)} disabled={photoUploadingId === m.id} className="text-xs text-rose-300/70 transition hover:text-rose-300 disabled:opacity-40">Remover</button>
                               ) : null}
                             </div>
+                          ) : null}
+                        </div>
+                        {editingId === m.id ? (
+                          <MemberForm initial={memberToForm(m)} initialRelatives={m.relatives ?? []} rites={rites} powers={powers} lodgeName={lodgeName} saving={saving} submitLabel="Salvar alterações" onSubmit={(form, rels) => updateMember(m.id, form, rels)} onCancel={() => setEditingId(null)} />
+                        ) : (
+                          <div className="space-y-4 text-sm">
                             <div className="grid gap-3 md:grid-cols-2">
                               <Detail label="E-mail" value={m.email} />
                               <Detail label="Telefone" value={m.phone} />
@@ -613,11 +616,37 @@ function Collapsible({ title, defaultOpen = false, badge, children }: { title: s
   );
 }
 
-function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLabel, onSubmit, onCancel }: {
+// "Esta loja": em vez de digitar o nome de novo (fonte de inconsistência — foi
+// exatamente essa digitação livre que causou uma classificação errada no
+// Quadro social), captura o nome já cadastrado da própria loja.
+function isThisLodge(value: string, lodgeName: string) {
+  return Boolean(lodgeName) && value.trim().toLowerCase() === lodgeName.trim().toLowerCase();
+}
+function LodgeNameField({ value, onChange, lodgeName, placeholder }: { value: string; onChange: (v: string) => void; lodgeName: string; placeholder: string }) {
+  const checked = isThisLodge(value, lodgeName);
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={checked}
+        className={`${INPUT} disabled:opacity-70`}
+        placeholder={placeholder}
+      />
+      <label className="flex shrink-0 items-center gap-1.5 text-xs text-sand-dark whitespace-nowrap">
+        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked ? lodgeName : '')} disabled={!lodgeName} />
+        Esta loja
+      </label>
+    </div>
+  );
+}
+
+function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, saving, submitLabel, onSubmit, onCancel }: {
   initial: FormState;
   initialRelatives: RelativeData[];
   rites: Option[];
   powers: Option[];
+  lodgeName: string;
   saving: boolean;
   submitLabel: string;
   onSubmit: (form: FormState, relatives: RelativeData[]) => void;
@@ -819,10 +848,10 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
             ['Exaltação', 'exaltationDate', 'exaltationLodge'],
             ['Instalação', 'installationDate', 'installationLodge'],
           ] as const).map(([label, dateKey, lodgeKey]) => (
-            <div key={dateKey} className="grid gap-3 md:grid-cols-[120px_1fr_1.4fr] md:items-center">
+            <div key={dateKey} className="grid gap-3 md:grid-cols-[120px_1fr_1.6fr] md:items-center">
               <span className="text-xs font-medium text-sand">{label}</span>
               <input type="date" value={form[dateKey]} onChange={(e) => set(dateKey, e.target.value)} className={INPUT} />
-              <input value={form[lodgeKey]} onChange={(e) => set(lodgeKey, e.target.value)} className={INPUT} placeholder={`Loja de ${label.toLowerCase()}`} />
+              <LodgeNameField value={form[lodgeKey] ?? ''} onChange={(v) => set(lodgeKey, v)} lodgeName={lodgeName} placeholder={`Loja de ${label.toLowerCase()}`} />
             </div>
           ))}
           <div className="mt-3 grid gap-4 border-t border-white/6 pt-4 md:grid-cols-2">
@@ -867,7 +896,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
             <option value="">Potência de origem</option>
             {powers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <input value={form.originLodge} onChange={(e) => set('originLodge', e.target.value)} className={INPUT} placeholder="Loja de origem" />
+          <LodgeNameField value={form.originLodge} onChange={(v) => set('originLodge', v)} lodgeName={lodgeName} placeholder="Loja de origem" />
         </div>
       </Collapsible>
 

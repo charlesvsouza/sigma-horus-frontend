@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard } from '@/components/ui';
+import { Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard, useConfirm } from '@/components/ui';
 
 interface SessionItem { id: string; title: string; date: string; type: string; grade?: string | null; notes?: string | null; agenda?: string | null; _count: { attendances: number }; }
 
 export default function SessoesClient({ sessions }: { sessions: SessionItem[] }) {
   const router = useRouter();
+  const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ title: '', date: '', endDate: '', type: 'ordinary', grade: '', notes: '', agenda: '' });
@@ -35,9 +36,16 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
     }
   }
 
-  async function remove(id: string) {
-    await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
-    router.refresh();
+  async function remove(id: string, title: string) {
+    if (!(await askConfirm({ title: 'Remover sessão', message: `Remover a sessão "${title}"? Convocações, presenças e o balaustre vinculados são perdidos. Esta ação não pode ser desfeita.`, confirmLabel: 'Remover', intent: 'danger' }))) return;
+    const res = await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Sessão removida.' });
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao remover.' });
+    }
   }
 
   const typeLabel: Record<string, string> = { ordinary: 'Ordinária', magnificent: 'Magna', emergency: 'Extraordinária', other: 'Outra' };
@@ -92,8 +100,8 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
                 </div>
                 <div className="flex items-center gap-4 text-sm text-sand-dark">
                   <Link href={`/dashboard/sessoes/${s.id}`} className="text-gold hover:text-gold-light">Presença</Link>
-                  <span>{new Date(s.date).toLocaleDateString('pt-BR')}</span>
-                  <button onClick={() => remove(s.id)} className="text-rose-300 hover:text-rose-200">Remover</button>
+                  <span>{new Date(s.date).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</span>
+                  <button onClick={() => void remove(s.id, s.title)} className="text-rose-300 hover:text-rose-200">Remover</button>
                 </div>
               </div>
             ))}

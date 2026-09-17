@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
+import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -30,8 +31,8 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const title = String(body?.title ?? '').trim();
-  const date = body?.date ? new Date(body.date) : new Date();
-  const endDate = body?.endDate ? new Date(body.endDate) : null;
+  const date = body?.date ? parseBRDateTimeLocal(String(body.date)) : new Date();
+  const endDate = body?.endDate ? parseBRDateTimeLocal(String(body.endDate)) : null;
   const type = String(body?.type ?? 'ordinary');
   const grade = body?.grade ? String(body.grade) : null;
   const notes = body?.notes ? String(body.notes) : null;

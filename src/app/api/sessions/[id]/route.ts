@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
+import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -37,8 +38,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const body = await request.json();
   const data: Record<string, unknown> = {};
   if (body?.title !== undefined) data.title = String(body.title).trim();
-  if (body?.date !== undefined) data.date = new Date(body.date);
-  if (body?.endDate !== undefined) data.endDate = body.endDate ? new Date(body.endDate) : null;
+  if (body?.date !== undefined) data.date = parseBRDateTimeLocal(String(body.date));
+  if (body?.endDate !== undefined) data.endDate = body.endDate ? parseBRDateTimeLocal(String(body.endDate)) : null;
   if (body?.type !== undefined) data.type = String(body.type);
   if (body?.grade !== undefined) data.grade = body.grade ? String(body.grade) : null;
   if (body?.notes !== undefined) data.notes = body.notes ? String(body.notes) : null;
@@ -65,8 +66,13 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { id } = await params;
-  await withTenant(String(lodgeId), (db) =>
-    db.session.deleteMany({ where: { id, lodgeId: String(lodgeId) } }),
-  );
+  const deleted = await withTenant(String(lodgeId), async (db) => {
+    const existing = await db.session.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { title: true } });
+    if (!existing) return null;
+    await db.session.deleteMany({ where: { id, lodgeId: String(lodgeId) } });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'session', entityId: id, metadata: { title: existing.title } });
+    return existing;
+  });
+  if (!deleted) return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

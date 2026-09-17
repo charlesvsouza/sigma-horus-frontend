@@ -126,8 +126,8 @@ export default function SessionDetailClient({
           <div>
             <h1 className="text-2xl font-bold text-sand-light">{session.title}</h1>
             <p className="mt-1 text-sm text-sand-dark">
-              {new Date(session.date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-              {endDate ? ` – ${endDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` : ''}
+              {new Date(session.date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' })}
+              {endDate ? ` – ${endDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' })}` : ''}
               {' • '}{SESSION_TYPE_LABEL[session.type] ?? session.type}
               {session.grade ? ` • Grau: ${session.grade}` : ''}
             </p>
@@ -142,7 +142,7 @@ export default function SessionDetailClient({
             <div>
               <h2 className="text-base font-semibold text-sand-light">Convocação (chamado)</h2>
               <p className="mt-1 text-xs text-sand-dark">
-                {convocationSentAt ? `Enviada em ${new Date(convocationSentAt).toLocaleString('pt-BR')}` : 'Ainda não enviada'} — vai por e-mail a todos os obreiros ativos, com data, hora e ordem do dia.
+                {convocationSentAt ? `Enviada em ${new Date(convocationSentAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}` : 'Ainda não enviada'} — vai por e-mail a todos os obreiros ativos, com data, hora e ordem do dia.
               </p>
             </div>
             <Button type="button" onClick={sendConvocation} disabled={sendingConvocation}>
@@ -192,7 +192,7 @@ export default function SessionDetailClient({
           <p className="mt-1 text-sm text-sand-dark">
             {sessionEnded
               ? 'Clique no membro para marcar presença/ausência.'
-              : `Disponível após o término da sessão${endDate ? `, em ${endDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` : ''}.`}
+              : `Disponível após o término da sessão${endDate ? `, em ${endDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' })}` : ''}.`}
           </p>
           <div className="mt-5 space-y-2">
             {members.map((member) => {

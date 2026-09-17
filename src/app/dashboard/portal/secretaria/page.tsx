@@ -76,7 +76,7 @@ export default function SecretariaPage() {
             <p className="text-xs font-medium uppercase tracking-[0.25em] text-gold">Próxima convocação</p>
             <h2 className="mt-2 text-lg font-semibold text-sand-light">{next.title}</h2>
             <p className="mt-1 text-sm text-sand">
-              {new Date(next.date).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' })} · {SESSION_TYPE_LABEL[next.type] ?? next.type}
+              {new Date(next.date).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'America/Sao_Paulo' })} · {SESSION_TYPE_LABEL[next.type] ?? next.type}
             </p>
             {next.agenda ? (
               <div className="mt-3 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4">
@@ -123,7 +123,7 @@ export default function SecretariaPage() {
                             className="block w-full truncate rounded bg-gold/15 px-1.5 py-0.5 text-left text-[11px] font-medium text-gold hover:bg-gold/25"
                             title={s.title}
                           >
-                            {new Date(s.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} {s.title}
+                            {new Date(s.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })} {s.title}
                           </button>
                         ))}
                       </div>
@@ -141,7 +141,7 @@ export default function SecretariaPage() {
               <div>
                 <h2 className="text-base font-semibold text-sand-light">{selected.title}</h2>
                 <p className="mt-1 text-sm text-sand-dark">
-                  {new Date(selected.date).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' })} · {SESSION_TYPE_LABEL[selected.type] ?? selected.type}
+                  {new Date(selected.date).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'America/Sao_Paulo' })} · {SESSION_TYPE_LABEL[selected.type] ?? selected.type}
                 </p>
               </div>
               <button type="button" onClick={() => setSelected(null)} className="text-xs text-sand-dark hover:text-sand-light">Fechar</button>
