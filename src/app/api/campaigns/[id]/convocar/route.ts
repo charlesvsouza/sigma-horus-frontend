@@ -31,41 +31,52 @@ export async function POST(request: Request, { params }: Ctx) {
 
   const stats = { sent: 0, queued: 0, failed: 0, skipped: 0 };
 
-  const result = await withTenant(String(lodgeId), async (db) => {
+  // Etapa 1 (transação curta): só leitura. O laço de despacho roda FORA de
+  // qualquer transação — uma transação interativa do Prisma expira em 5s por
+  // padrão, e dezenas de membros × pausa de DISPATCH_THROTTLE_MS entre cada
+  // envio passa fácil de 5s, derrubando a convocação inteira com "query
+  // cannot be executed on an expired transaction" (visto em produção).
+  const setup = await withTenant(String(lodgeId), async (db) => {
     const campaign = await db.campaign.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, title: true, description: true, beneficiaryName: true, goalAmount: true } });
-    if (!campaign) return { error: 'not_found' as const };
-
+    if (!campaign) return null;
     const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: LODGE_MESSAGING_SELECT });
-    const lodgeChannels = buildLodgeChannels(lodge);
-
     const members = await db.member.findMany({
       where: { lodgeId: String(lodgeId), ...(scope === 'active' ? { status: 'active' } : {}) },
       select: { id: true, name: true, email: true, phone: true },
     });
-
-    const subject = `Campanha de benemerência: ${campaign.title}`;
-    const meta = campaign.goalAmount ? ` Meta: ${brl(campaign.goalAmount)}.` : '';
-    const text = custom || `Meus irmãos, a Hospitalaria abriu a campanha "${campaign.title}"${campaign.beneficiaryName ? ` em favor de ${campaign.beneficiaryName}` : ''}.${campaign.description ? ` ${campaign.description}` : ''}${meta} Contamos com a participação de todos. Fraternalmente.`;
-
-    let dispatched = 0;
-    for (const m of members) {
-      for (const channel of channels) {
-        const to = channel === 'email' ? (m.email ?? '') : (m.phone ?? '');
-        if (!to) { stats.skipped++; continue; }
-        if (dispatched > 0) await sleep(DISPATCH_THROTTLE_MS);
-        dispatched++;
-        const r = await dispatch(channel, to, subject, text, lodgeChannels);
-        stats[r.status]++;
-        await db.messageLog.create({
-          data: { lodgeId: String(lodgeId), memberId: m.id, channel, title: subject, content: text, status: r.status, error: r.detail ?? null },
-        });
-      }
-    }
-
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'campaign-convocacao', entityId: id, metadata: { channels, scope, ...stats } });
-    return { ok: true };
+    return { campaign, lodge, members };
   });
+  if (!setup) return NextResponse.json({ error: 'Campanha não encontrada.' }, { status: 404 });
 
-  if (result && 'error' in result) return NextResponse.json({ error: 'Campanha não encontrada.' }, { status: 404 });
+  const { campaign, lodge, members } = setup;
+  const lodgeChannels = buildLodgeChannels(lodge);
+  const subject = `Campanha de benemerência: ${campaign.title}`;
+  const meta = campaign.goalAmount ? ` Meta: ${brl(campaign.goalAmount)}.` : '';
+  const text = custom || `Meus irmãos, a Hospitalaria abriu a campanha "${campaign.title}"${campaign.beneficiaryName ? ` em favor de ${campaign.beneficiaryName}` : ''}.${campaign.description ? ` ${campaign.description}` : ''}${meta} Contamos com a participação de todos. Fraternalmente.`;
+
+  // Etapa 2: laço de despacho, sem transação aberta. Cada MessageLog é
+  // gravado na sua própria transação curta (RLS continua garantido).
+  let dispatched = 0;
+  for (const m of members) {
+    for (const channel of channels) {
+      const to = channel === 'email' ? (m.email ?? '') : (m.phone ?? '');
+      if (!to) { stats.skipped++; continue; }
+      if (dispatched > 0) await sleep(DISPATCH_THROTTLE_MS);
+      dispatched++;
+      const r = await dispatch(channel, to, subject, text, lodgeChannels);
+      stats[r.status]++;
+      await withTenant(String(lodgeId), (db) =>
+        db.messageLog.create({
+          data: { lodgeId: String(lodgeId), memberId: m.id, channel, title: subject, content: text, status: r.status, error: r.detail ?? null },
+        }),
+      );
+    }
+  }
+
+  // Etapa 3 (transação curta): auditoria.
+  await withTenant(String(lodgeId), (db) =>
+    logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'campaign-convocacao', entityId: id, metadata: { channels, scope, ...stats } }),
+  );
+
   return NextResponse.json({ ok: true, stats });
 }

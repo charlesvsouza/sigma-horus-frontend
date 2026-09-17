@@ -63,41 +63,55 @@ export async function POST(request: Request) {
 
   const stats = { sent: 0, queued: 0, failed: 0, skipped: 0 };
 
-  const result = await withTenant(String(lodgeId), async (db) => {
+  // Etapa 1 (transação curta): só leitura. O laço de despacho abaixo roda
+  // FORA de qualquer transação — ele chama provedores externos (Resend/
+  // WhatsApp/Twilio) com uma pausa entre cada envio (DISPATCH_THROTTLE_MS),
+  // e uma transação interativa do Prisma expira em 5s por padrão. Pra loja
+  // com dezenas de membros isso estourava o timeout e derrubava o envio
+  // inteiro com "query cannot be executed on an expired transaction".
+  const setup = await withTenant(String(lodgeId), async (db) => {
     const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: LODGE_MESSAGING_SELECT });
-    const lodgeChannels = buildLodgeChannels(lodge);
-
     // Sem memberId: manda a todos os membros ativos. Com memberId: só a ele
     // (mesmo que inativo — foi uma escolha explícita de quem enviou).
     const members = memberId
       ? await db.member.findMany({ where: { id: memberId, lodgeId: String(lodgeId) }, select: { id: true, name: true, email: true, phone: true } })
       : await db.member.findMany({ where: { lodgeId: String(lodgeId), status: 'active' }, select: { id: true, name: true, email: true, phone: true } });
-
-    let lastItem = null;
-    let dispatched = 0;
-    for (const m of members) {
-      const to = channel === 'email' ? (m.email ?? '') : (m.phone ?? '');
-      if (!to) { stats.skipped++; continue; }
-      if (dispatched > 0) await sleep(DISPATCH_THROTTLE_MS);
-      dispatched++;
-      const r = await dispatch(channel, to, title, content, lodgeChannels);
-      stats[r.status]++;
-      lastItem = await db.messageLog.create({
-        data: { lodgeId: String(lodgeId), memberId: m.id, channel, title, content, status: r.status, error: r.detail ?? null },
-        include: { member: { select: { id: true, name: true } } },
-      });
-    }
-
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'message', entityId: lastItem?.id ?? 'broadcast', metadata: { channel, memberId, ...stats } });
-    return { item: lastItem, membersCount: members.length };
+    return { lodge, members };
   });
 
-  if (result.membersCount === 0) {
+  if (setup.members.length === 0) {
     return NextResponse.json({ error: memberId ? 'Membro não encontrado.' : 'Nenhum membro ativo para enviar.' }, { status: 400 });
   }
+
+  const lodgeChannels = buildLodgeChannels(setup.lodge);
+
+  // Etapa 2: laço de despacho, sem transação aberta. Cada MessageLog é
+  // gravado na sua própria transação curta (RLS continua garantido).
+  let lastItem = null;
+  let dispatched = 0;
+  for (const m of setup.members) {
+    const to = channel === 'email' ? (m.email ?? '') : (m.phone ?? '');
+    if (!to) { stats.skipped++; continue; }
+    if (dispatched > 0) await sleep(DISPATCH_THROTTLE_MS);
+    dispatched++;
+    const r = await dispatch(channel, to, title, content, lodgeChannels);
+    stats[r.status]++;
+    lastItem = await withTenant(String(lodgeId), (db) =>
+      db.messageLog.create({
+        data: { lodgeId: String(lodgeId), memberId: m.id, channel, title, content, status: r.status, error: r.detail ?? null },
+        include: { member: { select: { id: true, name: true } } },
+      }),
+    );
+  }
+
   if (stats.sent === 0 && stats.queued === 0 && stats.failed === 0 && stats.skipped > 0) {
     return NextResponse.json({ error: 'Ninguém com contato cadastrado para este canal.' }, { status: 400 });
   }
 
-  return NextResponse.json({ item: result.item, stats });
+  // Etapa 3 (transação curta): auditoria.
+  await withTenant(String(lodgeId), (db) =>
+    logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'message', entityId: lastItem?.id ?? 'broadcast', metadata: { channel, memberId, ...stats } }),
+  );
+
+  return NextResponse.json({ item: lastItem, stats });
 }
