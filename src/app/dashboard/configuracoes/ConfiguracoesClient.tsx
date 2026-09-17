@@ -279,6 +279,10 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
                   {BRAZILIAN_POWERS.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
                 </select>
               </label>
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Data de fundação</span>
+                <input type="date" value={form.foundationDate} onChange={(e) => set('foundationDate', e.target.value)} className={INPUT_CLASS} />
+              </label>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button type="button" onClick={seedOffices} disabled={seeding || !form.riteName} className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40">
@@ -391,6 +395,10 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
               <label className="flex items-center gap-2 text-sm text-sand">
                 <input type="checkbox" checked={form.notifyBillingRemindersEnabled === 'true'} onChange={(e) => set('notifyBillingRemindersEnabled', String(e.target.checked))} />
                 Lembrete de cobrança a vencer (3 dias antes) e vencida
+              </label>
+              <label className="flex items-center gap-2 text-sm text-sand">
+                <input type="checkbox" checked={form.notifyFoundationAnniversaryEnabled === 'true'} onChange={(e) => set('notifyFoundationAnniversaryEnabled', String(e.target.checked))} />
+                Aniversário de fundação da loja (mensagem a todos os obreiros ativos) — requer <strong>Data de fundação</strong> preenchida acima
               </label>
             </div>
           </section>

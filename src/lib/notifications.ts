@@ -34,10 +34,10 @@ const sameDayMonth = (a: Date, ref: { m: number; day: number }) => {
 };
 const fmtDate = (d: Date) => d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
-interface Stats { birthdays: number; relativesBirthdays: number; jubilees: number; dueSoon: number; overdue: number; sent: number; queued: number; failed: number; skipped: number }
+interface Stats { birthdays: number; relativesBirthdays: number; jubilees: number; foundationAnniversaries: number; dueSoon: number; overdue: number; sent: number; queued: number; failed: number; skipped: number }
 
 export async function runDailyNotifications(): Promise<Stats> {
-  const stats: Stats = { birthdays: 0, relativesBirthdays: 0, jubilees: 0, dueSoon: 0, overdue: 0, sent: 0, queued: 0, failed: 0, skipped: 0 };
+  const stats: Stats = { birthdays: 0, relativesBirthdays: 0, jubilees: 0, foundationAnniversaries: 0, dueSoon: 0, overdue: 0, sent: 0, queued: 0, failed: 0, skipped: 0 };
 
   const now = new Date();
   const today = partsBR(now);
@@ -75,7 +75,9 @@ export async function runDailyNotifications(): Promise<Stats> {
   const lodges = await prismaAdmin.lodge.findMany({
     select: {
       id: true, ...LODGE_MESSAGING_SELECT,
+      foundationDate: true,
       notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
+      notifyFoundationAnniversaryEnabled: true,
     },
   });
 
@@ -153,7 +155,20 @@ export async function runDailyNotifications(): Promise<Stats> {
       }
     }
 
-    // 4) Cobranças a vencer e vencidas
+    // 4) Aniversário de fundação da loja — mensagem a todos os obreiros ativos
+    if (lodge.notifyFoundationAnniversaryEnabled && lodge.foundationDate && sameDayMonth(lodge.foundationDate, today)) {
+      const years = today.y - partsBR(lodge.foundationDate).y;
+      for (const m of members) {
+        stats.foundationAnniversaries++;
+        for (const channel of list) {
+          await notify(lodge.id, [channel], lodgeChannels, m.id, contactFor(channel, m.email, m.phone),
+            `Aniversário de fundação da loja: ${years} anos`,
+            `Caro irmão ${m.name}, hoje a ${lodge.name} celebra ${years} anos de fundação! Um marco na nossa história de trabalho e fraternidade. Parabéns a todos nós. Fraternalmente.`);
+        }
+      }
+    }
+
+    // 5) Cobranças a vencer e vencidas
     if (lodge.notifyBillingRemindersEnabled) {
       for (const inv of invoices) {
         if (!inv.member) continue;

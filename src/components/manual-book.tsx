@@ -209,7 +209,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.17</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.18</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -271,7 +271,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.17 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.18 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -498,7 +498,7 @@ export function ManualBook() {
                 <Bullets>
                   <li><strong>Identificação:</strong> nome, razão social, nome fantasia, CNPJ, contato, endereço (o CEP preenche o endereço) e o <UI>Brasão da loja</UI> (imagem — envie em <UI>Enviar imagem</UI>).</li>
                   <li><strong>Dados bancários</strong> e <strong>chave PIX</strong> (úteis para conferência e conciliação).</li>
-                  <li><strong>Loja maçônica:</strong> o <UI>Rito</UI> praticado e a <UI>Potência</UI> (obediência). O rito define os cargos da loja.</li>
+                  <li><strong>Loja maçônica:</strong> o <UI>Rito</UI> praticado, a <UI>Potência</UI> (obediência) e a <UI>Data de fundação</UI>. O rito define os cargos da loja; a data de fundação, se preenchida, dispara uma mensagem comemorativa automática a todos os obreiros ativos no aniversário (ver 6.6).</li>
                   <li><strong>Sessões:</strong> marque os <UI>dias da semana</UI> e a <UI>periodicidade</UI> (semanal, quinzenal ou mensal) das sessões.</li>
                 </Bullets>
                 <p>
@@ -601,11 +601,14 @@ export function ManualBook() {
                   é direto da loja), em <UI>Administração → Integrações</UI>, no cartão <UI>Comunicação (WhatsApp / SMS)</UI>.
                 </p>
                 <p>
-                  Cada categoria de mensagem automática (aniversários, jubileus, lembretes de cobrança) liga/desliga
-                  independente em <UI>Configurações da loja → Mensagens automáticas</UI>. Jubileu cobre iniciação,
-                  elevação e exaltação (tempo de mestre) nos marcos de 1, 5, 10, 15, 20, 25, 30, 40, 50 e 60 anos.
-                  Membro ou familiar marcado como <strong>falecido</strong> (cadastro do membro, seção Família e
-                  dependentes — ver capítulo 8) nunca recebe felicitação, mesmo com a categoria ligada.
+                  Cada categoria de mensagem automática (aniversários, jubileus, lembretes de cobrança, aniversário
+                  de fundação da loja) liga/desliga independente em <UI>Configurações da loja → Mensagens
+                  automáticas</UI>. Jubileu cobre iniciação, elevação e exaltação (tempo de mestre) nos marcos de 1,
+                  5, 10, 15, 20, 25, 30, 40, 50 e 60 anos. <strong>Aniversário de fundação</strong> exige a
+                  <UI> Data de fundação</UI> preenchida em 6.1 — no dia, todos os obreiros ativos recebem uma
+                  mensagem comemorativa. Membro ou familiar marcado como <strong>falecido</strong> (cadastro do
+                  membro, seção Família e dependentes — ver capítulo 8) nunca recebe felicitação, mesmo com a
+                  categoria ligada.
                 </p>
                 <p><strong>WhatsApp (Meta Cloud API):</strong></p>
                 <Steps>
@@ -1115,7 +1118,7 @@ export function ManualBook() {
                 </p>
                 <Steps>
                   <li>Por padrão, mostra só membros <UI>Ativos</UI>; marque <UI>Incluir afastados/suspensos/inativos</UI> pra ver todo mundo.</li>
-                  <li>A tela lista cada grupo com contagem e nomes, e um resumo por situação (ativo, afastado, suspenso, inativo) ao final.</li>
+                  <li>A tela lista cada grupo com foto, nome e um resumo por situação (ativo, afastado, suspenso, inativo) ao final. A foto é a mesma cadastrada em Membros — não precisa (nem deve) enviar de novo aqui.</li>
                   <li><UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
                 </Steps>
                 <Note>

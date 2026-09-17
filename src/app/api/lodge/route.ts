@@ -23,10 +23,11 @@ export async function GET() {
         name: true, legalName: true, tradeName: true, cnpj: true, email: true, phone: true, crestUrl: true,
         addressLine: true, addressNumber: true, neighborhood: true, city: true, state: true, zipCode: true,
         bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
-        riteName: true, powerName: true, sessionWeekdays: true, sessionFrequency: true,
+        riteName: true, powerName: true, foundationDate: true, sessionWeekdays: true, sessionFrequency: true,
         expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
         autoBalanceteEnabled: true, art002Enabled: true,
         notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
+        notifyFoundationAnniversaryEnabled: true,
       },
     }),
   );
@@ -51,10 +52,14 @@ export async function PUT(request: Request) {
   if ('art002Enabled' in body) {
     data.art002Enabled = String(body.art002Enabled) === 'true';
   }
-  for (const notifyField of ['notifyBirthdaysEnabled', 'notifyMilestonesEnabled', 'notifyBillingRemindersEnabled'] as const) {
+  for (const notifyField of ['notifyBirthdaysEnabled', 'notifyMilestonesEnabled', 'notifyBillingRemindersEnabled', 'notifyFoundationAnniversaryEnabled'] as const) {
     if (notifyField in body) {
       data[notifyField] = String(body[notifyField]) === 'true';
     }
+  }
+  if ('foundationDate' in body) {
+    const raw = String(body.foundationDate ?? '').trim();
+    data.foundationDate = raw ? new Date(raw).toISOString() : null;
   }
   for (const field of FIELDS) {
     if (field in body) {

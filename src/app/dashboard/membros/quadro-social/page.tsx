@@ -31,7 +31,7 @@ export default async function QuadroSocialPage() {
       db.member.findMany({
         where: { lodgeId: String(lodgeId) },
         select: {
-          id: true, name: true, status: true,
+          id: true, name: true, status: true, photoUrl: true,
           initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true,
           initiationLodge: true,
         },
@@ -57,6 +57,7 @@ export default async function QuadroSocialPage() {
       id: m.id,
       name: m.name,
       status: m.status,
+      photoUrl: m.photoUrl,
       initiationDate: m.initiationDate ? m.initiationDate.toISOString() : null,
       elevationDate: m.elevationDate ? m.elevationDate.toISOString() : null,
       exaltationDate: m.exaltationDate ? m.exaltationDate.toISOString() : null,

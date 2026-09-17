@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { UserRound } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import { symbolicSituation, type SymbolicSituation } from '@/lib/masonic-degree';
 import { memberStatusLabel, MEMBER_STATUSES } from '@/lib/member-status';
@@ -10,6 +11,7 @@ interface MemberInput {
   id: string;
   name: string;
   status: string;
+  photoUrl: string | null;
   initiationDate: string | null;
   elevationDate: string | null;
   exaltationDate: string | null;
@@ -121,6 +123,7 @@ export default function QuadroSocialClient({ lodgeName, crestUrl, members }: { l
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-left text-xs uppercase tracking-wide text-sand-dark/70">
+                          <th className="border-b border-white/10 px-2 py-2">Foto</th>
                           <th className="border-b border-white/10 px-2 py-2">Nome</th>
                           <th className="border-b border-white/10 px-2 py-2">Situação</th>
                           <th className="border-b border-white/10 px-2 py-2">Origem</th>
@@ -129,6 +132,16 @@ export default function QuadroSocialClient({ lodgeName, crestUrl, members }: { l
                       <tbody>
                         {g.members.map((m) => (
                           <tr key={m.id}>
+                            <td className="border-b border-white/5 px-2 py-2">
+                              {m.photoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={m.photoUrl} alt="" className="h-8 w-8 rounded-full border border-white/8 object-cover" />
+                              ) : (
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-white/15 text-sand-dark/50">
+                                  <UserRound className="h-4 w-4" />
+                                </div>
+                              )}
+                            </td>
                             <td className="border-b border-white/5 px-2 py-2 text-sand-light">{m.name}</td>
                             <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{memberStatusLabel(m.status)}</td>
                             <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{ORIGIN_LABEL[m.origin]}</td>
