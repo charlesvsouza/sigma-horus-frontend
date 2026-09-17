@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { degreeShort } from '@/lib/masonic-degree';
 import { fetchCep, maskCEP, maskPhone } from '@/lib/masks';
 import { ACCOUNT_STATUS_LABEL, DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
-import { Alert, Button, inputClass } from '@/components/ui';
+import { Alert, Button, MaskedInput, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 
 interface MemberSummary {
@@ -175,16 +175,17 @@ function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; on
         <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Contato</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <input value={form.email} onChange={(e) => set('email', e.target.value)} className={inputClass} placeholder="E-mail" type="email" />
-          <input value={form.phone} onChange={(e) => set('phone', maskPhone(e.target.value))} className={inputClass} placeholder="Telefone" />
+          <MaskedInput value={form.phone} onChange={(v) => set('phone', v)} mask={maskPhone} className={inputClass} placeholder="Telefone" />
         </div>
       </div>
 
       <div>
         <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Endereço</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <input
+          <MaskedInput
             value={form.zipCode}
-            onChange={(e) => { const v = maskCEP(e.target.value); set('zipCode', v); if (v.replace(/\D/g, '').length === 8) lookupCep(v); }}
+            onChange={(v) => { set('zipCode', v); if (v.replace(/\D/g, '').length === 8) lookupCep(v); }}
+            mask={maskCEP}
             className={inputClass}
             placeholder="CEP"
           />

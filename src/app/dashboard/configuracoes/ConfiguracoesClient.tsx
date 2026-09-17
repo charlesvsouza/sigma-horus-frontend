@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Alert, Button, inputClass, useConfirm } from '@/components/ui';
+import { Alert, Button, MaskedInput, inputClass, useConfirm } from '@/components/ui';
 import ThemeToggle from '@/components/theme-toggle';
 import { fetchCep, maskCEP, maskCNPJ, maskPhone } from '@/lib/masks';
 import { BRAZILIAN_RITES, BRAZILIAN_POWERS } from '@/lib/masonic-reference';
@@ -17,16 +17,16 @@ const FREQUENCIES = [
 ];
 const INPUT_CLASS = `mt-1.5 ${inputClass}`; // fonte única do design system
 
-function Field({ label, value, onChange, ...rest }: { label: string; value: string; onChange: (v: string) => void } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'>) {
+function Field({ label, value, onChange, mask, ...rest }: { label: string; value: string; onChange: (v: string) => void; mask?: (raw: string) => string } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'>) {
+  const className = "mt-1.5 w-full rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
   return (
     <label className="block">
       <span className="text-xs uppercase tracking-wide text-sand-dark/70">{label}</span>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
-        {...rest}
-      />
+      {mask ? (
+        <MaskedInput value={value} onChange={onChange} mask={mask} className={className} {...rest} />
+      ) : (
+        <input value={value} onChange={(e) => onChange(e.target.value)} className={className} {...rest} />
+      )}
     </label>
   );
 }
@@ -228,9 +228,9 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
               <Field label="Nome da loja" value={form.name} onChange={(v) => set('name', v)} required />
               <Field label="Razão social" value={form.legalName} onChange={(v) => set('legalName', v)} />
               <Field label="Nome fantasia" value={form.tradeName} onChange={(v) => set('tradeName', v)} />
-              <Field label="CNPJ" value={form.cnpj} onChange={(v) => set('cnpj', maskCNPJ(v))} inputMode="numeric" placeholder="00.000.000/0000-00" />
+              <Field label="CNPJ" value={form.cnpj} onChange={(v) => set('cnpj', v)} mask={maskCNPJ} inputMode="numeric" placeholder="00.000.000/0000-00" />
               <Field label="E-mail" value={form.email} onChange={(v) => set('email', v)} type="email" />
-              <Field label="Telefone" value={form.phone} onChange={(v) => set('phone', maskPhone(v))} inputMode="tel" />
+              <Field label="Telefone" value={form.phone} onChange={(v) => set('phone', v)} mask={maskPhone} inputMode="tel" />
             </div>
             <div className="mt-5">
               <span className="text-xs uppercase tracking-wide text-sand-dark/70">Brasão da loja</span>
@@ -327,7 +327,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             <h2 className="text-base font-semibold text-sand-light">Endereço</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div>
-                <Field label="CEP" value={form.zipCode} onChange={(v) => set('zipCode', maskCEP(v))} onBlur={(e) => lookupCep((e.target as HTMLInputElement).value)} inputMode="numeric" />
+                <Field label="CEP" value={form.zipCode} onChange={(v) => set('zipCode', v)} mask={maskCEP} onBlur={(e) => lookupCep((e.target as HTMLInputElement).value)} inputMode="numeric" />
                 {cepStatus ? <p className="mt-1 text-xs text-sand-dark">{cepStatus}</p> : null}
               </div>
               <Field label="Logradouro" value={form.addressLine} onChange={(v) => set('addressLine', v)} />

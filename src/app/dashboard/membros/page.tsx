@@ -5,7 +5,7 @@ import { UserRound } from 'lucide-react';
 import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel, remidoEligibility } from '@/lib/masonic-degree';
 import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
-import { Button, EmptyState, Input, Skeleton, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Button, EmptyState, Input, MaskedInput, Skeleton, inputClass, Alert, useConfirm } from '@/components/ui';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -734,7 +734,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
       <div className="grid gap-4 md:grid-cols-2">
         <Input value={form.name} onChange={(e) => { set('name', e.target.value); if (nameError) setNameError(''); }} placeholder="Nome completo *" error={nameError || undefined} aria-label="Nome completo" />
         <input value={form.email} onChange={(e) => set('email', e.target.value)} className={INPUT} placeholder="E-mail" />
-        <input value={form.phone} onChange={(e) => set('phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
+        <MaskedInput value={form.phone} onChange={(v) => set('phone', v)} mask={maskPhone} inputMode="tel" className={INPUT} placeholder="Telefone" />
         <select value={form.status} onChange={(e) => set('status', e.target.value)} className={INPUT}>
           {MEMBER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
@@ -758,8 +758,8 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
         <div className="grid gap-4 md:grid-cols-2">
           <label className="block"><span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Nascimento</span>
             <input type="date" value={form.birthDate} onChange={(e) => set('birthDate', e.target.value)} className={INPUT} /></label>
-          <input value={form.cpf} onChange={(e) => set('cpf', maskCPF(e.target.value))} inputMode="numeric" className={INPUT} placeholder="CPF" />
-          <input value={form.rg} onChange={(e) => set('rg', maskRG(e.target.value))} className={INPUT} placeholder="RG" />
+          <MaskedInput value={form.cpf} onChange={(v) => set('cpf', v)} mask={maskCPF} inputMode="numeric" className={INPUT} placeholder="CPF" />
+          <MaskedInput value={form.rg} onChange={(v) => set('rg', v)} mask={maskRG} className={INPUT} placeholder="RG" />
           <select value={form.maritalStatus} onChange={(e) => set('maritalStatus', e.target.value)} className={INPUT}>
             <option value="">Estado civil</option>
             <option value="single">Solteiro</option>
@@ -781,7 +781,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
               <input value={rel.name ?? ''} onChange={(e) => setRel(setter)('name', e.target.value)} className={INPUT} placeholder="Nome" />
               <input type="date" value={rel.birthDate ?? ''} onChange={(e) => setRel(setter)('birthDate', e.target.value)} className={INPUT} />
               <input value={rel.email ?? ''} onChange={(e) => setRel(setter)('email', e.target.value)} className={INPUT} placeholder="E-mail" />
-              <input value={rel.phone ?? ''} onChange={(e) => setRel(setter)('phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
+              <MaskedInput value={rel.phone ?? ''} onChange={(v) => setRel(setter)('phone', v)} mask={maskPhone} inputMode="tel" className={INPUT} placeholder="Telefone" />
               <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-sand-dark" title="Não recebe felicitação de aniversário automática">
                 <input type="checkbox" checked={rel.deceased === true} onChange={(e) => setRel(setter)('deceased', e.target.checked)} />
                 Falecido(a)
@@ -808,9 +808,9 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
                   </select>
                   <input value={d.name ?? ''} onChange={(e) => setDep(i, 'name', e.target.value)} className={INPUT} placeholder="Nome" />
                   <input type="date" value={d.birthDate ?? ''} onChange={(e) => setDep(i, 'birthDate', e.target.value)} className={INPUT} />
-                  <input value={d.cpf ?? ''} onChange={(e) => setDep(i, 'cpf', maskCPF(e.target.value))} inputMode="numeric" className={INPUT} placeholder="CPF" />
+                  <MaskedInput value={d.cpf ?? ''} onChange={(v) => setDep(i, 'cpf', v)} mask={maskCPF} inputMode="numeric" className={INPUT} placeholder="CPF" />
                   <input value={d.email ?? ''} onChange={(e) => setDep(i, 'email', e.target.value)} className={INPUT} placeholder="E-mail" />
-                  <input value={d.phone ?? ''} onChange={(e) => setDep(i, 'phone', maskPhone(e.target.value))} inputMode="tel" className={INPUT} placeholder="Telefone" />
+                  <MaskedInput value={d.phone ?? ''} onChange={(v) => setDep(i, 'phone', v)} mask={maskPhone} inputMode="tel" className={INPUT} placeholder="Telefone" />
                   <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-sand-dark" title="Não recebe felicitação de aniversário automática">
                     <input type="checkbox" checked={d.deceased === true} onChange={(e) => setDep(i, 'deceased', e.target.checked)} />
                     Falecido(a)
@@ -832,7 +832,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
           <input value={form.city} onChange={(e) => set('city', e.target.value)} className={INPUT} placeholder="Cidade" />
           <input value={form.state} onChange={(e) => set('state', e.target.value)} className={INPUT} placeholder="Estado" />
           <div>
-            <input value={form.zipCode} onChange={(e) => set('zipCode', maskCEP(e.target.value))} onBlur={(e) => lookupCep(e.target.value)} inputMode="numeric" className={INPUT} placeholder="CEP (preenche o endereço)" />
+            <MaskedInput value={form.zipCode} onChange={(v) => set('zipCode', v)} mask={maskCEP} onBlur={(e) => lookupCep(e.target.value)} inputMode="numeric" className={INPUT} placeholder="CEP (preenche o endereço)" />
             {cepStatus ? <p className="mt-1 text-xs text-sand-dark">{cepStatus}</p> : null}
           </div>
           <input value={form.country} onChange={(e) => set('country', e.target.value)} className={INPUT} placeholder="País" />
