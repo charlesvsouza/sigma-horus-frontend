@@ -11,8 +11,11 @@ interface MessageItem {
   channel: string;
   content: string;
   status: string;
+  createdAt: string;
   member?: { name: string } | null;
 }
+
+const CHANNEL_LABEL: Record<string, string> = { email: 'E-mail', whatsapp: 'WhatsApp', sms: 'SMS' };
 
 export default function ComunicacaoClient({ items, members }: { items: MessageItem[]; members: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -22,6 +25,7 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
   const [memberId, setMemberId] = useState('');
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState('');
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -49,6 +53,11 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
   }
 
   const INPUT = inputClass; // fonte única do design system
+
+  const q = search.trim().toLowerCase();
+  const filteredItems = q
+    ? items.filter((item) => item.title.toLowerCase().includes(q) || item.member?.name.toLowerCase().includes(q) || item.channel.toLowerCase().includes(q))
+    : items;
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -80,16 +89,24 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
           </form>
         </FormCard>
 
-        <CollapsibleCard title="Histórico" count={items.length}>
-          <div className="space-y-3">
+        <CollapsibleCard
+          title="Histórico"
+          count={items.length}
+          headerAction={items.length > 0 ? <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por título, membro ou canal…" className={`${INPUT} max-w-56`} /> : undefined}
+        >
+          <div className="max-h-128 space-y-3 overflow-y-auto pr-1">
             {items.length === 0 ? (
               <EmptyState title="Os arautos ainda não partiram." description="As mensagens enviadas aos membros aparecem aqui. O envio externo (WhatsApp/e-mail) chega na Fase 7." />
-            ) : items.map((item) => (
+            ) : filteredItems.length === 0 ? (
+              <p className="text-sm text-sand-dark">Nenhuma mensagem encontrada para &quot;{search}&quot;.</p>
+            ) : filteredItems.map((item) => (
               <div key={item.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-sand-light">{item.title}</p>
-                    <p className="mt-1 text-xs text-sand-dark">{item.channel} • {item.member?.name ?? 'Todos'}</p>
+                    <p className="mt-1 text-xs text-sand-dark">
+                      {CHANNEL_LABEL[item.channel] ?? item.channel} • {item.member?.name ?? 'Todos'} • {new Date(item.createdAt).toLocaleDateString('pt-BR')}
+                    </p>
                   </div>
                   <p className="text-sm text-sand-dark">{MESSAGE_STATUS_LABEL[item.status] ?? item.status}</p>
                 </div>

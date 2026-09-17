@@ -12,6 +12,7 @@ export default async function ComunicacaoPage() {
           where: { lodgeId: String(lodgeId) },
           include: { member: { select: { id: true, name: true } } },
           orderBy: { createdAt: 'desc' },
+          take: 200,
         }),
         members: await db.member.findMany({
           where: { lodgeId: String(lodgeId) },
@@ -27,6 +28,7 @@ export default async function ComunicacaoPage() {
     channel: m.channel,
     content: m.content,
     status: m.status,
+    createdAt: m.createdAt.toISOString(),
     member: m.member ? { name: m.member.name } : null,
   }));
 
