@@ -36,6 +36,7 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/cobrancas', label: 'Cobranças', roles: ['admin', 'treasurer'] },
       { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
       { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
+      { href: '/dashboard/extratos', label: 'Extratos de contas', roles: ['admin', 'venerable', 'treasurer'] },
       { href: '/dashboard/conciliacao-bancaria', label: 'Conciliação bancária', roles: ['admin', 'treasurer'] },
       { href: '/dashboard/patrimonio', label: 'Patrimônio', roles: ['admin', 'venerable', 'treasurer'] },
       { href: '/dashboard/relatorios', label: 'Relatórios', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },

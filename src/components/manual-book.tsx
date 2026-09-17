@@ -55,6 +55,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-conciliacao', label: '7.12 Conciliação (Asaas e extrato bancário)' },
       { id: 'tes-clientes-fornecedores', label: '7.13 Clientes e fornecedores' },
       { id: 'tes-contas-bancarias', label: '7.14 Contas bancárias, Caixa e transferências' },
+      { id: 'tes-extratos', label: '7.15 Extratos de contas' },
     ],
   },
   { id: 'secretario', num: '8', label: 'Guia do Secretário' },
@@ -207,7 +208,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 16 de setembro de 2026 · versão 1.6</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.7</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -269,7 +270,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.6 — 16 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.7 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -421,7 +422,7 @@ export function ManualBook() {
               <Bullets>
                 <li><strong>Visão geral:</strong> <UI>Visão geral</UI> (indicadores), <UI>Meu portal</UI> e <UI>Manual &amp; ajuda</UI>.</li>
                 <li><strong>Loja &amp; cadastros:</strong> <UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>, <UI>Veneralato</UI>.</li>
-                <li><strong>Financeiro:</strong> <UI>Cadastros financeiros</UI>, <UI>Contas</UI>, <UI>Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Conciliação bancária</UI>, <UI>Patrimônio</UI>, <UI>Relatórios</UI>.</li>
+                <li><strong>Financeiro:</strong> <UI>Cadastros financeiros</UI>, <UI>Contas</UI>, <UI>Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de contas</UI>, <UI>Conciliação bancária</UI>, <UI>Patrimônio</UI>, <UI>Relatórios</UI>.</li>
                 <li><strong>Atividades:</strong> <UI>Sessões</UI>, <UI>Documentos</UI>, <UI>Comunicação</UI>.</li>
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI> e <UI>Campanhas</UI> de benemerência.</li>
                 <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
@@ -1000,6 +1001,24 @@ export function ManualBook() {
                   Essa dupla conferência (quem pede não é quem libera) existe para o mesmo cuidado de uma despesa acima
                   do limite (7.9): nenhuma movimentação de saldo entre contas acontece sem duas pessoas envolvidas. Uma
                   transferência com data dentro de um veneralato já encerrado é bloqueada, como qualquer outro lançamento (7.7).
+                </Note>
+              </Sub>
+              <Sub id="tes-extratos" title="7.15 Extratos de contas">
+                <p>
+                  Em <UI>Financeiro → Extratos de contas</UI>, veja a movimentação completa de uma conta bancária ou do
+                  Caixa isoladamente — o mesmo espírito de um extrato bancário: saldo inicial do período, cada
+                  lançamento em ordem cronológica com saldo corrente, e saldo final.
+                </p>
+                <Steps>
+                  <li>Escolha a <UI>Conta</UI> (banco, investimento ou Caixa) e o período (<UI>De</UI>/<UI>Até</UI>), ou use um atalho: <UI>Mês atual</UI>, <UI>Mês anterior</UI>, <UI>Ano atual</UI> ou <UI>Desde a abertura</UI>.</li>
+                  <li>Clique em <UI>Aplicar</UI>. A tela mostra o <UI>Saldo inicial</UI>, as <UI>Entradas</UI> e <UI>Saídas</UI> do período e o <UI>Saldo final</UI>, seguidos da tabela linha a linha.</li>
+                  <li><UI>Salvar como PDF</UI> imprime o extrato com o timbre da loja (mesmo padrão do fechamento, 7.11). <UI>Baixar XLS</UI> gera uma planilha Excel de verdade com as mesmas linhas, pronta pra conferência ou arquivo.</li>
+                </Steps>
+                <Note>
+                  O extrato só mostra o que está lançado no Sigma Horus (pagamentos e transferências aprovadas) — é o
+                  livro oficial da conta, por isso o saldo final sempre bate com o saldo mostrado em <UI>Cadastros
+                  financeiros</UI> e em <UI>Transferências</UI>. Para comparar contra o extrato real do banco (OFX), use
+                  a <UI>Conciliação bancária</UI> (7.12) — ferramentas diferentes, propósitos diferentes.
                 </Note>
               </Sub>
             </Chapter>
