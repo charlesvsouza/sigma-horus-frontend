@@ -98,6 +98,7 @@ export async function POST(_request: Request, { params }: Ctx) {
       title: subject,
       content: 'Senha provisória de acesso (conteúdo omitido).',
       status: result.status,
+      error: result.detail ?? null,
     },
   });
 

@@ -28,6 +28,7 @@ export default async function ComunicacaoPage() {
     channel: m.channel,
     content: m.content,
     status: m.status,
+    error: m.error ?? null,
     createdAt: m.createdAt.toISOString(),
     member: m.member ? { name: m.member.name } : null,
   }));

@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
-import { dispatch, type Channel } from '@/lib/messaging';
+import { dispatch, sleep, DISPATCH_THROTTLE_MS, type Channel } from '@/lib/messaging';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -74,13 +74,16 @@ export async function POST(request: Request) {
       : await db.member.findMany({ where: { lodgeId: String(lodgeId), status: 'active' }, select: { id: true, name: true, email: true, phone: true } });
 
     let lastItem = null;
+    let dispatched = 0;
     for (const m of members) {
       const to = channel === 'email' ? (m.email ?? '') : (m.phone ?? '');
       if (!to) { stats.skipped++; continue; }
+      if (dispatched > 0) await sleep(DISPATCH_THROTTLE_MS);
+      dispatched++;
       const r = await dispatch(channel, to, title, content, lodgeChannels);
       stats[r.status]++;
       lastItem = await db.messageLog.create({
-        data: { lodgeId: String(lodgeId), memberId: m.id, channel, title, content, status: r.status },
+        data: { lodgeId: String(lodgeId), memberId: m.id, channel, title, content, status: r.status, error: r.detail ?? null },
         include: { member: { select: { id: true, name: true } } },
       });
     }

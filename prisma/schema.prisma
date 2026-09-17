@@ -248,6 +248,11 @@ model MessageLog {
   title     String
   content   String
   status    String   @default("queued")
+  // Motivo de queued/failed (ex.: "WhatsApp não conectado nesta loja.",
+  // "Resend 429") — o mesmo texto que dispatch() já calculava mas nunca era
+  // salvo, obrigando quem investigasse a ler o código-fonte pra descobrir a
+  // causa. Null quando status='sent' (nada a explicar).
+  error     String?
   createdAt DateTime @default(now())
 
   lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)

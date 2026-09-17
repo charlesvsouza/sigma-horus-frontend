@@ -209,7 +209,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.11</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.12</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -271,7 +271,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.11 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.12 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1223,8 +1223,15 @@ export function ManualBook() {
                 <p>
                   O card <UI>Histórico</UI> mostra as 200 mensagens mais recentes (inclusive os avisos automáticos de
                   aniversário, jubileu e cobrança), com rolagem interna e um campo de busca por título, membro ou
-                  canal — assim ele não cresce sem limite conforme os avisos automáticos se acumulam.
+                  canal — assim ele não cresce sem limite conforme os avisos automáticos se acumulam. Quando uma
+                  mensagem fica <UI>Na fila</UI> ou <UI>Falhou</UI>, o motivo aparece logo abaixo dela (ex.:
+                  &quot;WhatsApp não conectado nesta loja&quot;) — não é preciso adivinhar o porquê.
                 </p>
+                <Note>
+                  Envios em lote (a todos os membros) têm uma pequena pausa entre cada mensagem, pra não estourar o
+                  limite de requisições por segundo do provedor de e-mail — um lote grande pode levar alguns segundos
+                  a mais que antes, mas evita que uma fração das mensagens falhe por sobrecarga.
+                </Note>
               </Sub>
             </Chapter>
 

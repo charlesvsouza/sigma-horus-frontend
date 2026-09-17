@@ -24,6 +24,15 @@ export interface LodgeChannels {
 
 export const EMPTY_CHANNELS: LodgeChannels = { whatsapp: null, sms: null };
 
+// Pausa entre disparos de um lote (convocação, comunicação em massa, avisos
+// diários) — sem isso, mandar pra dezenas de membros em segundos estoura o
+// limite de requisições por segundo do provedor (Resend/Meta/Twilio) e uma
+// fração do lote falha por rate limit, não por problema real do destinatário.
+export const DISPATCH_THROTTLE_MS = 250;
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 const onlyDigits = (s: string) => s.replace(/\D/g, '');
 
 // Normaliza telefone BR para E.164 (+55...). Aceita já com DDI.

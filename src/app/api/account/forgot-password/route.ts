@@ -62,6 +62,7 @@ export async function POST(request: Request) {
         title: subject,
         content: 'Senha provisória de redefinição (conteúdo omitido).',
         status: result.status,
+        error: result.detail ?? null,
       },
     });
     await prismaAdmin.auditLog.create({

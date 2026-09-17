@@ -1,7 +1,7 @@
 import { prismaAdmin, withTenant } from '@/lib/prisma';
 import type { Prisma } from '@/generated/prisma/client';
 import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
-import { channelsAvailable, dispatch, type Channel, type LodgeChannels } from '@/lib/messaging';
+import { channelsAvailable, dispatch, sleep, DISPATCH_THROTTLE_MS, type Channel, type LodgeChannels } from '@/lib/messaging';
 import { TENURE_MILESTONES } from '@/lib/masonic-degree';
 import { brl } from '@/lib/currency';
 
@@ -46,6 +46,10 @@ export async function runDailyNotifications(): Promise<Stats> {
   const dueLimit = new Date(now.getTime() + REMINDER_DAYS_AHEAD * 24 * 3600 * 1000);
 
   // Envia uma vez por (membro, canal, título) por dia (dedup via MessageLog).
+  // `dispatched` é compartilhado por TODAS as chamadas de notify() no cron —
+  // o cron roda todas as lojas e todos os membros numa só execução, então a
+  // pausa entre disparos precisa valer pro lote inteiro, não só por membro.
+  let dispatched = 0;
   async function notify(db: Prisma.TransactionClient, lodgeId: string, list: Channel[], ch: LodgeChannels, memberId: string | null, to: string, title: string, body: string) {
     for (const channel of list) {
       const dest = to.trim();
@@ -55,9 +59,11 @@ export async function runDailyNotifications(): Promise<Stats> {
         select: { id: true },
       });
       if (dup) { stats.skipped++; continue; }
+      if (dispatched > 0) await sleep(DISPATCH_THROTTLE_MS);
+      dispatched++;
       const r = await dispatch(channel, dest, title, body, ch);
       stats[r.status]++;
-      await db.messageLog.create({ data: { lodgeId, memberId, channel, title, content: body, status: r.status } });
+      await db.messageLog.create({ data: { lodgeId, memberId, channel, title, content: body, status: r.status, error: r.detail ?? null } });
     }
   }
 

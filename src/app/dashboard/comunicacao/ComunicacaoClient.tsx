@@ -11,6 +11,7 @@ interface MessageItem {
   channel: string;
   content: string;
   status: string;
+  error: string | null;
   createdAt: string;
   member?: { name: string } | null;
 }
@@ -116,9 +117,12 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
                       {CHANNEL_LABEL[item.channel] ?? item.channel} • {item.member?.name ?? 'Todos'} • {new Date(item.createdAt).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
-                  <p className="text-sm text-sand-dark">{MESSAGE_STATUS_LABEL[item.status] ?? item.status}</p>
+                  <p className={`text-sm ${item.status === 'sent' ? 'text-sand-dark' : item.status === 'failed' ? 'text-rose-300' : 'text-amber-300'}`} title={item.error ?? undefined}>
+                    {MESSAGE_STATUS_LABEL[item.status] ?? item.status}
+                  </p>
                 </div>
                 <p className="mt-2 text-sm text-sand">{item.content}</p>
+                {item.error ? <p className="mt-1.5 text-xs text-sand-dark/70">Motivo: {item.error}</p> : null}
               </div>
             ))}
           </div>

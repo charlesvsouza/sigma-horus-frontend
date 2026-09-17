@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     for (const r of recipients) {
       if (!r.email) continue;
       const sendResult = await dispatch('email', r.email, subject, text, EMPTY_CHANNELS);
-      await db.messageLog.create({ data: { lodgeId: String(lodgeId), memberId: String(memberId), channel: 'email', title: subject, content: text, status: sendResult.status } });
+      await db.messageLog.create({ data: { lodgeId: String(lodgeId), memberId: String(memberId), channel: 'email', title: subject, content: text, status: sendResult.status, error: sendResult.detail ?? null } });
     }
 
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'hospitality-request', entityId: created.id, metadata: { title } });

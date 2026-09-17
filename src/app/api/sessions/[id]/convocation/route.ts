@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
-import { dispatch, type Channel } from '@/lib/messaging';
+import { dispatch, sleep, DISPATCH_THROTTLE_MS, type Channel } from '@/lib/messaging';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -51,14 +51,17 @@ export async function POST(request: Request, { params }: Ctx) {
       'Contamos com a presença de todos. Fraternalmente.',
     ].filter(Boolean).join('\n\n');
 
+    let dispatched = 0;
     for (const m of members) {
       for (const channel of channels) {
         const to = channel === 'email' ? (m.email ?? '') : (m.phone ?? '');
         if (!to) { stats.skipped++; continue; }
+        if (dispatched > 0) await sleep(DISPATCH_THROTTLE_MS);
+        dispatched++;
         const r = await dispatch(channel, to, subject, text, lodgeChannels);
         stats[r.status]++;
         await db.messageLog.create({
-          data: { lodgeId: String(lodgeId), memberId: m.id, channel, title: subject, content: text, status: r.status },
+          data: { lodgeId: String(lodgeId), memberId: m.id, channel, title: subject, content: text, status: r.status, error: r.detail ?? null },
         });
       }
     }
