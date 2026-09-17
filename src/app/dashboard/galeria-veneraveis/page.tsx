@@ -32,7 +32,7 @@ export default async function GaleriaVeneraveisPage() {
   const canManage = ['admin', 'secretary', 'venerable'].includes(normalizeRole(role));
 
   const data = await withTenant(String(lodgeId), async (db) => {
-    const [lodge, memberOffices, manualEntries] = await Promise.all([
+    const [lodge, memberOffices, manualEntries, members] = await Promise.all([
       db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
       db.memberOffice.findMany({
         where: { lodgeId: String(lodgeId), office: { name: { contains: 'venerável', mode: 'insensitive' } } },
@@ -42,9 +42,14 @@ export default async function GaleriaVeneraveisPage() {
         },
         orderBy: { term: { startDate: 'asc' } },
       }),
-      db.venerableGalleryEntry.findMany({ where: { lodgeId: String(lodgeId) }, orderBy: { sortDate: 'asc' } }),
+      db.venerableGalleryEntry.findMany({
+        where: { lodgeId: String(lodgeId) },
+        include: { member: { select: { id: true, name: true, photoUrl: true } } },
+        orderBy: { sortDate: 'asc' },
+      }),
+      db.member.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
     ]);
-    return { lodge, memberOffices, manualEntries };
+    return { lodge, memberOffices, manualEntries, members };
   });
 
   const automatic = data.memberOffices.map((mo) => ({
@@ -57,14 +62,20 @@ export default async function GaleriaVeneraveisPage() {
     termTitle: mo.term.title,
   }));
 
+  // Quando vinculada a um membro, a foto e o nome exibidos são sempre os do
+  // cadastro atual — nunca uma foto própria da entrada (mesma fonte única já
+  // usada pelas entradas automáticas), mesmo que a entrada tenha uma foto
+  // enviada de antes de ser vinculada.
   const manual = data.manualEntries.map((e) => ({
     id: e.id,
     kind: 'manual' as const,
-    name: e.name,
-    photoUrl: e.photoUrl,
+    name: e.member?.name ?? e.name,
+    photoUrl: e.member?.photoUrl ?? e.photoUrl,
     periodLabel: e.periodLabel,
     sortDate: e.sortDate.toISOString(),
     notes: e.notes,
+    memberId: e.memberId,
+    rawName: e.name,
   }));
 
   return (
@@ -73,6 +84,7 @@ export default async function GaleriaVeneraveisPage() {
       crestUrl={data.lodge?.crestUrl ?? null}
       automatic={automatic}
       manual={manual}
+      members={data.members}
       canManage={canManage}
     />
   );

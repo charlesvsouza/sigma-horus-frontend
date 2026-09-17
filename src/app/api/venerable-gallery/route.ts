@@ -19,6 +19,7 @@ export async function GET() {
   const items = await withTenant(String(lodgeId), (db) =>
     db.venerableGalleryEntry.findMany({
       where: { lodgeId: String(lodgeId) },
+      include: { member: { select: { id: true, name: true, photoUrl: true } } },
       orderBy: { sortDate: 'asc' },
     }),
   );
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
   const periodLabel = String(body?.periodLabel ?? '').trim();
   const sortDateRaw = String(body?.sortDate ?? '');
   const notes = body?.notes ? String(body.notes).trim() : null;
+  const memberId = body?.memberId ? String(body.memberId) : null;
   if (!name || !periodLabel || !sortDateRaw) {
     return NextResponse.json({ error: 'Nome, período e data de referência são obrigatórios.' }, { status: 400 });
   }
@@ -46,12 +48,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Data de referência inválida.' }, { status: 400 });
   }
 
-  const item = await withTenant(String(lodgeId), async (db) => {
+  const result = await withTenant(String(lodgeId), async (db) => {
+    if (memberId) {
+      const member = await db.member.findFirst({ where: { id: memberId, lodgeId: String(lodgeId) }, select: { id: true } });
+      if (!member) return { error: 'member_not_found' as const };
+    }
     const created = await db.venerableGalleryEntry.create({
-      data: { lodgeId: String(lodgeId), name, periodLabel, sortDate, notes },
+      data: { lodgeId: String(lodgeId), name, periodLabel, sortDate, notes, memberId },
     });
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'venerableGalleryEntry', entityId: created.id, metadata: { name, periodLabel } });
-    return created;
+    return { item: created };
   });
-  return NextResponse.json({ item });
+  if ('error' in result) return NextResponse.json({ error: 'Membro não encontrado.' }, { status: 400 });
+  return NextResponse.json({ item: result.item });
 }

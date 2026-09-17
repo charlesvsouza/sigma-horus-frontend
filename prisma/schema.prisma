@@ -199,6 +199,7 @@ model Member {
   user               User?
   hospitalityRequests HospitalityRequest[]
   materialLoans      MaterialLoan[]
+  venerableGalleryEntries VenerableGalleryEntry[]
 }
 
 // Família e dependentes do membro (mãe, pai, esposa, filhos, outros dependentes).
@@ -747,17 +748,24 @@ model VenerableGalleryEntry {
   id              String   @id @default(cuid())
   lodgeId         String
   name            String
-  photoUrl        String?
+  photoUrl        String?  // usada só quando memberId é nulo (sem cadastro pra herdar foto)
   photoStorageKey String?
   periodLabel     String   // texto livre: "1985–1987", "1998 a 2000" etc.
   sortDate        DateTime // só para ordenar a linha do tempo (ex.: 1º jan do ano de início)
   notes           String?
+  // Vincula a um Member já cadastrado (ex.: veneralato antigo sem Term/cargo
+  // registrado no sistema, mas a pessoa já é membro) — quando preenchido, a
+  // galeria exibe sempre a foto atual do cadastro do membro, nunca uma foto
+  // própria da entrada (mesma fonte única usada pelas entradas automáticas).
+  memberId        String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  lodge Lodge @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  lodge  Lodge   @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
 
   @@index([lodgeId])
+  @@index([memberId])
 }
 
 model CashClose {

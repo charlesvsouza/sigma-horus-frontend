@@ -23,6 +23,7 @@ export async function PUT(request: Request, { params }: Ctx) {
   const periodLabel = String(body?.periodLabel ?? '').trim();
   const sortDateRaw = String(body?.sortDate ?? '');
   const notes = body?.notes ? String(body.notes).trim() : null;
+  const memberId = body?.memberId ? String(body.memberId) : null;
   if (!name || !periodLabel || !sortDateRaw) {
     return NextResponse.json({ error: 'Nome, período e data de referência são obrigatórios.' }, { status: 400 });
   }
@@ -31,15 +32,21 @@ export async function PUT(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: 'Data de referência inválida.' }, { status: 400 });
   }
 
-  const item = await withTenant(String(lodgeId), async (db) => {
+  const result = await withTenant(String(lodgeId), async (db) => {
     const existing = await db.venerableGalleryEntry.findFirst({ where: { id, lodgeId: String(lodgeId) } });
-    if (!existing) return null;
-    const updated = await db.venerableGalleryEntry.update({ where: { id }, data: { name, periodLabel, sortDate, notes } });
+    if (!existing) return { error: 'not_found' as const };
+    if (memberId) {
+      const member = await db.member.findFirst({ where: { id: memberId, lodgeId: String(lodgeId) }, select: { id: true } });
+      if (!member) return { error: 'member_not_found' as const };
+    }
+    const updated = await db.venerableGalleryEntry.update({ where: { id }, data: { name, periodLabel, sortDate, notes, memberId } });
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'venerableGalleryEntry', entityId: id, metadata: { name, periodLabel } });
-    return updated;
+    return { item: updated };
   });
-  if (!item) return NextResponse.json({ error: 'Entrada não encontrada.' }, { status: 404 });
-  return NextResponse.json({ item });
+  if ('error' in result) {
+    return NextResponse.json({ error: result.error === 'not_found' ? 'Entrada não encontrada.' : 'Membro não encontrado.' }, { status: result.error === 'not_found' ? 404 : 400 });
+  }
+  return NextResponse.json({ item: result.item });
 }
 
 export async function DELETE(_request: Request, { params }: Ctx) {

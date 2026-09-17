@@ -246,7 +246,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.20</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.21</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -308,7 +308,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.20 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.21 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1185,8 +1185,15 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li><strong>Entradas automáticas:</strong> qualquer irmão vinculado ao cargo de <UI>Venerável Mestre</UI> em algum período (em <UI>Veneralato</UI>) aparece aqui sozinho, com a foto cadastrada em Membros (se houver) e o período do veneralato.</li>
-                  <li><strong>Entradas manuais:</strong> pra Veneráveis antigos que a loja não tem cadastrados como membro (atas antigas, placas na parede), o Secretário, o Venerável ou o Administrador clicam em <UI>+ Adicionar Venerável antigo</UI> — nome, período em texto livre (ex.: &quot;1985–1987&quot;) e uma foto opcional (enviada depois de criar a entrada).</li>
-                  <li>Entradas automáticas não são editáveis aqui — pra corrigir, ajuste o cargo em <UI>Veneralato</UI>. Entradas manuais têm <UI>Trocar foto</UI> e <UI>Remover</UI>.</li>
+                  <li><strong>Entradas manuais:</strong> pra veneralatos antigos sem período/cargo registrado em <UI>Veneralato</UI> (atas antigas, placas na parede, ou simplesmente um período de gestão que nunca foi digitado no sistema), o Secretário, o Venerável ou o Administrador clicam em <UI>+ Adicionar Venerável antigo</UI> — nome, período em texto livre (ex.: &quot;1985–1987&quot;) e observações.</li>
+                  <li>
+                    <strong>Vincular a um membro cadastrado:</strong> se o Venerável do período já tem cadastro em Membros
+                    (é um caso comum: a pessoa é membro, só falta o registro daquele período específico em Veneralato),
+                    escolha o nome dela no seletor do formulário — a foto e o nome exibidos passam a vir sempre do
+                    cadastro, exatamente como nas entradas automáticas. Sem vincular a ninguém, a entrada usa a foto
+                    enviada manualmente (<UI>Enviar foto</UI>/<UI>Trocar foto</UI>).
+                  </li>
+                  <li>Entradas automáticas não são editáveis aqui — pra corrigir, ajuste o cargo em <UI>Veneralato</UI>. Entradas manuais têm <UI>Editar</UI> (nome, período, vínculo com membro) e <UI>Remover</UI>.</li>
                   <li><UI>Salvar como PDF</UI> imprime o mural com o timbre da loja.</li>
                 </Bullets>
               </Sub>
