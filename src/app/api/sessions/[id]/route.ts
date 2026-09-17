@@ -38,6 +38,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const data: Record<string, unknown> = {};
   if (body?.title !== undefined) data.title = String(body.title).trim();
   if (body?.date !== undefined) data.date = new Date(body.date);
+  if (body?.endDate !== undefined) data.endDate = body.endDate ? new Date(body.endDate) : null;
   if (body?.type !== undefined) data.type = String(body.type);
   if (body?.grade !== undefined) data.grade = body.grade ? String(body.grade) : null;
   if (body?.notes !== undefined) data.notes = body.notes ? String(body.notes) : null;

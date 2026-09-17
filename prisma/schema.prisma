@@ -616,11 +616,18 @@ model Session {
   lodgeId   String
   title     String
   date      DateTime
+  endDate   DateTime? // término da sessão — presença só pode ser marcada depois deste horário (sessões antigas sem este campo não são bloqueadas)
   type      String   @default("ordinary")
   grade     String?
   notes     String?  // anotações internas do Secretário, não visível ao obreiro
   agenda    String?  // ordem do dia — visível ao obreiro antes da sessão (Secretaria)
-  minutes   String?  // balaustre/ata — visível ao obreiro depois de preenchido
+  minutes   String?  // DEPRECADO: balaustre digitado direto; substituído pelo upload de arquivo abaixo
+  // Balaustre/ata como arquivo importado (PDF/Word) — bucket privado de Documentos,
+  // baixado por URL assinada de curta duração (nunca público). Visível a todos os
+  // membros ao revisitar a sessão.
+  minutesStorageKey String?
+  minutesFileName   String?
+  minutesMimeType   String?
   convocationSentAt   DateTime? // quando o chamado foi enviado por e-mail a todos
   convocationSentById String?
   createdAt DateTime @default(now())

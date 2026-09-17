@@ -19,7 +19,7 @@ export async function GET() {
   const items = await withTenant(String(lodgeId), (db) =>
     db.session.findMany({
       where: { lodgeId: String(lodgeId) },
-      select: { id: true, title: true, date: true, type: true, grade: true, agenda: true, minutes: true, convocationSentAt: true },
+      select: { id: true, title: true, date: true, endDate: true, type: true, grade: true, agenda: true, minutes: true, minutesFileName: true, convocationSentAt: true },
       orderBy: { date: 'asc' },
     }),
   );

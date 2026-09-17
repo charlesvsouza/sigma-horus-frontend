@@ -11,6 +11,7 @@ interface SessionItem {
   grade: string | null;
   agenda: string | null;
   minutes: string | null;
+  minutesFileName: string | null;
   convocationSentAt: string | null;
 }
 
@@ -152,7 +153,13 @@ export default function SecretariaPage() {
               </div>
               <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gold">Balaustre / Ata</p>
-                <p className="mt-2 whitespace-pre-wrap text-sm text-sand">{selected.minutes || 'Ainda não publicado.'}</p>
+                {selected.minutesFileName ? (
+                  <a href={`/api/sessions/${selected.id}/minutes/download`} className="mt-2 inline-block text-sm text-gold hover:text-gold-light">
+                    Baixar {selected.minutesFileName}
+                  </a>
+                ) : (
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-sand">{selected.minutes || 'Ainda não publicado.'}</p>
+                )}
               </div>
             </div>
           </section>

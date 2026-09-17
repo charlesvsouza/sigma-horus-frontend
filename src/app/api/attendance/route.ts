@@ -20,22 +20,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'sessionId e memberId são obrigatórios.' }, { status: 400 });
   }
 
-  const item = await withTenant(String(lodgeId), async (db) => {
+  const result = await withTenant(String(lodgeId), async (db) => {
+    const meeting = await db.session.findFirst({ where: { id: sessionId, lodgeId: String(lodgeId) }, select: { endDate: true } });
+    if (!meeting) return { error: 'not_found' as const };
+    // Sessões sem endDate (cadastradas antes deste campo existir) não são
+    // bloqueadas — o gate só vale pra sessões que já têm término definido.
+    if (meeting.endDate && new Date() < meeting.endDate) {
+      return { error: 'too_early' as const };
+    }
+
     const existing = await db.attendance.findUnique({
       where: { sessionId_memberId: { sessionId, memberId } },
     });
 
-    if (existing) {
-      return db.attendance.update({
-        where: { id: existing.id },
-        data: { status, notes },
-      });
-    }
-
-    return db.attendance.create({
-      data: { lodgeId: String(lodgeId), sessionId, memberId, status, notes },
-    });
+    const item = existing
+      ? await db.attendance.update({ where: { id: existing.id }, data: { status, notes } })
+      : await db.attendance.create({ data: { lodgeId: String(lodgeId), sessionId, memberId, status, notes } });
+    return { item };
   });
 
-  return NextResponse.json({ item });
+  if ('error' in result) {
+    if (result.error === 'not_found') return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
+    return NextResponse.json({ error: 'A presença só pode ser marcada depois do término da sessão.' }, { status: 400 });
+  }
+
+  return NextResponse.json({ item: result.item });
 }

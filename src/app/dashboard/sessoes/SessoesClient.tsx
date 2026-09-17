@@ -11,7 +11,7 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
   const router = useRouter();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ title: '', date: '', type: 'ordinary', grade: '', notes: '', agenda: '' });
+  const [form, setForm] = useState({ title: '', date: '', endDate: '', type: 'ordinary', grade: '', notes: '', agenda: '' });
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -20,12 +20,12 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, grade: form.grade || undefined, notes: form.notes || undefined, agenda: form.agenda || undefined }),
+        body: JSON.stringify({ ...form, grade: form.grade || undefined, notes: form.notes || undefined, agenda: form.agenda || undefined, endDate: form.endDate || undefined }),
       });
       const data = await res.json();
       if (res.ok) {
         setMessage({ kind: 'ok', text: 'Sessão criada.' });
-        setForm({ title: '', date: '', type: 'ordinary', grade: '', notes: '', agenda: '' });
+        setForm({ title: '', date: '', endDate: '', type: 'ordinary', grade: '', notes: '', agenda: '' });
         router.refresh();
       } else {
         setMessage({ kind: 'error', text: data.error ?? 'Erro.' });
@@ -58,7 +58,14 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Título da sessão" required />
-              <input type="datetime-local" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={INPUT} required />
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Início</span>
+                <input type="datetime-local" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={`mt-1.5 ${INPUT}`} required />
+              </label>
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Término (a presença só pode ser marcada depois)</span>
+                <input type="datetime-local" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={`mt-1.5 ${INPUT}`} required />
+              </label>
               <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={INPUT}>
                 <option value="ordinary">Ordinária</option>
                 <option value="magnificent">Magnífica</option>

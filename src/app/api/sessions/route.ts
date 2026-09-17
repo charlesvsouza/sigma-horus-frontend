@@ -31,16 +31,20 @@ export async function POST(request: Request) {
   const body = await request.json();
   const title = String(body?.title ?? '').trim();
   const date = body?.date ? new Date(body.date) : new Date();
+  const endDate = body?.endDate ? new Date(body.endDate) : null;
   const type = String(body?.type ?? 'ordinary');
   const grade = body?.grade ? String(body.grade) : null;
   const notes = body?.notes ? String(body.notes) : null;
   const agenda = body?.agenda ? String(body.agenda) : null;
 
   if (!title) return NextResponse.json({ error: 'Título é obrigatório.' }, { status: 400 });
+  if (endDate && endDate <= date) {
+    return NextResponse.json({ error: 'O término precisa ser depois do início da sessão.' }, { status: 400 });
+  }
 
   const item = await withTenant(String(lodgeId), async (db) => {
     const created = await db.session.create({
-      data: { lodgeId: String(lodgeId), title, date, type, grade, notes, agenda },
+      data: { lodgeId: String(lodgeId), title, date, endDate, type, grade, notes, agenda },
     });
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'session', entityId: created.id, metadata: { title, type } });
     return created;
