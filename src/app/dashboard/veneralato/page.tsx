@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Button, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, CollapsibleCard, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
 
 interface TermItem { id: string; title: string; startDate: string; endDate?: string | null; status: string; _count: { memberOffices: number }; }
 interface MemberOfficeItem { id: string; office: { id: string; name: string }; member: { id: string; name: string }; }
+interface MemberHistoryItem {
+  id: string;
+  member: { id: string; name: string };
+  office: { id: string; name: string };
+  term: { id: string; title: string; startDate: string; endDate?: string | null };
+}
 interface CashCloseItem {
   id: string;
   closedAt: string;
@@ -73,6 +79,34 @@ export default function VeneralatoPage() {
     const data = await res.json();
     setTermDetail(data.item);
   }
+
+  const [history, setHistory] = useState<MemberHistoryItem[] | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Busca sob demanda (só no primeiro clique) — junta MemberOffice de TODOS
+  // os veneralatos, ao contrário de loadTermDetail (só o termo selecionado).
+  async function loadHistory() {
+    if (history !== null || loadingHistory) return;
+    setLoadingHistory(true);
+    try {
+      const res = await fetch('/api/terms/member-history');
+      const data = await res.json();
+      setHistory(data.items ?? []);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
+
+  const historyByMember = useMemo(() => {
+    if (!history) return [];
+    const groups = new Map<string, { memberId: string; memberName: string; items: MemberHistoryItem[] }>();
+    for (const h of history) {
+      const g = groups.get(h.member.id) ?? { memberId: h.member.id, memberName: h.member.name, items: [] };
+      g.items.push(h);
+      groups.set(h.member.id, g);
+    }
+    return [...groups.values()].sort((a, b) => a.memberName.localeCompare(b.memberName));
+  }, [history]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -196,6 +230,35 @@ export default function VeneralatoPage() {
             </div>
           </section>
         </div>
+
+        <CollapsibleCard title="Histórico de cargos" count={historyByMember.length} defaultOpen={false}>
+          {history === null ? (
+            <button onClick={() => void loadHistory()} disabled={loadingHistory} className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-50">
+              {loadingHistory ? 'Carregando…' : 'Ver histórico de cargos'}
+            </button>
+          ) : historyByMember.length === 0 ? (
+            <p className="text-sm text-sand-dark">Nenhum cargo vinculado em nenhuma gestão ainda.</p>
+          ) : (
+            <div className="space-y-4">
+              {historyByMember.map((group) => (
+                <div key={group.memberId} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3">
+                  <p className="text-sm font-medium text-sand-light">{group.memberName}</p>
+                  <ul className="mt-2 space-y-1">
+                    {group.items
+                      .slice()
+                      .sort((a, b) => new Date(b.term.startDate).getTime() - new Date(a.term.startDate).getTime())
+                      .map((item) => (
+                        <li key={item.id} className="text-xs text-sand-dark">
+                          <span className="text-sand">{item.office.name}</span> — {item.term.title} ({new Date(item.term.startDate).toLocaleDateString('pt-BR')}
+                          {item.term.endDate ? ` a ${new Date(item.term.endDate).toLocaleDateString('pt-BR')}` : ' — em aberto'})
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </CollapsibleCard>
 
         {selectedTerm && termDetail && (
             <section className="rounded-xl border border-white/6 bg-sigma-card p-6">

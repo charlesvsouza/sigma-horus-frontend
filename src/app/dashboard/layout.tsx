@@ -7,7 +7,8 @@ import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus, isArt002Enabled } from '@/
 import DashboardShell from './DashboardShell';
 
 interface NavEntry { href: string; label: string; roles: string[]; }
-interface NavGroupDef { category: string; items: NavEntry[]; }
+interface NavSubgroupDef { label: string; items: NavEntry[]; }
+interface NavGroupDef { category: string; items?: NavEntry[]; subgroups?: NavSubgroupDef[]; }
 
 const NAV: NavGroupDef[] = [
   {
@@ -22,6 +23,7 @@ const NAV: NavGroupDef[] = [
     category: 'Loja & cadastros',
     items: [
       { href: '/dashboard/membros', label: 'Membros', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
+      { href: '/dashboard/membros/quadro-social', label: 'Quadro social', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/cadastros', label: 'Cadastros mestre', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: ['admin', 'secretary'] },
       { href: '/dashboard/cargos', label: 'Cargos', roles: ['admin', 'venerable', 'secretary'] },
@@ -30,21 +32,37 @@ const NAV: NavGroupDef[] = [
   },
   {
     category: 'Financeiro',
-    items: [
-      { href: '/dashboard/cadastros-financeiros', label: 'Cadastros financeiros', roles: ['admin', 'venerable', 'treasurer'] },
-      { href: '/dashboard/contas', label: 'Contas', roles: ['admin', 'venerable', 'treasurer'] },
-      { href: '/dashboard/cobrancas', label: 'Cobranças', roles: ['admin', 'treasurer'] },
-      { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
-      { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
-      { href: '/dashboard/extratos', label: 'Extratos de contas', roles: ['admin', 'venerable', 'treasurer'] },
-      { href: '/dashboard/conciliacao-bancaria', label: 'Conciliação bancária', roles: ['admin', 'treasurer'] },
-      { href: '/dashboard/patrimonio', label: 'Patrimônio', roles: ['admin', 'venerable', 'treasurer'] },
-      { href: '/dashboard/relatorios', label: 'Relatórios', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-      { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-      { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-      { href: '/dashboard/relatorios/balancetes', label: 'Balancetes periódicos', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-      { href: '/dashboard/relatorios/fluxo-caixa', label: 'Fluxo de caixa projetado', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-      { href: '/dashboard/relatorios/orcamento', label: 'Orçamento anual', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+    subgroups: [
+      {
+        label: 'Entradas e Saídas',
+        items: [
+          { href: '/dashboard/contas', label: 'Contas', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/cobrancas', label: 'Cobranças', roles: ['admin', 'treasurer'] },
+          { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
+          { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/extratos', label: 'Extratos de contas', roles: ['admin', 'venerable', 'treasurer'] },
+        ],
+      },
+      {
+        label: 'Cadastros e Conferência',
+        items: [
+          { href: '/dashboard/cadastros-financeiros', label: 'Cadastros financeiros', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/conciliacao-bancaria', label: 'Conciliação bancária', roles: ['admin', 'treasurer'] },
+          { href: '/dashboard/patrimonio', label: 'Patrimônio', roles: ['admin', 'venerable', 'treasurer'] },
+        ],
+      },
+      {
+        label: 'Relatórios',
+        items: [
+          { href: '/dashboard/relatorios', label: 'Resumo financeiro', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/dre', label: 'DRE comparativo', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/balancetes', label: 'Balancetes periódicos', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/fluxo-caixa', label: 'Fluxo de caixa projetado', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/orcamento', label: 'Orçamento anual', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+        ],
+      },
     ],
   },
   {
@@ -139,8 +157,14 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     d ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d) : '';
 
   const groups = NAV
-    .map((g) => ({ category: g.category, items: g.items.filter((i) => i.roles.includes(role)).map(({ href, label }) => ({ href, label })) }))
-    .filter((g) => g.items.length > 0);
+    .map((g) => ({
+      category: g.category,
+      items: (g.items ?? []).filter((i) => i.roles.includes(role)).map(({ href, label }) => ({ href, label })),
+      subgroups: (g.subgroups ?? [])
+        .map((sg) => ({ label: sg.label, items: sg.items.filter((i) => i.roles.includes(role)).map(({ href, label }) => ({ href, label })) }))
+        .filter((sg) => sg.items.length > 0),
+    }))
+    .filter((g) => g.items.length > 0 || g.subgroups.length > 0);
 
   return (
     <>

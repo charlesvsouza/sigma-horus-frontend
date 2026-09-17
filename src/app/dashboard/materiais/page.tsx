@@ -10,6 +10,7 @@ export default async function MateriaisPage() {
 
   const data = lodgeId
     ? await withTenant(String(lodgeId), async (db) => ({
+        lodge: await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
         materials: await db.material.findMany({
           where: { lodgeId: String(lodgeId) },
           include: {
@@ -33,7 +34,7 @@ export default async function MateriaisPage() {
         }),
         rites: await db.rite.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, name: true }, orderBy: { order: 'asc' } }),
       }))
-    : { materials: [], loans: [], members: [], rites: [] };
+    : { lodge: null, materials: [], loans: [], members: [], rites: [] };
 
   const materials = data.materials.map((m) => {
     const issued = m.loans.reduce((sum, l) => sum + l.quantity, 0);
@@ -69,5 +70,14 @@ export default async function MateriaisPage() {
     installationDate: m.installationDate ? m.installationDate.toISOString() : null,
   }));
 
-  return <MaterialsClient materials={materials} loans={loans} members={members} rites={data.rites} />;
+  return (
+    <MaterialsClient
+      lodgeName={data.lodge?.name ?? 'Loja'}
+      crestUrl={data.lodge?.crestUrl ?? null}
+      materials={materials}
+      loans={loans}
+      members={members}
+      rites={data.rites}
+    />
+  );
 }

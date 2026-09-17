@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, CollapsibleCard, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 import { MATERIAL_CATEGORIES } from '@/lib/masonic-reference';
@@ -39,7 +39,21 @@ interface LoanItem {
 const DEGREE_OPTIONS: SymbolicSituation[] = ['Aprendiz', 'Companheiro', 'Mestre', 'Mestre Instalado'];
 const INPUT_CLASS = inputClass;
 
-export default function MaterialsClient({ materials, loans, members, rites }: { materials: MaterialItem[]; loans: LoanItem[]; members: MemberOption[]; rites: RiteOption[] }) {
+const POSSE_PRINT_CSS = `
+@media print {
+  @page { size: A4; margin: 16mm 14mm; }
+  body * { visibility: hidden !important; }
+  .posse-print, .posse-print * { visibility: visible !important; }
+  .posse-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9.5pt; }
+  .posse-noprint { display: none !important; }
+  .posse-print h1, .posse-print h2, .posse-print h3 { color: #111 !important; }
+  .posse-print table { width: 100%; border-collapse: collapse; }
+  .posse-print th, .posse-print td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: left; }
+  .posse-print th { text-transform: uppercase; font-size: 8pt; border-bottom: 1.5px solid #333; }
+}
+`;
+
+export default function MaterialsClient({ lodgeName, crestUrl, materials, loans, members, rites }: { lodgeName: string; crestUrl: string | null; materials: MaterialItem[]; loans: LoanItem[]; members: MemberOption[]; rites: RiteOption[] }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -194,8 +208,19 @@ export default function MaterialsClient({ materials, loans, members, rites }: { 
   const filtered = q ? materials.filter((m) => m.name.toLowerCase().includes(q) || m.category?.toLowerCase().includes(q)) : materials;
   const availableForLoan = materials.filter((m) => m.active && m.availableQuantity > 0);
 
+  const loansByMember = useMemo(() => {
+    const groups = new Map<string, { memberId: string; memberName: string; items: LoanItem[] }>();
+    for (const loan of loans) {
+      const g = groups.get(loan.member.id) ?? { memberId: loan.member.id, memberName: loan.member.name, items: [] };
+      g.items.push(loan);
+      groups.set(loan.member.id, g);
+    }
+    return [...groups.values()].sort((a, b) => a.memberName.localeCompare(b.memberName));
+  }, [loans]);
+
   return (
     <main className="min-h-screen px-6 py-12">
+      <style dangerouslySetInnerHTML={{ __html: POSSE_PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -312,6 +337,52 @@ export default function MaterialsClient({ materials, loans, members, rites }: { 
                   <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'returned')} className="text-xs text-emerald-300/80 transition hover:text-emerald-300 disabled:opacity-40">Marcar como devolvido</button>
                   <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'lost')} className="text-xs text-rose-300/60 transition hover:text-rose-300 disabled:opacity-40">Marcar como extraviado</button>
                 </div>
+              </div>
+            ))}
+          </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard title="Materiais em posse por obreiro" count={loansByMember.length} defaultOpen={false}>
+          <div className="posse-noprint mb-4">
+            <button onClick={() => window.print()} disabled={loansByMember.length === 0} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark disabled:opacity-40">
+              Salvar como PDF
+            </button>
+          </div>
+
+          <div className="posse-print space-y-6">
+            <header className="mb-2 hidden text-center print:block">
+              {crestUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
+              ) : null}
+              <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
+              <h2 className="mt-0.5 text-sm text-sand-dark">Materiais em posse por obreiro</h2>
+              <p className="mt-0.5 text-xs text-sand-dark">Emitido em {new Date().toLocaleDateString('pt-BR')}</p>
+            </header>
+
+            {loansByMember.length === 0 ? (
+              <p className="text-sm text-sand-dark">Nenhum material em posse de obreiros no momento.</p>
+            ) : loansByMember.map((group) => (
+              <div key={group.memberId}>
+                <h3 className="text-sm font-semibold text-sand-light">{group.memberName}</h3>
+                <table className="mt-2 w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wide text-sand-dark/70">
+                      <th className="border-b border-white/10 px-2 py-1.5">Material</th>
+                      <th className="border-b border-white/10 px-2 py-1.5 text-right">Qtd.</th>
+                      <th className="border-b border-white/10 px-2 py-1.5">Desde</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.items.map((loan) => (
+                      <tr key={loan.id}>
+                        <td className="border-b border-white/5 px-2 py-1.5 text-sand">{loan.material.name}</td>
+                        <td className="border-b border-white/5 px-2 py-1.5 text-right tabular-nums text-sand">{loan.quantity}</td>
+                        <td className="border-b border-white/5 px-2 py-1.5 text-sand-dark">{new Date(loan.issuedAt).toLocaleDateString('pt-BR')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ))}
           </div>

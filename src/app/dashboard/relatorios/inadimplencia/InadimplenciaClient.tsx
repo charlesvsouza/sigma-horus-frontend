@@ -64,10 +64,28 @@ function RenegotiateForm({ memberId, onDone }: { memberId: string; onDone: () =>
   );
 }
 
+type AgingBucket = '1-30' | '31-60' | '61-90' | '90+';
+const AGING_LABEL: Record<AgingBucket, string> = { '1-30': '1 a 30 dias', '31-60': '31 a 60 dias', '61-90': '61 a 90 dias', '90+': 'Mais de 90 dias' };
+
+function agingBucketOf(daysOverdue: number): AgingBucket {
+  if (daysOverdue <= 30) return '1-30';
+  if (daysOverdue <= 60) return '31-60';
+  if (daysOverdue <= 90) return '61-90';
+  return '90+';
+}
+
 export default function InadimplenciaClient({ rows, canRenegotiate }: { rows: Row[]; canRenegotiate: boolean }) {
   const router = useRouter();
   const art002Count = rows.filter((r) => r.art002).length;
   const [renegotiatingId, setRenegotiatingId] = useState<string | null>(null);
+  const [agingFilter, setAgingFilter] = useState<AgingBucket | 'all'>('all');
+
+  const buckets: AgingBucket[] = ['1-30', '31-60', '61-90', '90+'];
+  const aging = buckets.map((bucket) => {
+    const bucketRows = rows.filter((r) => agingBucketOf(r.daysOverdue) === bucket);
+    return { bucket, count: bucketRows.length, total: bucketRows.reduce((s, r) => s + r.totalAmount, 0) };
+  });
+  const visibleRows = agingFilter === 'all' ? rows : rows.filter((r) => agingBucketOf(r.daysOverdue) === agingFilter);
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -96,11 +114,38 @@ export default function InadimplenciaClient({ rows, canRenegotiate }: { rows: Ro
         </section>
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Membros em aberto</h2>
+          <h2 className="text-base font-semibold text-sand-light">Faixas de atraso (aging)</h2>
+          <p className="mt-1 text-xs text-sand-dark">Clique numa faixa pra filtrar a lista abaixo por tempo de atraso — ajuda a priorizar a cobrança.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {aging.map((a) => (
+              <button
+                key={a.bucket}
+                onClick={() => setAgingFilter((cur) => (cur === a.bucket ? 'all' : a.bucket))}
+                className={`rounded-lg border p-4 text-left transition-colors ${agingFilter === a.bucket ? 'border-gold/50 bg-gold/10' : 'border-white/5 bg-sigma-blue-deep/50 hover:border-white/12'}`}
+              >
+                <p className="text-xs text-sand-dark">{AGING_LABEL[a.bucket]}</p>
+                <p className="mt-2 text-lg font-semibold text-sand-light">{a.count} membro{a.count !== 1 ? 's' : ''}</p>
+                <p className="mt-0.5 text-xs tabular-nums text-sand-dark">{brl(a.total)}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-sand-light">Membros em aberto</h2>
+            {agingFilter !== 'all' ? (
+              <button onClick={() => setAgingFilter('all')} className="text-xs text-gold/80 hover:text-gold">
+                Filtrando: {AGING_LABEL[agingFilter]} — limpar filtro
+              </button>
+            ) : null}
+          </div>
           <div className="mt-5 space-y-3">
             {rows.length === 0 ? (
               <EmptyState title="Tudo em dia. Nenhum irmão em atraso." description="Todos os membros estão em dia com a mensalidade." />
-            ) : rows.map((row) => {
+            ) : visibleRows.length === 0 ? (
+              <p className="text-sm text-sand-dark">Nenhum membro nesta faixa de atraso.</p>
+            ) : visibleRows.map((row) => {
               const hasCharge = row.lateCharge.fee > 0 || row.lateCharge.interest > 0;
               return (
                 <div key={row.memberId} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4">

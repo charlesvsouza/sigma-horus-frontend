@@ -13,11 +13,20 @@ import {
   ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
   MessageSquare, Contact, HeartHandshake, Settings, KeyRound, Gem, Plug, ScrollText,
   PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart,
-  Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck, type LucideIcon,
+  Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
+  Scale, Users2, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
-interface NavGroup { category: string; items: NavItem[]; }
+interface NavSubgroup { label: string; items: NavItem[]; }
+interface NavGroup { category: string; items: NavItem[]; subgroups: NavSubgroup[]; }
+
+// Todos os itens de uma categoria, soltos + dentro de subgrupos — usado onde
+// a estrutura de 3 níveis não importa (breadcrumb, paleta de comandos,
+// categoria ativa).
+function allItems(g: NavGroup): NavItem[] {
+  return [...g.items, ...g.subgroups.flatMap((sg) => sg.items)];
+}
 
 // Um ícone (Lucide) por destino do menu. Mantido no cliente porque componentes
 // não atravessam a fronteira RSC; o servidor passa só href/label.
@@ -26,6 +35,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/portal': CircleUser,
   '/manual': BookOpen,
   '/dashboard/membros': Users,
+  '/dashboard/membros/quadro-social': Users2,
   '/dashboard/cadastros': Database,
   '/dashboard/cargos': Briefcase,
   '/dashboard/veneralato': Crown,
@@ -39,6 +49,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/patrimonio': Landmark,
   '/dashboard/conciliacao-bancaria': ArrowLeftRight,
   '/dashboard/relatorios': ChartColumn,
+  '/dashboard/relatorios/dre': Scale,
   '/dashboard/relatorios/fechamento': BookCheck,
   '/dashboard/relatorios/inadimplencia': TriangleAlert,
   '/dashboard/relatorios/balancetes': ClipboardCheck,
@@ -80,7 +91,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 // Rótulos de segmentos de rota para a trilha (breadcrumb) que não vêm do menu.
 const SEGMENT_LABELS: Record<string, string> = {
-  configuracoes: 'Configurações da loja', relatorios: 'Relatórios', hospitalaria: 'Hospitalaria',
+  configuracoes: 'Configurações da loja', relatorios: 'Resumo financeiro', hospitalaria: 'Hospitalaria',
   sessoes: 'Sessões', usuarios: 'Usuários & acessos', permissoes: 'Permissões',
   fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', portal: 'Meu portal', secretaria: 'Secretaria',
   inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos',
@@ -98,7 +109,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
 
   // Categoria da rota atual: abre por padrão no acordeão.
   const activeCategory = useMemo(() => {
-    for (const g of groups) for (const it of g.items) {
+    for (const g of groups) for (const it of allItems(g)) {
       if (pathname === it.href) return g.category;
       if (it.href !== '/dashboard' && pathname?.startsWith(`${it.href}/`)) return g.category;
     }
@@ -158,14 +169,19 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
   // das setas do navegador. Cada nível é clicável quando corresponde a uma página.
   const hrefLabel = useMemo(() => {
     const map: Record<string, string> = { '/dashboard': 'Painel' };
-    for (const g of groups) for (const it of g.items) map[it.href] = it.label;
+    for (const g of groups) for (const it of allItems(g)) map[it.href] = it.label;
     return map;
   }, [groups]);
 
-  // Comandos (telas) para a paleta Ctrl/Cmd+K.
+  // Comandos (telas) para a paleta Ctrl/Cmd+K. Item de subgrupo carrega o
+  // subgrupo no rótulo do grupo ("Financeiro › Entradas e Saídas") — ajuda a
+  // achar o item certo numa categoria com muitos itens.
   const commands = useMemo<Command[]>(() => {
     const list: Command[] = [{ label: 'Painel', href: '/dashboard', group: 'Geral' }];
-    for (const g of groups) for (const it of g.items) list.push({ label: it.label, href: it.href, group: g.category });
+    for (const g of groups) {
+      for (const it of g.items) list.push({ label: it.label, href: it.href, group: g.category });
+      for (const sg of g.subgroups) for (const it of sg.items) list.push({ label: it.label, href: it.href, group: `${g.category} › ${sg.label}` });
+    }
     return list;
   }, [groups]);
 
@@ -225,6 +241,29 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
             {groups.map((group) => {
               const isOpen = openCategory === group.category;
               const groupId = `nav-group-${group.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
+              function renderItem(item: NavItem) {
+                const active = pathname === item.href;
+                const Icon = NAV_ICONS[item.href] ?? Circle;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    title={rail ? item.label : undefined}
+                    aria-label={item.label}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${rail ? 'lg:justify-center lg:px-0' : ''} ${
+                      active
+                        ? 'bg-gold/10 font-medium text-gold'
+                        : 'text-sand/70 hover:bg-white/3 hover:text-sand'
+                    }`}
+                  >
+                    <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-gold' : 'text-sand-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                    <span className={rail ? 'lg:hidden' : ''}>{item.label}</span>
+                  </Link>
+                );
+              }
+
               return (
                 <div key={group.category}>
                   <button
@@ -241,28 +280,18 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                  <div id={groupId} className={`mt-2 space-y-0.5 ${isOpen ? '' : 'hidden'} ${rail ? 'lg:block! lg:mt-0' : ''}`}>
-                      {group.items.map((item) => {
-                        const active = pathname === item.href;
-                        const Icon = NAV_ICONS[item.href] ?? Circle;
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setOpen(false)}
-                            title={rail ? item.label : undefined}
-                            aria-label={item.label}
-                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${rail ? 'lg:justify-center lg:px-0' : ''} ${
-                              active
-                                ? 'bg-gold/10 font-medium text-gold'
-                                : 'text-sand/70 hover:bg-white/3 hover:text-sand'
-                            }`}
-                          >
-                            <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-gold' : 'text-sand-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                            <span className={rail ? 'lg:hidden' : ''}>{item.label}</span>
-                          </Link>
-                        );
-                      })}
+                  <div id={groupId} className={`mt-2 space-y-3 ${isOpen ? '' : 'hidden'} ${rail ? 'lg:block! lg:mt-0 lg:space-y-0.5' : ''}`}>
+                      {group.items.length > 0 ? (
+                        <div className="space-y-0.5">{group.items.map(renderItem)}</div>
+                      ) : null}
+                      {group.subgroups.map((sg) => (
+                        <div key={sg.label}>
+                          <p className={`px-3 pb-1 text-[0.6rem] font-medium uppercase tracking-[0.15em] text-sand-dark/45 ${rail ? 'lg:hidden' : ''}`}>
+                            {sg.label}
+                          </p>
+                          <div className="space-y-0.5">{sg.items.map(renderItem)}</div>
+                        </div>
+                      ))}
                   </div>
                 </div>
               );
