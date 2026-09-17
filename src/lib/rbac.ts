@@ -24,7 +24,9 @@ const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = 
   },
   venerable: {
     read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'materials'],
-    write: ['documents', 'messages', 'portal', 'campaigns'],
+    // O Venerável preside a loja e precisa editar cadastro de membro, cargos,
+    // veneralato e cadastros mestre (ritos/potências) — não só a Secretaria.
+    write: ['members', 'documents', 'messages', 'portal', 'campaigns'],
   },
   treasurer: {
     read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
