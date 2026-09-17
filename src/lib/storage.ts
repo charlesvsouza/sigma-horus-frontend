@@ -39,6 +39,21 @@ export function getR2StorageSettings() {
   };
 }
 
+/**
+ * Bucket R2 separado para ativos que precisam ser exibidos direto em <img src>
+ * (brasão da loja, futuramente fotos de membros) — nunca documentos/planilhas,
+ * que ficam no bucket privado acima (LGPD: só via presigned URL de curta duração).
+ */
+export function getR2PublicStorageSettings() {
+  return {
+    accessKeyId: process.env.R2_PUBLIC_ACCESS_KEY_ID ?? null,
+    secretAccessKey: process.env.R2_PUBLIC_SECRET_ACCESS_KEY ?? null,
+    bucket: process.env.R2_PUBLIC_BUCKET ?? '',
+    endpoint: process.env.R2_ENDPOINT ?? null,
+    publicUrl: process.env.NEXT_PUBLIC_PUBLIC_ASSETS_URL ?? null,
+  };
+}
+
 type R2Settings = ReturnType<typeof getR2StorageSettings>;
 
 /**
@@ -80,8 +95,7 @@ export async function getPresignedDownloadUrl(storageKey: string, expiresInSecon
  * Remove o objeto do bucket. Retorna false (sem lançar) quando o storage não
  * está configurado, para não travar a exclusão do registro no banco.
  */
-export async function deleteObject(storageKey: string) {
-  const settings = getR2StorageSettings();
+export async function deleteObject(storageKey: string, settings: R2Settings = getR2StorageSettings()) {
   const client = getR2Client(settings);
   if (!client || !settings.bucket || !storageKey) {
     return false;

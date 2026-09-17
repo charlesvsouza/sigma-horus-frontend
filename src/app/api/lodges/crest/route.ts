@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
-import { buildObjectKey, buildPublicUrl, deleteObject, getR2Client, getR2StorageSettings } from '@/lib/storage';
+import { buildObjectKey, buildPublicUrl, deleteObject, getR2Client, getR2PublicStorageSettings } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
 // Brasão da loja: identidade visual exibida em relatórios, recibos e demais
@@ -28,10 +28,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'O brasão precisa ser uma imagem (PNG, JPG ou SVG).' }, { status: 400 });
   }
 
-  const settings = getR2StorageSettings();
+  // Bucket público dedicado (nunca o de Documentos, que é privado por LGPD) —
+  // o brasão precisa ser carregável direto num <img src>, em relatórios/e-mails.
+  const settings = getR2PublicStorageSettings();
   const client = getR2Client(settings);
   if (!client || !settings.bucket) {
-    return NextResponse.json({ error: 'Configuração de storage incompleta.' }, { status: 500 });
+    return NextResponse.json({ error: 'Configuração de storage público incompleta.' }, { status: 500 });
   }
 
   const storageKey = buildObjectKey(file.name, 'lodge-crests');
@@ -58,7 +60,7 @@ export async function POST(request: Request) {
   });
 
   if (previous?.crestStorageKey) {
-    await deleteObject(previous.crestStorageKey).catch(() => {});
+    await deleteObject(previous.crestStorageKey, settings).catch(() => {});
   }
 
   return NextResponse.json({ ok: true, crestUrl: publicUrl });
@@ -81,7 +83,7 @@ export async function DELETE() {
   });
 
   if (previous?.crestStorageKey) {
-    await deleteObject(previous.crestStorageKey).catch(() => {});
+    await deleteObject(previous.crestStorageKey, getR2PublicStorageSettings()).catch(() => {});
   }
 
   return NextResponse.json({ ok: true });
