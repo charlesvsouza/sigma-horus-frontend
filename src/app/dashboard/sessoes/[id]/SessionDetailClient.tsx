@@ -94,7 +94,7 @@ export default function SessionDetailClient({
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold text-sand-light">Convocação (chamado)</h2>
@@ -120,7 +120,7 @@ export default function SessionDetailClient({
           <Button type="button" onClick={saveAgenda} disabled={savingAgenda} className="mt-4">{savingAgenda ? 'Salvando…' : 'Salvar ordem do dia e balaustre'}</Button>
         </section>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Registrar presença</h2>
           <p className="mt-1 text-sm text-sand-dark">Clique no membro para marcar presença/ausência.</p>
           <div className="mt-5 space-y-2">
@@ -135,7 +135,7 @@ export default function SessionDetailClient({
                       ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
                       : status === 'absent'
                       ? 'border-rose-500/30 bg-rose-500/10 text-rose-200'
-                      : 'border-white/[5%] bg-sigma-blue-deep/50 text-sand hover:border-white/[8%]'
+                      : 'border-white/5 bg-sigma-blue-deep/50 text-sand hover:border-white/8'
                   }`}
                 >
                   <span>{member.name}</span>

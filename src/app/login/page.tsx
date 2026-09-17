@@ -118,7 +118,7 @@ export default function LoginPage() {
         </div>
 
         <div className="w-full max-w-sm mx-auto lg:mx-0">
-          <div className="animate-slide-up rounded-2xl border border-white/[8%] bg-sigma-blue-dark/60 p-8 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-md backdrop-saturate-150">
+          <div className="animate-slide-up rounded-2xl border border-white/8 bg-sigma-blue-dark/60 p-8 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-md backdrop-saturate-150">
             <Image
               src="/icon.png"
               alt="Sigma Horus"

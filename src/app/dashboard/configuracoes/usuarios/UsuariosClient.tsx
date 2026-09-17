@@ -79,13 +79,13 @@ export default function UsuariosClient({ users, denied }: { users: AppUser[]; de
           <div className={`rounded-xl border px-4 py-3 text-sm ${message.kind === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/30 bg-rose-500/10 text-rose-200'}`}>{message.text}</div>
         ) : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-2">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-2">
           {denied ? (
             <p className="p-6 text-sm text-sand-dark">Apenas o Administrador da loja pode gerenciar usuários.</p>
           ) : users.length === 0 ? (
             <p className="p-6 text-sm text-sand-dark">Nenhum usuário ainda.</p>
           ) : (
-            <ul className="divide-y divide-white/[6%]">
+            <ul className="divide-y divide-white/6">
               {users.map((u) => (
                 <li key={u.id} className="flex flex-wrap items-center gap-4 p-4">
                   <div className="min-w-0 flex-1">

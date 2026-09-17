@@ -191,9 +191,9 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
         ) : null}
 
         <aside
-          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/[6%] bg-sigma-blue-dark/95 transition-[transform,width] duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${rail ? 'lg:w-16' : ''} ${open ? 'translate-x-0' : '-translate-x-full'}`}
+          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/6 bg-sigma-blue-dark/95 transition-[transform,width] duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${rail ? 'lg:w-16' : ''} ${open ? 'translate-x-0' : '-translate-x-full'}`}
         >
-          <div className={`flex items-center justify-between border-b border-white/[5%] py-5 ${rail ? 'lg:justify-center lg:px-0' : 'px-6'}`}>
+          <div className={`flex items-center justify-between border-b border-white/5 py-5 ${rail ? 'lg:justify-center lg:px-0' : 'px-6'}`}>
             <Link href="/dashboard" className={`flex items-center gap-3 ${rail ? 'lg:gap-0' : ''}`}>
               <Image
                 src="/icon.png"
@@ -253,7 +253,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${rail ? 'lg:justify-center lg:px-0' : ''} ${
                               active
                                 ? 'bg-gold/10 font-medium text-gold'
-                                : 'text-sand/70 hover:bg-white/[3%] hover:text-sand'
+                                : 'text-sand/70 hover:bg-white/3 hover:text-sand'
                             }`}
                           >
                             <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-gold' : 'text-sand-dark'}`} strokeWidth={1.75} aria-hidden="true" />
@@ -267,12 +267,12 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
             })}
           </nav>
 
-          <div className="hidden border-t border-white/[5%] p-3 lg:block">
+          <div className="hidden border-t border-white/5 p-3 lg:block">
             <button
               onClick={toggleRail}
               title={rail ? 'Expandir menu' : 'Recolher menu'}
               aria-label={rail ? 'Expandir menu' : 'Recolher menu'}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sand-dark transition-colors hover:bg-white/[3%] hover:text-sand ${rail ? 'justify-center px-0' : ''}`}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sand-dark transition-colors hover:bg-white/3 hover:text-sand ${rail ? 'justify-center px-0' : ''}`}
             >
               {rail
                 ? <PanelLeft className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden="true" />
@@ -283,11 +283,11 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
         </aside>
 
         <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-0">
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-white/[6%] bg-sigma-blue-deep/85 px-5 py-3.5 backdrop-blur-sm lg:px-8">
+          <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-white/6 bg-sigma-blue-deep/85 px-5 py-3.5 backdrop-blur-sm lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 onClick={() => setOpen(true)}
-                className="flex items-center justify-center rounded-lg border border-white/[8%] px-2.5 py-1.5 text-sand/70 transition hover:border-white/[12%] hover:text-sand lg:hidden"
+                className="flex items-center justify-center rounded-lg border border-white/8 px-2.5 py-1.5 text-sand/70 transition hover:border-white/12 hover:text-sand lg:hidden"
                 aria-label="Abrir menu"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -303,7 +303,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
             <div className="flex items-center gap-3">
               <button
                 onClick={() => window.dispatchEvent(new Event('sigma:open-cmdk'))}
-                className="hidden items-center gap-2 rounded-full border border-white/[8%] px-3 py-1.5 text-xs text-sand-dark transition hover:border-gold/40 hover:text-sand sm:flex"
+                className="hidden items-center gap-2 rounded-full border border-white/8 px-3 py-1.5 text-xs text-sand-dark transition hover:border-gold/40 hover:text-sand sm:flex"
                 aria-label="Buscar (Ctrl ou Cmd + K)"
                 title="Buscar telas e ações"
               >
@@ -322,7 +322,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="rounded-full border border-white/[8%] px-3.5 py-1.5 text-xs text-sand/60 transition hover:border-rose-500/30 hover:text-rose-300"
+                className="rounded-full border border-white/8 px-3.5 py-1.5 text-xs text-sand/60 transition hover:border-rose-500/30 hover:text-rose-300"
               >
                 Sair
               </button>
@@ -330,7 +330,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
           </header>
 
           {crumbs.length > 1 ? (
-            <nav aria-label="Trilha de navegação" className="border-b border-white/[6%] bg-sigma-blue-deep/60 px-5 py-2.5 lg:px-8">
+            <nav aria-label="Trilha de navegação" className="border-b border-white/6 bg-sigma-blue-deep/60 px-5 py-2.5 lg:px-8">
               <ol className="flex flex-wrap items-center gap-1.5 text-xs">
                 {crumbs.map((c, i) => (
                   <li key={c.href} className="flex items-center gap-1.5">

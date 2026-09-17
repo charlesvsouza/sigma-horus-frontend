@@ -54,13 +54,13 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
+          className="w-full rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
           placeholder="Filtrar por entidade, ação..."
         />
 
-        <div className="overflow-x-auto rounded-xl border border-white/[6%]">
+        <div className="overflow-x-auto rounded-xl border border-white/6">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/[6%] bg-sigma-card">
+            <thead className="border-b border-white/6 bg-sigma-card">
               <tr>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Data</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Quem</th>
@@ -71,7 +71,7 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
             </thead>
             <tbody>
               {filtered.map((e) => (
-                <tr key={e.id} className="border-b border-white/[5%] transition-colors hover:bg-white/[3%]">
+                <tr key={e.id} className="border-b border-white/5 transition-colors hover:bg-white/3">
                   <td className="whitespace-nowrap px-4 py-3 text-sand-dark">{new Date(e.createdAt).toLocaleString('pt-BR')}</td>
                   <td className="px-4 py-3 text-sand-dark">
                     {e.userName ?? '—'}

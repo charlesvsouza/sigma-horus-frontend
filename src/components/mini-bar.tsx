@@ -13,7 +13,7 @@ export function MiniBar({ value, total, color = 'var(--sigma-gold)', label }: Mi
   return (
     <div className="flex items-center gap-3">
       {label ? <span className="w-20 text-xs text-sand-dark shrink-0">{label}</span> : null}
-      <div className="flex-1 h-2 rounded-full bg-white/[5%] overflow-hidden">
+      <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"
           style={{ width: `${pct}%`, backgroundColor: color }}

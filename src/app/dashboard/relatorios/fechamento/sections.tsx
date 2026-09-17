@@ -10,11 +10,11 @@ export const money = brl;
 export const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 
 export const TH = 'border-b border-white/10 px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-sand-dark';
-export const TD = 'border-b border-white/[5%] px-2 py-1.5 text-sand';
+export const TD = 'border-b border-white/5 px-2 py-1.5 text-sand';
 
 export function Section({ title, children, breakBefore }: { title: string; children: React.ReactNode; breakBefore?: boolean }) {
   return (
-    <section className={`report-section rcard rounded-xl border border-white/[6%] bg-sigma-card p-6 ${breakBefore ? 'pagebreak' : ''}`}>
+    <section className={`report-section rcard rounded-xl border border-white/6 bg-sigma-card p-6 ${breakBefore ? 'pagebreak' : ''}`}>
       <h2 className="text-lg font-semibold text-sand-light">{title}</h2>
       <div className="mt-4 text-sm text-sand">{children}</div>
     </section>

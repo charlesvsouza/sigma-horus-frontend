@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     return (
       <main className="flex min-h-[70vh] items-center justify-center px-6 py-16">
         <div className="text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/[6%] bg-sigma-card">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/6 bg-sigma-card">
             <svg className="h-7 w-7 text-sand-dark/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
@@ -88,7 +88,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         {/* Âncora: posição financeira da loja */}
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6 lg:p-7">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6 lg:p-7">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-sand-dark">Posição financeira</p>
             <Link href="/dashboard/relatorios" className="text-xs font-medium text-gold transition hover:text-gold-light">Relatórios</Link>
@@ -102,7 +102,7 @@ export default async function DashboardPage() {
             <MiniBar value={receivableTotal} total={receivableTotal + payableTotal} color="var(--color-emerald-500)" label="A receber" />
             <MiniBar value={payableTotal} total={receivableTotal + payableTotal} color="var(--color-rose-500)" label="A pagar" />
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[6%] bg-white/[6%]">
+          <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/6 bg-white/6">
             <div className="bg-sigma-blue-deep/60 p-4">
               <p className="text-xs text-sand-dark">A receber</p>
               <p className="mt-1 text-lg font-semibold tabular-nums text-emerald-300">{brl(receivableTotal)}</p>
@@ -119,12 +119,12 @@ export default async function DashboardPage() {
 
         {/* Rail: o que exige ação + atalhos */}
         <div className="space-y-5">
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Precisa de atenção</h2>
             {nothingPending ? (
               <p className="mt-4 text-sm text-sand-dark">Tudo em dia. Nenhuma pendência no momento.</p>
             ) : (
-              <ul className="mt-4 divide-y divide-white/[5%]">
+              <ul className="mt-4 divide-y divide-white/5">
                 {attention.map((a) => (
                   <li key={a.label}>
                     <Link href={a.href} className="group flex items-center justify-between py-2.5 transition-colors">
@@ -137,7 +137,7 @@ export default async function DashboardPage() {
             )}
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Ações rápidas</h2>
             <div className="mt-4 space-y-2">
               {[
@@ -148,7 +148,7 @@ export default async function DashboardPage() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="group flex items-center justify-between rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4 transition-all duration-150 hover:border-white/[10%] hover:bg-sigma-blue-deep/70"
+                  className="group flex items-center justify-between rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4 transition-all duration-150 hover:border-white/10 hover:bg-sigma-blue-deep/70"
                 >
                   <div>
                     <p className="text-sm font-medium text-sand/80 transition-colors group-hover:text-sand-light">{item.label}</p>

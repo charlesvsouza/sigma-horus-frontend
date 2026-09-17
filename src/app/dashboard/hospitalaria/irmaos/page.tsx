@@ -40,15 +40,15 @@ export default function IrmaosConsultaPage() {
           <p className="mt-1 text-sm text-sand-dark">Contatos dos obreiros e seus familiares para o acompanhamento da Hospitalaria. Somente leitura.</p>
         </div>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Obreiros</h2>
             <input value={query} onChange={(e) => setQuery(e.target.value)} className={`${inputClass} w-auto min-w-[16rem]`} placeholder="Buscar por nome, telefone ou e-mail…" />
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-lg border border-white/[6%]">
+          <div className="mt-4 overflow-hidden rounded-lg border border-white/6">
             {loading ? (
-              <div className="divide-y divide-white/[5%]">
+              <div className="divide-y divide-white/5">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-4 px-4 py-3.5"><Skeleton variant="text" className="w-1/3" /><Skeleton variant="text" className="ml-auto w-28" /></div>
                 ))}
@@ -59,7 +59,7 @@ export default function IrmaosConsultaPage() {
               filtered.map((m) => {
                 const open = openId === m.id;
                 return (
-                  <div key={m.id} className="border-b border-white/[5%] last:border-b-0">
+                  <div key={m.id} className="border-b border-white/5 last:border-b-0">
                     <button onClick={() => setOpenId(open ? null : m.id)} className="grid w-full grid-cols-1 gap-1 px-4 py-3 text-left transition-colors hover:bg-sigma-blue-deep/40 md:grid-cols-[1.6fr_0.8fr_1fr_1.2fr] md:items-center md:gap-3">
                       <span className="flex items-center gap-2 text-sm font-medium text-sand-light"><span className={`text-gold transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>{m.name}</span>
                       <span className="text-xs text-sand-dark md:text-sm">{degreeShort(m)}</span>
@@ -67,7 +67,7 @@ export default function IrmaosConsultaPage() {
                       <span className="truncate text-xs text-sand-dark md:text-sm">{m.email || '—'}</span>
                     </button>
                     {open ? (
-                      <div className="border-t border-white/[5%] bg-sigma-blue-deep/30 px-4 py-4 text-sm">
+                      <div className="border-t border-white/5 bg-sigma-blue-deep/30 px-4 py-4 text-sm">
                         <div className="grid gap-2 md:grid-cols-3">
                           <p className="text-sand-dark"><span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Situação:</span> <span className="text-sand">{STATUS[m.status] ?? m.status}</span></p>
                           <p className="text-sand-dark"><span className="text-[11px] uppercase tracking-wide text-sand-dark/70">CIM:</span> <span className="text-sand">{m.masonicNumber || '—'}</span></p>

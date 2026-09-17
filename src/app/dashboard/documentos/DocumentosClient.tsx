@@ -99,7 +99,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
                 <option value="">Vincular a um membro (deixe em branco para documento institucional — visível a todos)</option>
                 {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
               </select>
-              <label className="rounded-lg border border-dashed border-white/[8%] bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand md:col-span-2">
+              <label className="rounded-lg border border-dashed border-white/8 bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand md:col-span-2">
                 <span className="mb-2 block font-medium text-sand-light">Arquivo</span>
                 <input type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} className="w-full" />
               </label>
@@ -114,7 +114,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
             {items.length === 0 ? (
               <EmptyState title="Nenhum documento. O arquivo aguarda." description="Envie atas, comprovantes e certificados; ficam guardados com segurança e acesso por papel." />
             ) : items.map((item) => (
-              <div key={item.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
+              <div key={item.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="flex items-center gap-2 text-sm font-medium text-sand-light">

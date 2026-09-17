@@ -103,14 +103,14 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Saldo atual por conta</h2>
           {financialAccounts.length === 0 ? (
             <p className="mt-3 text-sm text-sand-dark">Nenhuma conta bancária/caixa cadastrada ainda — cadastre em Cadastros financeiros.</p>
           ) : (
             <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {financialAccounts.map((f) => (
-                <li key={f.id} className={`rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-3 ${!f.active ? 'opacity-50' : ''}`}>
+                <li key={f.id} className={`rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3 ${!f.active ? 'opacity-50' : ''}`}>
                   <p className="text-sm font-medium text-sand-light">{f.name}{f.isInvestment ? ' (Investimento)' : ''}</p>
                   <p className="mt-1 text-lg tabular-nums text-gold">{money(f.saldo)}</p>
                 </li>
@@ -140,13 +140,13 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
             </form>
           </FormCard>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Histórico</h2>
             <div className="mt-4 space-y-3">
               {transfers.length === 0 ? (
                 <EmptyState title="O saldo repousa onde está." description="As transferências solicitadas pelo Tesoureiro aparecem aqui, aguardando aprovação do Venerável Mestre." />
               ) : transfers.map((t) => (
-                <div key={t.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-3">
+                <div key={t.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-medium text-sand-light">{t.from.name} → {t.to.name}</p>
                     <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-medium ${STATUS_CLASS[t.status] ?? ''}`}>{STATUS_LABEL[t.status] ?? t.status}</span>

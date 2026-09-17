@@ -78,7 +78,7 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
             {sessions.length === 0 ? (
               <EmptyState title="O templo aguarda a primeira convocação." description="Cadastre as sessões da loja para registrar presença e acompanhar a frequência dos obreiros." />
             ) : sessions.map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
+              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{s.title}</p>
                   <p className="mt-1 text-xs text-sand-dark">{typeLabel[s.type] ?? s.type} • {s._count.attendances} presentes</p>

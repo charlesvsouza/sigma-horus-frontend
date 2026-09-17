@@ -173,7 +173,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
               <input type="date" value={bulk.dueDate} onChange={(event) => setBulk({ ...bulk, dueDate: event.target.value })} className={INPUT} required />
               <textarea value={bulk.description} onChange={(event) => setBulk({ ...bulk, description: event.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Descrição (ex.: Mensalidade de julho/2026)" rows={2} />
             </div>
-            <label className="flex items-center gap-3 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5">
+            <label className="flex items-center gap-3 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5">
               <input type="checkbox" checked={bulk.isRecurring} onChange={(event) => setBulk({ ...bulk, isRecurring: event.target.checked })} className="accent-gold" />
               <span className="text-sm text-sand">Criar como cobrança recorrente para cada membro</span>
             </label>
@@ -209,7 +209,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
               <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT} required />
               <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={INPUT} placeholder="Descrição" rows={3} />
             </div>
-            <label className="flex items-center gap-3 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5">
+            <label className="flex items-center gap-3 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5">
               <input type="checkbox" checked={form.isRecurring} onChange={(event) => setForm({ ...form, isRecurring: event.target.checked })} className="accent-gold" />
               <span className="text-sm text-sand">Criar como cobrança recorrente</span>
             </label>
@@ -228,7 +228,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
         </FormCard>
         </div>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Cobranças cadastradas</h2>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por número, membro ou status…" className={`${INPUT} max-w-xs`} />
@@ -239,7 +239,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
             ) : filteredInvoices.length === 0 ? (
               <p className="text-sm text-sand-dark">Nenhuma cobrança encontrada para &quot;{search}&quot;.</p>
             ) : filteredInvoices.map((invoice) => (
-              <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
+              <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{invoice.number}</p>
                   <p className="mt-1 text-xs text-sand-dark">{invoice.account?.title ?? 'Conta sem título'} • {invoice.member?.name ?? 'Sem membro'}</p>

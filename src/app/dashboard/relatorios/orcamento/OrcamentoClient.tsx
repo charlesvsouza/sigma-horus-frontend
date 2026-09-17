@@ -42,14 +42,14 @@ function EditableCell({ value, onSave, disabled }: { value: number; onSave: (v: 
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => { setEditing(false); const n = Number(draft); if (!Number.isNaN(n) && n !== value) onSave(n); }}
       onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditing(false); }}
-      className={`${inputClass} w-28 !py-1 text-right`}
+      className={`${inputClass} w-28 py-1! text-right`}
     />
   );
 }
 
 function Group({ title, rows, canEdit, onSave }: { title: string; rows: Row[]; canEdit: boolean; onSave: (chartAccountId: string, plannedAmount: number) => void }) {
   return (
-    <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+    <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
       <h2 className="text-base font-semibold text-sand-light">{title}</h2>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
@@ -68,14 +68,14 @@ function Group({ title, rows, canEdit, onSave }: { title: string; rows: Row[]; c
               const over = title === 'Despesas' ? r.realized > r.planned && r.planned > 0 : false;
               return (
                 <tr key={r.chartAccountId}>
-                  <td className="border-b border-white/[5%] px-2 py-2 text-sand-light">{r.code} — {r.name}</td>
-                  <td className="border-b border-white/[5%] px-2 py-2 text-right">
+                  <td className="border-b border-white/5 px-2 py-2 text-sand-light">{r.code} — {r.name}</td>
+                  <td className="border-b border-white/5 px-2 py-2 text-right">
                     <EditableCell value={r.planned} disabled={!canEdit} onSave={(v) => onSave(r.chartAccountId, v)} />
                   </td>
-                  <td className="border-b border-white/[5%] px-2 py-2 text-right tabular-nums text-sand">{brl(r.realized)}</td>
-                  <td className={`border-b border-white/[5%] px-2 py-2 text-right tabular-nums ${over ? 'text-rose-300' : 'text-sand-dark'}`}>{brl(r.variance)}</td>
-                  <td className="border-b border-white/[5%] px-2 py-2">
-                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/[6%]">
+                  <td className="border-b border-white/5 px-2 py-2 text-right tabular-nums text-sand">{brl(r.realized)}</td>
+                  <td className={`border-b border-white/5 px-2 py-2 text-right tabular-nums ${over ? 'text-rose-300' : 'text-sand-dark'}`}>{brl(r.variance)}</td>
+                  <td className="border-b border-white/5 px-2 py-2">
+                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/6">
                       <div className={`h-full rounded-full ${over ? 'bg-rose-400/70' : 'bg-gold/70'}`} style={{ width: `${Math.min(100, pct)}%` }} />
                     </div>
                   </td>

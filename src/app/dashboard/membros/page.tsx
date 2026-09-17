@@ -339,13 +339,13 @@ export default function MembrosPage() {
         ) : null}
 
         {creating ? (
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Novo membro</h2>
             <MemberForm initial={emptyForm} initialRelatives={[]} rites={rites} powers={powers} saving={saving} submitLabel="Salvar membro" onSubmit={createMember} onCancel={() => setCreating(false)} />
           </section>
         ) : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <h2 className="text-base font-semibold text-sand-light">Listagem</h2>
@@ -369,14 +369,14 @@ export default function MembrosPage() {
 
           <p className="mt-3 text-xs text-sand-dark">{loading ? 'Carregando…' : `${filtered.length} de ${members.length} membro(s)${statusFilter !== 'all' ? ` · situação: ${memberStatusLabel(statusFilter)}` : ''}`}</p>
 
-          <div className="mt-4 overflow-hidden rounded-lg border border-white/[6%]">
+          <div className="mt-4 overflow-hidden rounded-lg border border-white/6">
             {/* Cabeçalho */}
-            <div className="hidden grid-cols-[1.6fr_0.9fr_0.7fr_0.9fr_1fr_auto] gap-3 border-b border-white/[6%] bg-sigma-blue-deep/40 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-sand-dark md:grid">
+            <div className="hidden grid-cols-[1.6fr_0.9fr_0.7fr_0.9fr_1fr_auto] gap-3 border-b border-white/6 bg-sigma-blue-deep/40 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-sand-dark md:grid">
               <span>Nome</span><span>Grau</span><span>Status</span><span>Rito</span><span>Telefone</span><span className="text-right">Ações</span>
             </div>
 
             {loading ? (
-              <div className="divide-y divide-white/[5%]">
+              <div className="divide-y divide-white/5">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-4 px-4 py-3.5">
                     <Skeleton variant="text" className="w-1/3" />
@@ -399,7 +399,7 @@ export default function MembrosPage() {
                 const open = expandedId === m.id;
                 const detailId = `member-detail-${m.id}`;
                 return (
-                  <div key={m.id} className="border-b border-white/[5%] last:border-b-0">
+                  <div key={m.id} className="border-b border-white/5 last:border-b-0">
                     {/* Linha compacta */}
                     <button
                       onClick={() => { setExpandedId(open ? null : m.id); setEditingId(null); }}
@@ -420,7 +420,7 @@ export default function MembrosPage() {
 
                     {/* Painel expandido */}
                     {open ? (
-                      <div id={detailId} className="border-t border-white/[5%] bg-sigma-blue-deep/30 px-4 py-5">
+                      <div id={detailId} className="border-t border-white/5 bg-sigma-blue-deep/30 px-4 py-5">
                         {editingId === m.id ? (
                           <MemberForm initial={memberToForm(m)} initialRelatives={m.relatives ?? []} rites={rites} powers={powers} saving={saving} submitLabel="Salvar alterações" onSubmit={(form, rels) => updateMember(m.id, form, rels)} onCancel={() => setEditingId(null)} />
                         ) : (
@@ -532,16 +532,16 @@ const dateVal = (iso?: string | null) => (iso ? new Date(iso).toISOString().slic
 function Collapsible({ title, defaultOpen = false, badge, children }: { title: string; defaultOpen?: boolean; badge?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="overflow-hidden rounded-lg border border-white/[6%] bg-sigma-blue-deep/50">
-      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors hover:bg-white/[3%]">
+    <div className="overflow-hidden rounded-lg border border-white/6 bg-sigma-blue-deep/50">
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors hover:bg-white/3">
         <span className="flex items-center gap-2">
           <span className={`text-gold transition-transform duration-200 ${open ? 'rotate-90' : ''}`}>▸</span>
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">{title}</span>
-          {badge ? <span className="rounded-full bg-gold/[12%] px-2 py-0.5 text-[10px] font-medium text-gold">{badge}</span> : null}
+          {badge ? <span className="rounded-full bg-gold/12 px-2 py-0.5 text-[10px] font-medium text-gold">{badge}</span> : null}
         </span>
         <span className="text-[11px] text-sand-dark/60">{open ? 'recolher' : 'expandir'}</span>
       </button>
-      {open ? <div className="border-t border-white/[6%] px-5 pb-5 pt-4">{children}</div> : null}
+      {open ? <div className="border-t border-white/6 px-5 pb-5 pt-4">{children}</div> : null}
     </div>
   );
 }
@@ -694,7 +694,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
           ))}
         </div>
 
-        <div className="mt-5 border-t border-white/[6%] pt-4">
+        <div className="mt-5 border-t border-white/6 pt-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium uppercase tracking-wide text-sand-dark">Dependentes</p>
             <button type="button" onClick={addDependent} className="rounded-full border border-gold/40 px-3 py-1.5 text-xs font-medium text-gold/80 transition-all hover:border-gold/60 hover:text-gold">+ Adicionar dependente</button>
@@ -758,7 +758,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
               <input value={form[lodgeKey]} onChange={(e) => set(lodgeKey, e.target.value)} className={INPUT} placeholder={`Loja de ${label.toLowerCase()}`} />
             </div>
           ))}
-          <div className="mt-3 grid gap-4 border-t border-white/[6%] pt-4 md:grid-cols-2">
+          <div className="mt-3 grid gap-4 border-t border-white/6 pt-4 md:grid-cols-2">
             <label className="block">
               <span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Situação simbólica (automática)</span>
               <div className={`${INPUT} flex items-center text-sand`}>{formSituation ?? 'Defina os marcos acima'}</div>
@@ -777,7 +777,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, saving, submitLa
             <input value={form.masonicNumber} onChange={(e) => set('masonicNumber', e.target.value)} className={INPUT} placeholder="Número maçônico (CIM)" />
             <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Observações maçônicas e administrativas" rows={3} />
           </div>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[6%] bg-sigma-blue-deep/40 px-4 py-3">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/6 bg-sigma-blue-deep/40 px-4 py-3">
             <label className="flex items-center gap-2 text-sm text-sand">
               <input type="checkbox" checked={form.duesExempt === 'true'} onChange={(e) => set('duesExempt', String(e.target.checked))} />
               Isento de mensalidade (Maçom Remido)

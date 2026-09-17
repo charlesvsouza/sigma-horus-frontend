@@ -77,7 +77,7 @@ export default function HospitalariaPortalPage() {
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
         {showForm ? (
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Novo pedido</h2>
             <p className="mt-1 text-sm text-sand-dark">
               Envia uma mensagem direto para a Hospitalaria/Administração da loja — não é uma campanha formal ainda;
@@ -91,7 +91,7 @@ export default function HospitalariaPortalPage() {
           </section>
         ) : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Campanhas ativas</h2>
           {loading ? (
             <p className="mt-4 text-sm text-sand-dark">Carregando…</p>
@@ -100,7 +100,7 @@ export default function HospitalariaPortalPage() {
           ) : (
             <div className="mt-4 space-y-3">
               {campaigns.map((c) => (
-                <div key={c.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4 text-sm text-sand">
+                <div key={c.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4 text-sm text-sand">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-medium text-sand-light">{c.title}</p>
                     <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[11px] font-medium text-gold">{STATUS_LABEL[c.status] ?? c.status}</span>

@@ -183,7 +183,7 @@ export default function ConvitesPlataformaPage() {
   if (!token) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-sigma-blue-deep px-6">
-        <div className="w-full max-w-sm rounded-2xl border border-white/[8%] bg-sigma-blue-dark/80 p-8">
+        <div className="w-full max-w-sm rounded-2xl border border-white/8 bg-sigma-blue-dark/80 p-8">
           <p className="text-[0.6rem] uppercase tracking-[0.3em] text-gold/60">Sigma Horus — Plataforma</p>
           <h1 className="mt-3 text-xl font-semibold text-sand-light">Acesso restrito</h1>
           <p className="mt-2 text-sm text-sand-dark">
@@ -314,9 +314,9 @@ export default function ConvitesPlataformaPage() {
               description="Gere o primeiro convite no formulário acima."
             />
           ) : (
-            <div className="mt-4 overflow-x-auto rounded-xl border border-white/[6%]">
+            <div className="mt-4 overflow-x-auto rounded-xl border border-white/6">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-white/[6%] bg-sigma-card">
+                <thead className="border-b border-white/6 bg-sigma-card">
                   <tr>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Código</th>
                     <th className="hidden px-3 py-3 text-xs font-semibold uppercase text-sand-dark lg:table-cell">E-mail</th>
@@ -334,7 +334,7 @@ export default function ConvitesPlataformaPage() {
                     const badge = STATUS_BADGE[inv.status] ?? { variant: 'info' as BadgeVariant, label: inv.status };
                     const link = `${window.location.origin}/onboarding?invite=${inv.code}`;
                     return (
-                      <tr key={inv.id} className="border-b border-white/[5%] transition-colors hover:bg-white/[3%]">
+                      <tr key={inv.id} className="border-b border-white/5 transition-colors hover:bg-white/3">
                         <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-sand-light">{inv.code}</td>
                         <td className="hidden max-w-[11rem] truncate px-3 py-3 text-sand-dark lg:table-cell" title={inv.email ?? undefined}>
                           {inv.email ?? '—'}

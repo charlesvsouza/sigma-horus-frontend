@@ -97,47 +97,47 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
         <FiltrosRelatorios from={searchParams.from ?? ''} to={searchParams.to ?? ''} />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">A receber</p>
             <p className="mt-3 text-2xl font-semibold text-emerald-300">{brl(totalReceivables)}</p>
           </div>
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">A pagar</p>
             <p className="mt-3 text-2xl font-semibold text-rose-300">{brl(totalPayables)}</p>
           </div>
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Pagamentos registrados</p>
             <p className="mt-3 text-2xl font-semibold text-gold">{brl(totalPayments)}</p>
           </div>
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Fluxo líquido</p>
             <p className={`mt-3 text-2xl font-semibold ${netFlow >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{brl(netFlow)}</p>
           </div>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-sand-light">Resumo de abertura</h2>
               <Link href="/dashboard/contas" className="text-sm text-gold hover:text-gold-light">Ver contas</Link>
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+              <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                 <p className="text-sm text-sand-dark">Contas a receber abertas</p>
                 <p className="mt-2 text-2xl font-semibold text-emerald-300">{openReceivables.length}</p>
               </div>
-              <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+              <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                 <p className="text-sm text-sand-dark">Contas a pagar abertas</p>
                 <p className="mt-2 text-2xl font-semibold text-rose-300">{openPayables.length}</p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Próximos vencimentos</h2>
             <div className="mt-5 space-y-3">
               {upcoming.map((item) => (
-                <div key={item.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-3 text-sm text-sand">
+                <div key={item.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-3 text-sm text-sand">
                   <div className="flex items-center justify-between gap-3">
                     <span>{item.title}</span>
                     <span className={item.type === 'RECEIVABLE' ? 'text-emerald-300' : 'text-rose-300'}>{item.type === 'RECEIVABLE' ? 'Receber' : 'Pagar'}</span>
@@ -149,11 +149,11 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Últimos registros</h2>
           <div className="mt-5 space-y-3">
             {payments.slice(0, 6).map((payment) => (
-              <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
+              <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                 <span>Pagamento registrado</span>
                 <span>{brl(payment.amount)}</span>
                 <span>{new Date(payment.paidAt).toLocaleDateString('pt-BR')}</span>
@@ -161,7 +161,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
               </div>
             ))}
             {invoices.slice(0, 6).map((invoice) => (
-              <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
+              <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                 <span>Cobrança {invoice.number}</span>
                 <span>{brl(invoice.amount)}</span>
                 <span>{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span>

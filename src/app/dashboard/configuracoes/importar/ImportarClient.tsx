@@ -259,7 +259,7 @@ export default function ImportarClient({ denied }: { denied: boolean }) {
               </div>
 
               {analysis.ambiguousRows && analysis.ambiguousRows.length > 0 ? (
-                <div className="space-y-2 border-t border-white/[6%] pt-3">
+                <div className="space-y-2 border-t border-white/6 pt-3">
                   <p className="text-sm text-sand-light">
                     Estas linhas não têm CPF (ou o CPF não bateu com nenhum já cadastrado) — não dá para confirmar
                     automaticamente se já existem. Marque só as que você confirmou serem pessoas novas.
@@ -285,7 +285,7 @@ export default function ImportarClient({ denied }: { denied: boolean }) {
               ) : null}
 
               {analysis.duplicateRows && analysis.duplicateRows.length > 0 ? (
-                <div className="space-y-1 border-t border-white/[6%] pt-3">
+                <div className="space-y-1 border-t border-white/6 pt-3">
                   <p className="text-sm text-sand-light">Já cadastrados (por CPF) — não serão tocados:</p>
                   <ul className="max-h-40 space-y-1 overflow-y-auto text-xs text-sand-dark">
                     {analysis.duplicateRows.slice(0, 30).map((r) => (
@@ -303,9 +303,9 @@ export default function ImportarClient({ denied }: { denied: boolean }) {
           <Card className="space-y-3">
             <CardTitle>Mapeamento das colunas</CardTitle>
             <CardDescription>Para cada coluna do arquivo, escolha a que campo do SigmaHorus ela corresponde.</CardDescription>
-            <div className="overflow-x-auto rounded-xl border border-white/[6%]">
+            <div className="overflow-x-auto rounded-xl border border-white/6">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-white/[6%] bg-sigma-card">
+                <thead className="border-b border-white/6 bg-sigma-card">
                   <tr>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Coluna do arquivo</th>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Campo no SigmaHorus</th>
@@ -313,7 +313,7 @@ export default function ImportarClient({ denied }: { denied: boolean }) {
                 </thead>
                 <tbody>
                   {analysis.headers.map((header, idx) => (
-                    <tr key={idx} className="border-b border-white/[5%] transition-colors last:border-0 hover:bg-white/[3%]">
+                    <tr key={idx} className="border-b border-white/5 transition-colors last:border-0 hover:bg-white/3">
                       <td className="px-3 py-3 text-sand-light">{header || `Coluna ${idx + 1}`}</td>
                       <td className="px-3 py-3">
                         <select

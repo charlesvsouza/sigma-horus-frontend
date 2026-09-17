@@ -52,7 +52,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           onClick={() => close(false)}
         >
           <div
-            className="w-full max-w-md rounded-xl border border-white/[10%] bg-sigma-card-elevated p-6"
+            className="w-full max-w-md rounded-xl border border-white/10 bg-sigma-card-elevated p-6"
             onClick={(e) => e.stopPropagation()}
           >
             {opts.title ? <h2 className="text-base font-semibold text-sand-light">{opts.title}</h2> : null}
@@ -62,7 +62,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 type="button"
                 autoFocus
                 onClick={() => close(false)}
-                className="rounded-full border border-white/[10%] px-4 py-2 text-sm text-sand-dark transition-colors hover:text-sand"
+                className="rounded-full border border-white/10 px-4 py-2 text-sm text-sand-dark transition-colors hover:text-sand"
               >
                 {opts.cancelLabel ?? 'Cancelar'}
               </button>

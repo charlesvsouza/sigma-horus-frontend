@@ -184,11 +184,11 @@ export default function VeneralatoPage() {
             </form>
           </FormCard>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Períodos</h2>
             <div className="mt-5 space-y-3">
               {terms.map((t) => (
-                <button key={t.id} onClick={() => loadTermDetail(t.id)} className={`w-full rounded-lg border px-4 py-4 text-left transition-colors ${selectedTerm === t.id ? 'border-gold/40 bg-gold/10' : 'border-white/[5%] bg-sigma-blue-deep/50 hover:border-white/[8%]'}`}>
+                <button key={t.id} onClick={() => loadTermDetail(t.id)} className={`w-full rounded-lg border px-4 py-4 text-left transition-colors ${selectedTerm === t.id ? 'border-gold/40 bg-gold/10' : 'border-white/5 bg-sigma-blue-deep/50 hover:border-white/8'}`}>
                   <p className="text-sm font-medium text-sand-light">{t.title}</p>
                   <p className="mt-1 text-xs text-sand-dark">{new Date(t.startDate).toLocaleDateString('pt-BR')} - {t.endDate ? new Date(t.endDate).toLocaleDateString('pt-BR') : 'em aberto'} • {t._count.memberOffices} cargos</p>
                 </button>
@@ -198,7 +198,7 @@ export default function VeneralatoPage() {
         </div>
 
         {selectedTerm && termDetail && (
-            <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+            <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-base font-semibold text-sand-light">{termDetail.title}</h2>
                 <div className="flex items-center gap-2">
@@ -216,11 +216,11 @@ export default function VeneralatoPage() {
                 <div>
                   <h3 className="text-sm font-medium text-sand-dark">Vincular cargo</h3>
                   <div className="mt-2 grid grid-cols-3 gap-2">
-                    <select id="mo-member" aria-label="Membro" className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
+                    <select id="mo-member" aria-label="Membro" className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
                       <option value="">Membro</option>
                       {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
-                    <select id="mo-office" aria-label="Cargo" className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
+                    <select id="mo-office" aria-label="Cargo" className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
                       <option value="">Cargo</option>
                       {offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                     </select>
@@ -236,7 +236,7 @@ export default function VeneralatoPage() {
                   <h3 className="text-sm font-medium text-sand-dark">Cargos deste período</h3>
                   <div className="mt-2 space-y-2">
                     {termDetail.memberOffices?.map((mo) => (
-                      <div key={mo.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
+                      <div key={mo.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
                         <span className="text-gold">{mo.office.name}</span>
                         <span className="mx-2 text-sand-dark">—</span>
                         <span>{mo.member.name}</span>
@@ -256,7 +256,7 @@ export default function VeneralatoPage() {
                     return (
                       <div className="mt-2 space-y-3">
                         {/* Passo 1 — Tesoureiro fecha o caixa */}
-                        <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 px-4 py-3">
+                        <div className="rounded-lg border border-white/6 bg-sigma-blue-deep/50 px-4 py-3">
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-sm text-sand">1. Fechamento de caixa <span className="text-xs text-sand-dark">(Tesoureiro)</span></span>
                             {close ? <span className="text-xs text-emerald-300">✓ feito</span> : null}
@@ -279,7 +279,7 @@ export default function VeneralatoPage() {
                         </div>
 
                         {/* Passo 2 — Venerável aprova a prestação de contas */}
-                        <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 px-4 py-3">
+                        <div className="rounded-lg border border-white/6 bg-sigma-blue-deep/50 px-4 py-3">
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-sm text-sand">2. Prestação de contas <span className="text-xs text-sand-dark">(Venerável)</span></span>
                             {close?.approved ? <span className="text-xs text-emerald-300">✓ aprovada</span> : null}
@@ -291,7 +291,7 @@ export default function VeneralatoPage() {
                         </div>
 
                         {/* Passo 3 — Admin encerra o veneralato */}
-                        <div className="rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 px-4 py-3">
+                        <div className="rounded-lg border border-white/6 bg-sigma-blue-deep/50 px-4 py-3">
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-sm text-sand">3. Encerrar veneralato <span className="text-xs text-sand-dark">(Admin)</span></span>
                             {closed ? <span className="text-xs text-emerald-300">✓ encerrado</span> : null}

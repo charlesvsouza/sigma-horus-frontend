@@ -26,7 +26,7 @@ export function CollapsibleCard({ title, count, defaultOpen = false, headerActio
   }, [count]);
 
   return (
-    <section className={`rounded-xl border border-white/[6%] bg-sigma-card p-6 ${className}`}>
+    <section className={`rounded-xl border border-white/6 bg-sigma-card p-6 ${className}`}>
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"

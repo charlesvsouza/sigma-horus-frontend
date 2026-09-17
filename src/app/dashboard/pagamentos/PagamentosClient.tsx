@@ -127,7 +127,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
               </select>
               <textarea aria-label="Observação" value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observação" rows={3} />
             </div>
-            <label className="flex items-start gap-3 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-3">
+            <label className="flex items-start gap-3 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-3">
               <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 h-4 w-4 accent-gold" />
               <span className="text-sm text-sand">
                 Declaro estar ciente e de acordo com o registro deste e de eventuais lançamentos recorrentes,
@@ -139,7 +139,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
           </form>
         </FormCard>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Pagamentos recentes</h2>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por conta, membro ou forma…" className={`${INPUT} max-w-xs`} />
@@ -150,7 +150,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
             ) : filteredPayments.length === 0 ? (
               <p className="text-sm text-sand-dark">Nenhum pagamento encontrado para &quot;{search}&quot;.</p>
             ) : filteredPayments.map((payment) => (
-              <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
+              <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{payment.account?.title ?? 'Conta removida'}</p>
                   <p className="mt-1 text-xs text-sand-dark">{payment.member?.name ?? 'Sem vínculo'} • {payment.method}{payment.bankAccount ? ` • ${payment.bankAccount.name}` : ''}</p>

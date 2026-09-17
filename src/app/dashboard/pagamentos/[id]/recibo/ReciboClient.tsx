@@ -42,7 +42,7 @@ export default function ReciboClient({ payment }: { payment: Payment }) {
           <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2 text-sm font-medium text-sigma-blue-deep hover:bg-gold-light">Salvar como PDF</button>
         </div>
 
-        <div className="recibo-print rounded-xl border border-white/[6%] bg-sigma-card p-8 text-sm text-sand">
+        <div className="recibo-print rounded-xl border border-white/6 bg-sigma-card p-8 text-sm text-sand">
           <header className="border-b border-white/10 pb-4 text-center">
             {payment.lodge.crestUrl ? (
               // eslint-disable-next-line @next/next/no-img-element

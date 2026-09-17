@@ -38,14 +38,14 @@ export default function CargosClient({ offices }: { offices: Office[] }) {
           <p className="mt-1 text-sm text-sand-dark">Cadastre os cargos da loja (Venerável, Tesoureiro, Secretário...).</p>
         </div>
         {message ? <Alert intent="warn">{message}</Alert> : null}
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <form onSubmit={create} className="flex gap-3">
-            <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20" placeholder="Nome do cargo" required />
+            <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20" placeholder="Nome do cargo" required />
             <button type="submit" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Adicionar</button>
           </form>
           <div className="mt-6 space-y-2">
             {offices.map((o) => (
-              <div key={o.id} className="flex items-center justify-between rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-3 transition-colors hover:border-white/[8%]">
+              <div key={o.id} className="flex items-center justify-between rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3 transition-colors hover:border-white/8">
                 <span className="text-sm text-sand-light">{o.name}</span>
                 <button onClick={() => remove(o.id)} className="text-sm text-rose-300 hover:text-rose-200">Remover</button>
               </div>

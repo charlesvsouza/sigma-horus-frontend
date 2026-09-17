@@ -87,7 +87,7 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
           <p className="mt-1 text-sm text-sand-dark">Cada loja conecta a própria conta — as chaves são salvas aqui, sem precisar de reimplantação do sistema.</p>
         </div>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-base font-semibold text-sand-light">Asaas</h2>
@@ -98,7 +98,7 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
                 Conectado • {asaas.env} • {asaas.maskedKey}
               </span>
             ) : (
-              <span className="rounded-full border border-white/[10%] bg-white/[8%] px-2.5 py-0.5 text-xs font-medium text-sand-dark">Não conectado</span>
+              <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-0.5 text-xs font-medium text-sand-dark">Não conectado</span>
             )}
           </div>
 
@@ -148,7 +148,7 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
             </div>
           </form>
 
-          <div className="mt-6 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-3 text-xs text-sand-dark">
+          <div className="mt-6 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3 text-xs text-sand-dark">
             <p className="font-medium text-sand">Webhook de baixa automática</p>
             <p className="mt-1">No painel do Asaas, cadastre esta URL para receber as confirmações de pagamento:</p>
             <code className="mt-2 block break-all text-gold">{webhookFullUrl}</code>
@@ -167,7 +167,7 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
 
         <MessagingIntegration initial={messaging} />
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Stripe</h2>
           <p className="mt-2 text-sm text-sand-dark">Assinatura da plataforma (a loja paga o SaaS). Gerenciado pela plataforma.</p>
           <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/12 px-4 py-3 text-sm text-emerald-300">
@@ -204,11 +204,11 @@ function MessagingIntegration({ initial }: { initial: MsgStatus }) {
   }
 
   const badge = (on: boolean, label: string) => (
-    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${on ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300' : 'border-white/[10%] bg-white/[8%] text-sand-dark'}`}>{label}</span>
+    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${on ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300' : 'border-white/10 bg-white/8 text-sand-dark'}`}>{label}</span>
   );
 
   return (
-    <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+    <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold text-sand-light">Comunicação (WhatsApp / SMS)</h2>
@@ -222,7 +222,7 @@ function MessagingIntegration({ initial }: { initial: MsgStatus }) {
       )}
 
       {/* WhatsApp */}
-      <div className="mt-5 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4">
+      <div className="mt-5 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-sand-light">WhatsApp (Meta Cloud API)</p>
           {badge(Boolean(st?.whatsapp.configured), st?.whatsapp.configured ? 'Conectado' : 'Não conectado')}
@@ -241,7 +241,7 @@ function MessagingIntegration({ initial }: { initial: MsgStatus }) {
       </div>
 
       {/* SMS */}
-      <div className="mt-4 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4">
+      <div className="mt-4 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-sand-light">SMS (Twilio)</p>
           {badge(Boolean(st?.sms.configured), st?.sms.configured ? 'Conectado' : 'Não conectado')}

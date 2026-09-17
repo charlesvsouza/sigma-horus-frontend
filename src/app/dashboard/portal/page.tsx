@@ -307,7 +307,7 @@ export default function PortalPage() {
         ) : null}
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-sand-light">Resumo do obreiro</h2>
               {!loading && member && !editing ? (
@@ -325,13 +325,13 @@ export default function PortalPage() {
                 />
               ) : (
                 <div className="mt-5 space-y-4 text-sm text-sand">
-                  <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                  <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                     <p className="text-xs uppercase tracking-[0.25em] text-gold">Membro</p>
                     <p className="mt-2 text-lg font-semibold text-sand-light">{member.name}</p>
                     <p className="mt-1">{member.email ?? 'E-mail não informado'}</p>
                     <p>{member.phone ?? 'Telefone não informado'}</p>
                   </div>
-                  <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                  <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                     <p className="text-xs uppercase tracking-[0.25em] text-gold">Endereço</p>
                     <p className="mt-2">
                       {[member.addressLine, member.addressNumber].filter(Boolean).join(', ') || 'Não informado'}
@@ -341,11 +341,11 @@ export default function PortalPage() {
                     <p>{[member.zipCode, member.country].filter(Boolean).join(' · ')}</p>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                    <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                       <p className="text-xs uppercase tracking-[0.25em] text-gold">Grau atual</p>
                       <p className="mt-2 font-medium text-sand-light">{degreeShort(member)}</p>
                     </div>
-                    <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                    <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                       <p className="text-xs uppercase tracking-[0.25em] text-gold">Loja de origem</p>
                       <p className="mt-2 font-medium text-sand-light">{member.originLodge ?? 'Não informada'}</p>
                     </div>
@@ -357,21 +357,21 @@ export default function PortalPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Resumo financeiro</h2>
             {loading ? (
               <p className="mt-6 text-sm text-sand-dark">Carregando...</p>
             ) : (
               <div className="mt-5 space-y-3 text-sm text-sand">
-                <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                   <p className="text-xs uppercase tracking-[0.25em] text-gold">O que devo</p>
                   <p className="mt-2 text-xl font-semibold text-sand-light">{brl(summary.totalReceivables)}</p>
                 </div>
-                <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                   <p className="text-xs uppercase tracking-[0.25em] text-gold">A Loja me deve</p>
                   <p className="mt-2 text-xl font-semibold text-sand-light">{brl(summary.totalPayables)}</p>
                 </div>
-                <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+                <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                   <p className="text-xs uppercase tracking-[0.25em] text-gold">Pendências</p>
                   <p className="mt-2 text-xl font-semibold text-sand-light">{brl(summary.pending)}</p>
                 </div>
@@ -381,7 +381,7 @@ export default function PortalPage() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <button
               type="button"
               onClick={() => setExtratoOpen((v) => !v)}
@@ -401,12 +401,12 @@ export default function PortalPage() {
             {extratoOpen ? (
               <div id="extrato-content">
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
+                  <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)} className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
                     <option value="all">Tudo</option>
                     <option value="RECEIVABLE">Devo</option>
                     <option value="PAYABLE">A Loja me deve</option>
                   </select>
-                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
+                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
                     <option value="all">Qualquer status</option>
                     <option value="pending">Pendente</option>
                     <option value="paid">Pago</option>
@@ -428,7 +428,7 @@ export default function PortalPage() {
                     if (accounts.length === 0) return <p className="text-sm text-sand-dark">Nenhuma conta vinculada.</p>;
                     if (filteredAccounts.length === 0) return <p className="text-sm text-sand-dark">Nenhum lançamento para este filtro.</p>;
                     return filteredAccounts.map((account) => (
-                      <div key={account.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
+                      <div key={account.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <p className="font-medium text-sand-light">{account.title}</p>
@@ -450,11 +450,11 @@ export default function PortalPage() {
             ) : null}
           </div>
 
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Documentos recentes</h2>
             <div className="mt-5 space-y-3">
               {documents.length === 0 ? <p className="text-sm text-sand-dark">Nenhum documento registrado.</p> : documents.map((document) => (
-                <div key={document.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
+                <div key={document.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                   <p className="font-medium text-sand-light">{document.title}</p>
                   <p className="mt-1 text-sand-dark">{DOCUMENT_KIND_LABEL[document.kind] ?? document.kind} • {new Date(document.createdAt).toLocaleDateString('pt-BR')}</p>
                   <a href={`/api/documents/${document.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-gold hover:text-gold-light">Abrir arquivo</a>
@@ -463,12 +463,12 @@ export default function PortalPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Documentos da Loja</h2>
             <p className="mt-0.5 text-xs text-sand-dark">Regimento, regulamento, constituição e outros documentos institucionais.</p>
             <div className="mt-5 space-y-3">
               {institutionalDocuments.length === 0 ? <p className="text-sm text-sand-dark">Nenhum documento institucional publicado ainda.</p> : institutionalDocuments.map((document) => (
-                <div key={document.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
+                <div key={document.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                   <p className="font-medium text-sand-light">{document.title}</p>
                   <p className="mt-1 text-sand-dark">{document.category || (DOCUMENT_KIND_LABEL[document.kind] ?? document.kind)} • {new Date(document.createdAt).toLocaleDateString('pt-BR')}</p>
                   <a href={`/api/documents/${document.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-gold hover:text-gold-light">Abrir arquivo</a>

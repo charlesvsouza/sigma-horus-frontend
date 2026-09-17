@@ -87,7 +87,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
         </div>
 
         {/* Saldo do Tronco */}
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-sand-dark">Tronco de Solidariedade</p>
           {tronco?.configured ? (
             <>
@@ -100,7 +100,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
         </section>
 
         {/* Pedidos dos obreiros */}
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Pedidos dos obreiros</h2>
             {requests.some((r) => r.status === 'pending') ? (
@@ -115,7 +115,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
           ) : (
             <div className="mt-4 space-y-2">
               {requests.map((r) => (
-                <div key={r.id} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-3">
+                <div key={r.id} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3">
                   <div>
                     <p className="text-sm font-medium text-sand-light">
                       {r.title} <span className="ml-1 text-xs text-sand-dark">· {r.memberName}</span>
@@ -144,7 +144,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
         {message ? <Alert intent="warn">{message}</Alert> : null}
 
         {creating ? (
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Nova campanha</h2>
             <form onSubmit={createCampaign} className="mt-5 space-y-4">
               <div>
@@ -171,7 +171,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
           </section>
         ) : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Campanhas</h2>
           <div className="mt-4 space-y-3">
             {items.length === 0 ? (
@@ -182,7 +182,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
                 const pct = c.goalAmount ? Math.min(100, Math.round((raised / c.goalAmount) * 100)) : null;
                 const open = openId === c.id;
                 return (
-                  <div key={c.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50">
+                  <div key={c.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50">
                     <button onClick={() => openDetail(c.id)} className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3.5 text-left">
                       <div>
                         <p className="text-sm font-medium text-sand-light">{c.title} <span className="ml-1 text-xs text-sand-dark">· {STATUS_LABEL[c.status] ?? c.status}</span></p>
@@ -227,7 +227,7 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
     } else setConvResult(data.error ?? 'Erro ao convocar.');
   }
 
-  if (!campaign) return <div className="border-t border-white/[5%] px-4 py-4"><Skeleton variant="text" className="w-1/2" /></div>;
+  if (!campaign) return <div className="border-t border-white/5 px-4 py-4"><Skeleton variant="text" className="w-1/2" /></div>;
 
   async function addDonation(e: React.FormEvent) {
     e.preventDefault();
@@ -251,13 +251,13 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
   }
 
   return (
-    <div className="space-y-5 border-t border-white/[5%] bg-sigma-blue-deep/30 px-4 py-5 text-sm">
+    <div className="space-y-5 border-t border-white/5 bg-sigma-blue-deep/30 px-4 py-5 text-sm">
       {campaign.description ? <p className="text-sand">{campaign.description}</p> : null}
       {msg ? <p className="text-xs text-rose-300">{msg}</p> : null}
 
       <div className="grid gap-5 md:grid-cols-2">
         {/* Doação voluntária */}
-        <form onSubmit={addDonation} className="space-y-2 rounded-lg border border-white/[6%] p-4">
+        <form onSubmit={addDonation} className="space-y-2 rounded-lg border border-white/6 p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Registrar doação</p>
           <input type="number" step="0.01" value={donation.amount} onChange={(e) => setDonation({ ...donation, amount: e.target.value })} className={inputClass} placeholder="Valor *" required />
           <input value={donation.donorName} onChange={(e) => setDonation({ ...donation, donorName: e.target.value })} className={inputClass} placeholder="Nome do doador" disabled={donation.anonymous} />
@@ -266,7 +266,7 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
         </form>
 
         {/* Custeio pelo Tronco */}
-        <form onSubmit={fundFromTronco} className="space-y-2 rounded-lg border border-white/[6%] p-4">
+        <form onSubmit={fundFromTronco} className="space-y-2 rounded-lg border border-white/6 p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Custear pelo Tronco</p>
           <p className="text-xs text-sand-dark">Disponível: {tronco?.configured ? brl(tronco.balance) : '—'}. Já custeado: {brl(Number(campaign.fundAllocated))}.</p>
           <input type="number" step="0.01" value={fund} onChange={(e) => setFund(e.target.value)} className={inputClass} placeholder="Valor a custear" disabled={!tronco?.configured} />
@@ -278,7 +278,7 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
       {campaign.donations && campaign.donations.length > 0 ? (
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Doações ({campaign.donations.length})</p>
-          <ul className="mt-1 divide-y divide-white/[5%]">
+          <ul className="mt-1 divide-y divide-white/5">
             {campaign.donations.map((d) => (
               <li key={d.id} className="flex items-center justify-between py-1.5">
                 <span className="text-sand">{d.anonymous ? 'Doador anônimo' : d.donorName || 'Doador não identificado'}</span>
@@ -290,7 +290,7 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
       ) : null}
 
       {/* Convocação dos irmãos */}
-      <div className="rounded-lg border border-white/[6%] p-4">
+      <div className="rounded-lg border border-white/6 p-4">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Convocar os irmãos</p>
         <div className="mt-2 flex flex-wrap items-center gap-4">
           {(['email', 'whatsapp', 'sms'] as const).map((c) => (

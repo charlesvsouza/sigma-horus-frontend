@@ -151,7 +151,7 @@ export default function BackupsPlataformaPage() {
   if (!token) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-sigma-blue-deep px-6">
-        <div className="w-full max-w-sm rounded-2xl border border-white/[8%] bg-sigma-blue-dark/80 p-8">
+        <div className="w-full max-w-sm rounded-2xl border border-white/8 bg-sigma-blue-dark/80 p-8">
           <p className="text-[0.6rem] uppercase tracking-[0.3em] text-gold/60">Sigma Horus — Plataforma</p>
           <h1 className="mt-3 text-xl font-semibold text-sand-light">Acesso restrito</h1>
           <p className="mt-2 text-sm text-sand-dark">
@@ -217,9 +217,9 @@ export default function BackupsPlataformaPage() {
               description="Clique em “Rodar backup agora” ou aguarde o horário agendado (03:00 UTC)."
             />
           ) : (
-            <div className="mt-4 overflow-x-auto rounded-xl border border-white/[6%]">
+            <div className="mt-4 overflow-x-auto rounded-xl border border-white/6">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-white/[6%] bg-sigma-card">
+                <thead className="border-b border-white/6 bg-sigma-card">
                   <tr>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Data</th>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Status</th>
@@ -233,7 +233,7 @@ export default function BackupsPlataformaPage() {
                   {backups.map((b) => {
                     const badge = STATUS_BADGE[b.status] ?? { variant: 'info' as BadgeVariant, label: b.status };
                     return (
-                      <tr key={b.id} className="border-b border-white/[5%] transition-colors hover:bg-white/[3%]">
+                      <tr key={b.id} className="border-b border-white/5 transition-colors hover:bg-white/3">
                         <td className="whitespace-nowrap px-3 py-3 text-sand-light">{fmtDate(b.createdAt)}</td>
                         <td className="whitespace-nowrap px-3 py-3"><Badge variant={badge.variant}>{badge.label}</Badge></td>
                         <td className="px-3 py-3 text-sand-dark">{b.totalRows ?? '—'}</td>

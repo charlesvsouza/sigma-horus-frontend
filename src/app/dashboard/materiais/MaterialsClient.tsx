@@ -254,7 +254,7 @@ export default function MaterialsClient({ materials, loans, members, rites }: { 
               ) : filtered.length === 0 ? (
                 <p className="text-sm text-sand-dark">Nenhum material encontrado para &quot;{search}&quot;.</p>
               ) : filtered.map((material) => (
-                <div key={material.id} className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%] ${!material.active ? 'opacity-50' : ''}`}>
+                <div key={material.id} className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8 ${!material.active ? 'opacity-50' : ''}`}>
                   <div>
                     <p className="text-sm font-medium text-sand-light">
                       {material.name}
@@ -278,7 +278,7 @@ export default function MaterialsClient({ materials, loans, members, rites }: { 
         </div>
 
         <CollapsibleCard title="Fornecimento de materiais" count={loans.length} defaultOpen={loans.length > 0}>
-          <form onSubmit={handleLoanSubmit} className="mb-5 grid gap-4 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4 md:grid-cols-2">
+          <form onSubmit={handleLoanSubmit} className="mb-5 grid gap-4 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4 md:grid-cols-2">
             <select aria-label="Material" value={loanForm.materialId} onChange={(e) => setLoanForm({ ...loanForm, materialId: e.target.value })} className={INPUT_CLASS} required>
               <option value="">Material</option>
               {availableForLoan.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.availableQuantity} disponível)</option>)}
@@ -303,7 +303,7 @@ export default function MaterialsClient({ materials, loans, members, rites }: { 
             {loans.length === 0 ? (
               <EmptyState title="Nada saiu do inventário ainda." description="Materiais emitidos a membros (ex.: rituais) aparecem aqui até serem devolvidos." />
             ) : loans.map((loan) => (
-              <div key={loan.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
+              <div key={loan.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{loan.member.name} — {loan.material.name} ({loan.quantity})</p>
                   <p className="mt-1 text-xs text-sand-dark">desde {new Date(loan.issuedAt).toLocaleDateString('pt-BR')}{loan.notes ? ` • ${loan.notes}` : ''}</p>

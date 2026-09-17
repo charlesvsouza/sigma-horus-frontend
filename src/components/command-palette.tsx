@@ -57,7 +57,7 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
       aria-label="Paleta de comandos"
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-xl border border-white/[10%] bg-sigma-card-elevated"
+        className="w-full max-w-lg overflow-hidden rounded-xl border border-white/10 bg-sigma-card-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -67,7 +67,7 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
           onChange={(e) => { setQ(e.target.value); setActive(0); }}
           onKeyDown={onInputKey}
           placeholder="Buscar telas e ações…"
-          className="w-full border-b border-white/[8%] bg-transparent px-4 py-3.5 text-sm text-sand-light placeholder:text-sand-dark outline-none"
+          className="w-full border-b border-white/8 bg-transparent px-4 py-3.5 text-sm text-sand-light placeholder:text-sand-dark outline-none"
         />
         <ul className="max-h-[50vh] overflow-y-auto p-2">
           {filtered.length === 0 ? (
@@ -88,7 +88,7 @@ export default function CommandPalette({ commands }: { commands: Command[] }) {
             </li>
           ))}
         </ul>
-        <div className="flex items-center gap-3 border-t border-white/[8%] px-4 py-2 text-[0.65rem] text-sand-dark/70">
+        <div className="flex items-center gap-3 border-t border-white/8 px-4 py-2 text-[0.65rem] text-sand-dark/70">
           <span>↑↓ navegar</span><span>↵ abrir</span><span>esc fechar</span>
         </div>
       </div>

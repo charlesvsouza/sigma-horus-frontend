@@ -24,7 +24,7 @@ function Field({ label, value, onChange, ...rest }: { label: string; value: stri
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
+        className="mt-1.5 w-full rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
         {...rest}
       />
     </label>
@@ -222,7 +222,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
         <form onSubmit={save} className="space-y-6">
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Identificação</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field label="Nome da loja" value={form.name} onChange={(v) => set('name', v)} required />
@@ -238,9 +238,9 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
               <div className="mt-2.5 flex flex-wrap items-center gap-4">
                 {form.crestUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={form.crestUrl} alt="Brasão da loja" className="h-16 w-16 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 object-contain p-1" />
+                  <img src={form.crestUrl} alt="Brasão da loja" className="h-16 w-16 rounded-lg border border-white/8 bg-sigma-blue-deep/60 object-contain p-1" />
                 ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-white/[15%] text-[10px] text-sand-dark">Sem brasão</div>
+                  <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-white/15 text-[10px] text-sand-dark">Sem brasão</div>
                 )}
                 <div className="flex items-center gap-3">
                   <label className="cursor-pointer rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold">
@@ -261,7 +261,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Loja maçônica</h2>
             <p className="mt-1 text-sm text-sand-dark">Rito praticado e potência (obediência). O rito define os cargos da loja.</p>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -288,7 +288,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Sessões</h2>
             <p className="mt-1 text-sm text-sand-dark">Dias da semana e periodicidade padrão das sessões da loja.</p>
             <div className="mt-5 space-y-5">
@@ -319,7 +319,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Endereço</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div>
@@ -334,7 +334,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Dados bancários</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field label="Banco" value={form.bankName} onChange={(v) => set('bankName', v)} />
@@ -344,7 +344,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Financeiro</h2>
             <p className="mt-1 text-sm text-sand-dark">
               Despesas (contas a pagar) com valor igual ou acima deste limite ficam &quot;aguardando aprovação&quot; até o
@@ -373,7 +373,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             </p>
           </section>
 
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Mensagens automáticas</h2>
             <p className="mt-1 text-sm text-sand-dark">
               Disparos diários por e-mail (e WhatsApp/SMS, se a loja tiver conectado) — ver capítulo 6.6 do manual.
@@ -403,7 +403,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
           </div>
         </form>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Aparência</h2>
           <p className="mt-1 text-sm text-sand-dark">Escolha o tema da interface. A preferência fica salva neste navegador e vale para as telas do painel — o site público continua sempre no escuro da marca.</p>
           <div className="mt-5">
@@ -411,7 +411,7 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Backup dos dados</h2>
           <p className="mt-1 text-sm text-sand-dark">
             Baixe um arquivo com todos os dados desta loja (membros, família, financeiro, sessões,

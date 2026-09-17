@@ -146,7 +146,7 @@ export default function BalancetesClient({
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
         <div className="grid items-start gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Acesso rápido</h2>
           <p className="mt-1 text-xs text-sand-dark">
             Gera direto o balancete do último período fechado do veneralato atual. Um botão fica sem ação
@@ -199,13 +199,13 @@ export default function BalancetesClient({
         </FormCard>
         </div>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Histórico</h2>
           <div className="mt-5 space-y-3">
             {items.length === 0 ? (
               <EmptyState title="A prestação de contas aguarda a primeira pedra." description="Gere o balancete do trimestre/semestre para apresentar em sessão." />
             ) : items.map((b) => (
-              <div key={b.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
+              <div key={b.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-sand-light">{fmt(b.periodFrom)} — {fmt(b.periodTo)}</p>

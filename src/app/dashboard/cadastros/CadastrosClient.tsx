@@ -13,7 +13,7 @@ function InlineEdit({ value, onSave, onCancel }: { value: string; onSave: (v: st
     <form onSubmit={async (e) => { e.preventDefault(); setSaving(true); await onSave(edit); setSaving(false); }} className="flex gap-2 flex-1">
       <input
         value={edit} onChange={(e) => setEdit(e.target.value)}
-        className="flex-1 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-1.5 text-sm text-sand-light outline-none focus:border-gold/50"
+        className="flex-1 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-3 py-1.5 text-sm text-sand-light outline-none focus:border-gold/50"
         autoFocus
       />
       <button type="submit" disabled={saving || !edit.trim()} className="text-xs text-gold hover:text-gold-light disabled:opacity-40">Salvar</button>
@@ -129,7 +129,7 @@ export default function CadastrosClient({ rites, powers }: { rites: Item[]; powe
     }
   }
 
-  const INPUT = "flex-1 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
+  const INPUT = "flex-1 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
   const ADD_BTN = "rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark";
 
   return (
@@ -163,7 +163,7 @@ export default function CadastrosClient({ rites, powers }: { rites: Item[]; powe
             ) : (
               <ul className="mt-4 space-y-2">
                 {rites.map((rite) => (
-                  <li key={rite.id} className="flex items-center justify-between gap-2 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand-light hover:border-white/[8%]">
+                  <li key={rite.id} className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand-light hover:border-white/8">
                     {editingRite === rite.id ? (
                       <InlineEdit value={rite.name} onSave={(v) => renameRite(rite.id, v)} onCancel={() => setEditingRite(null)} />
                     ) : (
@@ -191,7 +191,7 @@ export default function CadastrosClient({ rites, powers }: { rites: Item[]; powe
             ) : (
               <ul className="mt-4 space-y-2">
                 {powers.map((power) => (
-                  <li key={power.id} className="flex items-center justify-between gap-2 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand-light hover:border-white/[8%]">
+                  <li key={power.id} className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand-light hover:border-white/8">
                     {editingPower === power.id ? (
                       <InlineEdit value={power.name} onSave={(v) => renamePower(power.id, v)} onCancel={() => setEditingPower(null)} />
                     ) : (

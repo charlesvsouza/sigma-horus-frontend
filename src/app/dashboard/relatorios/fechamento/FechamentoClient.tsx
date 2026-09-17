@@ -35,10 +35,10 @@ export default function FechamentoClient({ cards, meta, initialFrom, initialTo }
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <label className="text-xs text-sand-dark">De
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="mt-1 block rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light" />
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="mt-1 block rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light" />
             </label>
             <label className="text-xs text-sand-dark">Até
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="mt-1 block rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light" />
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="mt-1 block rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light" />
             </label>
             <button onClick={apply} className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/90 hover:border-gold/60 hover:text-gold">Aplicar</button>
             <Link
@@ -55,7 +55,7 @@ export default function FechamentoClient({ cards, meta, initialFrom, initialTo }
             <Link
               key={card.slug}
               href={`/dashboard/relatorios/fechamento/${card.slug}?from=${from}&to=${to}`}
-              className="group rounded-xl border border-white/[6%] bg-sigma-card p-6 transition-colors hover:border-gold/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+              className="group rounded-xl border border-white/6 bg-sigma-card p-6 transition-colors hover:border-gold/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
             >
               <h2 className="text-base font-semibold text-sand-light group-hover:text-gold">{card.title}</h2>
               <p className="mt-4 text-xs text-sand-dark">{card.keyLabel}</p>

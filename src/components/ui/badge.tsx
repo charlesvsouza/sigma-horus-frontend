@@ -25,7 +25,7 @@ const variantStyles: Record<BadgeVariant, { container: string; dot: string }> = 
   error:   { container: 'bg-rose-500/12 text-rose-300 border-rose-500/20',             dot: 'bg-rose-400' },
   billed:  { container: 'bg-sky-500/12 text-sky-200 border-sky-500/20',                dot: 'bg-sky-300' },
   info:    { container: 'bg-sky-500/12 text-sky-200 border-sky-500/20',                dot: 'bg-sky-300' },
-  canceled:{ container: 'bg-white/[8%] text-sand-dark border-white/[10%]',             dot: 'bg-sand-dark' },
+  canceled:{ container: 'bg-white/8 text-sand-dark border-white/10',             dot: 'bg-sand-dark' },
 };
 
 function Badge({ variant = 'info', dot = false, className = '', children, ...props }: BadgeProps) {

@@ -98,11 +98,11 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
         <section className="grid max-w-2xl gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Total investido (aquisição)</p>
             <p className="mt-3 text-2xl font-semibold text-sand-light">{brl(totalAcquisition)}</p>
           </div>
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Valor atual estimado</p>
             <p className="mt-3 text-2xl font-semibold text-gold">{brl(totalCurrent)}</p>
           </div>
@@ -139,7 +139,7 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
           </form>
         </FormCard>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Bens cadastrados</h2>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome ou categoria…" className={`${INPUT_CLASS} max-w-xs`} />
@@ -150,7 +150,7 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
             ) : filtered.length === 0 ? (
               <p className="text-sm text-sand-dark">Nenhum bem encontrado para &quot;{search}&quot;.</p>
             ) : filtered.map((asset) => (
-              <div key={asset.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
+              <div key={asset.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>
                   <p className="text-sm font-medium text-sand-light">
                     {asset.name}

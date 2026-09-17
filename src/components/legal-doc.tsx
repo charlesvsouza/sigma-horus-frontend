@@ -31,7 +31,7 @@ export function LegalDoc({
 }) {
   return (
     <article className="mx-auto max-w-3xl px-6 py-12 lg:py-16">
-      <header className="border-b border-white/[6%] pb-8">
+      <header className="border-b border-white/6 pb-8">
         {eyebrow ? (
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">{eyebrow}</p>
         ) : null}
@@ -50,7 +50,7 @@ export function LegalDoc({
 
       <div className="legal-body mt-8 space-y-8">{children}</div>
 
-      <footer className="mt-14 border-t border-white/[6%] pt-8 text-sm text-sand-dark">
+      <footer className="mt-14 border-t border-white/6 pt-8 text-sm text-sand-dark">
         <p>Sigma Horus — a tesouraria da sua loja no prumo.</p>
         <nav className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
           {INSTITUTIONAL_LINKS.map((l) => (

@@ -238,7 +238,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
             ) : filteredAccounts.length === 0 ? (
               <p className="text-sm text-sand-dark">Nenhuma conta encontrada para &quot;{search}&quot;.</p>
             ) : filteredAccounts.map((account) => (
-              <div key={account.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/[8%]">
+              <div key={account.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>
                   <p className="text-sm font-medium text-sand-light">
                     {account.title}

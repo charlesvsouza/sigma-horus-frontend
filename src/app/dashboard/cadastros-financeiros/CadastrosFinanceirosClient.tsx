@@ -257,7 +257,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
           </div>
 
           {showChartForm ? (
-            <form onSubmit={createChartAccount} className="mb-4 grid gap-3 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4 sm:grid-cols-3">
+            <form onSubmit={createChartAccount} className="mb-4 grid gap-3 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4 sm:grid-cols-3">
               <input value={chartForm.code} onChange={(e) => setChartForm({ ...chartForm, code: e.target.value })} className={inputClass} placeholder="Código (ex: 1.1.01)" required />
               <input value={chartForm.name} onChange={(e) => setChartForm({ ...chartForm, name: e.target.value })} className={inputClass} placeholder="Nome da conta" required />
               <select value={chartForm.type} onChange={(e) => setChartForm({ ...chartForm, type: e.target.value })} className={inputClass} aria-label="Tipo da conta">
@@ -282,11 +282,11 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
                   </h3>
                   <ul className="mt-3 space-y-2">
                     {chartAccounts.filter((c) => c.type === type).map((c) => (
-                      <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
+                      <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
                         {editingChart === c.id ? (
                           <div className="flex w-full flex-wrap gap-2">
-                            <input value={chartEditForm.code} onChange={(e) => setChartEditForm({ ...chartEditForm, code: e.target.value })} aria-label="Código" className="w-20 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                            <input value={chartEditForm.name} onChange={(e) => setChartEditForm({ ...chartEditForm, name: e.target.value })} aria-label="Nome" className="flex-1 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                            <input value={chartEditForm.code} onChange={(e) => setChartEditForm({ ...chartEditForm, code: e.target.value })} aria-label="Código" className="w-20 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                            <input value={chartEditForm.name} onChange={(e) => setChartEditForm({ ...chartEditForm, name: e.target.value })} aria-label="Nome" className="flex-1 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                             <button onClick={() => saveChart(c.id)} className="text-xs text-gold">Salvar</button>
                             <button onClick={() => setEditingChart(null)} className="text-xs text-sand-dark">Cancelar</button>
                           </div>
@@ -323,7 +323,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
           </div>
 
           {showCpForm ? (
-            <form onSubmit={createCounterparty} className="mb-4 grid gap-3 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4 sm:grid-cols-2">
+            <form onSubmit={createCounterparty} className="mb-4 grid gap-3 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4 sm:grid-cols-2">
               <input value={cpForm.name} onChange={(e) => setCpForm({ ...cpForm, name: e.target.value })} className={inputClass} placeholder="Nome" required />
               <select value={cpForm.kind} onChange={(e) => setCpForm({ ...cpForm, kind: e.target.value })} className={inputClass} aria-label="Tipo de contraparte">
                 <option value="supplier">Fornecedor</option>
@@ -347,17 +347,17 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
               {counterparties
                 .filter((c) => cpFilter === 'all' || c.kind === cpFilter || c.kind === 'both')
                 .map((c) => (
-                  <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand">
+                  <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand">
                     {editingCp === c.id ? (
                       <div className="flex w-full flex-wrap gap-2">
-                        <input value={cpEditForm.name} onChange={(e) => setCpEditForm({ ...cpEditForm, name: e.target.value })} aria-label="Nome" className="min-w-[10rem] flex-1 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <select value={cpEditForm.kind} onChange={(e) => setCpEditForm({ ...cpEditForm, kind: e.target.value })} aria-label="Tipo" className="rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50">
+                        <input value={cpEditForm.name} onChange={(e) => setCpEditForm({ ...cpEditForm, name: e.target.value })} aria-label="Nome" className="min-w-[10rem] flex-1 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <select value={cpEditForm.kind} onChange={(e) => setCpEditForm({ ...cpEditForm, kind: e.target.value })} aria-label="Tipo" className="rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50">
                           <option value="supplier">Fornecedor</option>
                           <option value="client">Cliente</option>
                           <option value="both">Cliente e fornecedor</option>
                         </select>
-                        <input value={cpEditForm.document} onChange={(e) => setCpEditForm({ ...cpEditForm, document: e.target.value })} aria-label="CPF/CNPJ" placeholder="CPF/CNPJ" className="w-32 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <input value={cpEditForm.phone} onChange={(e) => setCpEditForm({ ...cpEditForm, phone: e.target.value })} aria-label="Telefone" placeholder="Telefone" className="w-32 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <input value={cpEditForm.document} onChange={(e) => setCpEditForm({ ...cpEditForm, document: e.target.value })} aria-label="CPF/CNPJ" placeholder="CPF/CNPJ" className="w-32 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <input value={cpEditForm.phone} onChange={(e) => setCpEditForm({ ...cpEditForm, phone: e.target.value })} aria-label="Telefone" placeholder="Telefone" className="w-32 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <button onClick={() => saveCp(c.id)} className="text-xs text-gold">Salvar</button>
                         <button onClick={() => setEditingCp(null)} className="text-xs text-sand-dark">Cancelar</button>
                       </div>
@@ -397,7 +397,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
           </div>
 
           {showFaForm ? (
-            <form onSubmit={createFinancialAccount} className="mb-4 grid gap-3 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4 sm:grid-cols-2">
+            <form onSubmit={createFinancialAccount} className="mb-4 grid gap-3 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4 sm:grid-cols-2">
               <select value={faForm.kind} onChange={(e) => setFaForm({ ...faForm, kind: e.target.value })} className={inputClass} aria-label="Tipo de conta">
                 <option value="bank">Banco</option>
                 <option value="cash">Caixa</option>
@@ -432,12 +432,12 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
               {financialAccounts
                 .filter((f) => faFilter === 'all' || f.kind === faFilter)
                 .map((f) => (
-                  <li key={f.id} className={`flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand ${!f.active ? 'opacity-50' : ''}`}>
+                  <li key={f.id} className={`flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand ${!f.active ? 'opacity-50' : ''}`}>
                     {editingFa === f.id ? (
                       <div className="flex w-full flex-wrap gap-2">
-                        <input value={faEditForm.name} onChange={(e) => setFaEditForm({ ...faEditForm, name: e.target.value })} aria-label="Nome" className="min-w-[10rem] flex-1 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <input value={faEditForm.agency} onChange={(e) => setFaEditForm({ ...faEditForm, agency: e.target.value })} aria-label="Agência" placeholder="Agência" className="w-24 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <input value={faEditForm.accountNumber} onChange={(e) => setFaEditForm({ ...faEditForm, accountNumber: e.target.value })} aria-label="Conta" placeholder="Conta" className="w-28 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <input value={faEditForm.name} onChange={(e) => setFaEditForm({ ...faEditForm, name: e.target.value })} aria-label="Nome" className="min-w-[10rem] flex-1 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <input value={faEditForm.agency} onChange={(e) => setFaEditForm({ ...faEditForm, agency: e.target.value })} aria-label="Agência" placeholder="Agência" className="w-24 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <input value={faEditForm.accountNumber} onChange={(e) => setFaEditForm({ ...faEditForm, accountNumber: e.target.value })} aria-label="Conta" placeholder="Conta" className="w-28 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <button onClick={() => saveFa(f.id)} className="text-xs text-gold">Salvar</button>
                         <button onClick={() => setEditingFa(null)} className="text-xs text-sand-dark">Cancelar</button>
                       </div>

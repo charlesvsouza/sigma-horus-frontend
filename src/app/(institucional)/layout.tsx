@@ -5,7 +5,7 @@ import { INSTITUTIONAL_LINKS } from '@/components/legal-doc';
 export default function InstitucionalLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-white/[6%] bg-sigma-blue-deep/85 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-white/6 bg-sigma-blue-deep/85 backdrop-blur">
         <nav className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
           <Link href="/" className="text-sm font-semibold tracking-[0.2em] text-gold">SIGMA HORUS</Link>
           <div className="hidden items-center gap-5 md:flex">

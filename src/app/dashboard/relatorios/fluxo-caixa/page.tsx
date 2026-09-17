@@ -48,10 +48,10 @@ export default async function FluxoCaixaPage() {
           </p>
         </div>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="space-y-4">
             {flow.buckets.map((b) => (
-              <div key={b.label} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+              <div key={b.label} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-medium text-sand-light">{b.label}</p>
                   <p className={`text-sm font-semibold ${b.net >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
@@ -61,14 +61,14 @@ export default async function FluxoCaixaPage() {
                 <div className="mt-3 space-y-1.5">
                   <div className="flex items-center gap-2 text-xs text-sand-dark">
                     <span className="w-16 shrink-0">A receber</span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[6%]">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/6">
                       <div className="h-full rounded-full bg-emerald-400/70" style={{ width: `${(b.receivable / maxAbs) * 100}%` }} />
                     </div>
                     <span className="w-24 shrink-0 text-right tabular-nums">{brl(b.receivable)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-sand-dark">
                     <span className="w-16 shrink-0">A pagar</span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[6%]">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/6">
                       <div className="h-full rounded-full bg-rose-400/70" style={{ width: `${(b.payable / maxAbs) * 100}%` }} />
                     </div>
                     <span className="w-24 shrink-0 text-right tabular-nums">{brl(b.payable)}</span>

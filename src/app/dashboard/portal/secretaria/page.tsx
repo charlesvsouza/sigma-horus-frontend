@@ -71,14 +71,14 @@ export default function SecretariaPage() {
         </div>
 
         {next ? (
-          <section className="rounded-xl border border-gold/30 bg-gold/[6%] p-6">
+          <section className="rounded-xl border border-gold/30 bg-gold/6 p-6">
             <p className="text-xs font-medium uppercase tracking-[0.25em] text-gold">Próxima convocação</p>
             <h2 className="mt-2 text-lg font-semibold text-sand-light">{next.title}</h2>
             <p className="mt-1 text-sm text-sand">
               {new Date(next.date).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' })} · {SESSION_TYPE_LABEL[next.type] ?? next.type}
             </p>
             {next.agenda ? (
-              <div className="mt-3 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4">
+              <div className="mt-3 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Ordem do dia</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-sand">{next.agenda}</p>
               </div>
@@ -90,7 +90,7 @@ export default function SecretariaPage() {
           <p className="text-sm text-sand-dark">Nenhuma sessão futura agendada.</p>
         ) : null}
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex items-center justify-between">
             <button type="button" onClick={() => setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1))} className="rounded-full border border-white/15 px-3 py-1.5 text-sm text-sand-dark hover:text-sand-light">← Mês anterior</button>
             <h2 className="text-base font-semibold text-sand-light">{MONTH_LABELS[cursor.getMonth()]} de {cursor.getFullYear()}</h2>
@@ -110,7 +110,7 @@ export default function SecretariaPage() {
                   return (
                     <div
                       key={day.toISOString()}
-                      className={`min-h-[72px] rounded-lg border p-1.5 text-left ${inMonth ? 'border-white/[6%] bg-sigma-blue-deep/40' : 'border-white/[3%] bg-transparent opacity-40'} ${isToday ? 'ring-1 ring-gold/50' : ''}`}
+                      className={`min-h-[72px] rounded-lg border p-1.5 text-left ${inMonth ? 'border-white/6 bg-sigma-blue-deep/40' : 'border-white/3 bg-transparent opacity-40'} ${isToday ? 'ring-1 ring-gold/50' : ''}`}
                     >
                       <p className={`text-[11px] ${inMonth ? 'text-sand-dark' : 'text-sand-dark/50'}`}>{day.getDate()}</p>
                       <div className="mt-1 space-y-1">
@@ -135,7 +135,7 @@ export default function SecretariaPage() {
         </section>
 
         {selected ? (
-          <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-base font-semibold text-sand-light">{selected.title}</h2>
@@ -146,11 +146,11 @@ export default function SecretariaPage() {
               <button type="button" onClick={() => setSelected(null)} className="text-xs text-sand-dark hover:text-sand-light">Fechar</button>
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+              <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gold">Ordem do dia</p>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-sand">{selected.agenda || 'Não divulgada.'}</p>
               </div>
-              <div className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 p-4">
+              <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gold">Balaustre / Ata</p>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-sand">{selected.minutes || 'Ainda não publicado.'}</p>
               </div>

@@ -22,7 +22,7 @@ function Skeleton({ variant = 'text', className = '', ...props }: SkeletonProps)
 
 function SkeletonCard() {
   return (
-    <div className="rounded-xl border border-white/[6%] bg-sigma-blue-dark/80 p-5 space-y-4">
+    <div className="rounded-xl border border-white/6 bg-sigma-blue-dark/80 p-5 space-y-4">
       <Skeleton variant="badge" />
       <Skeleton variant="text" className="w-3/4" />
       <Skeleton variant="text" className="w-1/2" />

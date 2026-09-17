@@ -82,7 +82,7 @@ function Concluir() {
   return (
     <form onSubmit={submit} className="space-y-5">
       {summary ? (
-        <div className="rounded-xl border border-gold/25 bg-gold/[8%] px-4 py-3 text-sm text-gold">
+        <div className="rounded-xl border border-gold/25 bg-gold/8 px-4 py-3 text-sm text-gold">
           Plano <strong>{planName}</strong> {summary.interval === 'year' ? 'anual' : 'mensal'} · teste grátis{trialDate ? ` até ${trialDate}` : ''}. A cobrança só ocorre ao fim do teste, se não cancelar.
         </div>
       ) : (

@@ -81,21 +81,21 @@ export default function InadimplenciaClient({ rows, canRenegotiate }: { rows: Ro
         </div>
 
         <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Membros com mensalidade em aberto</p>
             <p className="mt-3 text-2xl font-semibold text-sand-light">{rows.length}</p>
           </div>
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Enquadrados no Art. 002 (&gt; 60 dias)</p>
             <p className="mt-3 text-2xl font-semibold text-rose-300">{art002Count}</p>
           </div>
-          <div className="rounded-xl border border-white/[6%] bg-sigma-card p-5">
+          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
             <p className="text-sm text-sand-dark">Total em aberto</p>
             <p className="mt-3 text-2xl font-semibold text-gold">{brl(rows.reduce((s, r) => s + r.totalAmount, 0))}</p>
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Membros em aberto</h2>
           <div className="mt-5 space-y-3">
             {rows.length === 0 ? (
@@ -103,7 +103,7 @@ export default function InadimplenciaClient({ rows, canRenegotiate }: { rows: Ro
             ) : rows.map((row) => {
               const hasCharge = row.lateCharge.fee > 0 || row.lateCharge.interest > 0;
               return (
-                <div key={row.memberId} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
+                <div key={row.memberId} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-medium text-sand-light">{row.memberName}</p>
@@ -124,7 +124,7 @@ export default function InadimplenciaClient({ rows, canRenegotiate }: { rows: Ro
                       </Badge>
                       {canRenegotiate ? (
                         <Button
-                          className="!px-3 !py-1 text-xs"
+                          className="px-3! py-1! text-xs"
                           onClick={() => setRenegotiatingId(renegotiatingId === row.memberId ? null : row.memberId)}
                         >
                           Negociar

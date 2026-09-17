@@ -50,7 +50,7 @@ function MatchPicker({ bankTxId, onDone }: { bankTxId: string; onDone: () => voi
         <button
           key={c.id}
           onClick={() => void pick(c.id)}
-          className="block w-full rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 px-3 py-2 text-left text-xs text-sand hover:border-gold/40"
+          className="block w-full rounded-lg border border-white/6 bg-sigma-blue-deep/50 px-3 py-2 text-left text-xs text-sand hover:border-gold/40"
         >
           {brl(c.amount)} • {fmt(c.paidAt)} • {c.account?.title ?? '—'} {c.member ? `• ${c.member.name}` : ''}
         </button>
@@ -127,7 +127,7 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
           </div>
         </FormCard>
 
-        <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-sand-light">Lançamentos importados</h2>
             {unmatchedCount > 0 ? <span className="text-xs text-amber-300">{unmatchedCount} sem conciliar</span> : null}
@@ -136,7 +136,7 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
             {items.length === 0 ? (
               <EmptyState title="A prova dos nove ainda não começou." description="Importe um arquivo OFX ou CSV para começar a conciliar." />
             ) : items.map((tx) => (
-              <div key={tx.id} className="rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-4">
+              <div key={tx.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-sand-light">{tx.description}</p>
@@ -147,7 +147,7 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
                     {tx.status === 'matched' ? (
                       <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-300">Conciliado</span>
                     ) : tx.status === 'ignored' ? (
-                      <span className="rounded-full border border-white/10 bg-white/[6%] px-2.5 py-0.5 text-xs text-sand-dark">Ignorado</span>
+                      <span className="rounded-full border border-white/10 bg-white/6 px-2.5 py-0.5 text-xs text-sand-dark">Ignorado</span>
                     ) : (
                       <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs text-amber-300">Sem conciliar</span>
                     )}
