@@ -27,7 +27,7 @@ interface SessionAttendanceSummary {
   total: number;
 }
 
-const TYPE_LABEL: Record<string, string> = { ordinary: 'Ordinária', magnificent: 'Magnífica', emergency: 'Extraordinária', other: 'Outra' };
+const TYPE_LABEL: Record<string, string> = { ordinary: 'Ordinária', magnificent: 'Magna', emergency: 'Extraordinária', other: 'Outra' };
 
 const PRINT_CSS = `
 @media print {

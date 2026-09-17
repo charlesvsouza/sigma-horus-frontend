@@ -16,6 +16,10 @@ const NAV: NavGroupDef[] = [
     items: [
       { href: '/dashboard', label: 'Visão geral', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
       { href: '/dashboard/portal', label: 'Meu portal', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
+      // Todo oficial também é obreiro — o calendário de sessões vale pra
+      // todos, não só pra quem tem papel "member" (por isso mora aqui, ao
+      // lado de "Meu portal", e não dentro de Atividades/gestão).
+      { href: '/dashboard/portal/secretaria', label: 'Calendário de sessões', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
       { href: '/manual', label: 'Manual & ajuda', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
     ],
   },
@@ -77,7 +81,6 @@ const NAV: NavGroupDef[] = [
     items: [
       { href: '/dashboard/sessoes', label: 'Sessões', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/sessoes/frequencia', label: 'Frequência às sessões', roles: ['admin', 'venerable', 'secretary'] },
-      { href: '/dashboard/portal/secretaria', label: 'Secretaria', roles: ['member'] },
       { href: '/dashboard/documentos', label: 'Documentos', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
       { href: '/dashboard/comunicacao', label: 'Comunicação', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
     ],

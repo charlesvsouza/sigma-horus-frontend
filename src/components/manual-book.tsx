@@ -209,7 +209,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.14</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.15</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -271,7 +271,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.14 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.15 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1325,8 +1325,9 @@ export function ManualBook() {
               </Sub>
               <Sub id="membro-secretaria" title="Secretaria: o calendário de sessões">
                 <p>
-                  Em <UI>Atividades → Secretaria</UI> você vê um <strong>calendário mensal</strong>, como uma agenda de
-                  parede: cada dia com sessão marcada mostra um chip com o horário e o título. No topo, o destaque
+                  Em <UI>Visão geral → Calendário de sessões</UI> (ao lado de <UI>Meu portal</UI> — todo oficial
+                  também é obreiro, então vale pra todos os papéis) você vê um <strong>calendário mensal</strong>,
+                  como uma agenda de parede: cada dia com sessão marcada mostra um chip com o horário e o título. No topo, o destaque
                   <UI> Próxima convocação</UI> traz a data, hora e ordem do dia da <strong>próxima sessão</strong> de
                   relance, sem precisar procurar no calendário.
                 </p>

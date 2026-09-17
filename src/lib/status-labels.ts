@@ -29,7 +29,7 @@ export const DOCUMENT_KIND_LABEL: Record<string, string> = {
 
 export const SESSION_TYPE_LABEL: Record<string, string> = {
   ordinary: 'Ordinária',
-  magnificent: 'Magnífica',
+  magnificent: 'Magna',
   emergency: 'Extraordinária',
   other: 'Outra',
 };

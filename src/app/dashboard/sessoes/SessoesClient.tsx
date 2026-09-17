@@ -40,7 +40,7 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
     router.refresh();
   }
 
-  const typeLabel: Record<string, string> = { ordinary: 'Ordinária', magnificent: 'Magnífica', emergency: 'Extraordinária', other: 'Outra' };
+  const typeLabel: Record<string, string> = { ordinary: 'Ordinária', magnificent: 'Magna', emergency: 'Extraordinária', other: 'Outra' };
   const INPUT = inputClass; // fonte única do design system
 
   return (
@@ -68,7 +68,7 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
               </label>
               <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={INPUT}>
                 <option value="ordinary">Ordinária</option>
-                <option value="magnificent">Magnífica</option>
+                <option value="magnificent">Magna</option>
                 <option value="emergency">Extraordinária</option>
                 <option value="other">Outra</option>
               </select>
