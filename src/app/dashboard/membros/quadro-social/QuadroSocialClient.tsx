@@ -14,8 +14,14 @@ interface MemberInput {
   elevationDate: string | null;
   exaltationDate: string | null;
   installationDate: string | null;
-  hasOrigin: boolean;
+  origin: 'local' | 'affiliated' | 'unknown';
 }
+
+const ORIGIN_LABEL: Record<MemberInput['origin'], string> = {
+  local: 'Iniciado nesta loja',
+  affiliated: 'Filiado',
+  unknown: 'Sem origem cadastrada',
+};
 
 const DEGREE_ORDER: (SymbolicSituation | 'sem-grau')[] = ['Mestre Instalado', 'Mestre', 'Companheiro', 'Aprendiz', 'sem-grau'];
 const DEGREE_LABEL: Record<string, string> = { 'sem-grau': 'Sem grau registrado' };
@@ -125,7 +131,7 @@ export default function QuadroSocialClient({ lodgeName, crestUrl, members }: { l
                           <tr key={m.id}>
                             <td className="border-b border-white/5 px-2 py-2 text-sand-light">{m.name}</td>
                             <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{memberStatusLabel(m.status)}</td>
-                            <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{m.hasOrigin ? 'Filiado' : 'Iniciado nesta loja'}</td>
+                            <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{ORIGIN_LABEL[m.origin]}</td>
                           </tr>
                         ))}
                       </tbody>

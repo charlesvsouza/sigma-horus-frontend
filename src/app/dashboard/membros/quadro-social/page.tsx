@@ -33,7 +33,7 @@ export default async function QuadroSocialPage() {
         select: {
           id: true, name: true, status: true,
           initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true,
-          originPowerId: true, originLodge: true,
+          initiationLodge: true,
         },
         orderBy: { name: 'asc' },
       }),
@@ -41,16 +41,29 @@ export default async function QuadroSocialPage() {
     return { lodge, members };
   });
 
-  const members = data.members.map((m) => ({
-    id: m.id,
-    name: m.name,
-    status: m.status,
-    initiationDate: m.initiationDate ? m.initiationDate.toISOString() : null,
-    elevationDate: m.elevationDate ? m.elevationDate.toISOString() : null,
-    exaltationDate: m.exaltationDate ? m.exaltationDate.toISOString() : null,
-    installationDate: m.installationDate ? m.installationDate.toISOString() : null,
-    hasOrigin: Boolean(m.originPowerId || m.originLodge),
-  }));
+  // Regra (decidida com o dono): compara a "Loja de iniciação" com a loja
+  // atual. Iguais → iniciado nesta loja. Diferente e preenchida → filiado.
+  // Em branco → "Sem origem" (cadastro incompleto), nunca vira Filiado por
+  // falta de dado.
+  const lodgeName = (data.lodge?.name ?? '').trim().toLowerCase();
+  const members = data.members.map((m) => {
+    const initiationLodgeName = (m.initiationLodge ?? '').trim().toLowerCase();
+    const origin: 'local' | 'affiliated' | 'unknown' = !initiationLodgeName
+      ? 'unknown'
+      : initiationLodgeName === lodgeName
+        ? 'local'
+        : 'affiliated';
+    return {
+      id: m.id,
+      name: m.name,
+      status: m.status,
+      initiationDate: m.initiationDate ? m.initiationDate.toISOString() : null,
+      elevationDate: m.elevationDate ? m.elevationDate.toISOString() : null,
+      exaltationDate: m.exaltationDate ? m.exaltationDate.toISOString() : null,
+      installationDate: m.installationDate ? m.installationDate.toISOString() : null,
+      origin,
+    };
+  });
 
   return <QuadroSocialClient lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} members={members} />;
 }
