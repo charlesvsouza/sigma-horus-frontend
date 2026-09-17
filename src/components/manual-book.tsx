@@ -59,10 +59,47 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-dre', label: '7.16 DRE comparativo entre períodos' },
     ],
   },
-  { id: 'secretario', num: '8', label: 'Guia do Secretário' },
+  {
+    id: 'secretario',
+    num: '8',
+    label: 'Guia do Secretário',
+    sub: [
+      { id: 'sec-membros', label: '8.1 Membros' },
+      { id: 'sec-quadro-social', label: '8.2 Quadro social' },
+      { id: 'sec-galeria-veneraveis', label: '8.3 Galeria de Veneráveis' },
+      { id: 'sec-quadro-gestao', label: '8.4 Quadro da Gestão' },
+      { id: 'sec-cadastros-mestre', label: '8.5 Cadastros mestre e cargos' },
+      { id: 'sec-veneralato', label: '8.6 Veneralato' },
+      { id: 'sec-sessoes', label: '8.7 Sessões e convocação' },
+      { id: 'sec-frequencia', label: '8.8 Frequência às sessões' },
+      { id: 'sec-materiais', label: '8.9 Materiais e patrimônio' },
+      { id: 'sec-documentos', label: '8.10 Documentos e comunicação' },
+    ],
+  },
   { id: 'veneravel', num: '9', label: 'Guia do Venerável' },
-  { id: 'membro', num: '10', label: 'Guia do Membro (obreiro)' },
-  { id: 'hospitaleiro', num: '11', label: 'Guia do Hospitaleiro' },
+  {
+    id: 'membro',
+    num: '10',
+    label: 'Guia do Membro (obreiro)',
+    sub: [
+      { id: 'membro-acesso', label: '10.1 Seu acesso e seus dados' },
+      { id: 'membro-secretaria', label: '10.2 Calendário de sessões' },
+      { id: 'membro-hospitalaria', label: '10.3 Hospitalaria' },
+    ],
+  },
+  {
+    id: 'hospitaleiro',
+    num: '11',
+    label: 'Guia do Hospitaleiro',
+    sub: [
+      { id: 'hosp-irmaos', label: '11.1 Irmãos (consulta)' },
+      { id: 'hosp-tronco', label: '11.2 O Tronco de Solidariedade' },
+      { id: 'hosp-campanha', label: '11.3 Criar uma campanha' },
+      { id: 'hosp-doacoes', label: '11.4 Doações e custeio pelo Tronco' },
+      { id: 'hosp-convocar', label: '11.5 Convocar os irmãos' },
+      { id: 'hosp-pedidos', label: '11.6 Pedidos dos obreiros' },
+    ],
+  },
   { id: 'assinatura', num: '12', label: 'Assinatura e cobrança' },
   { id: 'regras', num: '13', label: 'Reembolso, upgrade e downgrade' },
   { id: 'seguranca', num: '14', label: 'Privacidade, segurança e LGPD' },
@@ -209,7 +246,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.19</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.20</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -271,7 +308,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.19 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.20 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -304,7 +341,7 @@ export function ManualBook() {
               <p>Como ler este manual:</p>
               <Bullets>
                 <li>Comece pelos capítulos <strong>2 a 4</strong> (primeiros passos, papéis e navegação) — valem para todos.</li>
-                <li>Depois vá direto ao <strong>guia do seu perfil</strong>: Administrador (6), Tesoureiro (7), Secretário (8), Venerável (9) ou Membro (10).</li>
+                <li>Depois vá direto ao <strong>guia do seu perfil</strong>: Administrador (6), Tesoureiro (7), Secretário (8), Venerável (9), Membro (10) ou Hospitaleiro (11).</li>
                 <li>Os termos em destaque como <UI>Botão</UI> indicam exatamente o que aparece na tela.</li>
               </Bullets>
               <Note>
@@ -469,10 +506,8 @@ export function ManualBook() {
                 uma tela, use as setas para escolher e <UI>Enter</UI> para ir direto — sem precisar do mouse.
               </p>
               <p>
-                <strong>Tema da interface:</strong> em <UI>Configurações → Aparência</UI> você escolhe <strong>Escuro</strong>
-                (padrão), <strong>Papiro</strong> (pergaminho suave) ou <strong>Sistema</strong> (acompanha o modo claro/escuro
-                do seu computador, Windows ou Mac). A preferência vale para as telas do painel e fica salva neste navegador
-                — o site público (landing, login) continua sempre no escuro da marca.
+                <strong>Tema da interface:</strong> escolha entre Escuro, Papiro ou Sistema em <UI>Configurações →
+                Aparência</UI> — detalhes em <Link className="text-gold hover:text-gold-light" href="#admin-loja">6.1 Configurações da loja</Link>.
               </p>
             </Chapter>
 
@@ -1071,7 +1106,7 @@ export function ManualBook() {
             {/* ============== 8. SECRETÁRIO ============== */}
             <Chapter id="secretario" num="8" title="Guia do Secretário">
               <p>O Secretário mantém o quadro de obreiros, a estrutura de cargos, as sessões e os documentos.</p>
-              <Sub id="sec-membros" title="Membros — buscar, cadastrar, editar e excluir">
+              <Sub id="sec-membros" title="8.1 Membros — buscar, cadastrar, editar e excluir">
                 <p>
                   Em <UI>Secretaria → Membros & Cadastros → Membros</UI>, a tela abre com a <strong>lista de obreiros</strong> em formato
                   de tabela compacta. Use a <UI>busca</UI> (por <strong>nome, CPF ou CIM</strong>) e o filtro de
@@ -1121,7 +1156,7 @@ export function ManualBook() {
                   publicamente no mural e em documentos impressos.
                 </Note>
               </Sub>
-              <Sub id="sec-quadro-social" title="Quadro social">
+              <Sub id="sec-quadro-social" title="8.2 Quadro social">
                 <p>
                   Em <UI>Social → Quadro social</UI>, veja a fotografia atual do quadro agrupada por
                   <strong> grau simbólico</strong> (Aprendiz, Companheiro, Mestre, Mestre Instalado) — formato pensado
@@ -1143,7 +1178,7 @@ export function ManualBook() {
                   só por falta de preenchimento — complete o cadastro pra sair dessa situação).
                 </Note>
               </Sub>
-              <Sub id="sec-galeria-veneraveis" title="Galeria de Veneráveis">
+              <Sub id="sec-galeria-veneraveis" title="8.3 Galeria de Veneráveis">
                 <p>
                   Em <UI>Social → Galeria de Veneráveis</UI>, veja o mural com todos os Veneráveis da história da
                   loja, organizado pela <strong>linha do tempo</strong>.
@@ -1155,7 +1190,7 @@ export function ManualBook() {
                   <li><UI>Salvar como PDF</UI> imprime o mural com o timbre da loja.</li>
                 </Bullets>
               </Sub>
-              <Sub id="sec-quadro-gestao" title="Quadro da Gestão">
+              <Sub id="sec-quadro-gestao" title="8.4 Quadro da Gestão">
                 <p>
                   Em <UI>Social → Quadro da Gestão</UI>, veja os cargos do <strong>período em exercício</strong>,
                   com foto — pronto pra mural, apresentações ou prestação de contas.
@@ -1166,7 +1201,7 @@ export function ManualBook() {
                   <li><UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
                 </Bullets>
               </Sub>
-              <Sub id="sec-cadastros-mestre" title="Cadastros mestre e cargos">
+              <Sub id="sec-cadastros-mestre" title="8.5 Cadastros mestre e cargos">
                 <p>
                   Em <UI>Cadastros mestre</UI> você gerencia <UI>Ritos</UI> e <UI>Potências</UI>, além do botão
                   <UI> Popular dados padrão (Brasil)</UI> que preenche ritos, potências e o plano de contas de uma vez.
@@ -1176,7 +1211,7 @@ export function ManualBook() {
                   mantém os cargos da loja conforme o rito.
                 </p>
               </Sub>
-              <Sub id="sec-veneralato" title="Veneralato (períodos e vínculos)">
+              <Sub id="sec-veneralato" title="8.6 Veneralato (períodos e vínculos)">
                 <p>
                   Em <UI>Veneralato</UI>, crie um <UI>Novo período</UI> (ex.: &quot;Gestão 2025-2026&quot;) e <UI>Vincular</UI> os
                   oficiais aos cargos daquele período.
@@ -1194,7 +1229,7 @@ export function ManualBook() {
                   <Link className="text-gold hover:text-gold-light" href="#sec-galeria-veneraveis"> Galeria de Veneráveis</Link>.
                 </Note>
               </Sub>
-              <Sub id="sec-sessoes" title="Sessões, ordem do dia e convocação">
+              <Sub id="sec-sessoes" title="8.7 Sessões, ordem do dia e convocação">
                 <p>
                   Em <UI>Secretaria → Veneralato & Sessões → Sessões</UI>, use <UI>Criar sessão</UI> informando título, <UI>Início</UI> e
                   <UI> Término</UI> (data e hora dos dois — o término define quando a presença libera, ver abaixo),
@@ -1224,7 +1259,7 @@ export function ManualBook() {
                   Secretaria</strong> que o obreiro vê no portal (capítulo 10) — mantenha-os atualizados.
                 </Note>
               </Sub>
-              <Sub id="sec-frequencia" title="Frequência às sessões">
+              <Sub id="sec-frequencia" title="8.8 Frequência às sessões">
                 <p>
                   Em <UI>Secretaria → Veneralato & Sessões → Frequência às sessões</UI>, veja quem tem faltado — a lista de obreiros ativos
                   fica ordenada pela pior frequência primeiro, com <UI>faltas seguidas</UI> destacada quando chega a 3
@@ -1242,7 +1277,7 @@ export function ManualBook() {
                   um dado que não foi lançado).
                 </Note>
               </Sub>
-              <Sub id="sec-materiais" title="Materiais e patrimônio">
+              <Sub id="sec-materiais" title="8.9 Materiais e patrimônio">
                 <p>
                   Em <UI>Secretaria → Membros & Cadastros → Materiais e patrimônio</UI>, mantenha o inventário de tudo que a loja usa
                   no dia a dia — não só alfaias e indumentária: colunas, altar, malhetes, espadas, tapete, urna,
@@ -1270,7 +1305,7 @@ export function ManualBook() {
                   dar baixa em tudo de uma vez (ex.: desligamento).
                 </p>
               </Sub>
-              <Sub title="Documentos e comunicação">
+              <Sub id="sec-documentos" title="8.10 Documentos e comunicação">
                 <p>
                   Em <UI>Documentos</UI>, use <UI>Enviar e salvar documento</UI> (título + arquivo) para guardar atas,
                   comprovantes e certificados em armazenamento privado; o download é por link seguro temporário.
@@ -1347,7 +1382,7 @@ export function ManualBook() {
                 enquadramento automático do Art. 002 ligado em Configurações; algumas lojas preferem tratar isso
                 manualmente.
               </Note>
-              <Sub title="Seu acesso e seus dados">
+              <Sub id="membro-acesso" title="10.1 Seu acesso e seus dados">
                 <Bullets>
                   <li><strong>Primeiro acesso:</strong> entre com o e-mail e a senha provisória recebida por e-mail; o sistema pede para você <strong>definir uma nova senha</strong>.</li>
                   <li><strong>Editar meus dados:</strong> clique em <UI>Editar meus dados</UI> no topo do Resumo do obreiro para atualizar contato, endereço e família (mãe, pai, cônjuge, dependentes) — inclusive marcar <UI>Falecido(a)</UI> um familiar, o que já para as felicitações de aniversário automáticas para ele. O seu <strong>papel/cargo</strong>, CPF, rito/potência e evolução maçônica só são alterados pelo Administrador ou Secretaria.</li>
@@ -1355,7 +1390,7 @@ export function ManualBook() {
                   <li><strong>Tema Papiro:</strong> prefere a interface clara? Veja a seção Aparência (capítulo 6.1) — a escolha vale para o seu navegador.</li>
                 </Bullets>
               </Sub>
-              <Sub id="membro-secretaria" title="Secretaria: o calendário de sessões">
+              <Sub id="membro-secretaria" title="10.2 Secretaria: o calendário de sessões">
                 <p>
                   Em <UI>Visão geral → Calendário de sessões</UI> (ao lado de <UI>Meu portal</UI> — todo oficial
                   também é obreiro, então vale pra todos os papéis) você vê um <strong>calendário mensal</strong>,
@@ -1371,7 +1406,7 @@ export function ManualBook() {
                 </p>
                 <Note>Você recebe um e-mail de convocação automaticamente quando a Secretaria envia o chamado da sessão (capítulo 8).</Note>
               </Sub>
-              <Sub id="membro-hospitalaria" title="Hospitalaria: campanhas e pedidos de auxílio">
+              <Sub id="membro-hospitalaria" title="10.3 Hospitalaria: campanhas e pedidos de auxílio">
                 <p>
                   Em <UI>Hospitalaria</UI> você acompanha as <strong>campanhas de benemerência ativas</strong> da loja
                   (título, descrição, beneficiário e progresso da arrecadação) — mesma informação que o Hospitaleiro vê,
