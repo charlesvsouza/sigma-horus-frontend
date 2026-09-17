@@ -1,23 +1,10 @@
 "use client";
 
-import { useId, useState } from 'react';
-import { Alert, useConfirm } from '@/components/ui';
+import { useState } from 'react';
+import { Alert, CollapsibleCard, useConfirm } from '@/components/ui';
 import { useRouter } from 'next/navigation';
-import { BRAZILIAN_BANKS } from '@/lib/banks';
 
 interface Item { id: string; name: string; order: number; }
-interface ChartAccountItem { id: string; code: string; name: string; type: string; category?: string | null; }
-interface CounterpartyItem {
-  id: string; kind: string; name: string; legalName: string | null; document: string | null;
-  isCompany: boolean; email: string | null; phone: string | null; city: string | null; state: string | null;
-}
-interface FinancialAccountItem {
-  id: string; name: string; kind: string; bankName: string | null; isInvestment: boolean;
-  agency: string | null; accountNumber: string | null; active: boolean;
-}
-
-const KIND_LABEL: Record<string, string> = { client: 'Cliente', supplier: 'Fornecedor', both: 'Cliente e fornecedor' };
-const FA_KIND_LABEL: Record<string, string> = { bank: 'Banco', cash: 'Caixa' };
 
 function InlineEdit({ value, onSave, onCancel }: { value: string; onSave: (v: string) => Promise<void>; onCancel: () => void }) {
   const [edit, setEdit] = useState(value);
@@ -35,133 +22,15 @@ function InlineEdit({ value, onSave, onCancel }: { value: string; onSave: (v: st
   );
 }
 
-function CollapsibleCard({ title, count, defaultOpen, children }: { title: string; count: number; defaultOpen: boolean; children: React.ReactNode }) {
-  const [open, setOpen] = useState(defaultOpen || count <= 10);
-  const contentId = useId();
-  return (
-    <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
-      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={contentId} className="flex w-full items-center justify-between gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-gold/60">
-        <div>
-          <h2 className="text-base font-semibold text-sand-light">{title}</h2>
-          <p className="mt-0.5 text-xs text-sand-dark">{count} registro{count !== 1 ? 's' : ''}</p>
-        </div>
-        <svg className={`h-4 w-4 shrink-0 text-sand-dark transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open ? <div id={contentId} className="mt-4">{children}</div> : null}
-    </section>
-  );
-}
-
-export default function CadastrosClient({ rites, powers, chartAccounts, counterparties, financialAccounts }: { rites: Item[]; powers: Item[]; chartAccounts: ChartAccountItem[]; counterparties: CounterpartyItem[]; financialAccounts: FinancialAccountItem[] }) {
+export default function CadastrosClient({ rites, powers }: { rites: Item[]; powers: Item[] }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [riteName, setRiteName] = useState('');
   const [powerName, setPowerName] = useState('');
   const [editingRite, setEditingRite] = useState<string | null>(null);
   const [editingPower, setEditingPower] = useState<string | null>(null);
-  const [editingChart, setEditingChart] = useState<string | null>(null);
-  const [chartForm, setChartForm] = useState({ code: '', name: '', type: 'REVENUE' });
-  const [showChartForm, setShowChartForm] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [seeding, setSeeding] = useState(false);
-  const [linking, setLinking] = useState(false);
-
-  const EMPTY_CP_FORM = { kind: 'supplier', name: '', document: '', phone: '', city: '', state: '' };
-  const [cpForm, setCpForm] = useState(EMPTY_CP_FORM);
-  const [showCpForm, setShowCpForm] = useState(false);
-  const [editingCp, setEditingCp] = useState<string | null>(null);
-  const [cpFilter, setCpFilter] = useState<'all' | 'client' | 'supplier'>('all');
-  const [cpSaving, setCpSaving] = useState(false);
-
-  async function createCounterparty(event: React.FormEvent) {
-    event.preventDefault();
-    setCpSaving(true);
-    const res = await fetch('/api/counterparties', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...cpForm, document: cpForm.document || null }),
-    });
-    const data = await res.json();
-    setCpSaving(false);
-    if (res.ok) {
-      setMessage({ kind: 'ok', text: 'Contraparte criada com sucesso.' });
-      setCpForm(EMPTY_CP_FORM);
-      setShowCpForm(false);
-      router.refresh();
-    } else {
-      setMessage({ kind: 'error', text: data.error ?? 'Erro ao criar contraparte.' });
-    }
-  }
-
-  async function updateCounterparty(id: string, data: Partial<CounterpartyItem>) {
-    const res = await fetch(`/api/counterparties/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    setEditingCp(null);
-    if (res.ok) {
-      setMessage({ kind: 'ok', text: 'Contraparte atualizada.' });
-      router.refresh();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      setMessage({ kind: 'error', text: d.error ?? 'Erro ao atualizar contraparte.' });
-    }
-  }
-
-  async function removeCounterparty(id: string) {
-    if (!(await askConfirm({ title: 'Remover contraparte', message: 'Remover este cliente/fornecedor? Contas já lançadas mantêm o nome, só perdem o vínculo com o cadastro.', confirmLabel: 'Remover', intent: 'danger' }))) return;
-    const res = await fetch(`/api/counterparties/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      setMessage({ kind: 'ok', text: 'Contraparte removida.' });
-      router.refresh();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      setMessage({ kind: 'error', text: d.error ?? 'Erro ao remover contraparte.' });
-    }
-  }
-
-  const EMPTY_FA_FORM = { kind: 'bank', name: '', bankName: BRAZILIAN_BANKS[0], isInvestment: false, agency: '', accountNumber: '' };
-  const [faForm, setFaForm] = useState(EMPTY_FA_FORM);
-  const [showFaForm, setShowFaForm] = useState(false);
-  const [editingFa, setEditingFa] = useState<string | null>(null);
-  const [faFilter, setFaFilter] = useState<'all' | 'bank' | 'cash'>('all');
-  const [faSaving, setFaSaving] = useState(false);
-
-  async function createFinancialAccount(event: React.FormEvent) {
-    event.preventDefault();
-    setFaSaving(true);
-    const name = faForm.kind === 'cash' ? (faForm.name || 'Caixa da Loja') : (faForm.name || faForm.bankName);
-    const res = await fetch('/api/financial-accounts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...faForm, name }),
-    });
-    const data = await res.json();
-    setFaSaving(false);
-    if (res.ok) {
-      setMessage({ kind: 'ok', text: 'Conta financeira criada com sucesso.' });
-      setFaForm(EMPTY_FA_FORM);
-      setShowFaForm(false);
-      router.refresh();
-    } else {
-      setMessage({ kind: 'error', text: data.error ?? 'Erro ao criar conta financeira.' });
-    }
-  }
-
-  async function updateFinancialAccount(id: string, data: Partial<FinancialAccountItem>) {
-    const res = await fetch(`/api/financial-accounts/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    setEditingFa(null);
-    if (res.ok) {
-      setMessage({ kind: 'ok', text: 'Conta financeira atualizada.' });
-      router.refresh();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      setMessage({ kind: 'error', text: d.error ?? 'Erro ao atualizar conta financeira.' });
-    }
-  }
-
-  async function toggleFinancialAccountActive(item: FinancialAccountItem) {
-    await updateFinancialAccount(item.id, { active: !item.active });
-  }
 
   async function seedDefaults() {
     setSeeding(true);
@@ -171,41 +40,10 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
     setSeeding(false);
     if (res.ok) {
       const s = data.seeded ?? {};
-      setMessage({ kind: 'ok', text: `Dados padrão populados: ${s.rites ?? 0} ritos, ${s.powers ?? 0} potências, ${s.chartAccounts ?? 0} contas do plano.` });
+      setMessage({ kind: 'ok', text: `Dados padrão populados: ${s.rites ?? 0} ritos, ${s.powers ?? 0} potências, ${s.chartAccounts ?? 0} contas do plano (em Cadastros financeiros).` });
       router.refresh();
     } else {
       setMessage({ kind: 'error', text: data.error ?? 'Erro ao popular dados padrão.' });
-    }
-  }
-
-  async function syncChart() {
-    if (!(await askConfirm({ title: 'Atualizar plano de contas', message: 'Adiciona as contas que faltam e remove as contas padrão antigas que não estão em uso. Continuar?', confirmLabel: 'Atualizar' }))) return;
-    setLinking(true);
-    setMessage(null);
-    const res = await fetch('/api/chart-accounts/sync', { method: 'POST' });
-    const data = await res.json();
-    setLinking(false);
-    if (res.ok) {
-      const s = data.stats ?? {};
-      setMessage({ kind: 'ok', text: `Plano de contas atualizado: ${s.added ?? 0} adicionadas, ${s.removed ?? 0} antigas removidas, ${s.kept ?? 0} mantidas.` });
-      router.refresh();
-    } else {
-      setMessage({ kind: 'error', text: data.error ?? 'Erro ao atualizar o plano de contas.' });
-    }
-  }
-
-  async function backfillChart() {
-    if (!(await askConfirm({ title: 'Vincular contas ao plano', message: 'Tenta vincular automaticamente, pelo título, todas as contas a pagar/receber ainda sem categoria do plano de contas. Continuar?', confirmLabel: 'Vincular' }))) return;
-    setLinking(true);
-    setMessage(null);
-    const res = await fetch('/api/accounts/backfill-chart', { method: 'POST' });
-    const data = await res.json();
-    setLinking(false);
-    if (res.ok) {
-      const s = data.stats ?? {};
-      setMessage({ kind: 'ok', text: `Vínculo ao plano de contas: ${s.matched ?? 0} contas vinculadas, ${s.skipped ?? 0} sem correspondência (de ${s.processed ?? 0} sem vínculo).` });
-    } else {
-      setMessage({ kind: 'error', text: data.error ?? 'Erro ao vincular contas ao plano.' });
     }
   }
 
@@ -267,18 +105,6 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
     }
   }
 
-  async function renameChart(id: string, data: { code?: string; name?: string }) {
-    const res = await fetch(`/api/chart-accounts/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    setEditingChart(null);
-    if (res.ok) {
-      setMessage({ kind: 'ok', text: 'Conta atualizada.' });
-      router.refresh();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      setMessage({ kind: 'error', text: d.error ?? 'Erro ao atualizar conta.' });
-    }
-  }
-
   async function removeRite(id: string) {
     if (!(await askConfirm({ title: 'Remover rito', message: 'Remover este rito?', confirmLabel: 'Remover', intent: 'danger' }))) return;
     const res = await fetch(`/api/rites/${id}`, { method: 'DELETE' });
@@ -303,36 +129,6 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
     }
   }
 
-  async function removeChartAccount(id: string) {
-    if (!(await askConfirm({ title: 'Remover conta', message: 'Remover esta conta do plano de contas?', confirmLabel: 'Remover', intent: 'danger' }))) return;
-    const res = await fetch(`/api/chart-accounts/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      setMessage({ kind: 'ok', text: 'Conta removida.' });
-      router.refresh();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      setMessage({ kind: 'error', text: d.error ?? 'Erro ao remover conta.' });
-    }
-  }
-
-  async function createChartAccount(event: React.FormEvent) {
-    event.preventDefault();
-    const res = await fetch('/api/chart-accounts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(chartForm),
-    });
-    if (res.ok) {
-      setMessage({ kind: 'ok', text: 'Conta criada com sucesso.' });
-      setChartForm({ code: '', name: '', type: 'REVENUE' });
-      setShowChartForm(false);
-      router.refresh();
-    } else {
-      const data = await res.json();
-      setMessage({ kind: 'error', text: data.error ?? 'Erro ao criar conta.' });
-    }
-  }
-
   const INPUT = "flex-1 rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20";
   const ADD_BTN = "rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark";
 
@@ -342,12 +138,12 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-bold text-sand-light">Cadastros mestre</h1>
-            <p className="mt-1 text-sm text-sand-dark">Configure os ritos, potências e o plano de contas da sua loja.</p>
+            <p className="mt-1 text-sm text-sand-dark">Ritos e potências da sua loja.</p>
           </div>
           <button
             onClick={seedDefaults}
             disabled={seeding}
-            title="Preenche ritos, potências e plano de contas com os dados padrão da Maçonaria brasileira (não duplica)"
+            title="Preenche ritos, potências e o plano de contas (em Cadastros financeiros) com os dados padrão da Maçonaria brasileira (não duplica)"
             className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-50"
           >
             {seeding ? 'Populando…' : 'Popular dados padrão (Brasil)'}
@@ -413,264 +209,6 @@ export default function CadastrosClient({ rites, powers, chartAccounts, counterp
             )}
           </CollapsibleCard>
         </div>
-
-        <CollapsibleCard title="Plano de contas" count={chartAccounts.length} defaultOpen={false}>
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <p className="text-sm text-sand-dark">Categorias de receita e despesa típicas de uma loja maçônica.</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setShowChartForm(true)}
-                className="rounded-full border border-gold/40 px-4 py-1.5 text-xs font-medium text-gold/80 hover:border-gold/60 hover:text-gold"
-              >
-                + Nova conta
-              </button>
-              <button
-                onClick={syncChart}
-                disabled={linking}
-                className="rounded-full border border-white/15 px-4 py-1.5 text-xs font-medium text-sand-dark hover:text-sand-light disabled:opacity-40"
-              >
-                {linking ? '…' : 'Sincronizar padrão'}
-              </button>
-              <button
-                onClick={backfillChart}
-                disabled={linking || chartAccounts.length === 0}
-                className="rounded-full border border-white/15 px-4 py-1.5 text-xs font-medium text-sand-dark hover:text-sand-light disabled:opacity-40"
-              >
-                Vincular contas
-              </button>
-            </div>
-          </div>
-
-          {showChartForm ? (
-            <form onSubmit={createChartAccount} className="mb-4 flex flex-wrap gap-3 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4">
-              <input value={chartForm.code} onChange={(e) => setChartForm({ ...chartForm, code: e.target.value })} className={INPUT} placeholder="Código (ex: 1.1.01)" required />
-              <input value={chartForm.name} onChange={(e) => setChartForm({ ...chartForm, name: e.target.value })} className={INPUT} placeholder="Nome da conta" required />
-              <select value={chartForm.type} onChange={(e) => setChartForm({ ...chartForm, type: e.target.value })} className={INPUT}>
-                <option value="REVENUE">Receita</option>
-                <option value="EXPENSE">Despesa</option>
-              </select>
-              <button type="submit" className={ADD_BTN}>Criar</button>
-              <button type="button" onClick={() => setShowChartForm(false)} className="rounded-full border border-white/15 px-4 py-2.5 text-sm text-sand-dark hover:text-sand">Cancelar</button>
-            </form>
-          ) : null}
-
-          {chartAccounts.length === 0 ? (
-            <p className="mt-4 text-sm text-sand-dark">Nenhuma conta no plano.</p>
-          ) : (
-            <div className="grid gap-6 lg:grid-cols-2">
-              {(['REVENUE', 'EXPENSE'] as const).map((type) => (
-                <div key={type}>
-                  <h3 className={`text-sm font-semibold uppercase tracking-wide ${type === 'REVENUE' ? 'text-emerald-300' : 'text-rose-300'}`}>
-                    {type === 'REVENUE' ? 'Receitas' : 'Despesas'}
-                  </h3>
-                  <ul className="mt-3 space-y-2">
-                    {chartAccounts.filter((c) => c.type === type).map((c) => (
-                      <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
-                        {editingChart === c.id ? (
-                          <div className="flex w-full flex-wrap gap-2">
-                            <input defaultValue={c.code} id={`chart-code-${c.id}`} className="w-20 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                            <input defaultValue={c.name} id={`chart-name-${c.id}`} className="flex-1 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                            <button onClick={() => renameChart(c.id, { code: (document.getElementById(`chart-code-${c.id}`) as HTMLInputElement).value, name: (document.getElementById(`chart-name-${c.id}`) as HTMLInputElement).value })} className="text-xs text-gold">Salvar</button>
-                            <button onClick={() => setEditingChart(null)} className="text-xs text-sand-dark">Cancelar</button>
-                          </div>
-                        ) : (
-                          <>
-                            <span><span className="text-sand-dark">{c.code}</span> · {c.name}</span>
-                            <span className="flex items-center gap-2 shrink-0">
-                              {c.category ? <span className="text-xs text-sand-dark">{c.category}</span> : null}
-                              <button onClick={() => setEditingChart(c.id)} className="text-xs text-sand-dark hover:text-gold">Editar</button>
-                              <button onClick={() => removeChartAccount(c.id)} className="text-xs text-rose-300/70 hover:text-rose-300">Remover</button>
-                            </span>
-                          </>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </CollapsibleCard>
-
-        <CollapsibleCard title="Clientes e fornecedores" count={counterparties.length} defaultOpen={false}>
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <p className="text-sm text-sand-dark">Contrapartes de contas a pagar/receber que não são membros da loja.</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <select value={cpFilter} onChange={(e) => setCpFilter(e.target.value as typeof cpFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
-                <option value="all">Todos</option>
-                <option value="client">Clientes</option>
-                <option value="supplier">Fornecedores</option>
-              </select>
-              <button
-                onClick={() => setShowCpForm(true)}
-                className="rounded-full border border-gold/40 px-4 py-1.5 text-xs font-medium text-gold/80 hover:border-gold/60 hover:text-gold"
-              >
-                + Novo cadastro
-              </button>
-            </div>
-          </div>
-
-          {showCpForm ? (
-            <form onSubmit={createCounterparty} className="mb-4 flex flex-wrap gap-3 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4">
-              <input value={cpForm.name} onChange={(e) => setCpForm({ ...cpForm, name: e.target.value })} className={INPUT} placeholder="Nome" required />
-              <select value={cpForm.kind} onChange={(e) => setCpForm({ ...cpForm, kind: e.target.value })} className={INPUT}>
-                <option value="supplier">Fornecedor</option>
-                <option value="client">Cliente</option>
-                <option value="both">Cliente e fornecedor</option>
-              </select>
-              <input value={cpForm.document} onChange={(e) => setCpForm({ ...cpForm, document: e.target.value })} className={INPUT} placeholder="CPF/CNPJ (opcional)" />
-              <input value={cpForm.phone} onChange={(e) => setCpForm({ ...cpForm, phone: e.target.value })} className={INPUT} placeholder="Telefone (opcional)" />
-              <input value={cpForm.city} onChange={(e) => setCpForm({ ...cpForm, city: e.target.value })} className={INPUT} placeholder="Cidade (opcional)" />
-              <button type="submit" disabled={cpSaving} className={ADD_BTN}>{cpSaving ? '…' : 'Criar'}</button>
-              <button type="button" onClick={() => setShowCpForm(false)} className="rounded-full border border-white/15 px-4 py-2.5 text-sm text-sand-dark hover:text-sand">Cancelar</button>
-            </form>
-          ) : null}
-
-          {counterparties.filter((c) => cpFilter === 'all' || c.kind === cpFilter || c.kind === 'both').length === 0 ? (
-            <p className="mt-4 text-sm text-sand-dark">Nenhum cadastro ainda.</p>
-          ) : (
-            <ul className="space-y-2">
-              {counterparties
-                .filter((c) => cpFilter === 'all' || c.kind === cpFilter || c.kind === 'both')
-                .map((c) => (
-                  <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand">
-                    {editingCp === c.id ? (
-                      <div className="flex w-full flex-wrap gap-2">
-                        <input defaultValue={c.name} id={`cp-name-${c.id}`} className="flex-1 min-w-[10rem] rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <select defaultValue={c.kind} id={`cp-kind-${c.id}`} className="rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50">
-                          <option value="supplier">Fornecedor</option>
-                          <option value="client">Cliente</option>
-                          <option value="both">Cliente e fornecedor</option>
-                        </select>
-                        <input defaultValue={c.document ?? ''} id={`cp-doc-${c.id}`} placeholder="CPF/CNPJ" className="w-32 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <input defaultValue={c.phone ?? ''} id={`cp-phone-${c.id}`} placeholder="Telefone" className="w-32 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <button
-                          onClick={() => updateCounterparty(c.id, {
-                            name: (document.getElementById(`cp-name-${c.id}`) as HTMLInputElement).value,
-                            kind: (document.getElementById(`cp-kind-${c.id}`) as HTMLSelectElement).value,
-                            document: (document.getElementById(`cp-doc-${c.id}`) as HTMLInputElement).value || null,
-                            phone: (document.getElementById(`cp-phone-${c.id}`) as HTMLInputElement).value || null,
-                          } as Partial<CounterpartyItem>)}
-                          className="text-xs text-gold"
-                        >
-                          Salvar
-                        </button>
-                        <button onClick={() => setEditingCp(null)} className="text-xs text-sand-dark">Cancelar</button>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="flex-1 min-w-0">
-                          <span className="truncate">{c.name}</span>
-                          {c.document ? <span className="ml-2 text-xs text-sand-dark">{c.document}</span> : null}
-                          {c.phone ? <span className="ml-2 text-xs text-sand-dark">{c.phone}</span> : null}
-                        </span>
-                        <span className="flex items-center gap-2 shrink-0">
-                          <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-medium ${c.kind === 'client' ? 'bg-emerald-500/10 text-emerald-300' : c.kind === 'supplier' ? 'bg-rose-500/10 text-rose-300' : 'bg-gold/10 text-gold'}`}>
-                            {KIND_LABEL[c.kind] ?? c.kind}
-                          </span>
-                          <button onClick={() => setEditingCp(c.id)} className="text-xs text-sand-dark hover:text-gold">Editar</button>
-                          <button onClick={() => removeCounterparty(c.id)} className="text-xs text-rose-300/70 hover:text-rose-300">Remover</button>
-                        </span>
-                      </>
-                    )}
-                  </li>
-                ))}
-            </ul>
-          )}
-        </CollapsibleCard>
-
-        <CollapsibleCard title="Contas bancárias e Caixa" count={financialAccounts.length} defaultOpen={false}>
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <p className="text-sm text-sand-dark">Bancos, contas de investimento e o Caixa físico da loja — vincule pagamentos/recebimentos a cada um.</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <select value={faFilter} onChange={(e) => setFaFilter(e.target.value as typeof faFilter)} className="rounded-lg border border-white/[8%] bg-sigma-blue-deep/60 px-3 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
-                <option value="all">Todas</option>
-                <option value="bank">Bancos</option>
-                <option value="cash">Caixa</option>
-              </select>
-              <button
-                onClick={() => setShowFaForm(true)}
-                className="rounded-full border border-gold/40 px-4 py-1.5 text-xs font-medium text-gold/80 hover:border-gold/60 hover:text-gold"
-              >
-                + Nova conta
-              </button>
-            </div>
-          </div>
-
-          {showFaForm ? (
-            <form onSubmit={createFinancialAccount} className="mb-4 flex flex-wrap gap-3 rounded-lg border border-white/[6%] bg-sigma-blue-deep/50 p-4">
-              <select value={faForm.kind} onChange={(e) => setFaForm({ ...faForm, kind: e.target.value })} className={INPUT}>
-                <option value="bank">Banco</option>
-                <option value="cash">Caixa</option>
-              </select>
-              {faForm.kind === 'bank' ? (
-                <>
-                  <select value={faForm.bankName} onChange={(e) => setFaForm({ ...faForm, bankName: e.target.value })} className={INPUT}>
-                    {BRAZILIAN_BANKS.map((b) => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                  <input value={faForm.name} onChange={(e) => setFaForm({ ...faForm, name: e.target.value })} className={INPUT} placeholder="Rótulo (ex: Santander CC — opcional)" />
-                  <input value={faForm.agency} onChange={(e) => setFaForm({ ...faForm, agency: e.target.value })} className={INPUT} placeholder="Agência (opcional)" />
-                  <input value={faForm.accountNumber} onChange={(e) => setFaForm({ ...faForm, accountNumber: e.target.value })} className={INPUT} placeholder="Conta (opcional)" />
-                  <label className="flex items-center gap-2 text-sm text-sand-dark">
-                    <input type="checkbox" checked={faForm.isInvestment} onChange={(e) => setFaForm({ ...faForm, isInvestment: e.target.checked })} />
-                    Conta de investimento
-                  </label>
-                </>
-              ) : (
-                <input value={faForm.name} onChange={(e) => setFaForm({ ...faForm, name: e.target.value })} className={INPUT} placeholder="Nome (ex: Caixa da Loja)" />
-              )}
-              <button type="submit" disabled={faSaving} className={ADD_BTN}>{faSaving ? '…' : 'Criar'}</button>
-              <button type="button" onClick={() => setShowFaForm(false)} className="rounded-full border border-white/15 px-4 py-2.5 text-sm text-sand-dark hover:text-sand">Cancelar</button>
-            </form>
-          ) : null}
-
-          {financialAccounts.filter((f) => faFilter === 'all' || f.kind === faFilter).length === 0 ? (
-            <p className="mt-4 text-sm text-sand-dark">Nenhuma conta cadastrada.</p>
-          ) : (
-            <ul className="space-y-2">
-              {financialAccounts
-                .filter((f) => faFilter === 'all' || f.kind === faFilter)
-                .map((f) => (
-                  <li key={f.id} className={`flex items-center justify-between gap-3 rounded-lg border border-white/[5%] bg-sigma-blue-deep/50 px-4 py-2.5 text-sm text-sand ${!f.active ? 'opacity-50' : ''}`}>
-                    {editingFa === f.id ? (
-                      <div className="flex w-full flex-wrap gap-2">
-                        <input defaultValue={f.name} id={`fa-name-${f.id}`} className="flex-1 min-w-[10rem] rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <input defaultValue={f.agency ?? ''} id={`fa-agency-${f.id}`} placeholder="Agência" className="w-24 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <input defaultValue={f.accountNumber ?? ''} id={`fa-account-${f.id}`} placeholder="Conta" className="w-28 rounded border border-white/[8%] bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <button
-                          onClick={() => updateFinancialAccount(f.id, {
-                            name: (document.getElementById(`fa-name-${f.id}`) as HTMLInputElement).value,
-                            agency: (document.getElementById(`fa-agency-${f.id}`) as HTMLInputElement).value || null,
-                            accountNumber: (document.getElementById(`fa-account-${f.id}`) as HTMLInputElement).value || null,
-                          } as Partial<FinancialAccountItem>)}
-                          className="text-xs text-gold"
-                        >
-                          Salvar
-                        </button>
-                        <button onClick={() => setEditingFa(null)} className="text-xs text-sand-dark">Cancelar</button>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="flex-1 min-w-0">
-                          <span className="truncate">{f.name}</span>
-                          {f.bankName ? <span className="ml-2 text-xs text-sand-dark">{f.bankName}</span> : null}
-                          {f.agency || f.accountNumber ? <span className="ml-2 text-xs text-sand-dark">Ag. {f.agency ?? '—'} / Cc {f.accountNumber ?? '—'}</span> : null}
-                        </span>
-                        <span className="flex items-center gap-2 shrink-0">
-                          {f.isInvestment ? <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[0.65rem] font-medium text-gold">Investimento</span> : null}
-                          <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-medium ${f.kind === 'bank' ? 'bg-sky-500/10 text-sky-300' : 'bg-emerald-500/10 text-emerald-300'}`}>
-                            {FA_KIND_LABEL[f.kind] ?? f.kind}
-                          </span>
-                          <button onClick={() => setEditingFa(f.id)} className="text-xs text-sand-dark hover:text-gold">Editar</button>
-                          <button onClick={() => toggleFinancialAccountActive(f)} className="text-xs text-sand-dark hover:text-gold">{f.active ? 'Desativar' : 'Ativar'}</button>
-                        </span>
-                      </>
-                    )}
-                  </li>
-                ))}
-            </ul>
-          )}
-        </CollapsibleCard>
       </div>
     </main>
   );

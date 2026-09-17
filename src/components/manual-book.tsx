@@ -207,7 +207,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 16 de setembro de 2026 · versão 1.5</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 16 de setembro de 2026 · versão 1.6</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -269,7 +269,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.5 — 16 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.6 — 16 de setembro de 2026</p>
               </div>
             </div>
 
@@ -421,7 +421,7 @@ export function ManualBook() {
               <Bullets>
                 <li><strong>Visão geral:</strong> <UI>Visão geral</UI> (indicadores), <UI>Meu portal</UI> e <UI>Manual &amp; ajuda</UI>.</li>
                 <li><strong>Loja &amp; cadastros:</strong> <UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>, <UI>Veneralato</UI>.</li>
-                <li><strong>Financeiro:</strong> <UI>Contas</UI>, <UI>Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Conciliação bancária</UI>, <UI>Patrimônio</UI>, <UI>Relatórios</UI>.</li>
+                <li><strong>Financeiro:</strong> <UI>Cadastros financeiros</UI>, <UI>Contas</UI>, <UI>Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Conciliação bancária</UI>, <UI>Patrimônio</UI>, <UI>Relatórios</UI>.</li>
                 <li><strong>Atividades:</strong> <UI>Sessões</UI>, <UI>Documentos</UI>, <UI>Comunicação</UI>.</li>
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI> e <UI>Campanhas</UI> de benemerência.</li>
                 <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
@@ -689,9 +689,10 @@ export function ManualBook() {
                   base para a totalização por grupo no balancete e no fechamento.
                 </p>
                 <p>
-                  Consulte e ajuste em <UI>Cadastros mestre → Plano de contas</UI>. Para completar com o modelo padrão,
-                  use <UI>Popular dados padrão (Brasil)</UI> (adiciona apenas os códigos que faltam, sem duplicar). Para
-                  retirar uma conta que não usa, clique em <UI>Remover</UI> ao lado dela.
+                  Consulte e ajuste em <UI>Cadastros financeiros → Plano de contas</UI>. Para completar com o modelo
+                  padrão, use <UI>Popular dados padrão (Brasil)</UI> em <UI>Cadastros mestre</UI> (também preenche ritos
+                  e potências; adiciona apenas os códigos que faltam, sem duplicar). Para retirar uma conta que não usa,
+                  clique em <UI>Remover</UI> ao lado dela.
                 </p>
                 <p>
                   Se a sua loja foi criada com uma versão antiga do plano (códigos como <code>1.01</code> em vez de
@@ -945,7 +946,7 @@ export function ManualBook() {
                 <p>
                   Cadastro de quem <strong>não é membro</strong> da loja, mas aparece em contas a pagar ou a receber —
                   fornecedor de evento, buffet, entidade paramaçônica, contribuição à Grande Loja, doador avulso, etc.
-                  Em <UI>Cadastros mestre → Clientes e fornecedores</UI>:
+                  Em <UI>Cadastros financeiros → Clientes e fornecedores</UI>:
                 </p>
                 <Steps>
                   <li>Clique em <UI>+ Novo cadastro</UI> e informe o <UI>Nome</UI>.</li>
@@ -967,7 +968,7 @@ export function ManualBook() {
                   o Caixa físico — e vincula cada pagamento a um deles, além de poder <strong>transferir saldo entre
                   eles</strong> com aprovação em dois passos.
                 </p>
-                <p><strong>Cadastrar as contas</strong> — em <UI>Cadastros mestre → Contas bancárias e Caixa</UI>:</p>
+                <p><strong>Cadastrar as contas</strong> — em <UI>Cadastros financeiros → Contas bancárias e Caixa</UI>:</p>
                 <Steps>
                   <li>Clique em <UI>+ Nova conta</UI> e escolha o tipo: <strong>Banco</strong> ou <strong>Caixa</strong>.</li>
                   <li>
@@ -1044,9 +1045,12 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-cadastros-mestre" title="Cadastros mestre e cargos">
                 <p>
-                  Em <UI>Cadastros mestre</UI> você gerencia <UI>Ritos</UI>, <UI>Potências</UI>, o <UI>Plano de
-                  contas</UI> (Adicionar/Remover), <UI>Clientes e fornecedores</UI> (ver 7.13) e <UI>Contas bancárias e
-                  Caixa</UI> (ver 7.14). Em <UI>Cargos</UI>, mantém os cargos da loja conforme o rito.
+                  Em <UI>Cadastros mestre</UI> você gerencia <UI>Ritos</UI> e <UI>Potências</UI>, além do botão
+                  <UI> Popular dados padrão (Brasil)</UI> que preenche ritos, potências e o plano de contas de uma vez.
+                  O <UI>Plano de contas</UI>, <UI>Clientes e fornecedores</UI> (ver 7.13) e as <UI>Contas bancárias e
+                  Caixa</UI> (ver 7.14) ficam em <UI>Cadastros financeiros</UI>, dentro de <UI>Financeiro</UI> — são
+                  cadastros de uso do Tesoureiro, separados dos de Ritos/Potências (Secretaria). Em <UI>Cargos</UI>,
+                  mantém os cargos da loja conforme o rito.
                 </p>
               </Sub>
               <Sub id="sec-veneralato" title="Veneralato (períodos e vínculos)">
@@ -1350,7 +1354,7 @@ export function ManualBook() {
                 <li><strong>O saldo do Tronco aparece indisponível.</strong> Em Cadastros, clique em <UI>Atualizar plano de contas</UI> (7.1) para habilitar as contas do Tronco de Solidariedade.</li>
                 <li><strong>A convocação não chegou aos irmãos.</strong> O e-mail sai pela plataforma; WhatsApp/SMS exigem a loja conectar a própria conta em <UI>Integrações</UI> (6.6). Até lá, ficam registrados e enfileirados.</li>
                 <li><strong>Quero o manual em PDF.</strong> Use o botão <strong>Salvar como PDF</strong> no topo desta página.</li>
-                <li><strong>Não consigo registrar um pagamento.</strong> Desde a versão 1.3, todo pagamento exige escolher a <UI>Conta bancária/caixa</UI> que recebeu ou pagou o valor — cadastre pelo menos uma em <UI>Cadastros mestre → Contas bancárias e Caixa</UI> (7.14) antes de registrar.</li>
+                <li><strong>Não consigo registrar um pagamento.</strong> Desde a versão 1.3, todo pagamento exige escolher a <UI>Conta bancária/caixa</UI> que recebeu ou pagou o valor — cadastre pelo menos uma em <UI>Cadastros financeiros → Contas bancárias e Caixa</UI> (7.14) antes de registrar.</li>
                 <li><strong>A transferência entre contas não mudou o saldo.</strong> Toda transferência nasce pendente e só afeta o saldo depois que o Venerável Mestre (ou o Administrador) aprovar, no <UI>Histórico</UI> da tela de Transferências (7.14).</li>
                 <li><strong>Não consigo fornecer um ritual/material a um membro.</strong> O material tem um grau exigido e o membro ainda não chegou lá (ex.: Companheiro pedindo Ritual de Mestre) — ou não há quantidade disponível em estoque. Veja Materiais e patrimônio (capítulo 8).</li>
                 <li><strong>Onde encontro o Regimento Interno / Constituição da Potência?</strong> Em <UI>Meu portal → Documentos da Loja</UI>, se a Secretaria já tiver publicado (capítulo 10).</li>

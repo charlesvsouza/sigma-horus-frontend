@@ -281,16 +281,27 @@ P2. [x] Voz cerimonial dos estados vazios (DESIGN.md já escrita, nunca implemen
     fornecimento), Cobranças, Sessões, Comunicação, Documentos, Conciliação bancária,
     Patrimônio, Balancetes, Inadimplência e Campanhas de hospitalaria.
 
-P2. [x] Cadastros mestre: escopo e dono. Corrigido parcialmente (2026-09-16): o
-    `CollapsibleCard` local (fork do design system) ganhou o mesmo `aria-expanded`/
-    `aria-controls` do componente compartilhado. A parte estrutural — promover "Contas
-    bancárias e Caixa" (e possivelmente Plano de contas/Clientes-fornecedores) para
-    itens próprios em Financeiro, e trocar `INPUT`/`ADD_BTN`/`document.getElementById`
-    locais por `inputClass`/`Button` do design system — fica **deliberadamente
-    adiada**: mexe em rotas/navegação (não é refinamento de baixo risco) e o `INPUT`
-    local usa `flex-1` num layout `flex`, enquanto `inputClass` é `w-full` — trocar às
-    cegas arrisca quebrar o wrap dos formulários. Requer decisão do dono antes de
-    tocar em URLs/menu.
+P2. [x] Cadastros mestre: escopo e dono. Corrigido em duas etapas. Em 2026-09-16
+    (1ª etapa): o `CollapsibleCard` local (fork do design system) ganhou o mesmo
+    `aria-expanded`/`aria-controls` do componente compartilhado; a divisão estrutural
+    ficou deliberadamente adiada por depender de decisão do dono sobre rotas/menu.
+    Em 2026-09-16 (2ª etapa, após análise e decisão do dono): divisão completa feita.
+    Achado concreto que motivou a decisão: a página misturava dois recursos de RBAC
+    (Ritos/Potências gate em `'members'`/Secretaria; Plano de contas, Clientes-
+    fornecedores e Contas bancárias gate em `'accounts'`/Tesouraria) sob um único
+    controle de menu — o que fez o fix do P0 (dar `treasurer` acesso à página inteira)
+    produzir um bug ao vivo: Tesoureiro via os controles de editar/remover Ritos e
+    Potências, mas qualquer clique retornava "Acesso negado" (sem `members:write`).
+    Resolvido: nova página `/dashboard/cadastros-financeiros` ("Cadastros
+    financeiros", em Financeiro, roles `admin/venerable/treasurer`) recebeu Plano de
+    contas, Clientes e fornecedores e Contas bancárias e Caixa, reconstruídos com
+    `CollapsibleCard`/`inputClass`/`Button` do design system e edição inline por
+    estado controlado (sem `document.getElementById`). `Cadastros mestre` ficou só
+    com Ritos/Potências e o botão `Popular dados padrão (Brasil)` (que ainda semeia
+    as três coisas de uma vez); `treasurer` voltou a sair do seu nav (`layout.tsx`).
+    Atualizados: os 2 textos de dica em `TransferenciasClient.tsx` e ~9 referências
+    no manual (7.1, 7.13, 7.14, lista de menu do cap. 3, seção "Cadastros mestre e
+    cargos", FAQ) — manual em v1.6.
 
 P2. [x] Formulários longos sem aviso de alteração não salva nem scroll até o feedback.
     Corrigido (2026-09-16): `ConfiguracoesClient.tsx` ganhou `savedSnapshot`/`isDirty`

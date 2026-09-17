@@ -106,7 +106,7 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
         <section className="rounded-xl border border-white/[6%] bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Saldo atual por conta</h2>
           {financialAccounts.length === 0 ? (
-            <p className="mt-3 text-sm text-sand-dark">Nenhuma conta bancária/caixa cadastrada ainda — cadastre em Cadastros mestre.</p>
+            <p className="mt-3 text-sm text-sand-dark">Nenhuma conta bancária/caixa cadastrada ainda — cadastre em Cadastros financeiros.</p>
           ) : (
             <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {financialAccounts.map((f) => (
@@ -136,7 +136,7 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
                 <textarea aria-label="Observação" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observação (opcional)" rows={2} />
               </div>
               <Button type="submit" disabled={submitting || activeAccounts.length < 2}>{submitting ? 'Enviando…' : 'Solicitar transferência'}</Button>
-              {activeAccounts.length < 2 ? <p className="text-xs text-sand-dark">Cadastre pelo menos duas contas ativas em Cadastros mestre para transferir entre elas.</p> : null}
+              {activeAccounts.length < 2 ? <p className="text-xs text-sand-dark">Cadastre pelo menos duas contas ativas em Cadastros financeiros para transferir entre elas.</p> : null}
             </form>
           </FormCard>
 
