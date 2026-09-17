@@ -51,6 +51,7 @@ const NAV: NavGroupDef[] = [
     category: 'Atividades',
     items: [
       { href: '/dashboard/sessoes', label: 'Sessões', roles: ['admin', 'venerable', 'secretary'] },
+      { href: '/dashboard/sessoes/frequencia', label: 'Frequência às sessões', roles: ['admin', 'venerable', 'secretary'] },
       { href: '/dashboard/portal/secretaria', label: 'Secretaria', roles: ['member'] },
       { href: '/dashboard/documentos', label: 'Documentos', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
       { href: '/dashboard/comunicacao', label: 'Comunicação', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },

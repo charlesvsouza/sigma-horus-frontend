@@ -208,7 +208,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.7</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.8</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -270,7 +270,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.7 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.8 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -423,7 +423,7 @@ export function ManualBook() {
                 <li><strong>Visão geral:</strong> <UI>Visão geral</UI> (indicadores), <UI>Meu portal</UI> e <UI>Manual &amp; ajuda</UI>.</li>
                 <li><strong>Loja &amp; cadastros:</strong> <UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>, <UI>Veneralato</UI>.</li>
                 <li><strong>Financeiro:</strong> <UI>Cadastros financeiros</UI>, <UI>Contas</UI>, <UI>Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de contas</UI>, <UI>Conciliação bancária</UI>, <UI>Patrimônio</UI>, <UI>Relatórios</UI>.</li>
-                <li><strong>Atividades:</strong> <UI>Sessões</UI>, <UI>Documentos</UI>, <UI>Comunicação</UI>.</li>
+                <li><strong>Atividades:</strong> <UI>Sessões</UI>, <UI>Frequência às sessões</UI>, <UI>Documentos</UI>, <UI>Comunicação</UI>.</li>
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI> e <UI>Campanhas</UI> de benemerência.</li>
                 <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
               </Bullets>
@@ -1095,6 +1095,24 @@ export function ManualBook() {
                 <Note>
                   A ordem do dia e o balaustre de todas as sessões futuras e passadas formam o <strong>calendário da
                   Secretaria</strong> que o obreiro vê no portal (capítulo 10) — mantenha-os atualizados.
+                </Note>
+              </Sub>
+              <Sub id="sec-frequencia" title="Frequência às sessões">
+                <p>
+                  Em <UI>Atividades → Frequência às sessões</UI>, veja quem tem faltado — a lista de obreiros ativos
+                  fica ordenada pela pior frequência primeiro, com <UI>faltas seguidas</UI> destacada quando chega a 3
+                  ou mais.
+                </p>
+                <Steps>
+                  <li>Escolha o período (<UI>De</UI>/<UI>Até</UI>) ou um atalho: <UI>Ano atual</UI>, <UI>Últimos 6 meses</UI>, <UI>Últimos 12 meses</UI> ou <UI>Todas as sessões</UI>.</li>
+                  <li>A tabela mostra, por obreiro: presenças, faltas, sessões <UI>não registradas</UI> (quando ninguém marcou presença/ausência) e a frequência em %.</li>
+                  <li>Abaixo, a lista das sessões do período com o total de presentes/ausentes em cada uma — útil pra conferir se alguma sessão ficou sem registro de presença.</li>
+                  <li><UI>Salvar como PDF</UI> imprime o relatório com o timbre da loja.</li>
+                </Steps>
+                <Note>
+                  &quot;Não registrada&quot; é diferente de falta: significa que ninguém marcou presença daquele
+                  obreiro naquela sessão (7.15 tem o mesmo cuidado nos extratos financeiros — o relatório nunca inventa
+                  um dado que não foi lançado).
                 </Note>
               </Sub>
               <Sub id="sec-materiais" title="Materiais e patrimônio">

@@ -13,7 +13,7 @@ import {
   ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
   MessageSquare, Contact, HeartHandshake, Settings, KeyRound, Gem, Plug, ScrollText,
   PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart,
-  Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, type LucideIcon,
+  Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -45,6 +45,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/relatorios/fluxo-caixa': TrendingUp,
   '/dashboard/relatorios/orcamento': PieChart,
   '/dashboard/sessoes': CalendarDays,
+  '/dashboard/sessoes/frequencia': UserCheck,
   '/dashboard/portal/secretaria': CalendarDays,
   '/dashboard/documentos': FolderClosed,
   '/dashboard/comunicacao': MessageSquare,
