@@ -17,7 +17,7 @@ const RESOURCE_LABELS: Record<string, string> = {
   members: 'Membros',
   documents: 'Documentos',
   messages: 'Comunicação',
-  accounts: 'Financeiro',
+  accounts: 'Tesouraria',
   portal: 'Portal',
   campaigns: 'Hospitalaria',
   import: 'Importação de dados',

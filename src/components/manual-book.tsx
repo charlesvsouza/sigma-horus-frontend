@@ -209,7 +209,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.18</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.19</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -271,7 +271,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.18 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.19 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -420,22 +420,31 @@ export function ManualBook() {
                 Depois de entrar, você vê o painel com um <strong>menu lateral</strong> organizado por categorias. Cada
                 usuário enxerga apenas os itens permitidos ao seu papel.
               </p>
+              <p>
+                O menu tem dois tipos de entrada: <strong>itens soltos</strong>, sempre visíveis sem precisar abrir
+                nada (uso frequente por qualquer papel), e <strong>seções</strong> em acordeão — uma aberta por vez —
+                que espelham os quatro cargos de gestão da loja (mesma divisão dos capítulos 6 a 9 deste manual).
+              </p>
               <Bullets>
-                <li><strong>Visão geral:</strong> <UI>Visão geral</UI> (indicadores), <UI>Meu portal</UI> e <UI>Manual &amp; ajuda</UI>.</li>
-                <li><strong>Loja &amp; cadastros:</strong> <UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>, <UI>Veneralato</UI>.</li>
-                <li><strong>Social:</strong> <UI>Quadro social</UI>, <UI>Galeria de Veneráveis</UI> e <UI>Quadro da Gestão</UI> — as três telas de fotografia/histórico do quadro de membros e da gestão.</li>
+                <li><strong>Itens soltos (Visão geral):</strong> <UI>Visão geral</UI> (indicadores), <UI>Meu portal</UI>, <UI>Calendário de sessões</UI> (vale pra todo oficial, não só o obreiro) e <UI>Manual &amp; ajuda</UI>.</li>
                 <li>
-                  <strong>Financeiro:</strong> dividido em três grupos — <UI>Entradas e Saídas</UI> (<UI>Contas</UI>,
+                  <strong>Secretaria:</strong> dividida em quatro grupos — <UI>Membros &amp; Cadastros</UI>
+                  (<UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>),
+                  <UI> Veneralato &amp; Sessões</UI> (<UI>Veneralato</UI>, <UI>Sessões</UI>, <UI>Frequência às
+                  sessões</UI>), <UI>Social</UI> (<UI>Quadro social</UI>, <UI>Galeria de Veneráveis</UI>, <UI>Quadro
+                  da Gestão</UI>) e <UI>Documentos &amp; Comunicação</UI> (<UI>Documentos</UI>, <UI>Comunicação</UI>).
+                  Os grupos são só rótulos visuais dentro do menu já aberto — não precisam de um clique a mais.
+                </li>
+                <li>
+                  <strong>Tesouraria:</strong> dividida em três grupos — <UI>Entradas e Saídas</UI> (<UI>Contas</UI>,
                   <UI> Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de
                   contas</UI>), <UI>Cadastros e Conferência</UI> (<UI>Cadastros financeiros</UI>, <UI>Conciliação
                   bancária</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (<UI>Resumo financeiro</UI>, <UI>DRE
                   comparativo</UI>, <UI>Fechamento</UI>, <UI>Inadimplência (Art. 002)</UI>, <UI>Balancetes
-                  periódicos</UI>, <UI>Fluxo de caixa projetado</UI>, <UI>Orçamento anual</UI>). Os grupos são só
-                  rótulos visuais dentro do menu já aberto — não precisam de um clique a mais.
+                  periódicos</UI>, <UI>Fluxo de caixa projetado</UI>, <UI>Orçamento anual</UI>).
                 </li>
-                <li><strong>Atividades:</strong> <UI>Sessões</UI>, <UI>Frequência às sessões</UI>, <UI>Documentos</UI>, <UI>Comunicação</UI>.</li>
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI> e <UI>Campanhas</UI> de benemerência.</li>
-                <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
+                <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Importar cadastros</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
               </Bullets>
               <p>O topo mostra o nome da loja, o usuário logado e o status da assinatura (teste, ativa ou pendente).</p>
               <p>
@@ -449,8 +458,10 @@ export function ManualBook() {
                 celular, o menu abre pelo botão de menu (☰) e cobre a tela enquanto você escolhe.
               </p>
               <p>
-                <strong>Uma categoria por vez:</strong> ao abrir uma categoria, a anterior se fecha sozinha — assim a
-                lista não fica longa e poluída. A categoria da tela em que você está já abre automaticamente.
+                <strong>Uma categoria por vez:</strong> ao abrir uma seção (Secretaria, Tesouraria, Hospitalaria ou
+                Administração), a anterior se fecha sozinha — assim a lista não fica longa e poluída. A seção da tela
+                em que você está já abre automaticamente. Os <strong>itens soltos</strong> de Visão geral não entram
+                nesse acordeão — ficam sempre à mostra, sem nenhum clique.
               </p>
               <p>
                 <strong>Busca rápida (atalho):</strong> pressione <UI>Ctrl + K</UI> (ou <UI>⌘ + K</UI> no Mac), ou
@@ -559,7 +570,7 @@ export function ManualBook() {
                   login é o <strong>e-mail cadastrado</strong> e a senha inicial é <strong>gerada pelo sistema</strong>.
                 </p>
                 <Steps>
-                  <li>Em <UI>Loja &amp; cadastros → Membros</UI>, confirme que o membro tem <strong>e-mail</strong> e abra o cadastro.</li>
+                  <li>Em <UI>Secretaria → Membros & Cadastros → Membros</UI>, confirme que o membro tem <strong>e-mail</strong> e abra o cadastro.</li>
                   <li>Clique em <UI>Conceder acesso</UI>. O sistema cria o login e <strong>envia a senha provisória por e-mail</strong> ao obreiro.</li>
                   <li>No primeiro acesso, o obreiro é obrigado a <strong>definir uma nova senha</strong>.</li>
                   <li>Se precisar, use <UI>Reenviar acesso</UI> para gerar outra senha provisória.</li>
@@ -718,7 +729,7 @@ export function ManualBook() {
               </Sub>
 
               <Sub id="tes-contas" title="7.2 Lançar contas a receber e a pagar">
-                <p>Em <UI>Financeiro → Entradas e Saídas → Contas</UI>, no bloco <UI>Nova conta</UI>:</p>
+                <p>Em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, no bloco <UI>Nova conta</UI>:</p>
                 <Steps>
                   <li>Escolha a <UI>Categoria (plano de contas)</UI> — ela já sugere o título e o tipo.</li>
                   <li>Confira o <UI>Título da conta</UI> e o tipo: <strong>Conta a receber</strong> ou <strong>Conta a pagar</strong>.</li>
@@ -736,7 +747,7 @@ export function ManualBook() {
 
               <Sub id="tes-cobrancas" title="7.3 Criar cobranças e recorrência">
                 <p>
-                  Cobranças são os títulos que você gera para receber dos membros. Em <UI>Financeiro → Entradas e Saídas → Cobranças</UI>, no
+                  Cobranças são os títulos que você gera para receber dos membros. Em <UI>Tesouraria → Entradas e Saídas → Cobranças</UI>, no
                   bloco <UI>Nova cobrança</UI>:
                 </p>
                 <Steps>
@@ -782,7 +793,7 @@ export function ManualBook() {
               <Sub id="tes-pagamentos" title="7.5 Registrar pagamentos (baixa manual)">
                 <p>
                   Para pagamentos recebidos fora do Asaas (dinheiro, PIX direto, etc.) ou para baixar contas a pagar, use
-                  <UI>Financeiro → Entradas e Saídas → Pagamentos</UI>, bloco <UI>Novo pagamento</UI>:
+                  <UI>Tesouraria → Entradas e Saídas → Pagamentos</UI>, bloco <UI>Novo pagamento</UI>:
                 </p>
                 <Steps>
                   <li>Selecione a <UI>conta</UI> correspondente e, se quiser, <UI>vincule a um membro</UI>.</li>
@@ -805,11 +816,11 @@ export function ManualBook() {
 
               <Sub id="tes-relatorios" title="7.6 Relatórios e fechamento">
                 <p>
-                  Em <UI>Financeiro → Relatórios → Resumo financeiro</UI> você acompanha <UI>Resumo de abertura</UI>,
+                  Em <UI>Tesouraria → Relatórios → Resumo financeiro</UI> você acompanha <UI>Resumo de abertura</UI>,
                   <UI> Próximos vencimentos</UI> e <UI>Últimos registros</UI>, com <strong>filtro por período</strong> e <UI>Exportar</UI> (CSV).
                 </p>
                 <p>
-                  Em <UI>Financeiro → Relatórios → Fechamento</UI> está o <strong>relatório financeiro completo</strong> no formato livro
+                  Em <UI>Tesouraria → Relatórios → Fechamento</UI> está o <strong>relatório financeiro completo</strong> no formato livro
                   caixa, para o fechamento do veneralato: <strong>Balanço Financeiro</strong>, <strong>Balancete por plano
                   de contas</strong>, <strong>Receitas × Despesas</strong> mensal, <strong>Livro Caixa</strong>,
                   <strong> Cobranças</strong> e <strong>Saldo dos Irmãos</strong>. Escolha o período e use
@@ -820,7 +831,7 @@ export function ManualBook() {
 
               <Sub id="tes-fechamento" title="7.7 Encerramento do veneralato (3 passos)">
                 <p>
-                  Ao fim da gestão, em <UI>Loja &amp; cadastros → Veneralato</UI> o encerramento segue <strong>três passos
+                  Ao fim da gestão, em <UI>Secretaria → Veneralato & Sessões → Veneralato</UI> o encerramento segue <strong>três passos
                   encadeados</strong>, cada um com um responsável — não se pula etapa:
                 </p>
                 <Steps>
@@ -843,12 +854,12 @@ export function ManualBook() {
                 </p>
                 <Steps>
                   <li>
-                    Ao lançar uma conta a receber vinculada a um membro em <UI>Financeiro → Entradas e Saídas → Contas</UI>, marque a
+                    Ao lançar uma conta a receber vinculada a um membro em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, marque a
                     caixa <strong>&quot;É mensalidade do membro&quot;</strong>. Só contas marcadas assim entram na
                     regra dos 60 dias — cobranças pontuais (evento, campanha) não contam.
                   </li>
                   <li>
-                    Em <UI>Financeiro → Relatórios → Inadimplência (Art. 002)</UI>, veja todos os membros com
+                    Em <UI>Tesouraria → Relatórios → Inadimplência (Art. 002)</UI>, veja todos os membros com
                     mensalidade em aberto: quantidade de parcelas, valor total, vencimento mais antigo, dias de
                     atraso e, se configurada (7.9), a <strong>multa/juros estimados</strong>. Os enquadrados no
                     Art. 002 aparecem destacados.
@@ -911,7 +922,7 @@ export function ManualBook() {
 
               <Sub id="tes-balancetes" title="7.10 Balancetes periódicos">
                 <p>
-                  Em <UI>Financeiro → Relatórios → Balancetes periódicos</UI>, gere o balancete de qualquer intervalo de
+                  Em <UI>Tesouraria → Relatórios → Balancetes periódicos</UI>, gere o balancete de qualquer intervalo de
                   datas (trimestral, semestral — o que o regulamento da sua Potência exigir), independente do
                   encerramento do veneralato inteiro. Escolha <UI>De</UI>/<UI>Até</UI>, clique em <UI>Gerar
                   balancete</UI> e, depois de apresentado em sessão, o Venerável ou o Administrador clica em
@@ -942,7 +953,7 @@ export function ManualBook() {
 
               <Sub id="tes-gerencial" title="7.11 Fluxo de caixa, orçamento e patrimônio">
                 <p>
-                  Três telas de visão gerencial, em <UI>Financeiro</UI>:
+                  Três telas de visão gerencial, em <UI>Tesouraria</UI>:
                 </p>
                 <Bullets>
                   <li><strong>Fluxo de caixa projetado:</strong> mostra o que já está lançado e ainda não foi pago, separado em faixas (vencido, próximos 30/60/90 dias) — ajuda a antecipar se o caixa vai apertar antes de acontecer.</li>
@@ -957,7 +968,7 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li><strong>Verificar pagamentos no Asaas</strong> (em <UI>Integrações</UI>, se o Asaas estiver conectado): confere no Asaas cobranças emitidas que ainda não baixaram no sistema — cobre o caso raro de o aviso automático (webhook) falhar ou atrasar.</li>
-                  <li><strong>Conciliação bancária</strong> (<UI>Financeiro → Cadastros e Conferência → Conciliação bancária</UI>): importe o extrato do seu banco (arquivo <strong>OFX</strong>, exportado pelo internet banking, ou <strong>CSV</strong> com colunas Data/Descrição/Valor). O sistema tenta casar cada linha com um pagamento já registrado (mesmo valor, data próxima, mesma direção — receber ou pagar); o que não casar sozinho fica disponível para <UI>Vincular manualmente</UI> ou <UI>Ignorar</UI>.</li>
+                  <li><strong>Conciliação bancária</strong> (<UI>Tesouraria → Cadastros e Conferência → Conciliação bancária</UI>): importe o extrato do seu banco (arquivo <strong>OFX</strong>, exportado pelo internet banking, ou <strong>CSV</strong> com colunas Data/Descrição/Valor). O sistema tenta casar cada linha com um pagamento já registrado (mesmo valor, data próxima, mesma direção — receber ou pagar); o que não casar sozinho fica disponível para <UI>Vincular manualmente</UI> ou <UI>Ignorar</UI>.</li>
                 </Bullets>
               </Sub>
 
@@ -1007,7 +1018,7 @@ export function ManualBook() {
                   de cada banco/caixa.
                 </p>
                 <p>
-                  <strong>Transferir entre contas</strong> — em <UI>Financeiro → Entradas e Saídas → Transferências entre contas</UI>:
+                  <strong>Transferir entre contas</strong> — em <UI>Tesouraria → Entradas e Saídas → Transferências entre contas</UI>:
                 </p>
                 <Steps>
                   <li>No topo da tela, confira o <strong>saldo atual</strong> de cada conta cadastrada.</li>
@@ -1023,7 +1034,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="tes-extratos" title="7.15 Extratos de contas">
                 <p>
-                  Em <UI>Financeiro → Entradas e Saídas → Extratos de contas</UI>, veja a movimentação completa de uma
+                  Em <UI>Tesouraria → Entradas e Saídas → Extratos de contas</UI>, veja a movimentação completa de uma
                   conta bancária ou do Caixa isoladamente — o mesmo espírito de um extrato bancário: saldo inicial do
                   período, cada lançamento em ordem cronológica com saldo corrente, e saldo final.
                 </p>
@@ -1041,7 +1052,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="tes-dre" title="7.16 DRE comparativo entre períodos">
                 <p>
-                  Em <UI>Financeiro → Relatórios → DRE comparativo</UI>, veja receitas e despesas por conta do plano de
+                  Em <UI>Tesouraria → Relatórios → DRE comparativo</UI>, veja receitas e despesas por conta do plano de
                   contas, comparando dois períodos lado a lado — útil pra ver se uma categoria cresceu ou caiu de um
                   mês/ano pro outro, sem precisar decorar os números do período anterior.
                 </p>
@@ -1062,7 +1073,7 @@ export function ManualBook() {
               <p>O Secretário mantém o quadro de obreiros, a estrutura de cargos, as sessões e os documentos.</p>
               <Sub id="sec-membros" title="Membros — buscar, cadastrar, editar e excluir">
                 <p>
-                  Em <UI>Loja &amp; cadastros → Membros</UI>, a tela abre com a <strong>lista de obreiros</strong> em formato
+                  Em <UI>Secretaria → Membros & Cadastros → Membros</UI>, a tela abre com a <strong>lista de obreiros</strong> em formato
                   de tabela compacta. Use a <UI>busca</UI> (por <strong>nome, CPF ou CIM</strong>) e o filtro de
                   <UI> situação</UI> para encontrar rapidamente. Clique numa linha para <strong>expandir</strong> os detalhes,
                   onde ficam os botões <UI>Editar</UI> e <UI>Excluir cadastro</UI>.
@@ -1160,7 +1171,7 @@ export function ManualBook() {
                   Em <UI>Cadastros mestre</UI> você gerencia <UI>Ritos</UI> e <UI>Potências</UI>, além do botão
                   <UI> Popular dados padrão (Brasil)</UI> que preenche ritos, potências e o plano de contas de uma vez.
                   O <UI>Plano de contas</UI>, <UI>Clientes e fornecedores</UI> (ver 7.13) e as <UI>Contas bancárias e
-                  Caixa</UI> (ver 7.14) ficam em <UI>Cadastros financeiros</UI>, dentro de <UI>Financeiro</UI> — são
+                  Caixa</UI> (ver 7.14) ficam em <UI>Cadastros financeiros</UI>, dentro de <UI>Tesouraria</UI> — são
                   cadastros de uso do Tesoureiro, separados dos de Ritos/Potências (Secretaria). Em <UI>Cargos</UI>,
                   mantém os cargos da loja conforme o rito.
                 </p>
@@ -1185,7 +1196,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-sessoes" title="Sessões, ordem do dia e convocação">
                 <p>
-                  Em <UI>Atividades → Sessões</UI>, use <UI>Criar sessão</UI> informando título, <UI>Início</UI> e
+                  Em <UI>Secretaria → Veneralato & Sessões → Sessões</UI>, use <UI>Criar sessão</UI> informando título, <UI>Início</UI> e
                   <UI> Término</UI> (data e hora dos dois — o término define quando a presença libera, ver abaixo),
                   tipo, grau opcional e a <UI>Ordem do dia</UI> — o texto que os obreiros verão na Secretaria do
                   portal. As <UI>Observações internas</UI> ficam só para a diretoria, nunca aparecem para o membro.
@@ -1215,7 +1226,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-frequencia" title="Frequência às sessões">
                 <p>
-                  Em <UI>Atividades → Frequência às sessões</UI>, veja quem tem faltado — a lista de obreiros ativos
+                  Em <UI>Secretaria → Veneralato & Sessões → Frequência às sessões</UI>, veja quem tem faltado — a lista de obreiros ativos
                   fica ordenada pela pior frequência primeiro, com <UI>faltas seguidas</UI> destacada quando chega a 3
                   ou mais.
                 </p>
@@ -1233,7 +1244,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-materiais" title="Materiais e patrimônio">
                 <p>
-                  Em <UI>Loja &amp; cadastros → Materiais e patrimônio</UI>, mantenha o inventário de tudo que a loja usa
+                  Em <UI>Secretaria → Membros & Cadastros → Materiais e patrimônio</UI>, mantenha o inventário de tudo que a loja usa
                   no dia a dia — não só alfaias e indumentária: colunas, altar, malhetes, espadas, tapete, urna,
                   estandarte, placa constitutiva, tábua de delinear, aventais, punhos, joias de cargo e rituais, tudo
                   num só lugar.

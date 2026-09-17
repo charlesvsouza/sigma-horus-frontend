@@ -8,41 +8,68 @@ import DashboardShell from './DashboardShell';
 
 interface NavEntry { href: string; label: string; roles: string[]; }
 interface NavSubgroupDef { label: string; items: NavEntry[]; }
-interface NavGroupDef { category: string; items?: NavEntry[]; subgroups?: NavSubgroupDef[]; }
+interface NavGroupDef { category: string; items?: NavEntry[]; subgroups?: NavSubgroupDef[]; flat?: boolean; }
 
 const NAV: NavGroupDef[] = [
+  // "Visão geral" é um grupo solto (flat): os itens aparecem direto no menu,
+  // sem precisar abrir um acordeão — são as telas mais acessadas por
+  // qualquer papel (inclusive o obreiro comum), então cada clique a mais
+  // pesa proporcionalmente mais aqui do que nas seções de gestão abaixo.
   {
     category: 'Visão geral',
+    flat: true,
     items: [
       { href: '/dashboard', label: 'Visão geral', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
       { href: '/dashboard/portal', label: 'Meu portal', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
       // Todo oficial também é obreiro — o calendário de sessões vale pra
-      // todos, não só pra quem tem papel "member" (por isso mora aqui, ao
-      // lado de "Meu portal", e não dentro de Atividades/gestão).
+      // todos, não só pra quem tem papel "member".
       { href: '/dashboard/portal/secretaria', label: 'Calendário de sessões', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
       { href: '/manual', label: 'Manual & ajuda', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
     ],
   },
+  // As 4 seções de gestão espelham os cargos da loja (mesma divisão que o
+  // manual já usa por capítulo) — Secretaria concentra Membros/Cadastros/
+  // Veneralato/Sessões/Social/Documentos, que antes viviam espalhados em
+  // 3 categorias soltas ("Loja & cadastros", "Social", "Atividades").
   {
-    category: 'Loja & cadastros',
-    items: [
-      { href: '/dashboard/membros', label: 'Membros', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
-      { href: '/dashboard/cadastros', label: 'Cadastros mestre', roles: ['admin', 'venerable', 'secretary'] },
-      { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: ['admin', 'secretary'] },
-      { href: '/dashboard/cargos', label: 'Cargos', roles: ['admin', 'venerable', 'secretary'] },
-      { href: '/dashboard/veneralato', label: 'Veneralato', roles: ['admin', 'venerable', 'secretary'] },
+    category: 'Secretaria',
+    subgroups: [
+      {
+        label: 'Membros & Cadastros',
+        items: [
+          { href: '/dashboard/membros', label: 'Membros', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
+          { href: '/dashboard/cadastros', label: 'Cadastros mestre', roles: ['admin', 'venerable', 'secretary'] },
+          { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: ['admin', 'secretary'] },
+          { href: '/dashboard/cargos', label: 'Cargos', roles: ['admin', 'venerable', 'secretary'] },
+        ],
+      },
+      {
+        label: 'Veneralato & Sessões',
+        items: [
+          { href: '/dashboard/veneralato', label: 'Veneralato', roles: ['admin', 'venerable', 'secretary'] },
+          { href: '/dashboard/sessoes', label: 'Sessões', roles: ['admin', 'venerable', 'secretary'] },
+          { href: '/dashboard/sessoes/frequencia', label: 'Frequência às sessões', roles: ['admin', 'venerable', 'secretary'] },
+        ],
+      },
+      {
+        label: 'Social',
+        items: [
+          { href: '/dashboard/membros/quadro-social', label: 'Quadro social', roles: ['admin', 'venerable', 'secretary'] },
+          { href: '/dashboard/galeria-veneraveis', label: 'Galeria de Veneráveis', roles: ['admin', 'venerable', 'secretary'] },
+          { href: '/dashboard/quadro-gestao', label: 'Quadro da Gestão', roles: ['admin', 'venerable', 'secretary'] },
+        ],
+      },
+      {
+        label: 'Documentos & Comunicação',
+        items: [
+          { href: '/dashboard/documentos', label: 'Documentos', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
+          { href: '/dashboard/comunicacao', label: 'Comunicação', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
+        ],
+      },
     ],
   },
   {
-    category: 'Social',
-    items: [
-      { href: '/dashboard/membros/quadro-social', label: 'Quadro social', roles: ['admin', 'venerable', 'secretary'] },
-      { href: '/dashboard/galeria-veneraveis', label: 'Galeria de Veneráveis', roles: ['admin', 'venerable', 'secretary'] },
-      { href: '/dashboard/quadro-gestao', label: 'Quadro da Gestão', roles: ['admin', 'venerable', 'secretary'] },
-    ],
-  },
-  {
-    category: 'Financeiro',
+    category: 'Tesouraria',
     subgroups: [
       {
         label: 'Entradas e Saídas',
@@ -74,15 +101,6 @@ const NAV: NavGroupDef[] = [
           { href: '/dashboard/relatorios/orcamento', label: 'Orçamento anual', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
         ],
       },
-    ],
-  },
-  {
-    category: 'Atividades',
-    items: [
-      { href: '/dashboard/sessoes', label: 'Sessões', roles: ['admin', 'venerable', 'secretary'] },
-      { href: '/dashboard/sessoes/frequencia', label: 'Frequência às sessões', roles: ['admin', 'venerable', 'secretary'] },
-      { href: '/dashboard/documentos', label: 'Documentos', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
-      { href: '/dashboard/comunicacao', label: 'Comunicação', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
     ],
   },
   {
@@ -169,6 +187,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const groups = NAV
     .map((g) => ({
       category: g.category,
+      flat: g.flat ?? false,
       items: (g.items ?? []).filter((i) => i.roles.includes(role)).map(({ href, label }) => ({ href, label })),
       subgroups: (g.subgroups ?? [])
         .map((sg) => ({ label: sg.label, items: sg.items.filter((i) => i.roles.includes(role)).map(({ href, label }) => ({ href, label })) }))

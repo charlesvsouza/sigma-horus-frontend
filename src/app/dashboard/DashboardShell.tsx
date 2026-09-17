@@ -19,7 +19,7 @@ import {
 
 interface NavItem { href: string; label: string; }
 interface NavSubgroup { label: string; items: NavItem[]; }
-interface NavGroup { category: string; items: NavItem[]; subgroups: NavSubgroup[]; }
+interface NavGroup { category: string; items: NavItem[]; subgroups: NavSubgroup[]; flat: boolean; }
 
 // Todos os itens de uma categoria, soltos + dentro de subgrupos — usado onde
 // a estrutura de 3 níveis não importa (breadcrumb, paleta de comandos,
@@ -263,6 +263,22 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                     <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-gold' : 'text-sand-dark'}`} strokeWidth={1.75} aria-hidden="true" />
                     <span className={rail ? 'lg:hidden' : ''}>{item.label}</span>
                   </Link>
+                );
+              }
+
+              // Grupo "solto" (flat): sem acordeão — os itens ficam sempre
+              // visíveis, sem exigir um clique a mais pra abrir a categoria.
+              // Usado só pra "Visão geral" (itens de acesso frequente por
+              // qualquer papel); as demais categorias continuam em acordeão
+              // single-open, senão o menu inteiro ficaria comprido demais.
+              if (group.flat) {
+                return (
+                  <div key={group.category}>
+                    <p className={`px-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-sand-dark/70 ${rail ? 'lg:hidden' : ''}`}>
+                      {group.category}
+                    </p>
+                    <div className="mt-2 space-y-0.5">{group.items.map(renderItem)}</div>
+                  </div>
                 );
               }
 
