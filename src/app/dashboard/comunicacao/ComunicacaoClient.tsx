@@ -38,7 +38,15 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage({ kind: 'ok', text: 'Mensagem agendada com sucesso.' });
+        const s = data.stats as { sent: number; queued: number; failed: number; skipped: number } | undefined;
+        const parts: string[] = [];
+        if (s) {
+          if (s.sent) parts.push(`${s.sent} enviada${s.sent > 1 ? 's' : ''}`);
+          if (s.queued) parts.push(`${s.queued} na fila (canal não conectado nesta loja)`);
+          if (s.failed) parts.push(`${s.failed} falhou/falharam`);
+          if (s.skipped) parts.push(`${s.skipped} sem contato cadastrado`);
+        }
+        setMessage({ kind: s?.failed || s?.queued ? 'error' : 'ok', text: parts.length ? parts.join(', ') + '.' : 'Mensagem enviada com sucesso.' });
         setTitle('');
         setChannel('email');
         setContent('');

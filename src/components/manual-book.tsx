@@ -209,7 +209,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.10</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.11</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -271,7 +271,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.10 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.11 — 17 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1206,7 +1206,21 @@ export function ManualBook() {
                   disponibiliza o Regimento Interno (da loja e da Potência), o Regulamento Geral e a Constituição da
                   Potência: o Secretário sobe o arquivo uma vez e todo obreiro passa a ver e baixar em <UI>Meu portal →
                   Documentos da Loja</UI> (capítulo 10). Use o campo <UI>Categoria</UI> (ex.: &quot;Institucional&quot;)
-                  pra organizar a lista. Em <UI>Comunicação</UI>, registre avisos aos membros (recurso em evolução).
+                  pra organizar a lista.
+                </p>
+                <p>
+                  Em <UI>Comunicação</UI>, escreva um <UI>Título</UI> e o <UI>Texto da comunicação</UI>, escolha o
+                  <UI> canal</UI> (E-mail, WhatsApp ou SMS) e <UI>Enviar a todos ou a um membro</UI>, e clique em
+                  <UI> Enviar</UI> — a mensagem sai de verdade pelo canal escolhido, pros membros ativos (ou só pro
+                  selecionado). Deixar em branco manda a todos os membros ativos.
+                </p>
+                <Note>
+                  E-mail é provido pela plataforma (sempre disponível). WhatsApp e SMS dependem da loja ter conectado
+                  a própria conta em <UI>Administração → Integrações</UI> (6.6) — sem isso, a mensagem fica
+                  <strong> Na fila</strong> em vez de falhar, porque o canal simplesmente não está pronto ainda,
+                  não porque algo deu errado.
+                </Note>
+                <p>
                   O card <UI>Histórico</UI> mostra as 200 mensagens mais recentes (inclusive os avisos automáticos de
                   aniversário, jubileu e cobrança), com rolagem interna e um campo de busca por título, membro ou
                   canal — assim ele não cresce sem limite conforme os avisos automáticos se acumulam.
