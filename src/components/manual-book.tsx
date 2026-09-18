@@ -246,7 +246,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 17 de setembro de 2026 · versão 1.21</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 18 de setembro de 2026 · versão 1.22</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -308,7 +308,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.21 — 17 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.22 — 18 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1044,8 +1044,24 @@ export function ManualBook() {
                     <UI> Conta</UI> (opcionais) e marque <UI>Conta de investimento</UI> quando for o caso.
                   </li>
                   <li>Para <strong>Caixa</strong>: só o nome (ex.: &quot;Caixa da Loja&quot;) — representa o dinheiro em espécie guardado fisicamente.</li>
-                  <li>Clique em <UI>Criar</UI>. Uma conta que já tem lançamentos não pode ser excluída — use <UI>Desativar</UI> para tirá-la das opções de novos lançamentos sem perder o histórico.</li>
+                  <li>
+                    Preencha o <UI>Saldo inicial</UI> com o que já existia de verdade nessa conta/Caixa <strong>antes</strong>
+                    de começar a lançar no sistema (o extrato do banco/CDB na data em que a loja começou a usar o Sigma
+                    Horus, ou o dinheiro físico contado no Caixa naquele dia). Deixe em branco (zero) para uma conta nova,
+                    aberta sem saldo prévio.
+                  </li>
+                  <li>Clique em <UI>Criar</UI>. Uma conta que já tem lançamentos não pode ser excluída — use <UI>Desativar</UI> para tirá-la das opções de novos lançamentos sem perder o histórico. O <UI>Saldo inicial</UI> pode ser corrigido depois em <UI>Editar</UI>, a qualquer momento.</li>
                 </Steps>
+                <Note>
+                  <strong>Para o Tesoureiro:</strong> o saldo que a loja já tinha em banco/investimento/Caixa antes de
+                  começar a usar o sistema entra <strong>sempre</strong> pelo campo <UI>Saldo inicial</UI> desta tela —
+                  nunca lance esse valor como uma &quot;Conta a receber&quot; ou &quot;Conta a pagar&quot; fictícia só
+                  pra fazer o saldo bater. Uma conta a receber falsa não é dinheiro que alguém deve à loja; ela infla o
+                  card <UI>A receber</UI> do <UI>Resumo financeiro</UI> (7.6) com um valor que não tem cobrança nenhuma
+                  por trás, e passa a falsa impressão de inadimplência ou de recebíveis pendentes. O jeito certo de
+                  registrar &quot;o que a loja já tinha quando começou a escriturar aqui&quot; é sempre o <UI>Saldo
+                  inicial</UI> da própria conta bancária/Caixa (esta seção), nunca uma conta a receber/pagar.
+                </Note>
                 <p>
                   <strong>Usar nos lançamentos:</strong> ao lançar uma conta a receber/pagar (7.2), a <UI>Conta bancária/
                   caixa prevista</UI> é opcional — serve só para já vir sugerida na hora de dar baixa. Ao registrar o

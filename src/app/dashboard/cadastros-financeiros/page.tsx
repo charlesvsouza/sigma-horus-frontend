@@ -25,6 +25,7 @@ export default async function CadastrosFinanceirosPage() {
   const financialAccounts = data.financialAccounts.map((f) => ({
     id: f.id, name: f.name, kind: f.kind, bankName: f.bankName ?? null, isInvestment: f.isInvestment,
     agency: f.agency ?? null, accountNumber: f.accountNumber ?? null, active: f.active,
+    openingBalance: f.openingBalance,
   }));
 
   return <CadastrosFinanceirosClient chartAccounts={chartAccounts} counterparties={counterparties} financialAccounts={financialAccounts} />;

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, CollapsibleCard, inputClass, useConfirm } from '@/components/ui';
 import { BRAZILIAN_BANKS } from '@/lib/banks';
+import { brl } from '@/lib/currency';
 
 interface ChartAccountItem { id: string; code: string; name: string; type: string; category?: string | null; }
 interface CounterpartyItem {
@@ -12,7 +13,7 @@ interface CounterpartyItem {
 }
 interface FinancialAccountItem {
   id: string; name: string; kind: string; bankName: string | null; isInvestment: boolean;
-  agency: string | null; accountNumber: string | null; active: boolean;
+  agency: string | null; accountNumber: string | null; active: boolean; openingBalance: number;
 }
 
 const KIND_LABEL: Record<string, string> = { client: 'Cliente', supplier: 'Fornecedor', both: 'Cliente e fornecedor' };
@@ -175,11 +176,11 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
   }
 
   // --- Contas bancárias e Caixa ------------------------------------------
-  const EMPTY_FA_FORM = { kind: 'bank', name: '', bankName: BRAZILIAN_BANKS[0], isInvestment: false, agency: '', accountNumber: '' };
+  const EMPTY_FA_FORM = { kind: 'bank', name: '', bankName: BRAZILIAN_BANKS[0], isInvestment: false, agency: '', accountNumber: '', openingBalance: '' };
   const [faForm, setFaForm] = useState(EMPTY_FA_FORM);
   const [showFaForm, setShowFaForm] = useState(false);
   const [editingFa, setEditingFa] = useState<string | null>(null);
-  const [faEditForm, setFaEditForm] = useState({ name: '', agency: '', accountNumber: '' });
+  const [faEditForm, setFaEditForm] = useState({ name: '', agency: '', accountNumber: '', openingBalance: '' });
   const [faFilter, setFaFilter] = useState<'all' | 'bank' | 'cash'>('all');
   const [faSaving, setFaSaving] = useState(false);
 
@@ -206,7 +207,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
 
   function startEditFa(f: FinancialAccountItem) {
     setEditingFa(f.id);
-    setFaEditForm({ name: f.name, agency: f.agency ?? '', accountNumber: f.accountNumber ?? '' });
+    setFaEditForm({ name: f.name, agency: f.agency ?? '', accountNumber: f.accountNumber ?? '', openingBalance: String(f.openingBalance ?? 0) });
   }
 
   async function saveFa(id: string) {
@@ -418,6 +419,10 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
               ) : (
                 <input value={faForm.name} onChange={(e) => setFaForm({ ...faForm, name: e.target.value })} className={inputClass} placeholder="Nome (ex: Caixa da Loja)" />
               )}
+              <label className="block text-sm text-sand-dark sm:col-span-2">
+                Saldo inicial (o que já existia nessa conta antes de começar a usar o sistema)
+                <input type="number" step="0.01" value={faForm.openingBalance} onChange={(e) => setFaForm({ ...faForm, openingBalance: e.target.value })} className={`mt-1 ${inputClass}`} placeholder="0,00" />
+              </label>
               <div className="flex gap-2 sm:col-span-2">
                 <Button type="submit" disabled={faSaving}>{faSaving ? '…' : 'Criar'}</Button>
                 <Button type="button" variant="ghost" onClick={() => setShowFaForm(false)}>Cancelar</Button>
@@ -438,6 +443,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
                         <input value={faEditForm.name} onChange={(e) => setFaEditForm({ ...faEditForm, name: e.target.value })} aria-label="Nome" className="min-w-[10rem] flex-1 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <input value={faEditForm.agency} onChange={(e) => setFaEditForm({ ...faEditForm, agency: e.target.value })} aria-label="Agência" placeholder="Agência" className="w-24 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <input value={faEditForm.accountNumber} onChange={(e) => setFaEditForm({ ...faEditForm, accountNumber: e.target.value })} aria-label="Conta" placeholder="Conta" className="w-28 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <input type="number" step="0.01" value={faEditForm.openingBalance} onChange={(e) => setFaEditForm({ ...faEditForm, openingBalance: e.target.value })} aria-label="Saldo inicial" placeholder="Saldo inicial" className="w-32 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <button onClick={() => saveFa(f.id)} className="text-xs text-gold">Salvar</button>
                         <button onClick={() => setEditingFa(null)} className="text-xs text-sand-dark">Cancelar</button>
                       </div>
@@ -447,6 +453,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
                           <span className="truncate">{f.name}</span>
                           {f.bankName ? <span className="ml-2 text-xs text-sand-dark">{f.bankName}</span> : null}
                           {f.agency || f.accountNumber ? <span className="ml-2 text-xs text-sand-dark">Ag. {f.agency ?? '—'} / Cc {f.accountNumber ?? '—'}</span> : null}
+                          {f.openingBalance ? <span className="ml-2 text-xs text-sand-dark">Saldo inicial: {brl(f.openingBalance)}</span> : null}
                         </span>
                         <span className="flex shrink-0 items-center gap-2">
                           {f.isInvestment ? <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[0.65rem] font-medium text-gold">Investimento</span> : null}
