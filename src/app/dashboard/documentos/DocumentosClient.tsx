@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard } from '@/components/ui';
+import { Badge, Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard, useConfirm } from '@/components/ui';
 import { DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 
 const DOCUMENT_CATEGORIES = ['Institucional', 'Ata', 'Financeiro', 'Geral'];
@@ -19,6 +19,7 @@ interface DocumentItem {
 
 export default function DocumentosClient({ items, members }: { items: DocumentItem[]; members: { id: string; name: string }[] }) {
   const router = useRouter();
+  const askConfirm = useConfirm();
   const [title, setTitle] = useState('');
   const [kind, setKind] = useState('document');
   const [category, setCategory] = useState('');
@@ -27,45 +28,71 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
   const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   async function uploadOne(file: File) {
-    // 1) Pede uma URL assinada e sobe o arquivo DIRETO pro R2 (nunca passa
-    // pela function do Vercel, que rejeita corpo acima de 4,5MB — inviável
-    // pra PDFs/atas digitalizadas maiores que isso).
-    const mimeType = file.type || 'application/octet-stream';
-    const urlRes = await fetch('/api/documents/upload-url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileName: file.name, mimeType }),
-    });
-    const urlData = await urlRes.json().catch(() => ({}));
-    if (!urlRes.ok) return { ok: false, error: urlData.error as string | undefined };
+    try {
+      // 1) Pede uma URL assinada e sobe o arquivo DIRETO pro R2 (nunca passa
+      // pela function do Vercel, que rejeita corpo acima de 4,5MB — inviável
+      // pra PDFs/atas digitalizadas maiores que isso).
+      const mimeType = file.type || 'application/octet-stream';
+      const urlRes = await fetch('/api/documents/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, mimeType }),
+      });
+      const urlData = await urlRes.json().catch(() => ({}));
+      if (!urlRes.ok) return { ok: false, error: urlData.error as string | undefined };
 
-    const putRes = await fetch(urlData.uploadUrl, { method: 'PUT', headers: { 'Content-Type': mimeType }, body: file });
-    if (!putRes.ok) {
-      return { ok: false, error: 'Falha ao enviar o arquivo para o storage (verifique a configuração de CORS do bucket).' };
+      let putRes: Response;
+      try {
+        putRes = await fetch(urlData.uploadUrl, { method: 'PUT', headers: { 'Content-Type': mimeType }, body: file });
+      } catch {
+        // Falha de rede/CORS: o navegador bloqueia o PUT cross-origin antes de
+        // gerar uma resposta HTTP de verdade — cai aqui, não no `!putRes.ok`.
+        return { ok: false, error: 'O navegador bloqueou o envio direto ao storage — confira se o CORS do bucket R2 inclui exatamente este domínio (https://sigmahorus.com.br) e o método PUT.' };
+      }
+      if (!putRes.ok) {
+        return { ok: false, error: `Falha ao enviar o arquivo para o storage (HTTP ${putRes.status}). Confira a configuração de CORS do bucket.` };
+      }
+
+      // 2) Só agora registra os metadados (corpo pequeno) — o arquivo já está no R2.
+      const response = await fetch('/api/documents/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // Com vários arquivos, o título de cada um vira "Título — nome do arquivo"
+          // pra não cadastrar N documentos com o mesmo título e sem distinção na lista.
+          title: files.length > 1 ? `${title} — ${file.name}` : title,
+          kind,
+          category: category || undefined,
+          content,
+          memberId: memberId || undefined,
+          storageKey: urlData.storageKey,
+          fileName: file.name,
+          mimeType,
+          fileUrl: urlData.publicUrl,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      return { ok: response.ok, error: data.error as string | undefined };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : 'Erro inesperado ao enviar o arquivo.' };
     }
+  }
 
-    // 2) Só agora registra os metadados (corpo pequeno) — o arquivo já está no R2.
-    const response = await fetch('/api/documents/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        // Com vários arquivos, o título de cada um vira "Título — nome do arquivo"
-        // pra não cadastrar N documentos com o mesmo título e sem distinção na lista.
-        title: files.length > 1 ? `${title} — ${file.name}` : title,
-        kind,
-        category: category || undefined,
-        content,
-        memberId: memberId || undefined,
-        storageKey: urlData.storageKey,
-        fileName: file.name,
-        mimeType,
-        fileUrl: urlData.publicUrl,
-      }),
-    });
-    const data = await response.json().catch(() => ({}));
-    return { ok: response.ok, error: data.error as string | undefined };
+  async function removeDocument(item: DocumentItem) {
+    if (!(await askConfirm({ title: 'Remover documento', message: `Remover "${item.title}"? O arquivo também é apagado do storage. Esta ação não pode ser desfeita.`, confirmLabel: 'Remover', intent: 'danger' }))) return;
+    setRemovingId(item.id);
+    const res = await fetch(`/api/documents/${item.id}`, { method: 'DELETE' });
+    setRemovingId(null);
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Documento removido.' });
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao remover documento.' });
+    }
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -96,6 +123,8 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
         setMessage({ kind: 'error', text: `${results.length - failed.length} de ${results.length} arquivos enviados. ${failed.length} falharam: ${failed[0].error ?? 'erro desconhecido'}.` });
         router.refresh();
       }
+    } catch (err) {
+      setMessage({ kind: 'error', text: err instanceof Error ? err.message : 'Erro inesperado ao enviar o(s) documento(s).' });
     } finally {
       setSubmitting(false);
     }
@@ -163,6 +192,9 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
                     {item.storageKey ? <a href={`/api/documents/${item.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-sm text-gold hover:text-gold-light">Abrir arquivo</a> : null}
                   </div>
                   <p className="max-w-2xl text-sm text-sand-dark">{item.content ?? 'Sem resumo.'}</p>
+                  <button type="button" onClick={() => void removeDocument(item)} disabled={removingId === item.id} className="text-sm text-rose-300/70 transition hover:text-rose-300 disabled:opacity-40">
+                    {removingId === item.id ? 'Removendo…' : 'Remover'}
+                  </button>
                 </div>
               </div>
             ))}
