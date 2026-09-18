@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { formatDateOnly } from '@/lib/date-only';
 
 interface BalanceteItem {
   id: string;
@@ -19,7 +20,7 @@ interface BalanceteItem {
   notes?: string | null;
 }
 
-const fmt = (d: string) => new Date(d).toLocaleDateString('pt-BR');
+const fmt = (d: string) => formatDateOnly(d);
 
 // Datas de veneralato/balancete só carregam dia/mês/ano (sem hora) — tudo em
 // UTC-meia-noite pra bater com o que o input type="date" e o Prisma gravam.

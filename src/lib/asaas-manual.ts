@@ -1,5 +1,5 @@
 import type { Prisma } from '@/generated/prisma/client';
-import { receivePaymentInCash } from '@/lib/asaas';
+import { deletePayment, receivePaymentInCash } from '@/lib/asaas';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { withTenant } from '@/lib/prisma';
 
@@ -72,4 +72,24 @@ export async function notifyAsaasReceivedInCash(lodgeId: string, invoiceIds: str
     }
   }
   return warnings.length > 0 ? `Baixa registrada, mas: ${warnings.join(' ')}` : null;
+}
+
+/**
+ * Cancela no Asaas cobranças que deixaram de valer localmente (renegociação: novo
+ * valor/vencimento). Best-effort, depois do commit; devolve um aviso se algo falhar.
+ */
+export async function cancelAsaasCharges(lodgeId: string, asaasPaymentIds: string[]): Promise<string | null> {
+  if (asaasPaymentIds.length === 0) return null;
+  const lodge = await withTenant(lodgeId, (db) => db.lodge.findUnique({ where: { id: lodgeId }, select: { asaasApiKeyEnc: true, asaasEnv: true } }));
+  const config = buildLodgeAsaasConfig(lodge);
+  if (!config) return `Cobrança(s) do Asaas não canceladas (Asaas desconectado): encerre no painel do Asaas — ${asaasPaymentIds.join(', ')}.`;
+  const failed: string[] = [];
+  for (const id of asaasPaymentIds) {
+    try {
+      await deletePayment(config, id);
+    } catch {
+      failed.push(id);
+    }
+  }
+  return failed.length > 0 ? `Não foi possível cancelar no Asaas: ${failed.join(', ')}. Cancele no painel do Asaas para o irmão não pagar o valor antigo.` : null;
 }

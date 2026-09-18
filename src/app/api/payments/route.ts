@@ -5,6 +5,7 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
 import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
+import { coversAmount, isValidMoney, remainingAmount, round2 } from '@/lib/money';
 import { asaasConflictBody, findOpenAsaasCharges, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
 import { dispatch } from '@/lib/messaging';
 import { buildLodgeChannels } from '@/lib/lodge-channels';
@@ -57,14 +58,17 @@ export async function POST(request: Request) {
   const body = await request.json();
   const accountId = String(body?.accountId ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
-  const amount = Number(body?.amount ?? 0);
+  const amount = round2(Number(body?.amount ?? 0));
   const paidAt = body?.paidAt ? new Date(body.paidAt) : new Date();
   const method = String(body?.method ?? 'manual').trim();
   const note = String(body?.note ?? '').trim();
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
 
-  if (!accountId || Number.isNaN(amount) || amount <= 0) {
+  if (!accountId) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
+  }
+  if (!isValidMoney(amount)) {
+    return NextResponse.json({ error: 'Informe um valor maior que zero, com até 2 casas decimais.' }, { status: 400 });
   }
   if (!bankAccountId) {
     return NextResponse.json({ error: 'Selecione a conta bancária/caixa que recebeu ou pagou este valor.' }, { status: 400 });
@@ -98,6 +102,15 @@ export async function POST(request: Request) {
       return { asaasConflict: openCharges } as const;
     }
 
+    // Não aceita pagamento acima do saldo em aberto (conta de um membro ou conta simples) —
+    // barra também o clique duplicado/retentativa que lançaria a baixa duas vezes.
+    const plainAccount = await isPlainAccount(db, account);
+    if (account.memberId || plainAccount) {
+      const paidAgg = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId } });
+      const open = remainingAmount(Number(account.amount), Number(paidAgg._sum.amount ?? 0));
+      if (amount > open) return { overpay: open } as const;
+    }
+
     const created = await db.payment.create({
       data: {
         lodgeId: String(lodgeId),
@@ -126,14 +139,14 @@ export async function POST(request: Request) {
     if (account.memberId) {
       const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId } });
       const totalPaid = Number(aggregate._sum.amount ?? 0);
-      const nextStatus = totalPaid >= Number(account.amount) ? 'paid' : 'pending';
+      const nextStatus = coversAmount(totalPaid, Number(account.amount)) ? 'paid' : 'pending';
 
       await db.account.update({ where: { id: accountId }, data: { status: nextStatus } });
       if (nextStatus === 'paid') {
         await db.invoice.updateMany({ where: { accountId, status: { not: 'paid' } }, data: { status: 'paid' } });
       }
       await syncMemberArt002Status(db, String(lodgeId), account.memberId);
-    } else if (await isPlainAccount(db, account)) {
+    } else if (plainAccount) {
       // Conta simples (fornecedor/despesa/receita avulsa, sem membro nem cobrança):
       // quitar quando a soma dos pagamentos cobre o valor. Antes este caso ficava
       // sem tratamento e a conta permanecia "aberta" mesmo depois de paga.
@@ -145,7 +158,7 @@ export async function POST(request: Request) {
       const paidByMember = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId, memberId } });
       const totalPaidByMember = Number(paidByMember._sum.amount ?? 0);
 
-      if (owedByMember > 0 && totalPaidByMember >= owedByMember) {
+      if (owedByMember > 0 && coversAmount(totalPaidByMember, owedByMember)) {
         await db.invoice.updateMany({ where: { accountId, memberId, status: { not: 'paid' } }, data: { status: 'paid' } });
       }
       await syncMemberArt002Status(db, String(lodgeId), memberId);
@@ -181,6 +194,13 @@ export async function POST(request: Request) {
 
   if ('invalidBank' in result) {
     return NextResponse.json({ error: 'Conta bancária/caixa inválida ou inativa.' }, { status: 400 });
+  }
+
+  if ('overpay' in result && result.overpay !== undefined) {
+    return NextResponse.json(
+      { error: result.overpay > 0 ? `Valor maior que o saldo em aberto desta conta (${brl(result.overpay)}).` : 'Esta conta já está quitada — não há saldo em aberto para receber ou pagar.' },
+      { status: 400 },
+    );
   }
 
   if ('asaasConflict' in result && result.asaasConflict) {

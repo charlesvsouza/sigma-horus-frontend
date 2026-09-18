@@ -5,6 +5,7 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
 import { isPlainAccount, settleAccountAsPaid } from '@/lib/account-status';
+import { coversAmount, isValidMoney, round2 } from '@/lib/money';
 import { asaasConflictBody, findOpenAsaasCharges, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
 import { NextResponse } from 'next/server';
 
@@ -20,6 +21,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await request.json();
   const paidAt = body?.paidAt ? new Date(body.paidAt) : new Date();
+  if (body?.amount !== undefined && !isValidMoney(Number(body.amount))) {
+    return NextResponse.json({ error: 'Informe um valor maior que zero, com até 2 casas decimais.' }, { status: 400 });
+  }
 
   const result = await withTenant(String(lodgeId), async (db) => {
     const existing = await db.account.findFirst({ where: { id, lodgeId: String(lodgeId) } });
@@ -105,7 +109,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     } else if (nextStatus !== undefined && (nextMemberId || (await isPlainAccount(db, { id, memberId: nextMemberId })))) {
       const agg = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: id } });
       const totalPaid = Number(agg._sum.amount ?? 0);
-      if (totalPaid > 0) nextStatus = totalPaid + 0.005 >= nextAmount ? 'paid' : 'pending';
+      if (totalPaid > 0) nextStatus = coversAmount(totalPaid, nextAmount) ? 'paid' : 'pending';
     }
 
     const updated = await db.account.update({
@@ -113,7 +117,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       data: {
         title: body?.title !== undefined ? String(body.title).trim() : undefined,
         type: body?.type !== undefined ? String(body.type).trim().toUpperCase() : undefined,
-        amount: body?.amount !== undefined ? Number(body.amount) : undefined,
+        amount: body?.amount !== undefined ? round2(Number(body.amount)) : undefined,
         dueDate: body?.dueDate !== undefined ? nextDueDate : undefined,
         status: nextStatus,
         description: body?.description !== undefined ? (String(body.description).trim() || null) : undefined,

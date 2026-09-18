@@ -1,5 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { prismaAdmin, withTenant } from '@/lib/prisma';
+import { daysOverdueBR, todayBR } from '@/lib/date-only';
 
 // Art. 002 (regimento): suspensão dos direitos maçônicos do membro inadimplente
 // há mais de 60 dias. A regra vale só para mensalidade (Account.isDues=true;
@@ -8,10 +9,10 @@ import { prismaAdmin, withTenant } from '@/lib/prisma';
 // aberto: se ele já passou de 60 dias, o membro está enquadrado, mesmo que
 // tenha quitado parcelas mais recentes fora de ordem ("bola de neve").
 export const ART_002_THRESHOLD_DAYS = 60;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
+// Vencimento é data-só-dia (00:00 UTC) e "hoje" é o calendário de Brasília:
+// vence hoje = 0 dias (em dia); só passa a atrasado no dia seguinte.
 export function daysOverdue(dueDate: Date, now: Date = new Date()): number {
-  return Math.floor((now.getTime() - new Date(dueDate).getTime()) / DAY_MS);
+  return daysOverdueBR(dueDate, now);
 }
 
 export interface OpenDue {
@@ -39,7 +40,7 @@ async function findOpenDues(
         // o par Account+Invoice do mesmo débito entraria duas vezes.
         invoices: { none: {} },
         memberId: memberId ?? { not: null },
-        dueDate: { lt: now },
+        dueDate: { lt: todayBR(now) },
         member: memberFilter,
       },
       select: { memberId: true, amount: true, dueDate: true },
@@ -49,7 +50,7 @@ async function findOpenDues(
         lodgeId,
         status: { not: 'paid' },
         memberId: memberId ?? { not: null },
-        dueDate: { lt: now },
+        dueDate: { lt: todayBR(now) },
         account: { isDues: true },
         member: memberFilter,
       },

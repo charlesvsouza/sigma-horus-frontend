@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { UserRound } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
+import { formatDateOnly } from '@/lib/date-only';
 
 interface MemberOfficeItem {
   id: string;
@@ -68,7 +69,7 @@ export default function QuadroGestaoClient({ lodgeName, crestUrl, term }: { lodg
                 <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
                 <h2 className="mt-0.5 text-sm text-sand-dark">Quadro da Gestão — {term.title}</h2>
                 <p className="mt-0.5 text-xs text-sand-dark">
-                  {new Date(term.startDate).toLocaleDateString('pt-BR')} a {term.endDate ? new Date(term.endDate).toLocaleDateString('pt-BR') : 'em exercício'}
+                  {formatDateOnly(term.startDate)} a {term.endDate ? formatDateOnly(term.endDate) : 'em exercício'}
                 </p>
               </header>
 

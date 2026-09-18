@@ -104,3 +104,10 @@ export async function receivePaymentInCash(config: AsaasConfig, id: string, data
   if (!res.ok) throw new Error(`Asaas receiveInCash error: ${res.status} ${await res.text()}`);
   return res.json();
 }
+
+/** Exclui/cancela uma cobrança no Asaas (ex.: quando a cobrança local é renegociada com novo valor/vencimento). */
+export async function deletePayment(config: AsaasConfig, id: string) {
+  const res = await fetch(`${config.baseUrl}/payments/${id}`, { method: 'DELETE', headers: headers(config) });
+  if (!res.ok) throw new Error(`Asaas delete payment error: ${res.status} ${await res.text()}`);
+  return res.json();
+}

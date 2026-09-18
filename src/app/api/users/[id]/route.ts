@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { invalidateSessionUser } from '@/app/api/auth/[...nextauth]/auth';
 import { prismaAdmin } from '@/lib/prisma';
 import { normalizeRole, ROLES } from '@/lib/rbac';
 import { generateTempPassword } from '@/lib/password';
@@ -65,6 +66,13 @@ export async function PATCH(request: Request, { params }: Ctx) {
     data.role = role;
   }
   if (typeof body.status === 'string' && ['active', 'inactive'].includes(body.status)) {
+    // Mesma trava do papel: desativar o último Administrador ativo deixaria a loja sem gestão.
+    if (body.status === 'inactive' && target.role === 'admin' && target.status === 'active') {
+      const admins = await prismaAdmin.user.count({ where: { lodgeId: String(lodgeId), role: 'admin', status: 'active' } });
+      if (admins <= 1) {
+        return NextResponse.json({ error: 'A loja precisa de pelo menos um Administrador ativo.' }, { status: 409 });
+      }
+    }
     data.status = body.status;
   }
   if (Object.keys(data).length === 0) {
@@ -79,5 +87,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
   await prismaAdmin.auditLog.create({
     data: { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'user', entityId: id, after: JSON.stringify(data) },
   });
+  // Vale já nesta instância (nas demais, em até ~30s): papel/status novos na sessão.
+  invalidateSessionUser(id);
   return NextResponse.json({ item: updated });
 }

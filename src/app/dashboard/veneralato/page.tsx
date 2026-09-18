@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, CollapsibleCard, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { formatDateOnly } from '@/lib/date-only';
 
 interface TermItem { id: string; title: string; startDate: string; endDate?: string | null; status: string; _count: { memberOffices: number }; }
 interface MemberOfficeItem { id: string; office: { id: string; name: string }; member: { id: string; name: string }; }
@@ -224,7 +225,7 @@ export default function VeneralatoPage() {
               {terms.map((t) => (
                 <button key={t.id} onClick={() => loadTermDetail(t.id)} className={`w-full rounded-lg border px-4 py-4 text-left transition-colors ${selectedTerm === t.id ? 'border-gold/40 bg-gold/10' : 'border-white/5 bg-sigma-blue-deep/50 hover:border-white/8'}`}>
                   <p className="text-sm font-medium text-sand-light">{t.title}</p>
-                  <p className="mt-1 text-xs text-sand-dark">{new Date(t.startDate).toLocaleDateString('pt-BR')} - {t.endDate ? new Date(t.endDate).toLocaleDateString('pt-BR') : 'em aberto'} • {t._count.memberOffices} cargos</p>
+                  <p className="mt-1 text-xs text-sand-dark">{formatDateOnly(t.startDate)} - {t.endDate ? formatDateOnly(t.endDate) : 'em aberto'} • {t._count.memberOffices} cargos</p>
                 </button>
               ))}
             </div>
@@ -249,8 +250,8 @@ export default function VeneralatoPage() {
                       .sort((a, b) => new Date(b.term.startDate).getTime() - new Date(a.term.startDate).getTime())
                       .map((item) => (
                         <li key={item.id} className="text-xs text-sand-dark">
-                          <span className="text-sand">{item.office.name}</span> — {item.term.title} ({new Date(item.term.startDate).toLocaleDateString('pt-BR')}
-                          {item.term.endDate ? ` a ${new Date(item.term.endDate).toLocaleDateString('pt-BR')}` : ' — em aberto'})
+                          <span className="text-sand">{item.office.name}</span> — {item.term.title} ({formatDateOnly(item.term.startDate)}
+                          {item.term.endDate ? ` a ${formatDateOnly(item.term.endDate)}` : ' — em aberto'})
                         </li>
                       ))}
                   </ul>

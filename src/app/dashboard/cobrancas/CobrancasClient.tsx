@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { formatDateOnly } from '@/lib/date-only';
 
 interface MemberOption { id: string; name: string; }
 interface AccountOption { id: string; title: string; }
@@ -249,7 +250,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members }: { 
                 </div>
                 <div className="text-right text-xs text-sand-dark">
                   <p className="tabular-nums">{brl(invoice.amount)}</p>
-                  <p className="mt-0.5">{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</p>
+                  <p className="mt-0.5">{formatDateOnly(invoice.dueDate)}</p>
                   {invoice.isRecurring ? (
                     <p className="mt-1 text-xs text-gold/70">Recorrente • {invoice.recurringInterval === 'quarterly' ? 'trimestral' : invoice.recurringInterval === 'yearly' ? 'anual' : 'mensal'}</p>
                   ) : null}

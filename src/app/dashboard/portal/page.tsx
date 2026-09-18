@@ -6,6 +6,7 @@ import { clampDateYear, fetchCep, maskCEP, maskPhone } from '@/lib/masks';
 import { ACCOUNT_STATUS_LABEL, DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 import { Alert, Button, MaskedInput, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { formatDateOnly } from '@/lib/date-only';
 
 interface MemberSummary {
   id: string;
@@ -434,7 +435,7 @@ export default function PortalPage() {
                           <div>
                             <p className="font-medium text-sand-light">{account.title}</p>
                             <p className="text-sand-dark">
-                              {account.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'} • {new Date(account.dueDate).toLocaleDateString('pt-BR')}
+                              {account.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'} • {formatDateOnly(account.dueDate)}
                             </p>
                             {account.chartAccount ? (
                               <p className="mt-0.5 text-xs text-gold/80">{account.chartAccount.category ? `${account.chartAccount.category} — ` : ''}{account.chartAccount.name}</p>
@@ -499,7 +500,7 @@ export default function PortalPage() {
           <tbody>
             {filteredAccounts.map((account) => (
               <tr key={account.id}>
-                <td>{new Date(account.dueDate).toLocaleDateString('pt-BR')}</td>
+                <td>{formatDateOnly(account.dueDate)}</td>
                 <td>{account.title}</td>
                 <td>{account.chartAccount ? `${account.chartAccount.category ? account.chartAccount.category + ' — ' : ''}${account.chartAccount.name}` : '—'}</td>
                 <td>{account.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'}</td>

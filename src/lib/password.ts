@@ -1,14 +1,16 @@
 // Geração de senha provisória legível (sem caracteres ambíguos) para o 1º acesso
 // do obreiro. A senha é enviada por e-mail e deve ser trocada no primeiro login
 // (User.mustChangePassword). Não armazenamos a senha em claro — só o hash bcrypt.
+import { randomInt } from 'node:crypto';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // sem I, O
 const DIGITS = '23456789'; // sem 0, 1
 const LOWER = 'abcdefghijkmnpqrstuvwxyz'; // sem l, o
 
+// randomInt (CSPRNG): a senha provisória não pode ser previsível como seria com Math.random.
 function pick(set: string, n: number): string {
   let out = '';
-  for (let i = 0; i < n; i++) out += set[Math.floor(Math.random() * set.length)];
+  for (let i = 0; i < n; i++) out += set[randomInt(set.length)];
   return out;
 }
 

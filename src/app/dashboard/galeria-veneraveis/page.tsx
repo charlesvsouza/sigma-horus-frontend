@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole, requireLodgeAccess } from '@/lib/rbac';
 import GaleriaVeneraveisClient from './GaleriaVeneraveisClient';
+import { formatDateOnly } from '@/lib/date-only';
 
 // Galeria de Veneráveis: mural cronológico de todos os Veneráveis da história
 // da loja — entradas automáticas (a partir de cargos/períodos já cadastrados
@@ -57,7 +58,7 @@ export default async function GaleriaVeneraveisPage() {
     kind: 'auto' as const,
     name: mo.member.name,
     photoUrl: mo.member.photoUrl,
-    periodLabel: `${mo.term.startDate.toLocaleDateString('pt-BR')} a ${mo.term.endDate ? mo.term.endDate.toLocaleDateString('pt-BR') : 'em exercício'}`,
+    periodLabel: `${formatDateOnly(mo.term.startDate)} a ${mo.term.endDate ? formatDateOnly(mo.term.endDate) : 'em exercício'}`,
     sortDate: mo.term.startDate.toISOString(),
     termTitle: mo.term.title,
   }));

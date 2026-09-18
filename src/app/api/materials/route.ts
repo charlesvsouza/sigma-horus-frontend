@@ -27,6 +27,7 @@ export async function GET() {
 
   const items = materials.map((m) => {
     const issued = m.loans.reduce((sum, l) => sum + l.quantity, 0);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { loans, ...rest } = m;
     return { ...rest, availableQuantity: m.quantity - issued };
   });

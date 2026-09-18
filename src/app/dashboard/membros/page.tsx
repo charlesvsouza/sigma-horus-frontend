@@ -6,6 +6,7 @@ import { clampDateYear, fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel, remidoEligibility } from '@/lib/masonic-degree';
 import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
 import { Button, EmptyState, Input, MaskedInput, Skeleton, inputClass, Alert, useConfirm } from '@/components/ui';
+import { formatDateOnly } from '@/lib/date-only';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -106,7 +107,7 @@ function memberToForm(m: Member): FormState {
   return f;
 }
 
-const fmtDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '—');
+const fmtDate = (iso?: string | null) => formatDateOnly(iso);
 
 const TONE_BADGE: Record<string, string> = {
   active: 'bg-emerald-500/15 text-emerald-300',
@@ -125,7 +126,7 @@ function formatEvolution(m: Member): string {
   ];
   const parts = stages
     .filter(([, date, lodge]) => date || lodge)
-    .map(([label, date, lodge]) => `(${label}; ${date ? new Date(date).toLocaleDateString('pt-BR') : '—'}; ${lodge || '—'})`);
+    .map(([label, date, lodge]) => `(${label}; ${formatDateOnly(date)}; ${lodge || '—'})`);
   return parts.length ? parts.join(' ') : 'Sem marcos registrados';
 }
 

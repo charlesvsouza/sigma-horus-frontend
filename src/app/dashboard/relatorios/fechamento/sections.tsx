@@ -1,13 +1,14 @@
 import type { Closing } from './types';
 import { INVOICE_STATUS_LABEL } from '@/lib/status-labels';
 import { brl } from '@/lib/currency';
+import { formatDateOnly } from '@/lib/date-only';
 
 // Componentes de seção do relatório de fechamento — extraídos para serem
 // reusados tanto no relatório completo (impressão/PDF, formato AMORIO) quanto
 // nas telas individuais de cada seção (dashboard, ver page.tsx e [secao]/).
 
 export const money = brl;
-export const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
+export const fmtDate = (d: string) => formatDateOnly(d);
 
 export const TH = 'border-b border-white/10 px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-sand-dark';
 export const TD = 'border-b border-white/5 px-2 py-1.5 text-sand';

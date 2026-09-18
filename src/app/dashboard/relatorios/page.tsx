@@ -6,6 +6,7 @@ import { FiltrosRelatorios } from './filtros';
 import { BotaoExportar } from './exportar';
 import { INVOICE_STATUS_LABEL } from '@/lib/status-labels';
 import { brl } from '@/lib/currency';
+import { formatDateOnly } from '@/lib/date-only';
 
 function parseDate(value: string | undefined): Date | undefined {
   if (!value) return undefined;
@@ -142,7 +143,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
                     <span>{item.title}</span>
                     <span className={item.type === 'RECEIVABLE' ? 'text-emerald-300' : 'text-rose-300'}>{item.type === 'RECEIVABLE' ? 'Receber' : 'Pagar'}</span>
                   </div>
-                  <p className="mt-1 text-xs text-sand-dark">Vence em {new Date(item.dueDate).toLocaleDateString('pt-BR')}</p>
+                  <p className="mt-1 text-xs text-sand-dark">Vence em {formatDateOnly(item.dueDate)}</p>
                 </div>
               ))}
             </div>
@@ -164,7 +165,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
               <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                 <span>Cobrança {invoice.number}</span>
                 <span>{brl(invoice.amount)}</span>
-                <span>{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span>
+                <span>{formatDateOnly(invoice.dueDate)}</span>
                 <span>{INVOICE_STATUS_LABEL[invoice.status] ?? invoice.status}</span>
               </div>
             ))}

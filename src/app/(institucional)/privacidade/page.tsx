@@ -62,7 +62,7 @@ export default function PrivacidadePage() {
         </ul>
         <p className="mt-3">
           O tratamento de dados maçônicos com potencial de revelar convicções filosóficas tem como base legal o
-          art. 11, II, "a" e "b" da LGPD (obrigação legal e exercício regular de direitos em associação),
+          art. 11, II, &quot;a&quot; e &quot;b&quot; da LGPD (obrigação legal e exercício regular de direitos em associação),
           dispensando consentimento específico por ser indispensável à própria existência e funcionamento da
           relação associativa.
         </p>

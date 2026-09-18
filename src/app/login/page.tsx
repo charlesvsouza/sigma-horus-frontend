@@ -140,9 +140,9 @@ export default function LoginPage() {
               forgotSent ? (
                 <div className="mt-8 space-y-5">
                   <p className="rounded-lg bg-gold/10 px-3 py-3 text-sm leading-relaxed text-sand">
-                    Se houver uma conta com esse e-mail, enviamos uma senha provisória.
-                    Verifique sua caixa de entrada (e o spam) e entre com ela — você
-                    definirá uma nova senha no primeiro acesso.
+                    Se houver uma conta com esse e-mail, enviamos um link para definir
+                    uma nova senha (vale por 1 hora). Verifique sua caixa de entrada e o
+                    spam — sua senha atual só muda quando você concluir pelo link.
                   </p>
                   <button
                     type="button"

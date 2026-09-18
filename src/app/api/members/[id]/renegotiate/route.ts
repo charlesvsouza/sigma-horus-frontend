@@ -4,6 +4,9 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { sumLateCharges, syncMemberArt002Status, type LateCharge } from '@/lib/overdue';
+import { cancelAsaasCharges } from '@/lib/asaas-manual';
+import { todayBR } from '@/lib/date-only';
+import { retargetInvoices } from '@/lib/renegotiation';
 import { NextResponse } from 'next/server';
 
 function addMonths(date: Date, n: number) {
@@ -42,7 +45,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!member) return { error: 'notfound' as const };
 
     const openAccounts = await db.account.findMany({
-      where: { lodgeId: String(lodgeId), memberId, type: 'RECEIVABLE', isDues: true, status: { not: 'paid' }, dueDate: { lt: now } },
+      where: { lodgeId: String(lodgeId), memberId, type: 'RECEIVABLE', isDues: true, status: { not: 'paid' }, dueDate: { lt: todayBR(now) } },
       orderBy: { dueDate: 'asc' },
     });
     if (openAccounts.length === 0) return { error: 'noopen' as const };
@@ -70,9 +73,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (lockedFor) return { error: 'locked' as const, term: lockedFor };
     }
 
+    // Cobranças (Invoice) ligadas a estas contas seguem o novo valor/vencimento —
+    // o Art. 002 conta pela cobrança quando ela existe, então sem isso o irmão
+    // continuaria enquadrado com o vencimento antigo. Cobrança emitida no Asaas
+    // (valor/data antigos) é cancelada lá, depois do commit, para ninguém pagar o
+    // valor antigo; a cobrança local volta a "pendente" para ser reemitida.
+    const asaasToCancel: string[] = [];
     const updated = [];
     for (let i = 0; i < n; i++) {
       const amount = i === n - 1 ? lastAmount : base;
+      asaasToCancel.push(...(await retargetInvoices(db, openAccounts[i].id, { amount, dueDate: dueDates[i] })));
       const acc = await db.account.update({
         where: { id: openAccounts[i].id },
         data: {
@@ -96,7 +106,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       metadata: { action: 'renegotiate', memberId, installments: n, total, lateCharge: applyLateCharge ? lateCharge : null },
     });
 
-    return { updated, installments: n, total, lateCharge: applyLateCharge ? lateCharge : null };
+    return { updated, installments: n, total, lateCharge: applyLateCharge ? lateCharge : null, asaasToCancel };
   });
 
   if ('error' in result) {
@@ -107,5 +117,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
   }
 
-  return NextResponse.json(result);
+  const { asaasToCancel, ...payload } = result;
+  const asaasWarning = await cancelAsaasCharges(String(lodgeId), asaasToCancel).catch(() => 'Não foi possível cancelar as cobranças antigas no Asaas; cancele no painel do Asaas.');
+  return NextResponse.json({ ...payload, ...(asaasWarning ? { asaasWarning } : {}) });
 }

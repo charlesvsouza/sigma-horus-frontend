@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, CollapsibleCard, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { formatDateOnly } from '@/lib/date-only';
 
 interface ChartAccountOption { id: string; code: string; name: string; type: string; }
 interface MemberOption { id: string; name: string; }
@@ -272,7 +273,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                 </div>
                 <div className="text-right text-xs text-sand-dark">
                   <p className="tabular-nums">{brl(account.amount)}</p>
-                  <p className="mt-0.5">{new Date(account.dueDate).toLocaleDateString('pt-BR')}</p>
+                  <p className="mt-0.5">{formatDateOnly(account.dueDate)}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   {account.approvalStatus === 'pending' && canApprove ? (

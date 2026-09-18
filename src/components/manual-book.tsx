@@ -246,7 +246,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 18 de setembro de 2026 · versão 1.23</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 18 de setembro de 2026 · versão 1.24</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -308,7 +308,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.23 — 18 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.24 — 18 de setembro de 2026</p>
               </div>
             </div>
 
@@ -938,7 +938,9 @@ export function ManualBook() {
                   </li>
                   <li>
                     O critério é o <strong>vencimento em aberto mais antigo</strong>: se ele já passou de 60 dias, o
-                    membro está enquadrado, mesmo que parcelas mais recentes tenham sido pagas fora de ordem.
+                    membro está enquadrado, mesmo que parcelas mais recentes tenham sido pagas fora de ordem. A contagem
+                    usa o <strong>calendário de Brasília</strong>: quem vence hoje ainda está em dia; o atraso começa no dia
+                    seguinte ao vencimento.
                   </li>
                   <li>
                     Acima da lista, os cartões de <UI>Faixas de atraso</UI> agrupam os membros por tempo de atraso
@@ -972,7 +974,10 @@ export function ManualBook() {
                   na linha do membro. Escolha a data do <strong>1º vencimento</strong> e, se quiser, marque
                   <UI> Incluir multa/juros no total</UI>. O sistema soma as mensalidades vencidas (mais o encargo, se
                   marcado) e redistribui em novas parcelas mensais, reaproveitando as mesmas contas — o Art. 002 deixa
-                  de contar assim que os vencimentos passam a ser no futuro.
+                  de contar assim que os vencimentos passam a ser no futuro. As <strong>cobranças</strong> ligadas a essas
+                  mensalidades acompanham o novo valor e vencimento e voltam a <strong>Pendente</strong>; se alguma já estava
+                  emitida no Asaas (com o valor antigo), ela é <strong>cancelada lá</strong> — emita novamente em
+                  <UI> Cobranças</UI> para o irmão pagar o valor renegociado.
                 </p>
                 <p>
                   <strong>Maçom Remido:</strong> membros isentos de mensalidade (cadastro em <UI>Membros → Evolução
@@ -1641,6 +1646,9 @@ export function ManualBook() {
                 <li><strong>Aparece &quot;Cobrança aberta no Asaas&quot; ao baixar uma conta.</strong> A cobrança já foi emitida e o Asaas ainda espera o pagamento. Se o irmão pagou por fora, confirme <UI>Recebido fora do Asaas</UI>; caso contrário, aguarde a baixa automática (7.4).</li>
                 <li><strong>Recebi um e-mail de &quot;recebimento em duplicidade&quot;.</strong> O Asaas confirmou um pagamento de uma cobrança que já estava baixada manualmente. O valor está no Asaas e não foi lançado aqui — confira e estorne ao irmão, se for o caso (7.4).</li>
                 <li><strong>Não vejo Taxa de Elevação / Taxa de Exaltação ao cobrar.</strong> Clique em <UI>Atualizar plano de contas</UI> em Cadastros (7.1) para criar as categorias.</li>
+                <li><strong>Esqueci minha senha.</strong> Na tela de entrada, clique em <UI>Esqueceu a senha?</UI> e informe o e-mail: enviamos um <strong>link</strong> (vale por 1 hora e só funciona uma vez) para você definir uma nova senha. A sua senha atual <strong>só muda quando você conclui pelo link</strong> — quem apenas conhece o seu e-mail não consegue alterá-la. São aceitos até 3 pedidos a cada 15 minutos.</li>
+                <li><strong>Digitei a senha certa e a conta não abre.</strong> Depois de 8 senhas erradas seguidas, a conta fica bloqueada por 15 minutos (proteção contra tentativas de invasão) — aguarde ou redefina a senha. Também não entra o usuário <strong>desativado</strong> pelo Administrador (6.3) ou de loja encerrada. Mudanças de papel ou de situação do usuário passam a valer em até cerca de 30 segundos, sem ele precisar sair e entrar de novo.</li>
+                <li><strong>O sistema recusou o valor de uma conta ou pagamento.</strong> O valor precisa ser maior que zero, com até 2 casas decimais. Um pagamento também não pode ultrapassar o <strong>saldo em aberto</strong> da conta (ele mostra o quanto falta) — isso evita baixar a mesma conta duas vezes por clique duplicado.</li>
                 <li><strong>Não consigo emitir boleto.</strong> Verifique se o Asaas está conectado (6.2) e se o membro tem CPF (7.4).</li>
                 <li><strong>O pagamento não baixou sozinho.</strong> Confirme o webhook e o token no painel do Asaas (6.2-C).</li>
                 <li><strong>Meu acesso foi pausado.</strong> O teste de 10 dias terminou — contrate um plano em <UI>Assinatura</UI>; seus dados continuam guardados.</li>

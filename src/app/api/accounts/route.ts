@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { settleAccountAsPaid } from '@/lib/account-status';
+import { isValidMoney, round2 } from '@/lib/money';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const title = String(body?.title ?? '').trim();
   const type = String(body?.type ?? 'RECEIVABLE').trim().toUpperCase();
-  const amount = Number(body?.amount ?? 0);
+  const amount = round2(Number(body?.amount ?? 0));
   const dueDate = body?.dueDate ? new Date(body.dueDate) : new Date();
   const status = String(body?.status ?? 'pending').trim();
   const description = String(body?.description ?? '').trim();
@@ -64,8 +65,11 @@ export async function POST(request: Request) {
   const isDues = Boolean(body?.isDues);
   const paidAt = body?.paidAt ? new Date(body.paidAt) : new Date();
 
-  if (!title || !['RECEIVABLE', 'PAYABLE'].includes(type) || Number.isNaN(amount)) {
+  if (!title || !['RECEIVABLE', 'PAYABLE'].includes(type)) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
+  }
+  if (!isValidMoney(amount)) {
+    return NextResponse.json({ error: 'Informe um valor maior que zero, com até 2 casas decimais.' }, { status: 400 });
   }
 
   const result = await withTenant(String(lodgeId), async (db) => {

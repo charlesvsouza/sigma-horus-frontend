@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { formatDateOnly } from '@/lib/date-only';
 
 interface ChartAccountOption { id: string; code: string; name: string; }
 interface AssetItem {
@@ -158,7 +159,7 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
                   </p>
                   <p className="mt-1 text-xs text-sand-dark">
                     {STATUS_LABEL[asset.status] ?? asset.status}
-                    {asset.acquisitionDate ? ` • adquirido em ${new Date(asset.acquisitionDate).toLocaleDateString('pt-BR')}` : ''}
+                    {asset.acquisitionDate ? ` • adquirido em ${formatDateOnly(asset.acquisitionDate)}` : ''}
                     {asset.chartAccount ? ` • ${asset.chartAccount.code} — ${asset.chartAccount.name}` : ''}
                   </p>
                 </div>

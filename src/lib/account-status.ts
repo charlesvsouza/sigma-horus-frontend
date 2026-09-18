@@ -1,7 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
+import { coversAmount, remainingAmount } from '@/lib/money';
 import { findClosedTermForDate } from '@/lib/term-lock';
-
-const EPSILON = 0.005;
 
 /**
  * "Conta simples": sem membro fixo e sem cobranças (Invoice) — despesa de
@@ -18,7 +17,7 @@ export async function isPlainAccount(db: Prisma.TransactionClient, account: { id
 export async function syncPlainAccountStatus(db: Prisma.TransactionClient, account: { id: string; amount: number; status: string }) {
   const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: account.id } });
   const totalPaid = Number(aggregate._sum.amount ?? 0);
-  const nextStatus = totalPaid + EPSILON >= Number(account.amount) ? 'paid' : 'pending';
+  const nextStatus = coversAmount(totalPaid, Number(account.amount)) ? 'paid' : 'pending';
   if (nextStatus !== account.status) {
     await db.account.update({ where: { id: account.id }, data: { status: nextStatus } });
   }
@@ -43,8 +42,8 @@ export async function settleAccountAsPaid(
   const { lodgeId, account, bankAccountId, paidAt } = params;
 
   const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: account.id } });
-  const remaining = Number(account.amount) - Number(aggregate._sum.amount ?? 0);
-  if (remaining <= EPSILON) return { ok: true, created: false };
+  const remaining = remainingAmount(Number(account.amount), Number(aggregate._sum.amount ?? 0));
+  if (remaining <= 0) return { ok: true, created: false };
 
   if (account.type === 'PAYABLE' && account.approvalStatus === 'pending') {
     return { ok: false, status: 409, error: 'Despesa acima do limite precisa do visto do Venerável antes de ser paga. Lance como Pendente e aprove primeiro.' };

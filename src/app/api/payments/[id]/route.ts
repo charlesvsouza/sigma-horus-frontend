@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
+import { coversAmount } from '@/lib/money';
 import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
 import { NextResponse } from 'next/server';
 
@@ -45,7 +46,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       // Conta de um só membro: mesmo escopo de sempre (accountId inteiro).
       const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: account.id } });
       const totalPaid = Number(aggregate._sum.amount ?? 0);
-      const nextStatus = totalPaid >= Number(account.amount) ? 'paid' : 'pending';
+      const nextStatus = coversAmount(totalPaid, Number(account.amount)) ? 'paid' : 'pending';
 
       if (nextStatus !== account.status) {
         await db.account.update({ where: { id: account.id }, data: { status: nextStatus } });
@@ -67,7 +68,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       const paidByMember = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: account.id, memberId: payment.memberId } });
       const totalPaidByMember = Number(paidByMember._sum.amount ?? 0);
 
-      if (totalPaidByMember < owedByMember) {
+      if (!coversAmount(totalPaidByMember, owedByMember)) {
         await db.invoice.updateMany({ where: { accountId: account.id, memberId: payment.memberId, status: 'paid' }, data: { status: 'pending' } });
       }
       await syncMemberArt002Status(db, String(lodgeId), payment.memberId);

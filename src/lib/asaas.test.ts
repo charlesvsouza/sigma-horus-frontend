@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { asaasBaseUrl, isWebhookAuthorized, processWebhook } from './asaas.ts';
 
-test('webhook is authorized when the lodge has no token (sandbox/setup)', () => {
-  assert.equal(isWebhookAuthorized('anything', null), true);
-  assert.equal(isWebhookAuthorized(null, undefined), true);
+test('webhook is rejected when the lodge has no token configured (seguro por padrão)', () => {
+  assert.equal(isWebhookAuthorized('anything', null), false);
+  assert.equal(isWebhookAuthorized(null, undefined), false);
 });
 
 test('webhook requires matching token when the lodge configured one', () => {

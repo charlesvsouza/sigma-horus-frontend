@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { memberStatusLabel } from '@/lib/member-status';
+import { formatDateOnly } from '@/lib/date-only';
 
 interface LateCharge { fee: number; interest: number; total: number; }
 interface Row {
@@ -36,8 +37,11 @@ function RenegotiateForm({ memberId, onDone }: { memberId: string; onDone: () =>
     });
     const data = await res.json();
     setBusy(false);
-    if (res.ok) onDone();
-    else setError(data.error ?? 'Erro ao renegociar.');
+    if (res.ok) {
+      // Cobrança antiga no Asaas que não pôde ser cancelada: o operador precisa saber.
+      if (data.asaasWarning) window.alert(data.asaasWarning);
+      onDone();
+    } else setError(data.error ?? 'Erro ao renegociar.');
   }
 
   return (
@@ -154,7 +158,7 @@ export default function InadimplenciaClient({ rows, canRenegotiate }: { rows: Ro
                       <p className="text-sm font-medium text-sand-light">{row.memberName}</p>
                       <p className="mt-1 text-xs text-sand-dark">
                         {row.openCount} mensalidade{row.openCount > 1 ? 's' : ''} em aberto • vencimento mais antigo em{' '}
-                        {new Date(row.oldestDueDate).toLocaleDateString('pt-BR')} • situação atual: {memberStatusLabel(row.memberStatus)}
+                        {formatDateOnly(row.oldestDueDate)} • situação atual: {memberStatusLabel(row.memberStatus)}
                       </p>
                       {hasCharge ? (
                         <p className="mt-1 text-xs text-amber-300/80">

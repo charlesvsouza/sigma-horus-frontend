@@ -1,5 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { logAudit } from '@/lib/audit';
+import { coversAmount } from '@/lib/money';
 import { syncMemberArt002Status } from '@/lib/overdue';
 
 /**
@@ -43,7 +44,7 @@ export async function settleAsaasInvoicePayment(
     const paidWhere = memberId ? { accountId, memberId } : { accountId };
     const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: paidWhere });
     const totalPaidForInvoice = Number(aggregate._sum.amount ?? 0);
-    if (totalPaidForInvoice >= Number(invoice.amount)) {
+    if (coversAmount(totalPaidForInvoice, Number(invoice.amount))) {
       await db.invoice.update({ where: { id: invoiceId }, data: { status: 'paid' } });
     }
   }
@@ -53,7 +54,7 @@ export async function settleAsaasInvoicePayment(
   if (account?.memberId) {
     const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId } });
     const totalPaid = Number(aggregate._sum.amount ?? 0);
-    await db.account.update({ where: { id: account.id }, data: { status: totalPaid >= Number(account.amount) ? 'paid' : 'pending' } });
+    await db.account.update({ where: { id: account.id }, data: { status: coversAmount(totalPaid, Number(account.amount)) ? 'paid' : 'pending' } });
   }
   if (memberId) {
     await syncMemberArt002Status(db, lodgeId, memberId);

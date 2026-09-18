@@ -3,6 +3,7 @@ import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prismaAdmin, withTenant } from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
+import { isAccountUsable, isLockedOut, LOGIN_WINDOW_MS, SESSION_REVALIDATE_TTL_MS } from '@/lib/auth-policy';
 import type { DefaultSession } from 'next-auth';
 
 declare module 'next-auth' {
@@ -21,6 +22,29 @@ declare module 'next-auth' {
   }
 }
 
+// Cache curto (por instância) da revalidação do usuário na sessão.
+const sessionUserCache = new Map<string, { at: number; value: SessionUser | null }>();
+interface SessionUser { role: string; lodgeId: string; memberId: string | null; mustChangePassword: boolean }
+
+/** Descarta o cache do usuário (chamado quando o papel/status muda nesta instância). */
+export function invalidateSessionUser(id: string) {
+  sessionUserCache.delete(id);
+}
+
+async function loadSessionUser(id: string): Promise<SessionUser | null> {
+  const hit = sessionUserCache.get(id);
+  if (hit && Date.now() - hit.at < SESSION_REVALIDATE_TTL_MS) return hit.value;
+  const u = await prismaAdmin.user.findUnique({
+    where: { id },
+    select: { status: true, role: true, lodgeId: true, memberId: true, mustChangePassword: true, lodge: { select: { status: true } } },
+  });
+  const value = isAccountUsable(u, u?.lodge)
+    ? { role: u!.role, lodgeId: u!.lodgeId, memberId: u!.memberId, mustChangePassword: u!.mustChangePassword }
+    : null;
+  sessionUserCache.set(id, { at: Date.now(), value });
+  return value;
+}
+
 export const authOptions = {
   secret: process.env.AUTH_SECRET,
   session: { strategy: 'jwt' as const },
@@ -35,14 +59,30 @@ export const authOptions = {
           return null;
         }
 
+        // E-mails são gravados em minúsculas (cadastro); normaliza o digitado.
         const user = await prismaAdmin.user.findUnique({
-          where: { email: String(credentials.email) },
+          where: { email: String(credentials.email).trim().toLowerCase() },
+          include: { lodge: { select: { status: true } } },
         });
 
         if (!user) return null;
+        // Usuário desativado (ou loja encerrada) não entra.
+        if (!isAccountUsable(user, user.lodge)) return null;
+
+        // Trava contra força bruta: muitas senhas erradas seguidas bloqueiam a conta
+        // por alguns minutos (contagem via AuditLog, sem coluna nova).
+        const failures = await prismaAdmin.auditLog.count({
+          where: { userId: user.id, entity: 'login_failed', createdAt: { gte: new Date(Date.now() - LOGIN_WINDOW_MS) } },
+        });
+        if (isLockedOut(failures)) return null;
 
         const valid = await bcrypt.compare(String(credentials.password), user.passwordHash);
-        if (!valid) return null;
+        if (!valid) {
+          await prismaAdmin.auditLog
+            .create({ data: { lodgeId: user.lodgeId, userId: user.id, action: 'CREATE', entity: 'login_failed', entityId: user.id } })
+            .catch(() => {});
+          return null;
+        }
 
         return {
           id: user.id,
@@ -118,14 +158,21 @@ export const authOptions = {
         token.memberId = user.memberId ?? null;
         token.mustChangePassword = Boolean(user.mustChangePassword);
         token.viaSuperadmin = Boolean(user.viaSuperadmin);
-      } else if (token.id && token.memberId === undefined) {
-        // Sessão emitida antes do campo memberId existir neste callback (ou
-        // seja, antes de 2026-06-28) nunca teve essa propriedade preenchida —
-        // sem isso, telas que dependem da identidade do membro (Meu Portal,
-        // aviso do Art. 002) ficam vazias até o usuário deslogar e logar de
-        // novo. Preenche uma vez, sozinho, na próxima requisição.
-        const dbUser = await prismaAdmin.user.findUnique({ where: { id: token.id as string }, select: { memberId: true } });
-        token.memberId = dbUser?.memberId ?? null;
+      } else if (token.id) {
+        // Revalida a cada requisição (com cache curto por instância): o token
+        // guarda papel/loja do login e, sem isso, desativar ou rebaixar um usuário
+        // em "Usuários & acessos" só valeria no próximo login. Também preenche
+        // memberId em sessões antigas que não o tinham.
+        const fresh = await loadSessionUser(token.id as string);
+        if (!fresh) {
+          token.invalid = true;
+        } else {
+          token.invalid = false;
+          token.role = fresh.role;
+          token.lodgeId = fresh.lodgeId;
+          token.memberId = fresh.memberId;
+          if (!fresh.mustChangePassword) token.mustChangePassword = false;
+        }
       }
       // Após o usuário trocar a senha, o cliente chama update() para limpar a flag.
       if (trigger === 'update') {
@@ -135,6 +182,9 @@ export const authOptions = {
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async session({ session, token }: { session: any; token: any }) {
+      // Usuário desativado/removido (ou loja encerrada): sem usuário na sessão →
+      // rotas respondem 401 e o layout redireciona para o login.
+      if (token.invalid) return { ...session, user: undefined };
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
