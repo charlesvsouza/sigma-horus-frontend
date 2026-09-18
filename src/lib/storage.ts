@@ -77,6 +77,26 @@ export function getR2Client(settings: R2Settings = getR2StorageSettings()) {
 }
 
 /**
+ * Gera uma URL assinada de UPLOAD (PUT) direto pro bucket, pra subir o
+ * arquivo do navegador direto pro R2 sem passar pela function do Vercel —
+ * que tem limite rígido de 4,5MB de corpo de requisição (FUNCTION_PAYLOAD_
+ * TOO_LARGE), inviável pra PDFs/atas digitalizadas maiores que isso. Exige
+ * CORS habilitado no bucket pro domínio da aplicação (ver painel do
+ * Cloudflare R2 → bucket → Settings → CORS Policy), senão o navegador
+ * bloqueia o PUT.
+ */
+export async function getPresignedUploadUrl(storageKey: string, contentType: string, expiresInSeconds = 300) {
+  const settings = getR2StorageSettings();
+  const client = getR2Client(settings);
+  if (!client || !settings.bucket || !storageKey) {
+    return null;
+  }
+
+  const command = new PutObjectCommand({ Bucket: settings.bucket, Key: storageKey, ContentType: contentType });
+  return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+}
+
+/**
  * Gera uma URL de download assinada e de curta duração para um objeto do bucket.
  * Mantém o bucket privado (LGPD): o link só funciona por `expiresInSeconds`.
  */

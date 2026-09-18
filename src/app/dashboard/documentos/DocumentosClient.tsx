@@ -29,17 +29,41 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
   const [submitting, setSubmitting] = useState(false);
 
   async function uploadOne(file: File) {
-    const formData = new FormData();
-    // Com vários arquivos, o título de cada um vira "Título — nome do arquivo"
-    // pra não cadastrar N documentos com o mesmo título e sem distinção na lista.
-    formData.append('title', files.length > 1 ? `${title} — ${file.name}` : title);
-    formData.append('kind', kind);
-    if (category) formData.append('category', category);
-    formData.append('content', content);
-    if (memberId) formData.append('memberId', memberId);
-    formData.append('file', file);
+    // 1) Pede uma URL assinada e sobe o arquivo DIRETO pro R2 (nunca passa
+    // pela function do Vercel, que rejeita corpo acima de 4,5MB — inviável
+    // pra PDFs/atas digitalizadas maiores que isso).
+    const mimeType = file.type || 'application/octet-stream';
+    const urlRes = await fetch('/api/documents/upload-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName: file.name, mimeType }),
+    });
+    const urlData = await urlRes.json().catch(() => ({}));
+    if (!urlRes.ok) return { ok: false, error: urlData.error as string | undefined };
 
-    const response = await fetch('/api/documents/upload', { method: 'POST', body: formData });
+    const putRes = await fetch(urlData.uploadUrl, { method: 'PUT', headers: { 'Content-Type': mimeType }, body: file });
+    if (!putRes.ok) {
+      return { ok: false, error: 'Falha ao enviar o arquivo para o storage (verifique a configuração de CORS do bucket).' };
+    }
+
+    // 2) Só agora registra os metadados (corpo pequeno) — o arquivo já está no R2.
+    const response = await fetch('/api/documents/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        // Com vários arquivos, o título de cada um vira "Título — nome do arquivo"
+        // pra não cadastrar N documentos com o mesmo título e sem distinção na lista.
+        title: files.length > 1 ? `${title} — ${file.name}` : title,
+        kind,
+        category: category || undefined,
+        content,
+        memberId: memberId || undefined,
+        storageKey: urlData.storageKey,
+        fileName: file.name,
+        mimeType,
+        fileUrl: urlData.publicUrl,
+      }),
+    });
     const data = await response.json().catch(() => ({}));
     return { ok: response.ok, error: data.error as string | undefined };
   }

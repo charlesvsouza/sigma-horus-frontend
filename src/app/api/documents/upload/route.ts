@@ -1,10 +1,15 @@
-import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
-import { buildObjectKey, buildPublicUrl, getR2Client, getR2StorageSettings, normalizeStoragePayload } from '@/lib/storage';
+import { normalizeStoragePayload } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
+// Passo 2 do upload de documento: o arquivo já foi enviado direto pro R2 pelo
+// navegador (ver ./upload-url/route.ts), usando a URL assinada gerada ali —
+// esta rota só recebe METADADOS (JSON, corpo pequeno) e cria o registro.
+// Antes o arquivo inteiro passava por aqui como multipart/form-data, o que
+// esbarrava no limite de 4,5MB de corpo de requisição do Vercel
+// (FUNCTION_PAYLOAD_TOO_LARGE) em PDFs/atas digitalizadas maiores.
 export async function POST(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
@@ -19,45 +24,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  const formData = await request.formData();
-  const title = String(formData.get('title') ?? '').trim();
-  const memberId = formData.get('memberId') ? String(formData.get('memberId')) : null;
-  const category = formData.get('category') ? String(formData.get('category')) : 'general';
-  const kind = formData.get('kind') ? String(formData.get('kind')) : 'document';
-  const content = formData.get('content') ? String(formData.get('content')) : null;
-  const file = formData.get('file');
+  const body = await request.json().catch(() => ({}));
+  const title = String(body?.title ?? '').trim();
+  const memberId = body?.memberId ? String(body.memberId) : null;
+  const category = body?.category ? String(body.category) : 'general';
+  const kind = body?.kind ? String(body.kind) : 'document';
+  const content = body?.content ? String(body.content) : null;
+  const storage = normalizeStoragePayload(body);
 
-  if (!title || !(file instanceof File) || !file.size) {
+  if (!title || !storage.storageKey) {
     return NextResponse.json({ error: 'Título e arquivo são obrigatórios.' }, { status: 400 });
-  }
-
-  const settings = getR2StorageSettings();
-  const client = getR2Client(settings);
-  if (!client || !settings.bucket) {
-    return NextResponse.json({ error: 'Configuração de storage incompleta.' }, { status: 500 });
-  }
-
-  const storageKey = buildObjectKey(file.name, 'documents');
-  const publicUrl = buildPublicUrl(storageKey, settings.publicUrl ?? undefined);
-  const storage = normalizeStoragePayload({
-    storageKey,
-    fileName: file.name,
-    mimeType: file.type || 'application/octet-stream',
-    checksum: null,
-    fileUrl: publicUrl,
-  });
-
-  try {
-    await client.send(new PutObjectCommand({
-      Bucket: settings.bucket,
-      Key: storage.storageKey!,
-      Body: Buffer.from(await file.arrayBuffer()),
-      ContentType: storage.mimeType ?? 'application/octet-stream',
-      CacheControl: 'public, max-age=31536000',
-    }));
-  } catch (error) {
-    console.error('R2 upload failed', error);
-    return NextResponse.json({ error: 'Falha ao enviar arquivo para o storage.' }, { status: 500 });
   }
 
   const item = await withTenant(String(lodgeId), async (db) =>
@@ -79,5 +55,5 @@ export async function POST(request: Request) {
     }),
   );
 
-  return NextResponse.json({ item, storage: { storageKey, publicUrl, bucket: settings.bucket } });
+  return NextResponse.json({ item });
 }
