@@ -5,7 +5,7 @@
 
 export interface RiteSeed { name: string; order: number; }
 export interface PowerSeed { name: string; order: number; }
-export interface ChartAccountSeed { code: string; name: string; type: 'REVENUE' | 'EXPENSE'; category: string; solidarity?: boolean; }
+export interface ChartAccountSeed { code: string; name: string; type: 'REVENUE' | 'EXPENSE'; category: string; solidarity?: boolean; dues?: boolean; }
 export interface OfficeSeed { name: string; order: number; }
 export interface MaterialSeed {
   name: string;
@@ -215,6 +215,10 @@ export const BRAZILIAN_POWERS: PowerSeed[] = [
   { name: 'Outra / Independente', order: 99 },
 ];
 
+// Nome antigo da 1.1.02 (uma conta só para as três taxas): syncChartAccounts
+// renomeia para "Taxa de Iniciação" só quando encontra exatamente este nome.
+export const LEGACY_INITIATION_FEE_NAME = 'Taxas (Iniciação, Elevação, Exaltação)';
+
 // Plano de contas típico de uma loja maçônica (receitas e despesas correntes).
 // Estrutura: 1.x = receitas, 2.x = despesas. Código no padrão hierárquico simples.
 // Plano de contas no formato livro-caixa, com codificação hierárquica
@@ -224,13 +228,15 @@ export const BRAZILIAN_POWERS: PowerSeed[] = [
 export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   // ===== RECEITAS =====
   // 1.1 Receitas Próprias
-  { code: '1.1.01', name: 'Mensalidades', type: 'REVENUE', category: 'Receitas Próprias' },
-  { code: '1.1.02', name: 'Taxas (Iniciação, Elevação, Exaltação)', type: 'REVENUE', category: 'Receitas Próprias' },
+  { code: '1.1.01', name: 'Mensalidades', type: 'REVENUE', category: 'Receitas Próprias', dues: true },
+  { code: '1.1.02', name: 'Taxa de Iniciação', type: 'REVENUE', category: 'Receitas Próprias' },
   { code: '1.1.03', name: 'Taxa de Filiação / Regularização', type: 'REVENUE', category: 'Receitas Próprias' },
   { code: '1.1.04', name: 'Doações e Contribuições', type: 'REVENUE', category: 'Receitas Próprias' },
   { code: '1.1.05', name: 'Tronco de Beneficência', type: 'REVENUE', category: 'Receitas Próprias', solidarity: true },
   { code: '1.1.06', name: 'Jantar Ritualístico', type: 'REVENUE', category: 'Receitas Próprias' },
   { code: '1.1.07', name: 'Taxa Paramaçônica', type: 'REVENUE', category: 'Receitas Próprias' },
+  { code: '1.1.08', name: 'Taxa de Elevação', type: 'REVENUE', category: 'Receitas Próprias' },
+  { code: '1.1.09', name: 'Taxa de Exaltação', type: 'REVENUE', category: 'Receitas Próprias' },
   // 1.2 Outras Receitas
   { code: '1.2.01', name: 'Rendimentos de Aplicação Financeira', type: 'REVENUE', category: 'Outras Receitas' },
   { code: '1.2.02', name: 'Empréstimos Captados', type: 'REVENUE', category: 'Outras Receitas' },

@@ -7,6 +7,7 @@ import { brl } from '@/lib/currency';
 
 interface MemberOption { id: string; name: string; }
 interface AccountOption { id: string; title: string; }
+interface ChartOption { id: string; code: string; name: string; category: string | null; }
 interface InvoiceItem {
   id: string;
   number: string;
@@ -23,7 +24,7 @@ interface InvoiceItem {
   member?: MemberOption | null;
 }
 
-export default function CobrancasClient({ invoices, accounts, members }: { invoices: InvoiceItem[]; accounts: AccountOption[]; members: MemberOption[] }) {
+export default function CobrancasClient({ invoices, chartAccounts, members }: { invoices: InvoiceItem[]; chartAccounts: ChartOption[]; members: MemberOption[] }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -31,8 +32,8 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
   const [emittingId, setEmittingId] = useState('');
   const [asaasLinks, setAsaasLinks] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ accountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
-  const [bulk, setBulk] = useState({ accountId: '', amount: '', dueDate: '', description: '', scope: 'active', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
+  const [form, setForm] = useState({ chartAccountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
+  const [bulk, setBulk] = useState({ chartAccountId: '', amount: '', dueDate: '', description: '', scope: 'active', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -46,14 +47,13 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
         body: JSON.stringify({
           ...form,
           amount: Number(form.amount),
-          memberId: form.memberId || undefined,
         }),
       });
 
       const data = await response.json();
       if (response.ok) {
         setMessage({ kind: 'ok', text: 'Cobrança criada com sucesso.' });
-        setForm({ accountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
+        setForm({ chartAccountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
         router.refresh();
       } else {
         setMessage({ kind: 'error', text: data.error ?? 'Erro ao criar cobrança.' });
@@ -78,7 +78,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
     setBulkProcessing(false);
     if (res.ok) {
       setMessage({ kind: 'ok', text: `Cobranças geradas: ${data.created} (de ${data.members} membros).` });
-      setBulk({ accountId: '', amount: '', dueDate: '', description: '', scope: 'active', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
+      setBulk({ chartAccountId: '', amount: '', dueDate: '', description: '', scope: 'active', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
       router.refresh();
     } else {
       setMessage({ kind: 'error', text: data.error ?? 'Erro ao gerar cobranças em massa.' });
@@ -106,7 +106,7 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
   }
 
   async function cancelInvoice(invoiceId: string) {
-    if (!(await askConfirm({ title: 'Cancelar cobrança', message: 'Remove esta cobrança (não afeta a conta nem pagamentos já registrados).', confirmLabel: 'Cancelar cobrança', intent: 'danger' }))) return;
+    if (!(await askConfirm({ title: 'Cancelar cobrança', message: 'Remove esta cobrança e o lançamento a receber gerado por ela (pagamentos já registrados são preservados).', confirmLabel: 'Cancelar cobrança', intent: 'danger' }))) return;
     const res = await fetch(`/api/invoices/${invoiceId}`, { method: 'DELETE' });
     const data = await res.json().catch(() => ({}));
     setMessage(res.ok ? { kind: 'ok', text: 'Cobrança cancelada.' } : { kind: 'error', text: data.error ?? 'Erro ao cancelar.' });
@@ -161,9 +161,9 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
         <FormCard title="Cobrança em massa" description="Gera uma cobrança para todos os irmãos de uma vez (ex.: mensalidade). O número de cada cobrança é gerado automaticamente.">
           <form onSubmit={handleBulk} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <select value={bulk.accountId} onChange={(event) => setBulk({ ...bulk, accountId: event.target.value })} className={INPUT} required>
-                <option value="">Selecione uma conta</option>
-                {accounts.map((account) => <option key={account.id} value={account.id}>{account.title}</option>)}
+              <select aria-label="Categoria da cobrança" value={bulk.chartAccountId} onChange={(event) => setBulk({ ...bulk, chartAccountId: event.target.value })} className={INPUT} required>
+                <option value="">Selecione a categoria</option>
+                {chartAccounts.map((chart) => <option key={chart.id} value={chart.id}>{chart.code} — {chart.name}</option>)}
               </select>
               <select value={bulk.scope} onChange={(event) => setBulk({ ...bulk, scope: event.target.value })} className={INPUT}>
                 <option value="active">Somente membros ativos</option>
@@ -193,15 +193,15 @@ export default function CobrancasClient({ invoices, accounts, members }: { invoi
           </form>
         </FormCard>
 
-        <FormCard title="Nova cobrança">
+        <FormCard title="Nova cobrança" description="Escolha a categoria (mensalidade, iniciação, elevação…) e o membro: o lançamento a receber é criado junto com a cobrança.">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })} className={INPUT} required>
-                <option value="">Selecione uma conta</option>
-                {accounts.map((account) => <option key={account.id} value={account.id}>{account.title}</option>)}
+              <select aria-label="Categoria da cobrança" value={form.chartAccountId} onChange={(event) => setForm({ ...form, chartAccountId: event.target.value })} className={INPUT} required>
+                <option value="">Selecione a categoria</option>
+                {chartAccounts.map((chart) => <option key={chart.id} value={chart.id}>{chart.code} — {chart.name}</option>)}
               </select>
-              <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={INPUT}>
-                <option value="">Vincular a um membro</option>
+              <select aria-label="Membro a cobrar" value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={INPUT} required>
+                <option value="">Selecione o membro</option>
                 {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
               </select>
               <input value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} className={INPUT} placeholder="Número / referência (gerado automaticamente se vazio)" />

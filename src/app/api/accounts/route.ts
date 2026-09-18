@@ -73,9 +73,11 @@ export async function POST(request: Request) {
 
     // Garante que o plano de contas informado pertence à loja.
     let validChartId: string | null = null;
+    let chartIsDues = false;
     if (chartAccountId) {
-      const chart = await db.chartAccount.findFirst({ where: { id: chartAccountId, lodgeId: String(lodgeId) }, select: { id: true } });
+      const chart = await db.chartAccount.findFirst({ where: { id: chartAccountId, lodgeId: String(lodgeId) }, select: { id: true, isDues: true } });
       validChartId = chart?.id ?? null;
+      chartIsDues = chart?.isDues ?? false;
     }
 
     // Garante que a contraparte informada pertence à loja.
@@ -114,7 +116,7 @@ export async function POST(request: Request) {
         counterpartyId: validCounterpartyId,
         chartAccountId: validChartId,
         bankAccountId: validBankAccountId,
-        isDues,
+        isDues: isDues || chartIsDues,
         approvalStatus,
       },
       include: {

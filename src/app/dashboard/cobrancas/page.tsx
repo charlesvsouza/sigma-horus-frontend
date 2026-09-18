@@ -13,10 +13,11 @@ export default async function CobrancasPage() {
           include: { account: { select: { id: true, title: true } }, member: { select: { id: true, name: true } } },
           orderBy: { createdAt: 'desc' },
         }),
-        accounts: await db.account.findMany({
-          where: { lodgeId: String(lodgeId) },
-          select: { id: true, title: true },
-          orderBy: { dueDate: 'asc' },
+        // Categorias cobráveis: receitas do plano de contas, sem o Tronco (doação tem fluxo próprio).
+        chartAccounts: await db.chartAccount.findMany({
+          where: { lodgeId: String(lodgeId), type: 'REVENUE', active: true, isSolidarity: false },
+          select: { id: true, code: true, name: true, category: true },
+          orderBy: { code: 'asc' },
         }),
         members: await db.member.findMany({
           where: { lodgeId: String(lodgeId) },
@@ -24,7 +25,7 @@ export default async function CobrancasPage() {
           orderBy: { name: 'asc' },
         }),
       }))
-    : { invoices: [], accounts: [], members: [] };
+    : { invoices: [], chartAccounts: [], members: [] };
 
   const invoices = data.invoices.map((i) => ({
     id: i.id,
@@ -42,5 +43,5 @@ export default async function CobrancasPage() {
     member: i.member ? { id: i.member.id, name: i.member.name } : null,
   }));
 
-  return <CobrancasClient invoices={invoices} accounts={data.accounts} members={data.members} />;
+  return <CobrancasClient invoices={invoices} chartAccounts={data.chartAccounts} members={data.members} />;
 }

@@ -786,8 +786,8 @@ export function ManualBook() {
                   bloco <UI>Nova cobrança</UI>:
                 </p>
                 <Steps>
-                  <li>Selecione a <UI>conta</UI> (a receber) à qual a cobrança se refere.</li>
-                  <li><UI>Vincular a um membro</UI> — necessário se você for emitir boleto/PIX depois (ver 7.4).</li>
+                  <li>Selecione a <UI>categoria</UI> da cobrança (centro de custo do plano de contas: Mensalidades, Taxa de Iniciação, Taxa de Elevação, Taxa de Exaltação, eventos etc.). O <strong>lançamento a receber é criado automaticamente junto com a cobrança</strong>. O Tronco de Solidariedade não aparece aqui — a doação tem fluxo próprio na Hospitalaria.</li>
+                  <li>Selecione o <UI>membro</UI> a cobrar (obrigatório; necessário para emitir boleto/PIX depois, ver 7.4).</li>
                   <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> de vencimento. O <UI>Número / referência</UI> é <strong>gerado automaticamente</strong> (formato <code>COB-AAAAMM-NNNN</code>) se você deixar o campo em branco.</li>
                   <li>Opcional: <UI>Descrição</UI>.</li>
                   <li>Para mensalidades, marque <UI>Criar como cobrança recorrente</UI> e defina o intervalo (<strong>Mensal</strong>, <strong>Trimestral</strong> ou <strong>Anual</strong>) e a <UI>quantidade de ocorrências</UI>.</li>
@@ -799,9 +799,9 @@ export function ManualBook() {
                 </p>
                 <p>
                   <strong>Cobrança em massa:</strong> para cobrar todos os irmãos de uma vez (ex.: mensalidade), use o
-                  bloco <UI>Cobrança em massa</UI> — escolha a conta, o público (membros ativos ou todos), o valor por
-                  membro e o vencimento, e clique em <UI>Gerar para todos os membros</UI>. Cria uma cobrança numerada
-                  automaticamente para cada membro (e, se marcado, recorrente).
+                  bloco <UI>Cobrança em massa</UI> — escolha a categoria, o público (membros ativos ou todos), o valor por
+                  membro e o vencimento, e clique em <UI>Gerar para todos os membros</UI>. Cria, para cada membro, o lançamento a receber e uma cobrança numerada
+                  automaticamente (e, se marcado, recorrente). Na categoria Mensalidades, membros isentos (Maçom Remido) ficam de fora.
                 </p>
                 <p>
                   Na lista <UI>Cobranças cadastradas</UI>, cada item mostra um status: <strong>Pendente</strong>,
@@ -810,7 +810,7 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li><strong>Lembrar:</strong> envia por e-mail um lembrete avulso da cobrança ao membro — útil pra cobrar na hora, além do lembrete automático que o sistema já envia 3 dias antes do vencimento.</li>
-                  <li><strong>Cancelar:</strong> remove a cobrança (não mexe na conta nem em pagamentos já registrados). Só funciona em cobranças ainda não pagas.</li>
+                  <li><strong>Cancelar:</strong> remove a cobrança e o lançamento a receber gerado por ela (nunca mexe em pagamentos já registrados). Só funciona em cobranças ainda não pagas.</li>
                 </Bullets>
               </Sub>
 

@@ -24,6 +24,18 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     if (invoice.status === 'paid') return { error: 'paid' as const };
 
     await db.invoice.delete({ where: { id } });
+
+    // Lançamento 1:1 gerado pela cobrança: sai junto (se não houver pagamento nem
+    // outra cobrança nele) — senão ficaria pendente e, sendo mensalidade, o Art. 002
+    // passaria a contá-lo como dívida. Conta compartilhada (em massa antiga, sem
+    // membro) ou com pagamento é preservada.
+    const account = await db.account.findFirst({
+      where: { id: invoice.accountId, lodgeId: String(lodgeId), memberId: invoice.memberId ?? undefined },
+      select: { id: true, memberId: true, _count: { select: { invoices: true, payments: true } } },
+    });
+    if (account?.memberId && account._count.invoices === 0 && account._count.payments === 0) {
+      await db.account.delete({ where: { id: account.id } });
+    }
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'invoice', entityId: id, metadata: { number: invoice.number } });
     if (invoice.memberId) {
       await syncMemberArt002Status(db, String(lodgeId), invoice.memberId);

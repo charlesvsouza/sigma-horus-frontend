@@ -1,5 +1,5 @@
 import type { Prisma } from '@/generated/prisma/client';
-import { BRAZILIAN_POWERS, BRAZILIAN_RITES, DEFAULT_MATERIALS, MASONIC_CHART_OF_ACCOUNTS, OFFICES_BY_RITE } from '@/lib/masonic-reference';
+import { BRAZILIAN_POWERS, BRAZILIAN_RITES, DEFAULT_MATERIALS, LEGACY_INITIATION_FEE_NAME, MASONIC_CHART_OF_ACCOUNTS, OFFICES_BY_RITE } from '@/lib/masonic-reference';
 
 /**
  * Semeia uma loja com os dados de referência da Maçonaria brasileira:
@@ -41,7 +41,7 @@ export async function seedLodgeDefaults(
   const missingChart = MASONIC_CHART_OF_ACCOUNTS.filter((c) => !haveChartCodes.has(c.code));
   if (missingChart.length > 0) {
     await db.chartAccount.createMany({
-      data: missingChart.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false })),
+      data: missingChart.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false, isDues: c.dues ?? false })),
     });
     result.chartAccounts = missingChart.length;
   }
@@ -50,6 +50,9 @@ export async function seedLodgeDefaults(
   for (const c of MASONIC_CHART_OF_ACCOUNTS) {
     if (c.solidarity && haveChartCodes.has(c.code)) {
       await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, isSolidarity: { not: true } }, data: { isSolidarity: true } });
+    }
+    if (c.dues && haveChartCodes.has(c.code)) {
+      await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, isDues: { not: true } }, data: { isDues: true } });
     }
   }
 
@@ -101,9 +104,25 @@ export async function syncChartAccounts(
   const toAdd = MASONIC_CHART_OF_ACCOUNTS.filter((c) => !haveCodes.has(c.code));
   if (toAdd.length > 0) {
     await db.chartAccount.createMany({
-      data: toAdd.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false })),
+      data: toAdd.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false, isDues: c.dues ?? false })),
     });
   }
+
+  // Mensalidades (1.1.01) existente passa a carregar isDues, herdado pelos
+  // lançamentos/cobranças gerados a partir da categoria.
+  for (const c of MASONIC_CHART_OF_ACCOUNTS) {
+    if (c.dues && haveCodes.has(c.code)) {
+      await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, isDues: { not: true } }, data: { isDues: true } });
+    }
+  }
+
+  // 1.1.02 era uma conta só para as três taxas; agora é só a Iniciação
+  // (Elevação/Exaltação são 1.1.08/1.1.09). Renomeia apenas o nome original —
+  // nome customizado pela loja é preservado. Lançamentos antigos mantêm o vínculo.
+  await db.chartAccount.updateMany({
+    where: { lodgeId, code: '1.1.02', name: LEGACY_INITIATION_FEE_NAME },
+    data: { name: 'Taxa de Iniciação' },
+  });
 
   // Atualiza isSolidarity nas contas existentes que estão no padrão canônico,
   // para corrigir registros criados antes do campo existir (ex.: Tronco).

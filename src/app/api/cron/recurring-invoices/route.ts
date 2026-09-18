@@ -1,24 +1,7 @@
 import { auth } from '@/lib/auth';
+import { addInterval } from '@/lib/charges';
 import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
-
-function addInterval(date: Date, interval: string) {
-  const next = new Date(date);
-  switch (interval) {
-    case 'monthly':
-      next.setMonth(next.getMonth() + 1);
-      break;
-    case 'quarterly':
-      next.setMonth(next.getMonth() + 3);
-      break;
-    case 'yearly':
-      next.setFullYear(next.getFullYear() + 1);
-      break;
-    default:
-      next.setMonth(next.getMonth() + 1);
-  }
-  return next;
-}
 
 export async function POST() {
   const session = await auth();
@@ -38,6 +21,7 @@ export async function POST() {
         recurringCount: { not: 0 },
         status: 'pending',
       },
+      include: { account: true },
     }),
   );
 
@@ -56,10 +40,33 @@ export async function POST() {
 
         const hasMore = newCount === null || newCount > 0;
 
+        // Cada ocorrência tem o próprio lançamento (1:1 com o membro): reaproveitar
+        // o Account da primeira faria a baixa dela quitar as ocorrências futuras.
+        // Contas compartilhadas (cobranças em massa antigas, sem membro) seguem
+        // reaproveitadas, como sempre foi.
+        const src = invoice.account;
+        let accountId = invoice.accountId;
+        if (src.memberId) {
+          const account = await tx.account.create({
+            data: {
+              lodgeId,
+              type: 'RECEIVABLE',
+              title: src.title,
+              amount: invoice.amount,
+              dueDate: invoice.nextDueDate!,
+              description: src.description,
+              memberId: src.memberId,
+              chartAccountId: src.chartAccountId,
+              isDues: src.isDues,
+            },
+          });
+          accountId = account.id;
+        }
+
         await tx.invoice.create({
           data: {
             lodgeId,
-            accountId: invoice.accountId,
+            accountId,
             memberId: invoice.memberId,
             number: `${invoice.number}-${Date.now()}`,
             amount: invoice.amount,

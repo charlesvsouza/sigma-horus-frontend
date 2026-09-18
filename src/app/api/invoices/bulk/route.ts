@@ -1,21 +1,13 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
+import { createChargesWithAccounts } from '@/lib/charges';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
-function addInterval(date: Date, interval: string) {
-  const next = new Date(date);
-  switch (interval) {
-    case 'quarterly': next.setMonth(next.getMonth() + 3); break;
-    case 'yearly': next.setFullYear(next.getFullYear() + 1); break;
-    default: next.setMonth(next.getMonth() + 1);
-  }
-  return next;
-}
-
-// Gera uma cobrança para cada membro da loja (todos os irmãos), com número de
-// referência automático e coerente (COB-AAAAMM-NNNN sequencial).
+// Gera uma cobrança para cada membro da loja (todos os irmãos): para cada um,
+// um lançamento a receber próprio (categoria do plano de contas) + a cobrança,
+// com número de referência automático (COB-AAAAMM-NNNN sequencial).
 export async function POST(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
@@ -26,67 +18,52 @@ export async function POST(request: Request) {
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const body = await request.json();
-  const accountId = String(body?.accountId ?? '').trim();
+  const chartAccountId = String(body?.chartAccountId ?? '').trim();
   const amount = Number(body?.amount ?? 0);
   const dueDate = body?.dueDate ? new Date(body.dueDate) : new Date();
-  const description = String(body?.description ?? '').trim();
-  const isRecurring = Boolean(body?.isRecurring);
-  const recurringInterval = typeof body?.recurringInterval === 'string' ? body.recurringInterval : 'monthly';
   const recurringCount = body?.recurringCount != null && body.recurringCount !== '' ? Number(body.recurringCount) : null;
   const scope = body?.scope === 'all' ? 'all' : 'active';
 
-  if (!accountId || Number.isNaN(amount) || amount <= 0) {
-    return NextResponse.json({ error: 'Selecione a conta e informe um valor válido.' }, { status: 400 });
-  }
-
   const result = await withTenant(String(lodgeId), async (db) => {
-    // A cobrança em massa é genérica (evento, campanha, mensalidade — qualquer
-    // Account serve de categoria). A isenção do Maçom Remido só faz sentido
-    // pra mensalidade — cobrar um isento por uma taxa de evento, por exemplo,
-    // continua válido mesmo com scope="all".
-    const targetAccount = await db.account.findFirst({ where: { id: accountId, lodgeId: String(lodgeId) }, select: { isDues: true } });
+    // A isenção do Maçom Remido só faz sentido pra mensalidade — cobrar um
+    // isento por uma taxa de evento, por exemplo, continua válido com scope="all".
+    const chart = await db.chartAccount.findFirst({ where: { id: chartAccountId, lodgeId: String(lodgeId) }, select: { isDues: true } });
 
     const members = await db.member.findMany({
       where: {
         lodgeId: String(lodgeId),
-        ...(targetAccount?.isDues ? { duesExempt: false } : {}),
+        ...(chart?.isDues ? { duesExempt: false } : {}),
         ...(scope === 'active' ? { status: 'active' } : {}),
       },
       select: { id: true },
       orderBy: { name: 'asc' },
     });
-    if (members.length === 0) return { created: 0, members: 0 };
+    if (members.length === 0) return { ok: true, created: 0, members: 0 } as const;
 
-    const now = new Date();
-    const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const prefix = `COB-${ym}-`;
-    const existing = await db.invoice.count({ where: { lodgeId: String(lodgeId), number: { startsWith: prefix } } });
-
-    const data = members.map((m, i) => ({
+    const created = await createChargesWithAccounts(db, {
       lodgeId: String(lodgeId),
-      accountId,
-      memberId: m.id,
-      number: `${prefix}${String(existing + 1 + i).padStart(4, '0')}`,
+      chartAccountId,
+      memberIds: members.map((m) => m.id),
       amount,
       dueDate,
-      description: description || null,
-      isRecurring,
-      recurringInterval: isRecurring ? recurringInterval : null,
-      recurringCount: isRecurring ? recurringCount : null,
-      nextDueDate: isRecurring ? addInterval(dueDate, recurringInterval) : null,
-    }));
+      description: String(body?.description ?? ''),
+      isRecurring: Boolean(body?.isRecurring),
+      recurringInterval: typeof body?.recurringInterval === 'string' ? body.recurringInterval : 'monthly',
+      recurringCount,
+    });
+    if (!created.ok) return created;
 
-    await db.invoice.createMany({ data });
     await logAudit(db, {
       lodgeId: String(lodgeId),
       userId: session.user.id,
       action: 'CREATE',
       entity: 'invoice-bulk',
       entityId: String(lodgeId),
-      metadata: { created: data.length, scope, amount, accountId, isRecurring },
+      metadata: { created: created.invoiceIds.length, scope, amount, chartAccountId, isRecurring: Boolean(body?.isRecurring) },
     });
-    return { created: data.length, members: members.length };
+    return { ok: true, created: created.invoiceIds.length, members: members.length } as const;
   });
 
-  return NextResponse.json({ ok: true, ...result });
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+  return NextResponse.json({ ok: true, created: result.created, members: result.members });
 }

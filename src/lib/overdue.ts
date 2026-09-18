@@ -35,6 +35,9 @@ async function findOpenDues(
         type: 'RECEIVABLE',
         isDues: true,
         status: { not: 'paid' },
+        // Lançamento que já tem cobrança (Invoice) é contado pela Invoice — senão
+        // o par Account+Invoice do mesmo débito entraria duas vezes.
+        invoices: { none: {} },
         memberId: memberId ?? { not: null },
         dueDate: { lt: now },
         member: memberFilter,
