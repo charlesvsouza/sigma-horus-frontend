@@ -5,7 +5,7 @@
 
 export interface RiteSeed { name: string; order: number; }
 export interface PowerSeed { name: string; order: number; }
-export interface ChartAccountSeed { code: string; name: string; type: 'REVENUE' | 'EXPENSE'; category: string; solidarity?: boolean; dues?: boolean; }
+export interface ChartAccountSeed { code: string; name: string; type: 'REVENUE' | 'EXPENSE'; category: string; solidarity?: boolean; dues?: boolean; fund?: 'tronco' | 'donations'; }
 export interface OfficeSeed { name: string; order: number; }
 export interface MaterialSeed {
   name: string;
@@ -231,8 +231,8 @@ export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   { code: '1.1.01', name: 'Mensalidades', type: 'REVENUE', category: 'Receitas Próprias', dues: true },
   { code: '1.1.02', name: 'Taxa de Iniciação', type: 'REVENUE', category: 'Receitas Próprias' },
   { code: '1.1.03', name: 'Taxa de Filiação / Regularização', type: 'REVENUE', category: 'Receitas Próprias' },
-  { code: '1.1.04', name: 'Doações e Contribuições', type: 'REVENUE', category: 'Receitas Próprias' },
-  { code: '1.1.05', name: 'Tronco de Beneficência', type: 'REVENUE', category: 'Receitas Próprias', solidarity: true },
+  { code: '1.1.04', name: 'Doações e Contribuições', type: 'REVENUE', category: 'Receitas Próprias', fund: 'donations' },
+  { code: '1.1.05', name: 'Tronco de Beneficência', type: 'REVENUE', category: 'Receitas Próprias', solidarity: true, fund: 'tronco' },
   { code: '1.1.06', name: 'Jantar Ritualístico', type: 'REVENUE', category: 'Receitas Próprias' },
   { code: '1.1.07', name: 'Taxa Paramaçônica', type: 'REVENUE', category: 'Receitas Próprias' },
   { code: '1.1.08', name: 'Taxa de Elevação', type: 'REVENUE', category: 'Receitas Próprias' },
@@ -271,7 +271,7 @@ export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   { code: '2.2.05', name: 'Seguros', type: 'EXPENSE', category: 'Investimentos' },
   { code: '2.2.06', name: 'Obras e Benfeitorias', type: 'EXPENSE', category: 'Investimentos' },
   // 8.9 Assistência e Manutenção
-  { code: '8.9.03', name: 'Ação Social e Caridade', type: 'EXPENSE', category: 'Assistência e Manutenção', solidarity: true },
+  { code: '8.9.03', name: 'Ação Social e Caridade', type: 'EXPENSE', category: 'Assistência e Manutenção', solidarity: true, fund: 'tronco' },
   { code: '8.9.04', name: 'Manutenção Preventiva/Corretiva', type: 'EXPENSE', category: 'Assistência e Manutenção' },
   { code: '8.9.05', name: 'Estorno de Receita', type: 'EXPENSE', category: 'Assistência e Manutenção' },
   { code: '8.9.06', name: 'Material Ritualístico e Paramentos', type: 'EXPENSE', category: 'Assistência e Manutenção' },

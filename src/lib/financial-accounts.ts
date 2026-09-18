@@ -1,6 +1,9 @@
 // Lógica pura de saldo por conta financeira (banco/investimento/caixa),
 // separada da rota para ser testável sem Prisma. Mesmo espírito de
 // lib/closing.ts e lib/hospitalaria.ts (saldo = abertura + entradas − saídas).
+// Valores são Float: cada soma é arredondada em centavos (lib/money) para não
+// acumular erro de ponto flutuante (100 + 30,10 + 20,20 ≠ 150,30 sem isso).
+import { round2 } from '@/lib/money';
 
 export interface AccountPaymentInput {
   bankAccountId: string | null;
@@ -36,12 +39,12 @@ export function computeFinancialAccountBalances(
   for (const p of payments) {
     if (!p.bankAccountId || !saldos.has(p.bankAccountId)) continue;
     const sinal = p.accountType === 'RECEIVABLE' ? 1 : -1;
-    saldos.set(p.bankAccountId, (saldos.get(p.bankAccountId) ?? 0) + sinal * p.amount);
+    saldos.set(p.bankAccountId, round2((saldos.get(p.bankAccountId) ?? 0) + sinal * p.amount));
   }
 
   for (const t of approvedTransfers) {
-    if (saldos.has(t.fromId)) saldos.set(t.fromId, (saldos.get(t.fromId) ?? 0) - t.amount);
-    if (saldos.has(t.toId)) saldos.set(t.toId, (saldos.get(t.toId) ?? 0) + t.amount);
+    if (saldos.has(t.fromId)) saldos.set(t.fromId, round2((saldos.get(t.fromId) ?? 0) - t.amount));
+    if (saldos.has(t.toId)) saldos.set(t.toId, round2((saldos.get(t.toId) ?? 0) + t.amount));
   }
 
   return accounts.map((a) => ({ id: a.id, saldo: saldos.get(a.id) ?? a.openingBalance }));
@@ -96,7 +99,7 @@ export function computeAccountStatement(
   let openingBalance = baseOpeningBalance;
   const inRange: StatementMovementInput[] = [];
   for (const m of sorted) {
-    if (m.date < from) openingBalance += signedAmountOf(m);
+    if (m.date < from) openingBalance = round2(openingBalance + signedAmountOf(m));
     else if (m.date <= to) inRange.push(m);
   }
 
@@ -105,8 +108,8 @@ export function computeAccountStatement(
   let totalOut = 0;
   const movements: StatementMovement[] = inRange.map((m) => {
     const signedAmount = signedAmountOf(m);
-    running += signedAmount;
-    if (signedAmount >= 0) totalIn += signedAmount; else totalOut += -signedAmount;
+    running = round2(running + signedAmount);
+    if (signedAmount >= 0) totalIn = round2(totalIn + signedAmount); else totalOut = round2(totalOut - signedAmount);
     return { ...m, date: m.date.toISOString(), signedAmount, balance: running };
   });
 

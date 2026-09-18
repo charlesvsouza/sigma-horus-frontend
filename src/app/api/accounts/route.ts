@@ -5,6 +5,7 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { settleAccountAsPaid } from '@/lib/account-status';
 import { isValidMoney, round2 } from '@/lib/money';
+import { fundAccountForChart } from '@/lib/funds';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -98,6 +99,10 @@ export async function POST(request: Request) {
     if (bankAccountId) {
       const ba = await db.financialAccount.findFirst({ where: { id: bankAccountId, lodgeId: String(lodgeId) }, select: { id: true } });
       validBankAccountId = ba?.id ?? null;
+    }
+    // Categoria de fundo (Tronco / Doações): sem caixa informado, usa o caixa do fundo.
+    if (!validBankAccountId && validChartId) {
+      validBankAccountId = (await fundAccountForChart(db, String(lodgeId), validChartId))?.id ?? null;
     }
 
     // Visto do Venerável: despesa acima do limite configurado nasce "pending"

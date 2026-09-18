@@ -26,14 +26,16 @@ export async function settleAsaasInvoicePayment(
 ) {
   const { lodgeId, invoiceId, accountId, memberId, amount, asaasPaymentId, userId, source = 'manual-reconcile' } = params;
 
-  const created = await db.payment.create({
-    data: { lodgeId, accountId, memberId, amount, method: 'asaas', note: `Baixa automática Asaas (${asaasPaymentId})` },
-  });
-
   const [invoice, account] = await Promise.all([
     db.invoice.findUnique({ where: { id: invoiceId } }),
     db.account.findUnique({ where: { id: accountId } }),
   ]);
+
+  // Sem conta bancária o pagamento não entra no saldo de nenhuma conta: usa a
+  // prevista do lançamento (ex.: Caixa do Tronco numa doação por Pix).
+  const created = await db.payment.create({
+    data: { lodgeId, accountId, memberId, bankAccountId: account?.bankAccountId ?? null, amount, method: 'asaas', note: `Baixa automática Asaas (${asaasPaymentId})` },
+  });
 
   // Escopa por membro (quando a Invoice tem um): a mesma Account pode ser
   // compartilhada por várias Invoices de membros diferentes (cobrança em

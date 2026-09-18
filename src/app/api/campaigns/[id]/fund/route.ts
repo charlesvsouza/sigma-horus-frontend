@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { brl } from '@/lib/currency';
 import { getTroncoBalance } from '@/lib/hospitalaria';
+import { findFundAccount } from '@/lib/funds';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -41,6 +42,8 @@ export async function POST(request: Request, { params }: Ctx) {
     });
     if (!expenseAccount) return { error: 'no_tronco' as const };
 
+    const caixa = await findFundAccount(db, String(lodgeId), 'tronco');
+
     const account = await db.account.create({
       data: {
         lodgeId: String(lodgeId),
@@ -50,11 +53,12 @@ export async function POST(request: Request, { params }: Ctx) {
         dueDate: new Date(),
         status: 'paid',
         chartAccountId: expenseAccount.id,
+        bankAccountId: caixa?.id ?? null,
         description: 'Custeio pelo Tronco de Solidariedade',
       },
     });
     await db.payment.create({
-      data: { lodgeId: String(lodgeId), accountId: account.id, amount, method: 'fund', note: `Custeio: ${campaign.title}` },
+      data: { lodgeId: String(lodgeId), accountId: account.id, bankAccountId: caixa?.id ?? null, amount, method: 'fund', note: `Custeio: ${campaign.title}` },
     });
     const updated = await db.campaign.update({
       where: { id },

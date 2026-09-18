@@ -112,6 +112,7 @@ const NAV: NavGroupDef[] = [
     items: [
       { href: '/dashboard/hospitalaria/irmaos', label: 'Irmãos (consulta)', roles: ['admin', 'venerable', 'hospitaller'] },
       { href: '/dashboard/hospitalaria/campanhas', label: 'Campanhas', roles: ['admin', 'venerable', 'hospitaller', 'treasurer'] },
+      { href: '/dashboard/hospitalaria/fundos', label: 'Fundos (Tronco e Doações)', roles: ['admin', 'venerable', 'hospitaller', 'treasurer'] },
       { href: '/dashboard/portal/hospitalaria', label: 'Hospitalaria', roles: ['member'] },
     ],
   },

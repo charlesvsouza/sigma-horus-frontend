@@ -1,4 +1,5 @@
 import type { Prisma } from '@/generated/prisma/client';
+import { ensureFundAccounts } from '@/lib/funds';
 import { BRAZILIAN_POWERS, BRAZILIAN_RITES, DEFAULT_MATERIALS, LEGACY_INITIATION_FEE_NAME, MASONIC_CHART_OF_ACCOUNTS, OFFICES_BY_RITE } from '@/lib/masonic-reference';
 
 /**
@@ -41,7 +42,7 @@ export async function seedLodgeDefaults(
   const missingChart = MASONIC_CHART_OF_ACCOUNTS.filter((c) => !haveChartCodes.has(c.code));
   if (missingChart.length > 0) {
     await db.chartAccount.createMany({
-      data: missingChart.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false, isDues: c.dues ?? false })),
+      data: missingChart.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false, isDues: c.dues ?? false, fundPurpose: c.fund ?? null })),
     });
     result.chartAccounts = missingChart.length;
   }
@@ -54,7 +55,13 @@ export async function seedLodgeDefaults(
     if (c.dues && haveChartCodes.has(c.code)) {
       await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, isDues: { not: true } }, data: { isDues: true } });
     }
+    if (c.fund && haveChartCodes.has(c.code)) {
+      await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, fundPurpose: null }, data: { fundPurpose: c.fund } });
+    }
   }
+
+  // Caixa próprio para o Tronco de Beneficência e para Doações e Contribuições.
+  await ensureFundAccounts(db, lodgeId);
 
   // Semeia cargos do rito escolhido (apenas se não houver cargos ainda).
   if (offices === 0 && riteName) {
@@ -104,7 +111,7 @@ export async function syncChartAccounts(
   const toAdd = MASONIC_CHART_OF_ACCOUNTS.filter((c) => !haveCodes.has(c.code));
   if (toAdd.length > 0) {
     await db.chartAccount.createMany({
-      data: toAdd.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false, isDues: c.dues ?? false })),
+      data: toAdd.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false, isDues: c.dues ?? false, fundPurpose: c.fund ?? null })),
     });
   }
 
@@ -130,7 +137,13 @@ export async function syncChartAccounts(
     if (c.solidarity && haveCodes.has(c.code)) {
       await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, isSolidarity: { not: true } }, data: { isSolidarity: true } });
     }
+    if (c.fund && haveCodes.has(c.code)) {
+      await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, fundPurpose: null }, data: { fundPurpose: c.fund } });
+    }
   }
+
+  // Garante o caixa de cada fundo (Tronco e Doações) — idempotente.
+  await ensureFundAccounts(db, lodgeId);
 
   return { added: toAdd.length, removed: toRemove.length, kept: current.length - toRemove.length };
 }

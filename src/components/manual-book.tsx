@@ -98,6 +98,7 @@ const INDEX: IndexEntry[] = [
       { id: 'hosp-doacoes', label: '11.4 Doações e custeio pelo Tronco' },
       { id: 'hosp-convocar', label: '11.5 Convocar os irmãos' },
       { id: 'hosp-pedidos', label: '11.6 Pedidos dos obreiros' },
+      { id: 'hosp-fundos', label: '11.7 Fundos: caixa do Tronco e das Doações' },
     ],
   },
   { id: 'assinatura', num: '12', label: 'Assinatura e cobrança' },
@@ -246,7 +247,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 18 de setembro de 2026 · versão 1.24</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 18 de setembro de 2026 · versão 1.25</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -308,7 +309,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.24 — 18 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.25 — 18 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1087,6 +1088,11 @@ export function ManualBook() {
                   </li>
                   <li>Para <strong>Caixa</strong>: só o nome (ex.: &quot;Caixa da Loja&quot;) — representa o dinheiro em espécie guardado fisicamente.</li>
                   <li>
+                    Escolha a <UI>Finalidade da conta</UI>: <strong>Geral</strong> (a maioria), <strong>Caixa do Tronco de
+                    Beneficência</strong> ou <strong>Caixa de Doações e Contribuições</strong>. Esses dois últimos são os
+                    <strong> fundos</strong> da loja (capítulo 11.7) — o dinheiro de cada um fica separado, com relatórios próprios.
+                  </li>
+                  <li>
                     Preencha o <UI>Saldo inicial</UI> com o que já existia de verdade nessa conta/Caixa <strong>antes</strong>
                     de começar a lançar no sistema (o extrato do banco/CDB na data em que a loja começou a usar o Sigma
                     Horus, ou o dinheiro físico contado no Caixa naquele dia). Deixe em branco (zero) para uma conta nova,
@@ -1510,8 +1516,10 @@ export function ManualBook() {
                   <strong> saldo disponível</strong> no topo da tela de Campanhas.
                 </p>
                 <p>
-                  O saldo é calculado pela contabilidade: <strong>entradas do Tronco</strong> (conta &quot;Tronco de
-                  Beneficência&quot;) menos os <strong>gastos de benemerência</strong> (conta &quot;Ação Social e Caridade&quot;).
+                  O Tronco tem o seu <strong>próprio caixa</strong> (&quot;Caixa do Tronco de Beneficência&quot;, ver 11.7). O saldo
+                  disponível é o do caixa: saldo inicial + <strong>entradas do Tronco</strong> (conta &quot;Tronco de
+                  Beneficência&quot;) − <strong>gastos de benemerência</strong> (conta &quot;Ação Social e Caridade&quot;) ± transferências
+                  aprovadas. Sem um caixa do Tronco cadastrado, vale só o movimento dessas duas contas.
                   Se o saldo aparecer indisponível, peça ao Tesoureiro/Administrador para clicar em <UI>Atualizar plano de
                   contas</UI> em Cadastros (capítulo 7.1) — isso habilita as contas do Tronco.
                 </p>
@@ -1573,6 +1581,43 @@ export function ManualBook() {
                   <UI> reabrir</UI> se precisar revisar de novo). Se decidir formalizar o pedido, crie uma campanha
                   normalmente em <UI>+ Nova campanha</UI> (11.3), usando o pedido como referência.
                 </p>
+              </Sub>
+
+              <Sub id="hosp-fundos" title="11.7 Fundos: caixa do Tronco e das Doações">
+                <p>
+                  A loja mantém <strong>dois fundos com caixa próprio</strong>, separados do caixa geral, como o Caixa e as
+                  contas bancárias (7.14): o <strong>Caixa do Tronco de Beneficência</strong> e o <strong>Caixa de Doações e
+                  Contribuições</strong>. Cada um mostra à parte quanto tem, de onde veio e para onde foi — sem misturar com o
+                  dinheiro do dia a dia. As lojas novas já nascem com os dois caixas; nas lojas existentes eles foram criados com
+                  saldo inicial zero (ajuste em <UI>Cadastros financeiros → Contas bancárias e Caixa → Editar</UI>, campo
+                  <UI> Saldo inicial</UI>, com o que já havia guardado antes de usar o sistema).
+                </p>
+                <p><strong>Para onde o dinheiro vai sozinho</strong> — você não precisa escolher o caixa nestes casos:</p>
+                <Bullets>
+                  <li>Doações a uma <strong>campanha</strong> e o <strong>custeio pelo Tronco</strong> (11.4) usam o caixa do Tronco.</li>
+                  <li>Doação do irmão ao Tronco por Pix (portal) também.</li>
+                  <li>Em <UI>Contas</UI>, ao escolher a categoria <em>Tronco de Beneficência</em> ou <em>Doações e Contribuições</em>, a conta bancária/caixa já vem preenchida com o caixa do fundo (e, se você lançar como Pago sem escolher, ele é usado automaticamente).</li>
+                </Bullets>
+                <p>
+                  <strong>Gerenciar:</strong> em <UI>Hospitalaria → Fundos (Tronco e Doações)</UI> escolha o fundo e o
+                  período. A tela mostra o <strong>saldo de hoje</strong>, o saldo inicial e final do período, as entradas e
+                  saídas e traz os relatórios de gestão:
+                </p>
+                <Bullets>
+                  <li><strong>Entradas por origem:</strong> sessões (tronco passado), campanhas e avulsas, com o detalhe de cada campanha e de cada sessão.</li>
+                  <li><strong>Saídas do período</strong> por destino/finalidade (por exemplo, cada campanha custeada).</li>
+                  <li><strong>Doadores</strong> — os nomes de quem doou ao Tronco só aparecem para Administrador, Venerável e Tesoureiro; os demais veem &quot;Doação (irmão)&quot;.</li>
+                  <li><strong>Campanhas</strong> (Tronco): meta, doações recebidas, valor custeado pelo Tronco e % da meta.</li>
+                  <li><strong>Evolução mensal</strong> dos últimos 12 meses e o <strong>extrato</strong> do período, com saldo corrente.</li>
+                  <li><strong>Salvar como PDF</strong> gera a prestação de contas do fundo, com o brasão da loja.</li>
+                </Bullets>
+                <Note>
+                  <strong>Conferência:</strong> se um pagamento de categoria do fundo passar por <em>outra</em> conta (por exemplo,
+                  o tronco recolhido na sessão lançado no Caixa geral), a tela avisa e lista o que está fora do lugar. Para o
+                  dinheiro ficar no fundo, faça uma <UI>Transferência entre contas</UI> (7.14) do caixa onde ele entrou para o
+                  caixa do fundo — a transferência precisa da aprovação do Venerável. O custeio de campanha é limitado ao saldo
+                  do <strong>caixa</strong> do Tronco.
+                </Note>
               </Sub>
             </Chapter>
 

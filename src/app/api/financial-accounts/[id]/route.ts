@@ -5,6 +5,7 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 const KINDS = ['bank', 'cash'];
+const PURPOSES = ['general', 'tronco', 'donations'];
 
 async function getSessionAndCheck(lodgeId: string | undefined, role: string | undefined) {
   if (!lodgeId) return { error: 'Unauthorized', status: 401 } as const;
@@ -27,7 +28,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Tipo deve ser bank ou cash.' }, { status: 400 });
   }
 
-  const fields = ['name', 'kind', 'bankName', 'isInvestment', 'agency', 'accountNumber', 'openingBalance', 'isDefault', 'active'] as const;
+  if (body?.purpose != null && !PURPOSES.includes(String(body.purpose))) {
+    return NextResponse.json({ error: 'Finalidade inválida.' }, { status: 400 });
+  }
+
+  const fields = ['name', 'kind', 'purpose', 'bankName', 'isInvestment', 'agency', 'accountNumber', 'openingBalance', 'isDefault', 'active'] as const;
   const data: Record<string, unknown> = {};
   for (const f of fields) {
     if (body?.[f] === undefined) continue;

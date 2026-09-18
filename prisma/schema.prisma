@@ -399,6 +399,7 @@ model FinancialAccount {
   kind           String              // bank | cash
   bankName       String?             // nome do banco (lista fixa), só quando kind=bank
   isInvestment   Boolean  @default(false)
+  purpose        String   @default("general") // general | tronco | donations — caixa do fundo de benemerência / de doações
   agency         String?
   accountNumber  String?
   openingBalance Float    @default(0)
@@ -850,6 +851,7 @@ model ChartAccount {
   active    Boolean  @default(true)
   isSolidarity Boolean @default(false) // conta do Tronco de Solidariedade (benemerência)
   isDues       Boolean @default(false) // mensalidade: lançamento/cobrança herda isDues (base do Art. 002)
+  fundPurpose  String? // tronco | donations — a categoria pertence a um fundo (caixa próprio, ver FinancialAccount.purpose)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

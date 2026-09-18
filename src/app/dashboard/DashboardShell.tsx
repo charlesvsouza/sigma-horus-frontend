@@ -11,7 +11,7 @@ import Art002Alert from '@/components/art002-alert';
 import {
   LayoutDashboard, CircleUser, BookOpen, Users, Database, Briefcase, Crown, Wallet,
   ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
-  MessageSquare, Contact, HeartHandshake, Settings, KeyRound, Gem, Plug, ScrollText,
+  MessageSquare, Contact, HeartHandshake, PiggyBank, Settings, KeyRound, Gem, Plug, ScrollText,
   PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart,
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
   Scale, Users2, Images, LayoutGrid, type LucideIcon,
@@ -64,6 +64,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/comunicacao': MessageSquare,
   '/dashboard/hospitalaria/irmaos': Contact,
   '/dashboard/hospitalaria/campanhas': HeartHandshake,
+  '/dashboard/hospitalaria/fundos': PiggyBank,
   '/dashboard/portal/hospitalaria': HeartHandshake,
   '/dashboard/configuracoes': Settings,
   '/dashboard/configuracoes/usuarios': KeyRound,
@@ -95,7 +96,7 @@ const ROLE_LABEL: Record<string, string> = {
 const SEGMENT_LABELS: Record<string, string> = {
   configuracoes: 'Configurações da loja', relatorios: 'Resumo financeiro', hospitalaria: 'Hospitalaria',
   sessoes: 'Sessões', usuarios: 'Usuários & acessos', permissoes: 'Permissões',
-  fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', portal: 'Meu portal', secretaria: 'Secretaria',
+  fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', fundos: 'Fundos (Tronco e Doações)', portal: 'Meu portal', secretaria: 'Secretaria',
   inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos',
   'fluxo-caixa': 'Fluxo de caixa projetado', orcamento: 'Orçamento anual',
   patrimonio: 'Patrimônio', 'conciliacao-bancaria': 'Conciliação bancária',

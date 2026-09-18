@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { findFundAccount } from '@/lib/funds';
 import { NextResponse } from 'next/server';
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -39,6 +40,8 @@ export async function POST(request: Request, { params }: Ctx) {
     });
     if (!tronco) return { error: 'no_tronco' as const };
 
+    const caixa = await findFundAccount(db, String(lodgeId), 'tronco');
+
     const display = anonymous ? 'Doação anônima' : donorName ?? 'Doador não identificado';
 
     // Lançamento financeiro: conta recebível já baixada na conta do Tronco.
@@ -51,11 +54,12 @@ export async function POST(request: Request, { params }: Ctx) {
         dueDate: new Date(),
         status: 'paid',
         chartAccountId: tronco.id,
+        bankAccountId: caixa?.id ?? null,
         description: display,
       },
     });
     const payment = await db.payment.create({
-      data: { lodgeId: String(lodgeId), accountId: account.id, amount, method: 'donation', note: display },
+      data: { lodgeId: String(lodgeId), accountId: account.id, bankAccountId: caixa?.id ?? null, amount, method: 'donation', note: display },
     });
     const donation = await db.campaignDonation.create({
       data: { lodgeId: String(lodgeId), campaignId: id, donorName, anonymous, amount, note, paymentId: payment.id },

@@ -1,4 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
+import { computeFinancialAccountBalances } from '@/lib/financial-accounts';
+import { sumMoney } from '@/lib/money';
 
 export const BENEFICIARY_LABELS: Record<string, string> = {
   person: 'Pessoa física',
@@ -27,22 +29,47 @@ export const CAMPAIGN_TEMPLATES = [
 export async function getTroncoBalance(
   db: Prisma.TransactionClient,
   lodgeId: string,
-): Promise<{ revenue: number; expense: number; balance: number; configured: boolean }> {
-  const [solidarityCount, payments] = await Promise.all([
+): Promise<{ revenue: number; expense: number; balance: number; configured: boolean; caixa: boolean }> {
+  const [solidarityCount, payments, fundAccounts] = await Promise.all([
     db.chartAccount.count({ where: { lodgeId, isSolidarity: true } }),
     db.payment.findMany({
       where: { lodgeId, account: { chartAccount: { isSolidarity: true } } },
       select: { amount: true, account: { select: { type: true } } },
     }),
+    db.financialAccount.findMany({ where: { lodgeId, purpose: 'tronco', active: true }, select: { id: true, openingBalance: true } }),
   ]);
 
+  // Movimento por categoria (entradas/saídas do Tronco no plano de contas).
   let revenue = 0;
   let expense = 0;
   for (const p of payments) {
     if (p.account?.type === 'RECEIVABLE') revenue += Number(p.amount);
     else if (p.account?.type === 'PAYABLE') expense += Number(p.amount);
   }
-  return { revenue, expense, balance: revenue - expense, configured: solidarityCount > 0 };
+
+  // Com caixa próprio do Tronco, o saldo disponível é o do CAIXA (saldo inicial +
+  // tudo que entrou/saiu nele + transferências aprovadas). Sem caixa, cai no
+  // movimento por categoria (comportamento antigo).
+  if (fundAccounts.length > 0) {
+    const ids = fundAccounts.map((f) => f.id);
+    const [caixaPayments, transfers] = await Promise.all([
+      db.payment.findMany({
+        where: { lodgeId, bankAccountId: { in: ids } },
+        select: { amount: true, bankAccountId: true, account: { select: { type: true } } },
+      }),
+      db.accountTransfer.findMany({
+        where: { lodgeId, status: 'approved', OR: [{ fromId: { in: ids } }, { toId: { in: ids } }] },
+        select: { fromId: true, toId: true, amount: true },
+      }),
+    ]);
+    const saldos = computeFinancialAccountBalances(
+      fundAccounts.map((f) => ({ id: f.id, openingBalance: Number(f.openingBalance) })),
+      caixaPayments.map((p) => ({ bankAccountId: p.bankAccountId, amount: Number(p.amount), accountType: p.account?.type ?? 'RECEIVABLE' })),
+      transfers.map((t) => ({ fromId: t.fromId, toId: t.toId, amount: Number(t.amount) })),
+    );
+    return { revenue, expense, balance: sumMoney(saldos.map((s) => s.saldo)), configured: solidarityCount > 0, caixa: true };
+  }
+  return { revenue, expense, balance: revenue - expense, configured: solidarityCount > 0, caixa: false };
 }
 
 // Quem pode ver o nome de quem doou ao Tronco (ex.: em Contas a receber ou na
