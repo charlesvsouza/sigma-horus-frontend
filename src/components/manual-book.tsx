@@ -246,7 +246,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 18 de setembro de 2026 · versão 1.22</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 18 de setembro de 2026 · versão 1.23</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -308,7 +308,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.22 — 18 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.23 — 18 de setembro de 2026</p>
               </div>
             </div>
 
@@ -761,6 +761,16 @@ export function ManualBook() {
                   (as contas vinculadas a lançamentos são preservadas). Isso também habilita o <strong>Tronco de
                   Solidariedade</strong> usado pela Hospitalaria (capítulo 11).
                 </p>
+                <p>
+                  <strong>Taxas maçônicas separadas:</strong> <code>1.1.02 Taxa de Iniciação</code>,
+                  <code> 1.1.08 Taxa de Elevação</code> e <code>1.1.09 Taxa de Exaltação</code> são categorias
+                  distintas, para cobrar e acompanhar cada taxa por si (7.3). Em lojas que já existiam, a antiga
+                  &quot;Taxas (Iniciação, Elevação, Exaltação)&quot; é renomeada para <em>Taxa de Iniciação</em> (se o
+                  nome não tiver sido personalizado; os lançamentos antigos continuam ligados a ela) e, ao clicar em
+                  <UI> Atualizar plano de contas</UI>, as categorias de Elevação e Exaltação são criadas. A categoria
+                  <strong> Mensalidades</strong> (<code>1.1.01</code>) é a que identifica a mensalidade do membro para o
+                  Art. 002 (7.8).
+                </p>
               </Sub>
 
               <Sub id="tes-contas" title="7.2 Lançar contas a receber e a pagar">
@@ -769,20 +779,29 @@ export function ManualBook() {
                   <li>Escolha a <UI>Categoria (plano de contas)</UI> — ela já sugere o título e o tipo.</li>
                   <li>Confira o <UI>Título da conta</UI> e o tipo: <strong>Conta a receber</strong> ou <strong>Conta a pagar</strong>.</li>
                   <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> de vencimento.</li>
-                  <li>Defina o <UI>Status</UI> (Pendente, Pago ou Vencido).</li>
+                  <li>Defina o <UI>Status</UI> (Pendente, Pago ou Vencido). Ao escolher <strong>Pago</strong>, aparecem a <UI>Data do pagamento</UI> (em branco = hoje) e a <UI>Conta bancária/caixa do pagamento</UI>, que passa a ser <strong>obrigatória</strong> — ver o quadro abaixo.</li>
                   <li>Opcional: <UI>Vincular a um membro</UI> ou <UI>Vincular a um cliente/fornecedor</UI> (cadastro de quem não é membro — ver 7.13), escolher a <UI>Conta bancária/caixa prevista</UI> (ver 7.14) e escrever uma <UI>Descrição</UI>.</li>
                   <li>Clique em <UI>Salvar conta</UI>. A conta aparece na lista <UI>Contas cadastradas</UI>; use <UI>Remover</UI> para excluir.</li>
                 </Steps>
                 <Bullets>
                   <li><strong>Editar:</strong> clique em <UI>Editar</UI> na linha da conta para corrigir valor, vencimento, título ou vínculo — não precisa excluir e recriar. Contas de um veneralato já encerrado não podem ser editadas nem excluídas.</li>
                   <li><strong>Buscar:</strong> o campo de busca acima da lista filtra por título, membro ou status.</li>
-                  <li><strong>É mensalidade do membro:</strong> ao vincular a conta a um membro, aparece essa opção — marque para que ela entre na regra de inadimplência do Art. 002 (capítulo 7.8).</li>
+                  <li><strong>É mensalidade do membro:</strong> ao vincular a conta a um membro, aparece essa opção — marque para que ela entre na regra de inadimplência do Art. 002 (capítulo 7.8). Se a categoria escolhida for <strong>Mensalidades</strong>, a conta já nasce como mensalidade, sem precisar marcar.</li>
+                  <li><strong>Situação na lista:</strong> cada conta mostra um selo — <strong>Em aberto</strong>, <strong>Vencida</strong> ou <strong>Recebida/Paga</strong>. Quando há uma cobrança emitida no Asaas ainda sem pagamento, aparece também <strong>Aguardando Asaas</strong>.</li>
                 </Bullets>
+                <Note>
+                  <strong>&quot;Pago&quot; registra o dinheiro no caixa.</strong> Ao lançar (ou editar) uma conta como <strong>Pago</strong>, o
+                  sistema cria o pagamento correspondente na <UI>conta bancária/caixa</UI> escolhida — é isso que faz o valor
+                  entrar no saldo, no extrato, no DRE e no livro-caixa (7.14 a 7.16). Sem a conta bancária/caixa, o
+                  lançamento como Pago não é salvo. Também não é salvo se: a despesa está acima do limite e ainda aguarda o
+                  visto do Venerável (7.9 — lance como Pendente e aprove primeiro), ou a data do pagamento cai num
+                  veneralato já encerrado. Se já existirem pagamentos na conta, o status passa a seguir a soma deles.
+                </Note>
               </Sub>
 
               <Sub id="tes-cobrancas" title="7.3 Criar cobranças e recorrência">
                 <p>
-                  Cobranças são os títulos que você gera para receber dos membros. Em <UI>Tesouraria → Entradas e Saídas → Cobranças</UI>, no
+                  Cobranças são os títulos que você gera para receber dos membros. Cada cobrança nasce com o seu próprio lançamento a receber, ligado ao membro. Em <UI>Tesouraria → Entradas e Saídas → Cobranças</UI>, no
                   bloco <UI>Nova cobrança</UI>:
                 </p>
                 <Steps>
@@ -795,7 +814,7 @@ export function ManualBook() {
                 </Steps>
                 <p>
                   Para gerar as parcelas recorrentes que já venceram/estão previstas, use o botão <UI>Processar
-                  recorrentes</UI> no bloco <UI>Recorrência</UI> — ele cria as cobranças do período automaticamente.
+                  recorrentes</UI> no bloco <UI>Recorrência</UI> — ele cria as cobranças do período automaticamente, cada ocorrência com o seu próprio lançamento (pagar uma parcela não quita as seguintes).
                 </p>
                 <p>
                   <strong>Cobrança em massa:</strong> para cobrar todos os irmãos de uma vez (ex.: mensalidade), use o
@@ -823,6 +842,20 @@ export function ManualBook() {
                   <li>O status passa a <strong>Emitida</strong>. Se precisar refazer, use <UI>Reemitir</UI>.</li>
                 </Steps>
                 <Note>Quando o membro pagar, o webhook do Asaas (6.2-C) <strong>baixa a cobrança automaticamente</strong> e registra o pagamento — você não precisa lançar nada à mão.</Note>
+                <p>
+                  <strong>Cobrança emitida = a baixa é do Asaas.</strong> Depois de emitida, a cobrança fica <strong>Aguardando
+                  Asaas</strong> (selo na lista de Contas). Se o irmão pagar por fora (dinheiro em mãos, PIX direto) e você
+                  tentar baixar a conta em <UI>Contas</UI> (status Pago) ou em <UI>Pagamentos</UI>, o sistema avisa:
+                  <em> &quot;Cobrança aberta no Asaas&quot;</em>. Só siga com <UI>Recebido fora do Asaas</UI> se o valor foi de
+                  fato recebido por fora — o sistema então registra a baixa e <strong>avisa o Asaas para encerrar a
+                  cobrança</strong>, evitando que o irmão pague de novo pelo boleto/PIX. Se preferir, cancele o aviso e aguarde
+                  a confirmação automática do Asaas.
+                </p>
+                <Bullets>
+                  <li>Se o aviso ao Asaas falhar, a baixa no sistema é mantida (o dinheiro foi recebido) e a tela indica o que encerrar manualmente no painel do Asaas. Pagamento parcial não encerra a cobrança lá — ela segue aberta pelo valor integral.</li>
+                  <li><strong>Pagamento em duplicidade:</strong> se o Asaas confirmar um pagamento de uma cobrança que você já tinha baixado por fora, o valor entrou no Asaas mas <strong>não é lançado no sistema</strong>. Os administradores recebem um e-mail de alerta (e o registro fica em <UI>Auditoria</UI>) para conferir e, se for o caso, estornar ao irmão pelo painel do Asaas.</li>
+                  <li>Cancelar a cobrança no painel do Asaas depois de uma baixa por fora <strong>não desfaz</strong> a baixa no sistema.</li>
+                </Bullets>
               </Sub>
 
               <Sub id="tes-pagamentos" title="7.5 Registrar pagamentos (baixa manual)">
@@ -846,6 +879,8 @@ export function ManualBook() {
                   <li><strong>Recibo:</strong> cada pagamento tem um link <UI>Recibo</UI> — abre um comprovante pronto pra <UI>Salvar como PDF</UI> pelo diálogo de impressão do navegador.</li>
                   <li><strong>Estornar:</strong> lançou errado? Clique em <UI>Estornar</UI> na linha do pagamento — ele é removido e o status da conta/cobrança volta ao que era antes. Não funciona dentro de um período já encerrado.</li>
                   <li>Quando a conta é a receber (não a pagar), o membro recebe automaticamente um <strong>e-mail de confirmação</strong> do pagamento.</li>
+                  <li><strong>Contas sem membro</strong> (fornecedor, energia, aluguel etc.): a conta passa a <strong>Paga</strong> assim que a soma dos pagamentos cobre o valor — e volta a <strong>Em aberto</strong> se um estorno deixar de cobri-lo.</li>
+                  <li><strong>Conta com cobrança aberta no Asaas:</strong> a baixa manual pede a confirmação <UI>Recebido fora do Asaas</UI> (ver 7.4).</li>
                 </Bullets>
               </Sub>
 
@@ -889,9 +924,11 @@ export function ManualBook() {
                 </p>
                 <Steps>
                   <li>
-                    Ao lançar uma conta a receber vinculada a um membro em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, marque a
-                    caixa <strong>&quot;É mensalidade do membro&quot;</strong>. Só contas marcadas assim entram na
-                    regra dos 60 dias — cobranças pontuais (evento, campanha) não contam.
+                    Cobranças criadas pela categoria <strong>Mensalidades</strong> (7.3) já entram na regra
+                    automaticamente. Ao lançar à mão uma conta a receber vinculada a um membro em <UI>Tesouraria → Entradas e Saídas → Contas</UI>,
+                    escolha a categoria <strong>Mensalidades</strong> ou marque a caixa <strong>&quot;É mensalidade do membro&quot;</strong>.
+                    Só contas marcadas assim entram na regra dos 60 dias — cobranças pontuais (evento, campanha, taxas de
+                    Iniciação/Elevação/Exaltação) não contam.
                   </li>
                   <li>
                     Em <UI>Tesouraria → Relatórios → Inadimplência (Art. 002)</UI>, veja todos os membros com
@@ -1600,6 +1637,10 @@ export function ManualBook() {
             {/* ============== 15. DÚVIDAS ============== */}
             <Chapter id="duvidas" num="15" title="Dúvidas frequentes">
               <Bullets>
+                <li><strong>Lancei uma conta como Pago mas o caixa não mudou / a conta não foi salva.</strong> Lançar como <strong>Pago</strong> exige a <UI>Conta bancária/caixa</UI> do pagamento (7.2). Sem ela, o sistema recusa — escolha o caixa, informe a data do pagamento e salve. Contas antigas marcadas como Pago sem pagamento por trás não entram no saldo: abra a conta em <UI>Editar</UI>, escolha o caixa e salve para registrar o pagamento que faltava.</li>
+                <li><strong>Aparece &quot;Cobrança aberta no Asaas&quot; ao baixar uma conta.</strong> A cobrança já foi emitida e o Asaas ainda espera o pagamento. Se o irmão pagou por fora, confirme <UI>Recebido fora do Asaas</UI>; caso contrário, aguarde a baixa automática (7.4).</li>
+                <li><strong>Recebi um e-mail de &quot;recebimento em duplicidade&quot;.</strong> O Asaas confirmou um pagamento de uma cobrança que já estava baixada manualmente. O valor está no Asaas e não foi lançado aqui — confira e estorne ao irmão, se for o caso (7.4).</li>
+                <li><strong>Não vejo Taxa de Elevação / Taxa de Exaltação ao cobrar.</strong> Clique em <UI>Atualizar plano de contas</UI> em Cadastros (7.1) para criar as categorias.</li>
                 <li><strong>Não consigo emitir boleto.</strong> Verifique se o Asaas está conectado (6.2) e se o membro tem CPF (7.4).</li>
                 <li><strong>O pagamento não baixou sozinho.</strong> Confirme o webhook e o token no painel do Asaas (6.2-C).</li>
                 <li><strong>Meu acesso foi pausado.</strong> O teste de 10 dias terminou — contrate um plano em <UI>Assinatura</UI>; seus dados continuam guardados.</li>
