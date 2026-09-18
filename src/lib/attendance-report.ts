@@ -95,7 +95,7 @@ export function computeAttendanceReport(
         consecutiveAbsences,
       };
     })
-    .sort((a, b) => a.attendanceRate - b.attendanceRate || a.memberName.localeCompare(b.memberName));
+    .sort((a, b) => a.memberName.localeCompare(b.memberName));
 
   const sessionSummaries: SessionAttendanceSummary[] = periodSessions.map((s) => {
     let present = 0;

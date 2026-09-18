@@ -274,6 +274,7 @@ model Account {
   chartAccountId String?  // vínculo ao plano de contas (livro caixa / balancete)
   counterpartyId String?  // vínculo ao cadastro de cliente/fornecedor (quando não é membro)
   bankAccountId  String?  // conta bancária/caixa PREVISTA (só pré-preenche o pagamento; não é obrigatória)
+  sessionId      String?  // sessão do dia em que o lançamento ocorreu (ex.: doação ao Tronco na sessão em curso)
   type           String   // RECEIVABLE | PAYABLE
   title          String
   amount         Float
@@ -295,12 +296,14 @@ model Account {
   chartAccount ChartAccount? @relation(fields: [chartAccountId], references: [id], onDelete: SetNull)
   counterparty Counterparty? @relation(fields: [counterpartyId], references: [id], onDelete: SetNull)
   bankAccount  FinancialAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  session      Session?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   payments     Payment[]
   invoices     Invoice[]
 
   @@index([chartAccountId])
   @@index([counterpartyId])
   @@index([bankAccountId])
+  @@index([sessionId])
 }
 
 // Cadastro de clientes/fornecedores — contrapartes de Account que não são
@@ -633,11 +636,17 @@ model Session {
   minutesMimeType   String?
   convocationSentAt   DateTime? // quando o chamado foi enviado por e-mail a todos
   convocationSentById String?
+  // Trava a sessão contra edição (agenda, presença, balaustre) — travada
+  // automaticamente ao salvar o balaustre; só Administrador/Venerável destranca.
+  locked     Boolean   @default(false)
+  lockedAt   DateTime?
+  lockedById String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   lodge      Lodge       @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   attendances Attendance[]
+  accounts   Account[]
 }
 
 // Pedido leve do obreiro à Hospitalaria (proposta de campanha ou solicitação

@@ -24,44 +24,53 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
   const [category, setCategory] = useState('');
   const [content, setContent] = useState('');
   const [memberId, setMemberId] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  async function uploadOne(file: File) {
+    const formData = new FormData();
+    // Com vários arquivos, o título de cada um vira "Título — nome do arquivo"
+    // pra não cadastrar N documentos com o mesmo título e sem distinção na lista.
+    formData.append('title', files.length > 1 ? `${title} — ${file.name}` : title);
+    formData.append('kind', kind);
+    if (category) formData.append('category', category);
+    formData.append('content', content);
+    if (memberId) formData.append('memberId', memberId);
+    formData.append('file', file);
+
+    const response = await fetch('/api/documents/upload', { method: 'POST', body: formData });
+    const data = await response.json().catch(() => ({}));
+    return { ok: response.ok, error: data.error as string | undefined };
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
-    if (!file) {
-      setMessage({ kind: 'error', text: 'Selecione um arquivo antes de salvar.' });
+    if (files.length === 0) {
+      setMessage({ kind: 'error', text: 'Selecione ao menos um arquivo antes de salvar.' });
       return;
     }
 
     setSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('kind', kind);
-      if (category) formData.append('category', category);
-      formData.append('content', content);
-      if (memberId) formData.append('memberId', memberId);
-      formData.append('file', file);
+      const results = await Promise.all(files.map(uploadOne));
+      const failed = results.filter((r) => !r.ok);
 
-      const response = await fetch('/api/documents/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMessage({ kind: 'ok', text: 'Documento enviado e registrado com sucesso.' });
+      if (failed.length === 0) {
+        setMessage({ kind: 'ok', text: files.length > 1 ? `${files.length} documentos enviados e registrados com sucesso.` : 'Documento enviado e registrado com sucesso.' });
         setTitle('');
         setKind('document');
         setCategory('');
         setContent('');
         setMemberId('');
-        setFile(null);
+        setFiles([]);
         router.refresh();
+      } else if (failed.length === results.length) {
+        setMessage({ kind: 'error', text: failed[0].error ?? 'Erro ao registrar documento.' });
       } else {
-        setMessage({ kind: 'error', text: data.error ?? 'Erro ao registrar documento.' });
+        setMessage({ kind: 'error', text: `${results.length - failed.length} de ${results.length} arquivos enviados. ${failed.length} falharam: ${failed[0].error ?? 'erro desconhecido'}.` });
+        router.refresh();
       }
     } finally {
       setSubmitting(false);
@@ -100,12 +109,13 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
                 {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
               </select>
               <label className="rounded-lg border border-dashed border-white/8 bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand md:col-span-2">
-                <span className="mb-2 block font-medium text-sand-light">Arquivo</span>
-                <input type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} className="w-full" />
+                <span className="mb-2 block font-medium text-sand-light">Arquivo(s)</span>
+                <input type="file" multiple onChange={(event) => setFiles(Array.from(event.target.files ?? []))} className="w-full" />
+                {files.length > 1 ? <span className="mt-2 block text-xs text-sand-dark">{files.length} arquivos selecionados — cada um vira um documento, com o título acima seguido do nome do arquivo.</span> : null}
               </label>
               <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Resumo ou conteúdo do documento" rows={4} />
             </div>
-            <Button type="submit" disabled={submitting}>{submitting ? 'Enviando…' : 'Enviar e salvar documento'}</Button>
+            <Button type="submit" disabled={submitting}>{submitting ? 'Enviando…' : files.length > 1 ? `Enviar ${files.length} documentos` : 'Enviar e salvar documento'}</Button>
           </form>
         </FormCard>
 

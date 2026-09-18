@@ -83,10 +83,11 @@ test('lista de sessões: soma presente+ausente+não registrada bate com o total 
   assert.equal(s1.total, members.length);
 });
 
-test('membros ordenados por taxa de frequência crescente (pior primeiro)', () => {
+test('membros ordenados alfabeticamente por nome, independente da taxa de frequência', () => {
   const sessions = [sess({ id: 's1', date: new Date('2026-06-10') })];
+  // m2 (Bruno) tem frequência pior que m1 (Ana), mas a ordem tem que continuar A→Z por nome.
   const records = [{ sessionId: 's1', memberId: 'm1', status: 'present' }, { sessionId: 's1', memberId: 'm2', status: 'absent' }];
   const r = computeAttendanceReport(members, sessions, records, new Date('2026-06-01'), new Date('2026-06-30'));
-  assert.equal(r.members[0].memberId, 'm2');
-  assert.equal(r.members[1].memberId, 'm1');
+  assert.equal(r.members[0].memberId, 'm1');
+  assert.equal(r.members[1].memberId, 'm2');
 });

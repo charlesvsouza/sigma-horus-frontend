@@ -21,8 +21,9 @@ export async function POST(request: Request) {
   }
 
   const result = await withTenant(String(lodgeId), async (db) => {
-    const meeting = await db.session.findFirst({ where: { id: sessionId, lodgeId: String(lodgeId) }, select: { endDate: true } });
+    const meeting = await db.session.findFirst({ where: { id: sessionId, lodgeId: String(lodgeId) }, select: { endDate: true, locked: true } });
     if (!meeting) return { error: 'not_found' as const };
+    if (meeting.locked) return { error: 'locked' as const };
     // Sessões sem endDate (cadastradas antes deste campo existir) não são
     // bloqueadas — o gate só vale pra sessões que já têm término definido.
     if (meeting.endDate && new Date() < meeting.endDate) {
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
 
   if ('error' in result) {
     if (result.error === 'not_found') return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
+    if (result.error === 'locked') return NextResponse.json({ error: 'Sessão trancada — peça ao Venerável ou Administrador para destrancar.' }, { status: 423 });
     return NextResponse.json({ error: 'A presença só pode ser marcada depois do término da sessão.' }, { status: 400 });
   }
 

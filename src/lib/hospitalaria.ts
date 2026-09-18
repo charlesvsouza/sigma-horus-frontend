@@ -44,3 +44,24 @@ export async function getTroncoBalance(
   }
   return { revenue, expense, balance: revenue - expense, configured: solidarityCount > 0 };
 }
+
+// Quem pode ver o nome de quem doou ao Tronco (ex.: em Contas a receber ou na
+// própria Hospitalaria) — o restante do sistema vê "Doação (irmão)".
+const TRONCO_VIEWER_ROLES = new Set(['admin', 'venerable', 'treasurer']);
+
+export function canSeeDonorIdentity(role: string | undefined | null) {
+  return TRONCO_VIEWER_ROLES.has(role ?? '');
+}
+
+/**
+ * Nome a exibir para uma Account ligada ao Tronco de Solidariedade: some
+ * pra quem não é Administrador/Venerável/Tesoureiro, mesmo que o papel tenha
+ * accounts:read (Secretário, por exemplo, não deve ver quem doou). `isSolidarity`
+ * vem do ChartAccount vinculado à Account (mesmo critério de getTroncoBalance).
+ * Passe `name` como null/undefined pra não mudar nada quando não há nome a mostrar.
+ */
+export function donorDisplayName(name: string | null | undefined, isSolidarity: boolean, role: string | undefined | null): string | null {
+  if (!name) return name ?? null;
+  if (!isSolidarity || canSeeDonorIdentity(role)) return name;
+  return 'Doação (irmão)';
+}

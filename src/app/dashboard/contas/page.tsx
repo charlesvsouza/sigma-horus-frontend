@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { donorDisplayName } from '@/lib/hospitalaria';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
 import ContasClient from './ContasClient';
@@ -16,6 +17,7 @@ export default async function ContasPage() {
             member: { select: { id: true, name: true } },
             counterparty: { select: { id: true, name: true, kind: true } },
             bankAccount: { select: { id: true, name: true, kind: true } },
+            chartAccount: { select: { isSolidarity: true } },
           },
           orderBy: { dueDate: 'asc' },
         }),
@@ -42,20 +44,23 @@ export default async function ContasPage() {
       }))
     : { accounts: [], members: [], chartAccounts: [], counterparties: [], financialAccounts: [] };
 
-  const accounts = data.accounts.map((a) => ({
-    id: a.id,
-    title: a.title,
-    type: a.type,
-    amount: Number(a.amount),
-    dueDate: a.dueDate.toISOString(),
-    status: a.status,
-    description: a.description ?? null,
-    isDues: a.isDues,
-    approvalStatus: a.approvalStatus,
-    member: a.member ? { id: a.member.id, name: a.member.name } : null,
-    counterparty: a.counterparty ? { id: a.counterparty.id, name: a.counterparty.name, kind: a.counterparty.kind } : null,
-    bankAccount: a.bankAccount ? { id: a.bankAccount.id, name: a.bankAccount.name, kind: a.bankAccount.kind } : null,
-  }));
+  const accounts = data.accounts.map((a) => {
+    const isSolidarity = a.chartAccount?.isSolidarity ?? false;
+    return {
+      id: a.id,
+      title: a.title,
+      type: a.type,
+      amount: Number(a.amount),
+      dueDate: a.dueDate.toISOString(),
+      status: a.status,
+      description: a.description ?? null,
+      isDues: a.isDues,
+      approvalStatus: a.approvalStatus,
+      member: a.member ? { id: a.member.id, name: donorDisplayName(a.member.name, isSolidarity, role)! } : null,
+      counterparty: a.counterparty ? { id: a.counterparty.id, name: donorDisplayName(a.counterparty.name, isSolidarity, role)!, kind: a.counterparty.kind } : null,
+      bankAccount: a.bankAccount ? { id: a.bankAccount.id, name: a.bankAccount.name, kind: a.bankAccount.kind } : null,
+    };
+  });
 
   return <ContasClient accounts={accounts} members={data.members} chartAccounts={data.chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} />;
 }

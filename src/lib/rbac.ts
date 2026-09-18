@@ -187,6 +187,14 @@ export async function requireLodgeAccess(
   return { ok: true } as const;
 }
 
+// Não é role×resource×action da matriz de Permissões (não existe resource
+// 'sessions') — é uma checagem fixa e intencional: só quem preside a loja
+// (Administrador/Venerável) pode destrancar uma sessão já trancada, mesmo que
+// o papel tenha members:write (Secretário, por exemplo, não pode).
+export function canUnlockSession(role: string | undefined | null) {
+  return role === 'admin' || role === 'venerable';
+}
+
 /**
  * Retorna a matriz efetiva da loja (padrões + customizações) para a UI de admin.
  * Garante que toda combinação role×resource×action tenha um valor booleano.

@@ -7,6 +7,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
+  const role = session?.user?.role ?? '';
 
   const data = lodgeId
     ? await withTenant(String(lodgeId), async (db) => {
@@ -43,9 +44,12 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         agenda: data.item.agenda ?? null,
         minutesFileName: data.item.minutesFileName ?? null,
         convocationSentAt: data.item.convocationSentAt ? data.item.convocationSentAt.toISOString() : null,
+        locked: data.item.locked,
+        lockedAt: data.item.lockedAt ? data.item.lockedAt.toISOString() : null,
       }}
       members={data.members}
       initialAttendance={initialAttendance}
+      role={role}
     />
   );
 }

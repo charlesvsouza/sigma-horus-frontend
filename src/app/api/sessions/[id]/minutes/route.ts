@@ -51,16 +51,27 @@ export async function POST(request: Request, { params }: Ctx) {
   }
 
   const previous = await withTenant(String(lodgeId), async (db) => {
-    const existing = await db.session.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { minutesStorageKey: true } });
+    const existing = await db.session.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { minutesStorageKey: true, locked: true } });
     if (!existing) return undefined;
-    await db.session.update({ where: { id }, data: { minutesStorageKey: storageKey, minutesFileName: file.name, minutesMimeType: file.type } });
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session!.user.id, action: 'UPDATE', entity: 'session', entityId: id, metadata: { field: 'minutes' } });
+    if (existing.locked) return { locked: true as const };
+    // Salvar o balaustre tranca a sessão automaticamente — protege os registros
+    // (presença, agenda, o próprio balaustre) contra edição a partir daqui;
+    // só Administrador/Venerável destranca (ver ./../unlock/route.ts).
+    await db.session.update({
+      where: { id },
+      data: { minutesStorageKey: storageKey, minutesFileName: file.name, minutesMimeType: file.type, locked: true, lockedAt: new Date(), lockedById: session!.user.id },
+    });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session!.user.id, action: 'UPDATE', entity: 'session', entityId: id, metadata: { field: 'minutes', autoLocked: true } });
     return existing;
   });
 
   if (previous === undefined) {
     await deleteObject(storageKey).catch(() => {});
     return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
+  }
+  if ('locked' in previous && previous.locked) {
+    await deleteObject(storageKey).catch(() => {});
+    return NextResponse.json({ error: 'Sessão trancada — peça ao Venerável ou Administrador para destrancar.' }, { status: 423 });
   }
   if (previous?.minutesStorageKey) {
     await deleteObject(previous.minutesStorageKey).catch(() => {});
@@ -78,14 +89,18 @@ export async function DELETE(_request: Request, { params }: Ctx) {
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const previous = await withTenant(String(lodgeId), async (db) => {
-    const existing = await db.session.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { minutesStorageKey: true } });
+    const existing = await db.session.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { minutesStorageKey: true, locked: true } });
     if (!existing) return undefined;
+    if (existing.locked) return { locked: true as const };
     await db.session.update({ where: { id }, data: { minutesStorageKey: null, minutesFileName: null, minutesMimeType: null } });
     await logAudit(db, { lodgeId: String(lodgeId), userId: session!.user.id, action: 'UPDATE', entity: 'session', entityId: id, metadata: { field: 'minutes', removed: true } });
     return existing;
   });
 
   if (previous === undefined) return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
+  if ('locked' in previous && previous.locked) {
+    return NextResponse.json({ error: 'Sessão trancada — peça ao Venerável ou Administrador para destrancar.' }, { status: 423 });
+  }
   if (previous?.minutesStorageKey) {
     await deleteObject(previous.minutesStorageKey).catch(() => {});
   }

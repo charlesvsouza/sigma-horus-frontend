@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { degreeShort } from '@/lib/masonic-degree';
-import { fetchCep, maskCEP, maskPhone } from '@/lib/masks';
+import { clampDateYear, fetchCep, maskCEP, maskPhone } from '@/lib/masks';
 import { ACCOUNT_STATUS_LABEL, DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 import { Alert, Button, MaskedInput, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
@@ -157,7 +157,7 @@ function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; on
   const relInputs = (rel: RelativeData, setter: (field: keyof RelativeData, value: string | boolean) => void, label: string) => (
     <div className="grid gap-3 sm:grid-cols-2">
       <input value={rel.name} onChange={(e) => setter('name', e.target.value)} className={inputClass} placeholder={`Nome (${label})`} />
-      <input type="date" value={rel.birthDate ?? ''} onChange={(e) => setter('birthDate', e.target.value)} className={inputClass} />
+      <input type="date" value={rel.birthDate ?? ''} onChange={(e) => setter('birthDate', clampDateYear(e.target.value, rel.birthDate ?? ''))} className={inputClass} />
       <input value={rel.email ?? ''} onChange={(e) => setter('email', e.target.value)} className={inputClass} placeholder="E-mail" />
       <input value={rel.phone ?? ''} onChange={(e) => setter('phone', e.target.value)} className={inputClass} placeholder="Telefone" />
       <label className="flex items-center gap-2 text-xs text-sand-dark sm:col-span-2" title="Não recebe felicitação de aniversário automática">

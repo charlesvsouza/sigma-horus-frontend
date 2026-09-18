@@ -16,6 +16,7 @@ interface CampaignItem {
 }
 
 const STATUS_LABEL: Record<string, string> = { active: 'Ativa', completed: 'Concluída', canceled: 'Cancelada' };
+const DONATION_PRESETS = [5, 10, 20, 50, 100];
 
 export default function HospitalariaPortalPage() {
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
@@ -25,6 +26,11 @@ export default function HospitalariaPortalPage() {
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [donationAmount, setDonationAmount] = useState<number | null>(null);
+  const [customAmount, setCustomAmount] = useState('');
+  const [generatingDonation, setGeneratingDonation] = useState(false);
+  const [donationResult, setDonationResult] = useState<{ pixCopyPaste: string | null; invoiceUrl: string | null } | null>(null);
+  const [donationError, setDonationError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -57,6 +63,29 @@ export default function HospitalariaPortalPage() {
     }
   }
 
+  async function generateDonation() {
+    const amount = donationAmount ?? Number(customAmount.replace(',', '.'));
+    if (!amount || Number.isNaN(amount) || amount <= 0) {
+      setDonationError('Escolha um valor ou digite um valor válido.');
+      return;
+    }
+    setGeneratingDonation(true);
+    setDonationError(null);
+    setDonationResult(null);
+    const res = await fetch('/api/hospitalaria/tronco', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setGeneratingDonation(false);
+    if (res.ok) {
+      setDonationResult({ pixCopyPaste: data.pixCopyPaste ?? null, invoiceUrl: data.invoiceUrl ?? null });
+    } else {
+      setDonationError(data.error ?? 'Erro ao gerar a doação.');
+    }
+  }
+
   return (
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -75,6 +104,51 @@ export default function HospitalariaPortalPage() {
         </div>
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
+          <h2 className="text-base font-semibold text-sand-light">Doação para o Tronco de Solidariedade</h2>
+          <p className="mt-1 text-sm text-sand-dark">
+            Sua identidade como doador só é vista pelo Venerável Mestre e pelo Tesoureiro. Pagamento via Pix.
+          </p>
+          {donationError ? <Alert intent="danger" className="mt-3">{donationError}</Alert> : null}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {DONATION_PRESETS.map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => { setDonationAmount(v); setCustomAmount(''); setDonationResult(null); }}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                  donationAmount === v ? 'border-gold bg-gold/10 text-gold' : 'border-white/15 text-sand hover:border-white/25'
+                }`}
+              >
+                {brl(v)}
+              </button>
+            ))}
+            <input
+              value={customAmount}
+              onChange={(e) => { setCustomAmount(e.target.value); setDonationAmount(null); setDonationResult(null); }}
+              placeholder="Outro valor"
+              inputMode="decimal"
+              className={`${inputClass} w-32`}
+            />
+          </div>
+          <Button type="button" onClick={generateDonation} disabled={generatingDonation} className="mt-4">
+            {generatingDonation ? 'Gerando…' : 'Gerar doação'}
+          </Button>
+          {donationResult ? (
+            <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-200">
+              <p>Doação gerada — pague via Pix para confirmar.</p>
+              {donationResult.invoiceUrl ? (
+                <a href={donationResult.invoiceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-medium text-emerald-100 underline">
+                  Abrir cobrança Pix
+                </a>
+              ) : null}
+              {donationResult.pixCopyPaste ? (
+                <textarea readOnly value={donationResult.pixCopyPaste} onClick={(e) => e.currentTarget.select()} className={`${inputClass} mt-2 text-xs`} rows={3} />
+              ) : null}
+            </div>
+          ) : null}
+        </section>
 
         {showForm ? (
           <section className="rounded-xl border border-white/6 bg-sigma-card p-6">

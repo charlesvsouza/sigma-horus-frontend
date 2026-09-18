@@ -23,6 +23,8 @@ export async function POST(request: Request) {
   const title = String(formData.get('title') ?? '').trim();
   const memberId = formData.get('memberId') ? String(formData.get('memberId')) : null;
   const category = formData.get('category') ? String(formData.get('category')) : 'general';
+  const kind = formData.get('kind') ? String(formData.get('kind')) : 'document';
+  const content = formData.get('content') ? String(formData.get('content')) : null;
   const file = formData.get('file');
 
   if (!title || !(file instanceof File) || !file.size) {
@@ -64,10 +66,10 @@ export async function POST(request: Request) {
         lodgeId: String(lodgeId),
         memberId,
         title,
-        kind: 'document',
+        kind,
         category,
         status: 'uploaded',
-        content: null,
+        content,
         fileUrl: storage.fileUrl,
         fileName: storage.fileName,
         mimeType: storage.mimeType,

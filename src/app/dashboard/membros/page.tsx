@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { UserRound } from 'lucide-react';
-import { fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
+import { clampDateYear, fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel, remidoEligibility } from '@/lib/masonic-degree';
 import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
 import { Button, EmptyState, Input, MaskedInput, Skeleton, inputClass, Alert, useConfirm } from '@/components/ui';
@@ -757,7 +757,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
       <Collapsible title="Dados pessoais" defaultOpen={hasPersonal}>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="block"><span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Nascimento</span>
-            <input type="date" value={form.birthDate} onChange={(e) => set('birthDate', e.target.value)} className={INPUT} /></label>
+            <input type="date" value={form.birthDate} onChange={(e) => set('birthDate', clampDateYear(e.target.value, form.birthDate))} className={INPUT} /></label>
           <MaskedInput value={form.cpf} onChange={(v) => set('cpf', v)} mask={maskCPF} inputMode="numeric" className={INPUT} placeholder="CPF" />
           <MaskedInput value={form.rg} onChange={(v) => set('rg', v)} mask={maskRG} className={INPUT} placeholder="RG" />
           <select value={form.maritalStatus} onChange={(e) => set('maritalStatus', e.target.value)} className={INPUT}>
@@ -779,7 +779,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
             <div key={label} className="grid gap-2 md:grid-cols-[90px_1.4fr_1fr_1.2fr_1.1fr_auto] md:items-center">
               <span className="text-xs font-medium text-sand">{label}</span>
               <input value={rel.name ?? ''} onChange={(e) => setRel(setter)('name', e.target.value)} className={INPUT} placeholder="Nome" />
-              <input type="date" value={rel.birthDate ?? ''} onChange={(e) => setRel(setter)('birthDate', e.target.value)} className={INPUT} />
+              <input type="date" value={rel.birthDate ?? ''} onChange={(e) => setRel(setter)('birthDate', clampDateYear(e.target.value, rel.birthDate ?? ''))} className={INPUT} />
               <input value={rel.email ?? ''} onChange={(e) => setRel(setter)('email', e.target.value)} className={INPUT} placeholder="E-mail" />
               <MaskedInput value={rel.phone ?? ''} onChange={(v) => setRel(setter)('phone', v)} mask={maskPhone} inputMode="tel" className={INPUT} placeholder="Telefone" />
               <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-sand-dark" title="Não recebe felicitação de aniversário automática">
@@ -807,7 +807,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
                     <option value="other">Outro</option>
                   </select>
                   <input value={d.name ?? ''} onChange={(e) => setDep(i, 'name', e.target.value)} className={INPUT} placeholder="Nome" />
-                  <input type="date" value={d.birthDate ?? ''} onChange={(e) => setDep(i, 'birthDate', e.target.value)} className={INPUT} />
+                  <input type="date" value={d.birthDate ?? ''} onChange={(e) => setDep(i, 'birthDate', clampDateYear(e.target.value, d.birthDate ?? ''))} className={INPUT} />
                   <MaskedInput value={d.cpf ?? ''} onChange={(v) => setDep(i, 'cpf', v)} mask={maskCPF} inputMode="numeric" className={INPUT} placeholder="CPF" />
                   <input value={d.email ?? ''} onChange={(e) => setDep(i, 'email', e.target.value)} className={INPUT} placeholder="E-mail" />
                   <MaskedInput value={d.phone ?? ''} onChange={(v) => setDep(i, 'phone', v)} mask={maskPhone} inputMode="tel" className={INPUT} placeholder="Telefone" />
@@ -850,7 +850,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
           ] as const).map(([label, dateKey, lodgeKey]) => (
             <div key={dateKey} className="grid gap-3 md:grid-cols-[120px_1fr_1.6fr] md:items-center">
               <span className="text-xs font-medium text-sand">{label}</span>
-              <input type="date" value={form[dateKey]} onChange={(e) => set(dateKey, e.target.value)} className={INPUT} />
+              <input type="date" value={form[dateKey]} onChange={(e) => set(dateKey, clampDateYear(e.target.value, form[dateKey]))} className={INPUT} />
               <LodgeNameField value={form[lodgeKey] ?? ''} onChange={(v) => set(lodgeKey, v)} lodgeName={lodgeName} placeholder={`Loja de ${label.toLowerCase()}`} />
             </div>
           ))}

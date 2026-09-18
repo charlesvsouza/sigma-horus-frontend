@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, parseSelfEditFields, validateMemberFields } from '@/lib/member-fields';
+import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, parseSelfEditFields, validateMemberFields, validateRelatives } from '@/lib/member-fields';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -30,6 +30,10 @@ export async function PUT(request: Request, { params }: Ctx) {
 
   const body = await request.json();
   const relatives = parseRelatives(body);
+  const relativesError = validateRelatives(relatives);
+  if (relativesError) {
+    return NextResponse.json({ error: relativesError }, { status: 400 });
+  }
 
   if (isSelf) {
     const fields = parseSelfEditFields(body);

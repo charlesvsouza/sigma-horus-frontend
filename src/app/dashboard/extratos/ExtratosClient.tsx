@@ -219,7 +219,7 @@ export default function ExtratosClient({
                         <tr className="text-left text-xs uppercase tracking-wide text-sand-dark/70">
                           <th className="border-b border-white/10 px-2 py-2">Data</th>
                           <th className="border-b border-white/10 px-2 py-2">Histórico</th>
-                          <th className="border-b border-white/10 px-2 py-2">Referência</th>
+                          <th className="border-b border-white/10 px-2 py-2">Nome</th>
                           <th className="border-b border-white/10 px-2 py-2">Tipo</th>
                           <th className="border-b border-white/10 px-2 py-2 text-right num">Valor</th>
                           <th className="border-b border-white/10 px-2 py-2 text-right num">Saldo</th>

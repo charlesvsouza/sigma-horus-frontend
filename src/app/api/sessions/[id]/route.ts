@@ -49,12 +49,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const result = await withTenant(String(lodgeId), async (db) => {
     const existing = await db.session.findFirst({ where: { id, lodgeId: String(lodgeId) } });
     if (!existing) return { notFound: true as const };
+    if (existing.locked) return { locked: true as const };
     const updated = await db.session.update({ where: { id }, data });
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'session', entityId: id, metadata: { fields: Object.keys(data) } });
     return { item: updated };
   });
 
   if ('notFound' in result) return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
+  if ('locked' in result) return NextResponse.json({ error: 'Sessão trancada — peça ao Venerável ou Administrador para destrancar.' }, { status: 423 });
   return NextResponse.json({ item: result.item });
 }
 
@@ -67,12 +69,14 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   const deleted = await withTenant(String(lodgeId), async (db) => {
-    const existing = await db.session.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { title: true } });
+    const existing = await db.session.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { title: true, locked: true } });
     if (!existing) return null;
+    if (existing.locked) return { locked: true as const };
     await db.session.deleteMany({ where: { id, lodgeId: String(lodgeId) } });
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'session', entityId: id, metadata: { title: existing.title } });
     return existing;
   });
   if (!deleted) return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
+  if ('locked' in deleted && deleted.locked) return NextResponse.json({ error: 'Sessão trancada — peça ao Venerável ou Administrador para destrancar.' }, { status: 423 });
   return NextResponse.json({ ok: true });
 }

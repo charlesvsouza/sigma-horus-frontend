@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isValidCNPJ, isValidCPF, maskCEP, maskCNPJ, maskCPF, maskPhone, maskRG } from './masks.ts';
+import { clampDateYear, isValidCNPJ, isValidCPF, maskCEP, maskCNPJ, maskCPF, maskPhone, maskRG } from './masks.ts';
 
 test('maskCPF formats progressively', () => {
   assert.equal(maskCPF('12345678901'), '123.456.789-01');
@@ -26,4 +26,11 @@ test('CPF/CNPJ validation', () => {
   assert.equal(isValidCPF('111.111.111-11'), false);
   assert.equal(isValidCNPJ('11.222.333/0001-81'), true);
   assert.equal(isValidCNPJ('11.111.111/1111-11'), false);
+});
+
+test('clampDateYear rejects a 5th digit typed into the year', () => {
+  assert.equal(clampDateYear('2025-01-01', ''), '2025-01-01');
+  assert.equal(clampDateYear('20255-01-01', '2025-01-01'), '2025-01-01');
+  assert.equal(clampDateYear('202599-01-01', '2025-01-01'), '2025-01-01');
+  assert.equal(clampDateYear('', ''), '');
 });

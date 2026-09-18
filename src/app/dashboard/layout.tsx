@@ -93,6 +93,10 @@ const NAV: NavGroupDef[] = [
         label: 'Relatórios',
         items: [
           { href: '/dashboard/relatorios', label: 'Resumo financeiro', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/contas-a-receber', label: 'Contas a receber', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/contas-a-pagar', label: 'Contas a pagar', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/contas-recebidas', label: 'Contas recebidas', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/contas-pagas', label: 'Contas pagas', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/dre', label: 'DRE comparativo', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },

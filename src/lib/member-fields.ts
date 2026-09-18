@@ -136,6 +136,25 @@ export function parseSelfEditFields(body: Body): SelfEditFields {
   };
 }
 
+// Segunda linha de defesa contra o ano de 6+ dígitos que o <input type="date">
+// nativo aceita digitar (o form já trava isso em clampDateYear/masks.ts, mas
+// chamada direta à API ou importação de CSV passam por aqui sem essa trava).
+const MIN_YEAR = 1900;
+function isPlausibleDate(d: Date | null): boolean {
+  if (!d) return true;
+  const year = d.getFullYear();
+  return year >= MIN_YEAR && year <= new Date().getFullYear() + 1;
+}
+
+const DATE_FIELD_LABEL: Record<string, string> = {
+  birthDate: 'Nascimento',
+  spouseBirthDate: 'Nascimento do cônjuge',
+  initiationDate: 'Iniciação',
+  elevationDate: 'Elevação',
+  exaltationDate: 'Exaltação',
+  installationDate: 'Instalação',
+};
+
 // Validação compartilhada por POST (create) e PUT (update) — checa os campos
 // que o form já restringe via <select>/máscara, mas que a API aceita como
 // texto livre (ex.: currentDegree só pode chegar aqui fora do range 4–33 por
@@ -144,6 +163,22 @@ export function validateMemberFields(fields: MemberFields): string | null {
   if (!fields.name) return 'Nome do membro é obrigatório.';
   if (fields.currentDegree && parsePhilosophicalDegree(fields.currentDegree) == null) {
     return 'Grau filosófico inválido — deve ser um número entre 4 e 33.';
+  }
+  for (const [key, label] of Object.entries(DATE_FIELD_LABEL)) {
+    if (!isPlausibleDate(fields[key as keyof MemberFields] as Date | null)) {
+      return `Data de "${label}" inválida.`;
+    }
+  }
+  return null;
+}
+
+// Mesma checagem de ano plausível, para as datas de nascimento de
+// família/dependentes (RelativeInput), validadas à parte pois vêm de um array.
+export function validateRelatives(relatives: RelativeInput[]): string | null {
+  for (const r of relatives) {
+    if (!isPlausibleDate(r.birthDate)) {
+      return `Data de nascimento inválida para "${r.name}".`;
+    }
   }
   return null;
 }

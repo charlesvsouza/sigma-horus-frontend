@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, validateMemberFields } from '@/lib/member-fields';
+import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, validateMemberFields, validateRelatives } from '@/lib/member-fields';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   const fields = parseMemberFields(body);
   const relatives = parseRelatives(body);
 
-  const validationError = validateMemberFields(fields);
+  const validationError = validateMemberFields(fields) ?? validateRelatives(relatives);
   if (validationError) {
     return NextResponse.json({ error: validationError }, { status: 400 });
   }

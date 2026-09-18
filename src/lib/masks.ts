@@ -39,6 +39,20 @@ export function maskCEP(value: string) {
   return d.replace(/^(\d{5})(\d)/, '$1-$2');
 }
 
+/**
+ * Trava o ano de um <input type="date"> em no máximo 4 dígitos. O input nativo
+ * aceita `\d{4,}` no ano (o spec HTML permite anos de mais de 4 dígitos), então
+ * digitar um 5º dígito no ano vira uma data absurda (ex.: "202599-01-01") sem
+ * nenhum aviso — reportado como "aceita 6 ou mais dígitos" nas datas de
+ * evolução maçônica. Se o ano digitado já tem 4 dígitos, descarta a tecla
+ * (mantém o valor anterior) em vez de deixar passar.
+ */
+export function clampDateYear(raw: string, previous: string) {
+  const m = /^(\d+)-(\d{2})-(\d{2})$/.exec(raw);
+  if (!m) return raw;
+  return m[1].length > 4 ? previous : raw;
+}
+
 /** 00.000.000-0 (formato comum de RG; varia por estado) */
 export function maskRG(value: string) {
   const d = (value ?? '').replace(/[^0-9xX]/g, '').slice(0, 9);
