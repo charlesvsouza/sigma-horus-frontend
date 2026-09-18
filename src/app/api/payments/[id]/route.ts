@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
+import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
 import { NextResponse } from 'next/server';
 
 // Estorno/exclusão de um pagamento lançado errado. Recalcula o status da
@@ -53,6 +54,11 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
         await db.invoice.updateMany({ where: { accountId: account.id, status: 'paid' }, data: { status: 'pending' } });
       }
       await syncMemberArt002Status(db, String(lodgeId), account.memberId);
+    } else if (account && (await isPlainAccount(db, account))) {
+      // Conta simples (sem membro nem cobrança): reabre se a soma dos pagamentos
+      // restantes não cobre mais o valor.
+      await syncPlainAccountStatus(db, { id: account.id, amount: Number(account.amount), status: account.status });
+      if (payment.memberId) await syncMemberArt002Status(db, String(lodgeId), payment.memberId);
     } else if (account && payment.memberId) {
       // Conta compartilhada entre membros (cobrança em massa): reabre só a
       // Invoice DESTE membro, nunca a dos outros que pagaram de verdade.

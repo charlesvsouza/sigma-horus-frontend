@@ -60,19 +60,28 @@ export default function PagamentosClient({ accounts, members, payments, financia
     }
     setSubmitting(true);
     try {
-      const response = await fetch('/api/payments', {
+      const send = (confirmOutsideAsaas: boolean) => fetch('/api/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
           amount: Number(form.amount),
           memberId: form.memberId || undefined,
+          ...(confirmOutsideAsaas ? { confirmOutsideAsaas: true } : {}),
         }),
       });
 
-      const data = await response.json();
+      let response = await send(false);
+      let data = await response.json();
+      // Cobrança aberta no Asaas: a baixa é do Asaas. Só segue se foi recebido fora dele.
+      if (response.status === 409 && data.code === 'ASAAS_CHARGE_OPEN') {
+        const ok = await askConfirm({ title: 'Cobrança aberta no Asaas', message: data.error, confirmLabel: 'Recebido fora do Asaas' });
+        if (!ok) return;
+        response = await send(true);
+        data = await response.json();
+      }
       if (response.ok) {
-        setMessage({ kind: 'ok', text: 'Pagamento registrado com sucesso.' });
+        setMessage(data.asaasWarning ? { kind: 'error', text: data.asaasWarning } : { kind: 'ok', text: 'Pagamento registrado com sucesso.' });
         setForm({ accountId: '', memberId: '', bankAccountId: '', amount: '', paidAt: '', method: 'manual', note: '' });
         setConsent(false);
         router.refresh();

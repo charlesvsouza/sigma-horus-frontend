@@ -88,3 +88,19 @@ export function isWebhookAuthorized(received: string | null, expected: string | 
   if (!received) return false;
   return received === expected;
 }
+
+/**
+ * Registra no Asaas que a cobrança foi recebida FORA dele (dinheiro em mãos, Pix
+ * direto). Encerra a cobrança lá para o membro não pagar em duplicidade. O Asaas
+ * responde disparando `PAYMENT_RECEIVED` com status `RECEIVED_IN_CASH` (não é
+ * dinheiro creditado) — o webhook local trata isso como "já baixada".
+ */
+export async function receivePaymentInCash(config: AsaasConfig, id: string, data: { paymentDate: string; value: number; notifyCustomer?: boolean }) {
+  const res = await fetch(`${config.baseUrl}/payments/${id}/receiveInCash`, {
+    method: 'POST',
+    headers: headers(config),
+    body: JSON.stringify({ notifyCustomer: false, ...data }),
+  });
+  if (!res.ok) throw new Error(`Asaas receiveInCash error: ${res.status} ${await res.text()}`);
+  return res.json();
+}

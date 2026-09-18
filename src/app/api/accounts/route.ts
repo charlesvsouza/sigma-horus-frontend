@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { settleAccountAsPaid } from '@/lib/account-status';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
   const chartAccountId = body?.chartAccountId ? String(body.chartAccountId) : null;
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
   const isDues = Boolean(body?.isDues);
+  const paidAt = body?.paidAt ? new Date(body.paidAt) : new Date();
 
   if (!title || !['RECEIVABLE', 'PAYABLE'].includes(type) || Number.isNaN(amount)) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
@@ -127,9 +129,29 @@ export async function POST(request: Request) {
       },
     });
 
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'account', entityId: created.id, metadata: { title, type, amount } });
+    // "Pago" precisa gerar o Payment (é ele que move o caixa/extrato/DRE). Se a
+    // baixa não for possível (sem conta bancária/caixa, despesa sem visto, período
+    // fechado), o lançamento não é criado.
+    if (status === 'paid') {
+      const settled = await settleAccountAsPaid(db, {
+        lodgeId: String(lodgeId),
+        account: { id: created.id, amount, memberId, type, approvalStatus },
+        bankAccountId: validBankAccountId,
+        paidAt,
+      });
+      if (!settled.ok) {
+        await db.account.delete({ where: { id: created.id } });
+        return { settleError: settled } as const;
+      }
+    }
+
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'account', entityId: created.id, metadata: { title, type, amount, status } });
     return { created } as const;
   });
+
+  if ('settleError' in result && result.settleError) {
+    return NextResponse.json({ error: result.settleError.error }, { status: result.settleError.status });
+  }
 
   if ('locked' in result && result.locked) {
     return NextResponse.json(

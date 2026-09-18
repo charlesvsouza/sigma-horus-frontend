@@ -4,6 +4,7 @@ import { syncMemberArt002Status } from '@/lib/overdue';
 import { settleAsaasInvoicePayment } from '@/lib/asaas-settlement';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { brl } from '@/lib/currency';
+import { logAudit } from '@/lib/audit';
 import { NextResponse } from 'next/server';
 
 // Eventos do Asaas que significam "dinheiro recebido" → baixa automática.
@@ -17,6 +18,40 @@ const REVERSED_EVENTS = new Set([
   'PAYMENT_REVERSED',
   'PAYMENT_CHARGEBACK_REQUESTED',
 ]);
+
+// A baixa automática grava o id do Asaas na nota do Payment (asaas-settlement.ts).
+async function settledByAsaasPayment(accountId: string, asaasPaymentId: string) {
+  const found = await prismaAdmin.payment.findFirst({ where: { accountId, note: { contains: asaasPaymentId } }, select: { id: true } });
+  return Boolean(found);
+}
+
+async function flagDuplicateReceipt(
+  invoice: { id: string; lodgeId: string; number: string; lodge: { name: string } },
+  payment: { id: string; value: number },
+) {
+  await logAudit(prismaAdmin, {
+    lodgeId: invoice.lodgeId,
+    userId: 'system:asaas-webhook',
+    action: 'CREATE',
+    entity: 'asaas-duplicate-receipt',
+    entityId: invoice.id,
+    metadata: { number: invoice.number, asaasPaymentId: payment.id, value: payment.value },
+  }).catch(() => {});
+
+  const admins = await prismaAdmin.user.findMany({ where: { lodgeId: invoice.lodgeId, role: 'admin', status: 'active' }, select: { email: true } });
+  const valor = brl(payment.value);
+  for (const a of admins) {
+    dispatch(
+      'email',
+      a.email,
+      `Atenção: recebimento em duplicidade — ${invoice.lodge.name}`,
+      `A cobrança ${invoice.number} já estava baixada manualmente, mas o Asaas confirmou agora um pagamento de ${valor} (id ${payment.id}).
+
+O valor entrou na conta do Asaas e NÃO foi lançado no sistema. Verifique e, se for o caso, faça o estorno ao membro pelo painel do Asaas.`,
+      EMPTY_CHANNELS,
+    ).catch(() => {});
+  }
+}
 
 export async function POST(request: Request) {
   let payload;
@@ -57,6 +92,17 @@ export async function POST(request: Request) {
   if (PAID_EVENTS.has(event)) {
     // Idempotência: Asaas reenvia webhooks. Se já está paga, não duplica a baixa.
     if (invoice.status === 'paid') {
+      // RECEIVED_IN_CASH é o eco do nosso próprio "recebido fora do Asaas" — nada a fazer.
+      if (payment.status === 'RECEIVED_IN_CASH') {
+        return NextResponse.json({ received: true, alreadyPaid: true });
+      }
+      // Dinheiro REAL chegou pelo Asaas, mas a cobrança já estava baixada sem esse
+      // pagamento (baixa manual anterior): recebimento em duplicidade. Não some em
+      // silêncio — registra na auditoria e avisa os administradores da loja.
+      if (!(await settledByAsaasPayment(invoice.accountId, payment.id))) {
+        await flagDuplicateReceipt(invoice, payment);
+        return NextResponse.json({ received: true, alreadyPaid: true, duplicate: true });
+      }
       return NextResponse.json({ received: true, alreadyPaid: true });
     }
 
@@ -95,7 +141,19 @@ export async function POST(request: Request) {
   }
 
   if (REVERSED_EVENTS.has(event)) {
-    await prismaAdmin.invoice.update({ where: { id: invoice.id }, data: { status: 'pending' } });
+    // Cobrança cancelada/estornada no Asaas. Se ela já estava baixada por FORA do
+    // Asaas (recebimento manual), o cancelamento lá não desfaz o recebimento real —
+    // só limpa o vínculo com a cobrança do Asaas.
+    if (invoice.status === 'paid' && !(await settledByAsaasPayment(invoice.accountId, payment.id))) {
+      if (event === 'PAYMENT_DELETED') {
+        await prismaAdmin.invoice.update({ where: { id: invoice.id }, data: { asaasPaymentId: null, asaasInvoiceUrl: null } });
+      }
+      return NextResponse.json({ received: true, status: 'kept-paid' });
+    }
+    await prismaAdmin.invoice.update({
+      where: { id: invoice.id },
+      data: { status: 'pending', ...(event === 'PAYMENT_DELETED' ? { asaasPaymentId: null, asaasInvoiceUrl: null } : {}) },
+    });
     if (invoice.memberId) {
       await syncMemberArt002Status(prismaAdmin, invoice.lodgeId, invoice.memberId);
     }

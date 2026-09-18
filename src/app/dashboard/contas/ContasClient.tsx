@@ -19,6 +19,7 @@ interface AccountItem {
   description?: string | null;
   isDues: boolean;
   approvalStatus: string;
+  awaitingAsaas?: boolean;
   member?: MemberOption | null;
   counterparty?: CounterpartyOption | null;
   bankAccount?: FinancialAccountOption | null;
@@ -44,6 +45,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
     counterpartyId: '',
     bankAccountId: '',
     isDues: false,
+    paidAt: '',
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -62,13 +64,14 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
       counterpartyId: account.counterparty?.id ?? '',
       bankAccountId: account.bankAccount?.id ?? '',
       isDues: account.isDues,
+      paidAt: '',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function cancelEdit() {
     setEditingId(null);
-    setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', bankAccountId: '', isDues: false });
+    setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', bankAccountId: '', isDues: false, paidAt: '' });
   }
 
   function selectChart(id: string) {
@@ -93,15 +96,23 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
         counterpartyId: form.counterpartyId || undefined,
         bankAccountId: form.bankAccountId || undefined,
       };
-      const response = await fetch(editingId ? `/api/accounts/${editingId}` : '/api/accounts', {
+      const send = (confirmOutsideAsaas: boolean) => fetch(editingId ? `/api/accounts/${editingId}` : '/api/accounts', {
         method: editingId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(confirmOutsideAsaas ? { ...payload, confirmOutsideAsaas: true } : payload),
       });
 
-      const data = await response.json();
+      let response = await send(false);
+      let data = await response.json();
+      // Cobrança aberta no Asaas: a baixa é do Asaas. Só segue se foi recebido fora dele.
+      if (response.status === 409 && data.code === 'ASAAS_CHARGE_OPEN') {
+        const ok = await askConfirm({ title: 'Cobrança aberta no Asaas', message: data.error, confirmLabel: 'Recebido fora do Asaas' });
+        if (!ok) return;
+        response = await send(true);
+        data = await response.json();
+      }
       if (response.ok) {
-        setMessage({ kind: 'ok', text: editingId ? 'Conta atualizada com sucesso.' : 'Conta cadastrada com sucesso.' });
+        setMessage(data.asaasWarning ? { kind: 'error', text: data.asaasWarning } : { kind: 'ok', text: editingId ? 'Conta atualizada com sucesso.' : 'Conta cadastrada com sucesso.' });
         cancelEdit();
         router.refresh();
       } else {
@@ -188,7 +199,13 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                   <option value="paid">Pago</option>
                   <option value="overdue">Vencido</option>
                 </select>
+                {form.status === 'paid' ? (
+                  <input aria-label="Data do pagamento" type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className={INPUT_CLASS} title="Data do pagamento (vazio = hoje)" />
+                ) : null}
               </div>
+              {form.status === 'paid' ? (
+                <p className="mt-2 text-xs text-sand-dark">Ao marcar como Pago, o pagamento é registrado na conta bancária/caixa escolhida abaixo e entra no saldo e no extrato. Data do pagamento em branco = hoje.</p>
+              ) : null}
             </div>
 
             <div>
@@ -206,8 +223,8 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
-                <select aria-label="Conta bancária/caixa prevista" value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT_CLASS}>
-                  <option value="">Conta bancária/caixa prevista (opcional)</option>
+                <select aria-label="Conta bancária/caixa" value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT_CLASS} required={form.status === 'paid' && !editingId}>
+                  <option value="">{form.status === 'paid' ? 'Conta bancária/caixa do pagamento (obrigatória)' : 'Conta bancária/caixa prevista (opcional)'}</option>
                   {financialAccounts.map((f) => (
                     <option key={f.id} value={f.id}>{f.name}</option>
                   ))}
@@ -243,6 +260,10 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                   <p className="text-sm font-medium text-sand-light">
                     {account.title}
                     {account.isDues ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">Mensalidade</span> : null}
+                    <span className={`ml-2 rounded-full border px-2 py-0.5 text-[10px] font-medium ${account.status === 'paid' ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300' : account.status === 'overdue' ? 'border-rose-500/20 bg-rose-500/12 text-rose-300' : 'border-gold/15 bg-gold/10 text-gold'}`}>
+                      {account.status === 'paid' ? (account.type === 'RECEIVABLE' ? 'Recebida' : 'Paga') : account.status === 'overdue' ? 'Vencida' : 'Em aberto'}
+                    </span>
+                    {account.awaitingAsaas && account.status !== 'paid' ? <span className="ml-2 rounded-full border border-sky-500/20 bg-sky-500/12 px-2 py-0.5 text-[10px] font-medium text-sky-200">Aguardando Asaas</span> : null}
                     {account.approvalStatus === 'pending' ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300">Aguardando aprovação</span> : null}
                   </p>
                   <p className="mt-1 text-xs text-sand-dark">

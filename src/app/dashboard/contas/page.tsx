@@ -18,6 +18,8 @@ export default async function ContasPage() {
             counterparty: { select: { id: true, name: true, kind: true } },
             bankAccount: { select: { id: true, name: true, kind: true } },
             chartAccount: { select: { isSolidarity: true } },
+            // Cobrança emitida e ainda aberta no Asaas → "Aguardando Asaas".
+            invoices: { where: { asaasPaymentId: { not: null }, status: { in: ['billed', 'overdue'] } }, select: { id: true }, take: 1 },
           },
           orderBy: { dueDate: 'asc' },
         }),
@@ -56,6 +58,7 @@ export default async function ContasPage() {
       description: a.description ?? null,
       isDues: a.isDues,
       approvalStatus: a.approvalStatus,
+      awaitingAsaas: a.invoices.length > 0,
       member: a.member ? { id: a.member.id, name: donorDisplayName(a.member.name, isSolidarity, role)! } : null,
       counterparty: a.counterparty ? { id: a.counterparty.id, name: donorDisplayName(a.counterparty.name, isSolidarity, role)!, kind: a.counterparty.kind } : null,
       bankAccount: a.bankAccount ? { id: a.bankAccount.id, name: a.bankAccount.name, kind: a.bankAccount.kind } : null,

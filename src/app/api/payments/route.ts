@@ -4,6 +4,8 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
+import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
+import { asaasConflictBody, findOpenAsaasCharges, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
 import { dispatch } from '@/lib/messaging';
 import { buildLodgeChannels } from '@/lib/lodge-channels';
 import { brl } from '@/lib/currency';
@@ -89,6 +91,13 @@ export async function POST(request: Request) {
       return { invalidBank: true as const };
     }
 
+    // Cobrança aberta no Asaas: a baixa é do Asaas. Baixa manual só com a
+    // confirmação explícita de que foi recebido fora dele (depois avisamos o Asaas).
+    const openCharges = await findOpenAsaasCharges(db, { accountId, memberId: memberId ?? account.memberId });
+    if (openCharges.length > 0 && body?.confirmOutsideAsaas !== true) {
+      return { asaasConflict: openCharges } as const;
+    }
+
     const created = await db.payment.create({
       data: {
         lodgeId: String(lodgeId),
@@ -124,6 +133,12 @@ export async function POST(request: Request) {
         await db.invoice.updateMany({ where: { accountId, status: { not: 'paid' } }, data: { status: 'paid' } });
       }
       await syncMemberArt002Status(db, String(lodgeId), account.memberId);
+    } else if (await isPlainAccount(db, account)) {
+      // Conta simples (fornecedor/despesa/receita avulsa, sem membro nem cobrança):
+      // quitar quando a soma dos pagamentos cobre o valor. Antes este caso ficava
+      // sem tratamento e a conta permanecia "aberta" mesmo depois de paga.
+      await syncPlainAccountStatus(db, { id: account.id, amount: Number(account.amount), status: account.status });
+      if (memberId) await syncMemberArt002Status(db, String(lodgeId), memberId);
     } else if (memberId) {
       const memberInvoices = await db.invoice.findMany({ where: { accountId, memberId } });
       const owedByMember = memberInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
@@ -146,7 +161,7 @@ export async function POST(request: Request) {
       lodgeChannels = buildLodgeChannels(lodge);
     }
 
-    return { payment: created, lodgeName, lodgeChannels };
+    return { payment: created, lodgeName, lodgeChannels, chargeIds: openCharges.map((c) => c.id) };
   });
 
   if ('locked' in result && result.locked) {
@@ -168,6 +183,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Conta bancária/caixa inválida ou inativa.' }, { status: 400 });
   }
 
+  if ('asaasConflict' in result && result.asaasConflict) {
+    return NextResponse.json(asaasConflictBody(result.asaasConflict), { status: 409 });
+  }
+
+  // Baixa já commitada: avisa o Asaas (rede, fora da transação) para encerrar a cobrança lá.
+  const asaasWarning = await notifyAsaasReceivedInCash(String(lodgeId), result.chargeIds, paidAt).catch(() => 'Baixa registrada, mas não foi possível avisar o Asaas; encerre a cobrança manualmente no painel do Asaas.');
+
   // Confirmação por e-mail ao membro (recibo simples). Best-effort: falha de
   // envio não deve derrubar o registro do pagamento, que já está salvo.
   const { payment, lodgeName, lodgeChannels } = result;
@@ -183,5 +205,5 @@ export async function POST(request: Request) {
     ).catch(() => {});
   }
 
-  return NextResponse.json({ item: payment });
+  return NextResponse.json({ item: payment, ...(asaasWarning ? { asaasWarning } : {}) });
 }

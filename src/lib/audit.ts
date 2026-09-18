@@ -41,15 +41,21 @@ export async function logAudit(
 ) {
   try {
     const viaSuperadmin = await isViaSuperadmin();
+    // Ator de sistema (webhook, cron): "system:..." não é um User — AuditLog.userId
+    // é FK para User, e o insert violando a FK ABORTA a transação do chamador (o
+    // catch abaixo engole o erro, mas o COMMIT seguinte vira ROLLBACK silencioso,
+    // perdendo a operação inteira). Grava userId=null e guarda o ator no metadata.
+    const isSystemActor = params.userId.startsWith('system:');
+    const metadata = isSystemActor ? { ...params.metadata, actor: params.userId } : params.metadata;
     await db.auditLog.create({
       data: {
         lodgeId: params.lodgeId,
-        userId: params.userId,
+        userId: isSystemActor ? null : params.userId,
         action: params.action,
         entity: params.entity,
         entityId: params.entityId,
         before: params.before ? JSON.stringify(params.before) : null,
-        after: JSON.stringify(viaSuperadmin ? { ...params.metadata, viaSuperadmin: true } : (params.metadata ?? {})),
+        after: JSON.stringify(viaSuperadmin ? { ...metadata, viaSuperadmin: true } : (metadata ?? {})),
       },
     });
   } catch {
