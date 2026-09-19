@@ -3,6 +3,7 @@ import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels
 import { channelsAvailable, dispatch, sleep, DISPATCH_THROTTLE_MS, type Channel, type LodgeChannels } from '@/lib/messaging';
 import { TENURE_MILESTONES } from '@/lib/masonic-degree';
 import { brl } from '@/lib/currency';
+import { payHint } from '@/lib/collection';
 
 // Gatilhos automáticos diários (Fase 7): aniversariantes (obreiro + família),
 // jubileus (iniciação/elevação/exaltação — tempo de mestre) e lembretes de
@@ -78,6 +79,7 @@ export async function runDailyNotifications(): Promise<Stats> {
       foundationDate: true,
       notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
       notifyFoundationAnniversaryEnabled: true,
+      collectionMode: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true,
     },
   });
 
@@ -100,8 +102,9 @@ export async function runDailyNotifications(): Promise<Stats> {
           },
         }),
         db.invoice.findMany({
-          where: { lodgeId: lodge.id, status: { in: ['pending', 'overdue'] } },
-          select: { id: true, number: true, amount: true, dueDate: true, status: true, member: { select: { id: true, name: true, email: true, phone: true } } },
+          // 'billed' = já emitida no Asaas e ainda em aberto — também recebe lembrete (com o link).
+          where: { lodgeId: lodge.id, status: { in: ['pending', 'billed', 'overdue'] } },
+          select: { id: true, number: true, amount: true, dueDate: true, status: true, asaasInvoiceUrl: true, member: { select: { id: true, name: true, email: true, phone: true } } },
         }),
       ]);
       return { members, invoices };
@@ -178,8 +181,8 @@ export async function runDailyNotifications(): Promise<Stats> {
         if (overdue) stats.overdue++; else stats.dueSoon++;
         const title = overdue ? 'Aviso de cobrança vencida' : 'Lembrete de cobrança a vencer';
         const body = overdue
-          ? `Caro irmão ${inv.member.name}, consta a cobrança ${inv.number} no valor de ${brl(inv.amount)}, vencida em ${fmtDate(inv.dueDate)}. Por gentileza, regularize. Fraternalmente, Tesouraria.`
-          : `Caro irmão ${inv.member.name}, lembramos a cobrança ${inv.number} no valor de ${brl(inv.amount)}, com vencimento em ${fmtDate(inv.dueDate)}. Fraternalmente, Tesouraria.`;
+          ? `Caro irmão ${inv.member.name}, consta a cobrança ${inv.number} no valor de ${brl(inv.amount)}, vencida em ${fmtDate(inv.dueDate)}. Por gentileza, regularize.${payHint(lodge, inv)} Fraternalmente, Tesouraria.`
+          : `Caro irmão ${inv.member.name}, lembramos a cobrança ${inv.number} no valor de ${brl(inv.amount)}, com vencimento em ${fmtDate(inv.dueDate)}.${payHint(lodge, inv)} Fraternalmente, Tesouraria.`;
         for (const channel of list) {
           await notify(lodge.id, [channel], lodgeChannels, inv.member.id, contactFor(channel, inv.member.email, inv.member.phone), title, body);
         }

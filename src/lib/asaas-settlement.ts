@@ -1,5 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { logAudit } from '@/lib/audit';
+import { ASAAS_FEE_CHART, feeFromNet } from '@/lib/collection';
 import { coversAmount } from '@/lib/money';
 import { syncMemberArt002Status } from '@/lib/overdue';
 
@@ -9,6 +10,11 @@ import { syncMemberArt002Status } from '@/lib/overdue';
  * o Art. 002 do membro. Compartilhado pelo webhook (tempo real) e pela
  * reconciliação manual (Financeiro → Integrações → Verificar no Asaas), que
  * cobre o caso do webhook ter falhado/não chegado.
+ *
+ * O dinheiro é lançado na CONTA CORRENTE da loja (conta de repasse configurada em
+ * Modo Asaas) — nunca numa "conta Asaas" — e a tarifa real que o Asaas cobrou
+ * (valor − líquido) entra como despesa na mesma conta, para o saldo do sistema
+ * bater com o do banco. A loja absorve a tarifa (política atual).
  */
 export async function settleAsaasInvoicePayment(
   db: Prisma.TransactionClient,
@@ -20,22 +26,60 @@ export async function settleAsaasInvoicePayment(
     amount: number;
     asaasPaymentId: string;
     userId: string;
+    /** Valor líquido informado pelo Asaas (após a tarifa). Sem ele, a tarifa não é lançada. */
+    netValue?: number | null;
+    /** Método efetivamente pago (PIX, BOLETO, CREDIT_CARD…), informado pelo Asaas. */
+    billingType?: string | null;
     /** Evento do Asaas que originou a baixa (webhook) ou "manual-reconcile" (reconciliação sob demanda) — só para o audit log. */
     source?: string;
   },
 ) {
-  const { lodgeId, invoiceId, accountId, memberId, amount, asaasPaymentId, userId, source = 'manual-reconcile' } = params;
+  const { lodgeId, invoiceId, accountId, memberId, amount, asaasPaymentId, userId, netValue, billingType, source = 'manual-reconcile' } = params;
 
-  const [invoice, account] = await Promise.all([
+  const [invoice, account, lodge] = await Promise.all([
     db.invoice.findUnique({ where: { id: invoiceId } }),
     db.account.findUnique({ where: { id: accountId } }),
+    db.lodge.findUnique({ where: { id: lodgeId }, select: { asaasSettlementAccountId: true } }),
   ]);
 
   // Sem conta bancária o pagamento não entra no saldo de nenhuma conta: usa a
-  // prevista do lançamento (ex.: Caixa do Tronco numa doação por Pix).
+  // prevista do lançamento (ex.: Caixa do Tronco numa doação por Pix) e, na falta
+  // dela, a conta corrente de repasse do Asaas escolhida pela loja.
+  const bankAccountId = account?.bankAccountId ?? lodge?.asaasSettlementAccountId ?? null;
   const created = await db.payment.create({
-    data: { lodgeId, accountId, memberId, bankAccountId: account?.bankAccountId ?? null, amount, method: 'asaas', note: `Baixa automática Asaas (${asaasPaymentId})` },
+    data: { lodgeId, accountId, memberId, bankAccountId, amount, method: 'asaas', note: `Baixa automática Asaas (${asaasPaymentId})` },
   });
+
+  // Tarifa real cobrada pelo Asaas: despesa na mesma conta, com o rastro na cobrança.
+  const fee = feeFromNet(amount, netValue);
+  if (invoice) {
+    await db.invoice.update({
+      where: { id: invoiceId },
+      data: { asaasBillingType: billingType ?? null, asaasNetValue: netValue ?? null, asaasFee: fee },
+    });
+  }
+  if (fee != null && fee > 0) {
+    const chart =
+      (await db.chartAccount.findFirst({ where: { lodgeId, code: ASAAS_FEE_CHART.code }, select: { id: true } })) ??
+      (await db.chartAccount.create({ data: { lodgeId, ...ASAAS_FEE_CHART }, select: { id: true } }));
+    const feeAccount = await db.account.create({
+      data: {
+        lodgeId,
+        type: 'PAYABLE',
+        title: `Tarifa Asaas — cobrança ${invoice?.number ?? invoiceId}`,
+        amount: fee,
+        dueDate: new Date(),
+        status: 'paid',
+        chartAccountId: chart.id,
+        bankAccountId,
+        counterpartyName: 'Asaas',
+        description: `Tarifa do Asaas sobre o recebimento ${asaasPaymentId} (absorvida pela loja)`,
+      },
+    });
+    await db.payment.create({
+      data: { lodgeId, accountId: feeAccount.id, bankAccountId, amount: fee, method: 'asaas-fee', note: `Tarifa Asaas (${asaasPaymentId})` },
+    });
+  }
 
   // Escopa por membro (quando a Invoice tem um): a mesma Account pode ser
   // compartilhada por várias Invoices de membros diferentes (cobrança em
@@ -68,7 +112,7 @@ export async function settleAsaasInvoicePayment(
     action: 'CREATE',
     entity: 'payment',
     entityId: created.id,
-    metadata: { source: 'asaas', event: source, asaasPaymentId, invoiceId, amount },
+    metadata: { source: 'asaas', event: source, asaasPaymentId, invoiceId, amount, fee, billingType: billingType ?? null },
   });
 
   return created;

@@ -103,6 +103,7 @@ const NAV: NavGroupDef[] = [
           { href: '/dashboard/relatorios/balancetes', label: 'Balancetes periódicos', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/fluxo-caixa', label: 'Fluxo de caixa projetado', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/orcamento', label: 'Orçamento anual', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/tarifas', label: 'Tarifas de cobrança (Asaas)', roles: ['admin', 'venerable', 'treasurer'] },
         ],
       },
     ],

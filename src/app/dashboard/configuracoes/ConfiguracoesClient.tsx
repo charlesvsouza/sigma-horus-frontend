@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Alert, Button, MaskedInput, inputClass, useConfirm } from '@/components/ui';
 import ThemeToggle from '@/components/theme-toggle';
+import CollectionSettings, { type CollectionProps } from './CollectionSettings';
 import { fetchCep, maskCEP, maskCNPJ, maskPhone } from '@/lib/masks';
 import { BRAZILIAN_RITES, BRAZILIAN_POWERS } from '@/lib/masonic-reference';
 
@@ -31,7 +32,7 @@ function Field({ label, value, onChange, mask, ...rest }: { label: string; value
   );
 }
 
-export default function ConfiguracoesClient({ initialForm }: { initialForm: LodgeForm }) {
+export default function ConfiguracoesClient({ initialForm, collection }: { initialForm: LodgeForm; collection: CollectionProps }) {
   const askConfirm = useConfirm();
   const [form, setForm] = useState<LodgeForm>(initialForm);
   // "Última versão salva" — não é o mesmo que `initialForm` (que não muda sem
@@ -410,6 +411,8 @@ export default function ConfiguracoesClient({ initialForm }: { initialForm: Lodg
             {isDirty && !saving ? <span className="text-xs text-gold/80">Você tem alterações não salvas.</span> : null}
           </div>
         </form>
+
+        <CollectionSettings {...collection} />
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Aparência</h2>

@@ -34,6 +34,7 @@ const INDEX: IndexEntry[] = [
       { id: 'admin-comunicacao', label: '6.6 Comunicação (WhatsApp/SMS)' },
       { id: 'admin-importar', label: '6.7 Importar cadastro de outro sistema' },
       { id: 'admin-backup', label: '6.8 Backup dos dados da loja' },
+      { id: 'admin-recebimento', label: '6.9 Modo de recebimento das cobranças' },
     ],
   },
   {
@@ -57,6 +58,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-contas-bancarias', label: '7.14 Contas bancárias, Caixa e transferências' },
       { id: 'tes-extratos', label: '7.15 Extratos de contas' },
       { id: 'tes-dre', label: '7.16 DRE comparativo entre períodos' },
+      { id: 'tes-tarifas', label: '7.17 Tarifas de cobrança (Asaas)' },
     ],
   },
   {
@@ -247,7 +249,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 18 de setembro de 2026 · versão 1.25</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.26</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -309,7 +311,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.25 — 18 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.26 — 19 de setembro de 2026</p>
               </div>
             </div>
 
@@ -570,8 +572,9 @@ export function ManualBook() {
               <Sub id="admin-asaas" title="6.2 Conectar o Asaas (cobrança aos membros)">
                 <p>
                   O Asaas é o gateway que emite <strong>boleto e PIX</strong> para os membros. No modelo do Sigma Horus,
-                  <strong> cada loja conecta a própria conta Asaas</strong> — o dinheiro cai direto na conta bancária da
-                  loja; a plataforma nunca toca no dinheiro. Veja o passo a passo completo.
+                  <strong> cada loja conecta a própria conta Asaas</strong> — a plataforma Sigma Horus nunca toca no dinheiro. O
+                  pagamento do irmão cai primeiro na conta Asaas da loja e depois é <strong>repassado, manualmente pelo Tesoureiro,
+                  para a conta corrente da loja</strong> (ver 6.9). A conexão só vale no <strong>Modo Asaas</strong>. Veja o passo a passo completo.
                 </p>
                 <p><strong>Parte A — Criar a conta e gerar a chave no Asaas:</strong></p>
                 <Steps>
@@ -719,6 +722,40 @@ export function ManualBook() {
                 </Note>
               </Sub>
 
+              <Sub id="admin-recebimento" title="6.9 Modo de recebimento das cobranças">
+                <p>
+                  Cada loja escolhe <strong>como recebe</strong> as mensalidades e demais cobranças — é uma decisão da loja, não do
+                  sistema. Em <UI>Administração → Configurações da loja → Recebimento das cobranças</UI> (só o Administrador altera):
+                </p>
+                <Bullets>
+                  <li>
+                    <strong>Modo Loja</strong> — os irmãos pagam direto na conta da loja, por <strong>Pix (chave)</strong> ou
+                    depósito/TED, sem intermediário. A chave Pix e os dados bancários (cadastrados em <UI>Dados bancários</UI>, no topo
+                    das Configurações) aparecem na tela de Cobranças e nos lembretes enviados aos irmãos. O Tesoureiro confirma o
+                    recebimento e dá a baixa em <UI>Pagamentos</UI> (7.5). Não há tarifas.
+                  </li>
+                  <li>
+                    <strong>Modo Asaas</strong> — a cobrança é emitida no Asaas em <strong>Pix ou boleto</strong> (você escolhe o
+                    padrão; o <strong>cartão fica de fora</strong>, porque só cai cerca de 32 dias depois). O Asaas confirma o
+                    pagamento e o sistema dá a baixa sozinho (7.4). Exige o Asaas conectado (6.2) e a <strong>conta corrente que recebe
+                    o repasse</strong> — uma conta corrente ativa da loja (não pode ser investimento nem caixa de fundo).
+                  </li>
+                </Bullets>
+                <Note>
+                  <strong>O dinheiro é sempre lançado na conta corrente da loja</strong> — nunca numa &quot;conta Asaas&quot;. No Modo
+                  Asaas, o valor confirmado fica no Asaas até o Tesoureiro fazer o <strong>repasse manual</strong> (transferência do
+                  saldo do Asaas para a conta corrente, no painel do Asaas). Enquanto isso, a tela de Cobranças mostra o{' '}
+                  <strong>saldo no Asaas, a repassar</strong>, para o Tesoureiro saber quanto ainda está lá. A <strong>tarifa</strong>{' '}
+                  que o Asaas cobra por recebimento é lançada como despesa (valor real, categoria <em>Tarifas de Cobrança (Asaas)</em>)
+                  e <strong>absorvida pela loja</strong> — o saldo da conta corrente no sistema bate com o do banco depois do repasse.
+                </Note>
+                <p>
+                  Trocar de modo vale para as cobranças novas. Cobranças já emitidas no Asaas continuam valendo até serem pagas (o
+                  sistema avisa quantas). Lojas que já usavam o Asaas foram mantidas no <strong>Modo Asaas</strong> — falta apenas
+                  escolher a conta de repasse.
+                </p>
+              </Sub>
+
               <Sub id="admin-backup" title="6.8 Backup dos dados da loja">
                 <p>
                   Em <UI>Administração → Configurações da loja</UI>, o botão <UI>Baixar backup completo da minha
@@ -835,14 +872,14 @@ export function ManualBook() {
               </Sub>
 
               <Sub id="tes-asaas" title="7.4 Emitir boleto/PIX no Asaas">
-                <p>Pré-requisitos: o Administrador já conectou o Asaas (6.2) e a cobrança está vinculada a um membro com <strong>CPF cadastrado</strong>.</p>
+                <p>Pré-requisitos: a loja está no <strong>Modo Asaas</strong> com a conta de repasse escolhida (6.9), o Administrador conectou o Asaas (6.2) e a cobrança está vinculada a um membro com <strong>CPF cadastrado</strong>. O botão <UI>Emitir no Asaas</UI> só aparece no Modo Asaas.</p>
                 <Steps>
                   <li>Confirme que o membro tem <strong>CPF</strong> preenchido em <UI>Membros</UI> (sem CPF o Asaas recusa).</li>
                   <li>Em <UI>Cobranças</UI>, localize a cobrança e clique em <UI>Emitir no Asaas</UI>.</li>
-                  <li>O sistema cria o cliente do membro no Asaas, gera a cobrança (boleto/PIX) e devolve o link <UI>Abrir cobrança</UI> para enviar ao membro.</li>
-                  <li>O status passa a <strong>Emitida</strong>. Se precisar refazer, use <UI>Reemitir</UI>.</li>
+                  <li>O sistema cria o cliente do membro no Asaas, gera a cobrança em <strong>Pix ou boleto</strong> (conforme o método padrão da loja — nunca cartão) e devolve o link <UI>Abrir cobrança</UI> para enviar ao membro. Os lembretes automáticos e o lembrete avulso já levam esse link.</li>
+                  <li>O status passa a <strong>Emitida</strong>. Se precisar refazer, use <UI>Reemitir</UI> — a cobrança anterior é cancelada no Asaas, para o irmão não pagar duas vezes.</li>
                 </Steps>
-                <Note>Quando o membro pagar, o webhook do Asaas (6.2-C) <strong>baixa a cobrança automaticamente</strong> e registra o pagamento — você não precisa lançar nada à mão.</Note>
+                <Note>Quando o membro pagar, o webhook do Asaas (6.2-C) <strong>baixa a cobrança automaticamente</strong> e registra o pagamento na <strong>conta corrente de repasse</strong>, junto com a <strong>tarifa real</strong> cobrada pelo Asaas (despesa) — você não precisa lançar nada à mão. Depois é só fazer o <strong>repasse manual</strong> no painel do Asaas (6.9).</Note>
                 <p>
                   <strong>Cobrança emitida = a baixa é do Asaas.</strong> Depois de emitida, a cobrança fica <strong>Aguardando
                   Asaas</strong> (selo na lista de Contas). Se o irmão pagar por fora (dinheiro em mãos, PIX direto) e você
@@ -1164,6 +1201,25 @@ export function ManualBook() {
                   </li>
                   <li>A tabela mostra, por conta do plano de contas, o valor em cada período e a <UI>Variação</UI> em R$ e %. Verde é sempre &quot;foi bom&quot; (receita subiu ou despesa caiu); vermelho é o oposto. <UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
                 </Steps>
+              </Sub>
+
+              <Sub id="tes-tarifas" title="7.17 Tarifas de cobrança (Asaas)">
+                <p>
+                  Em <UI>Tesouraria → Relatórios → Tarifas de cobrança (Asaas)</UI> você vê o custo <strong>real</strong> do Asaas: em cada
+                  recebimento, a tarifa é a diferença entre o valor cobrado e o <strong>valor líquido que o próprio Asaas informa</strong>
+                  (as tarifas variam por contrato — o sistema não usa tabela fixa). Escolha o período e veja:
+                </p>
+                <Bullets>
+                  <li><strong>Recebido pelo Asaas</strong>, <strong>tarifa paga</strong> (com o % do recebido e a média por recebimento) e o <strong>líquido</strong> que chegou à loja.</li>
+                  <li><strong>Absorvida pela loja</strong> e <strong>repassada aos irmãos</strong> — hoje a política é a loja <strong>absorver</strong> toda a tarifa.</li>
+                  <li>Quebra <strong>por método</strong> (Pix, boleto…) e <strong>por mês</strong>, e a lista de cada recebimento (cobrança, irmão, valor, tarifa, líquido).</li>
+                  <li>Aviso de recebimentos <strong>sem tarifa informada</strong> (baixas antigas) e de recebimentos por <strong>cartão</strong>, que estão fora da política da loja.</li>
+                  <li><UI>Salvar como PDF</UI> para a prestação de contas.</li>
+                </Bullets>
+                <p>
+                  A tarifa também aparece como despesa no <strong>DRE</strong> e no extrato da conta corrente (categoria <em>Tarifas de
+                  Cobrança (Asaas)</em>), então o resultado da loja já considera o custo da cobrança.
+                </p>
               </Sub>
             </Chapter>
 
@@ -1691,6 +1747,9 @@ export function ManualBook() {
                 <li><strong>Aparece &quot;Cobrança aberta no Asaas&quot; ao baixar uma conta.</strong> A cobrança já foi emitida e o Asaas ainda espera o pagamento. Se o irmão pagou por fora, confirme <UI>Recebido fora do Asaas</UI>; caso contrário, aguarde a baixa automática (7.4).</li>
                 <li><strong>Recebi um e-mail de &quot;recebimento em duplicidade&quot;.</strong> O Asaas confirmou um pagamento de uma cobrança que já estava baixada manualmente. O valor está no Asaas e não foi lançado aqui — confira e estorne ao irmão, se for o caso (7.4).</li>
                 <li><strong>Não vejo Taxa de Elevação / Taxa de Exaltação ao cobrar.</strong> Clique em <UI>Atualizar plano de contas</UI> em Cadastros (7.1) para criar as categorias.</li>
+                <li><strong>O botão &quot;Emitir no Asaas&quot; sumiu / a emissão foi recusada.</strong> A loja está no <strong>Modo Loja</strong> ou ainda não escolheu a conta corrente de repasse. Ajuste em <UI>Configurações da loja → Recebimento das cobranças</UI> (6.9).</li>
+                <li><strong>Onde está o dinheiro que o Asaas recebeu?</strong> Fica no Asaas até o repasse manual para a conta corrente. A tela de Cobranças mostra o saldo a repassar; o sistema já lança o recebimento na conta corrente (6.9).</li>
+                <li><strong>Quanto o Asaas cobra da loja?</strong> Veja em <UI>Relatórios → Tarifas de cobrança (Asaas)</UI> (7.17): é a tarifa real de cada recebimento, absorvida pela loja.</li>
                 <li><strong>Esqueci minha senha.</strong> Na tela de entrada, clique em <UI>Esqueceu a senha?</UI> e informe o e-mail: enviamos um <strong>link</strong> (vale por 1 hora e só funciona uma vez) para você definir uma nova senha. A sua senha atual <strong>só muda quando você conclui pelo link</strong> — quem apenas conhece o seu e-mail não consegue alterá-la. São aceitos até 3 pedidos a cada 15 minutos.</li>
                 <li><strong>Digitei a senha certa e a conta não abre.</strong> Depois de 8 senhas erradas seguidas, a conta fica bloqueada por 15 minutos (proteção contra tentativas de invasão) — aguarde ou redefina a senha. Também não entra o usuário <strong>desativado</strong> pelo Administrador (6.3) ou de loja encerrada. Mudanças de papel ou de situação do usuário passam a valer em até cerca de 30 segundos, sem ele precisar sair e entrar de novo.</li>
                 <li><strong>O sistema recusou o valor de uma conta ou pagamento.</strong> O valor precisa ser maior que zero, com até 2 casas decimais. Um pagamento também não pode ultrapassar o <strong>saldo em aberto</strong> da conta (ele mostra o quanto falta) — isso evita baixar a mesma conta duas vezes por clique duplicado.</li>

@@ -64,6 +64,11 @@ model Lodge {
   asaasApiKeyEnc    String?
   asaasEnv          String?  @default("sandbox") // sandbox | production
   asaasWebhookToken String?  // token p/ validar o webhook do Asaas desta loja
+  // Como a loja recebe as cobranças: "lodge" = direto na conta da loja (Pix/TED, baixa manual ou por extrato);
+  // "asaas" = via Asaas, que repassa (manualmente) à conta corrente. Escolha da própria loja.
+  collectionMode           String  @default("lodge")
+  asaasSettlementAccountId String? // conta corrente da loja que recebe o repasse do Asaas (FinancialAccount)
+  asaasBillingType         String  @default("PIX") // método emitido no Asaas: PIX | BOLETO (cartão fica fora)
   // Mensageria BYO por loja (WhatsApp/SMS): credenciais próprias da loja, custo direto dela.
   // E-mail é provido pela plataforma (Resend). Tokens criptografados (AES-256-GCM).
   whatsappPhoneId      String?
@@ -357,6 +362,9 @@ model Invoice {
   nextDueDate        DateTime?
   asaasPaymentId     String?  // id da cobrança no Asaas (reconciliação reversa)
   asaasInvoiceUrl    String?  // link universal da cobrança no Asaas (boleto/PIX/cartão), persistido p/ sobreviver a reload
+  asaasBillingType   String?  // método efetivamente pago (informado pelo Asaas na baixa)
+  asaasNetValue      Float?   // valor líquido após a tarifa do Asaas
+  asaasFee           Float?   // tarifa real cobrada pelo Asaas (valor − líquido); absorvida pela loja
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

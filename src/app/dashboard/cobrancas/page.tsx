@@ -1,6 +1,9 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import CobrancasClient from './CobrancasClient';
+import { getAccountBalance } from '@/lib/asaas';
+import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
+import { isAsaasMode, paymentInstructions } from '@/lib/collection';
 
 // Server Component: cobranças + contas + membros no servidor.
 export default async function CobrancasPage() {
@@ -24,8 +27,28 @@ export default async function CobrancasPage() {
           select: { id: true, name: true },
           orderBy: { name: 'asc' },
         }),
+        lodge: await db.lodge.findUnique({
+          where: { id: String(lodgeId) },
+          select: { collectionMode: true, asaasSettlementAccountId: true, asaasApiKeyEnc: true, asaasEnv: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true },
+        }),
       }))
-    : { invoices: [], chartAccounts: [], members: [] };
+    : { invoices: [], chartAccounts: [], members: [], lodge: null };
+
+  // Modo de recebimento da loja. No Modo Asaas mostra o saldo que ainda está no Asaas (a repassar,
+  // manualmente, à conta corrente); no Modo Loja, como os irmãos pagam.
+  const asaasMode = isAsaasMode(data.lodge);
+  let asaasBalance: number | null = null;
+  const asaasConfig = asaasMode ? buildLodgeAsaasConfig(data.lodge) : null;
+  if (asaasConfig) asaasBalance = await getAccountBalance(asaasConfig).catch(() => null);
+  const settlementName = asaasMode && data.lodge?.asaasSettlementAccountId
+    ? (await withTenant(String(lodgeId), (db) => db.financialAccount.findUnique({ where: { id: data.lodge!.asaasSettlementAccountId! }, select: { name: true } })))?.name ?? null
+    : null;
+  const collection = {
+    mode: asaasMode ? ('asaas' as const) : ('lodge' as const),
+    settlementName,
+    balance: asaasBalance,
+    instructions: asaasMode ? null : paymentInstructions(data.lodge),
+  };
 
   const invoices = data.invoices.map((i) => ({
     id: i.id,
@@ -43,5 +66,5 @@ export default async function CobrancasPage() {
     member: i.member ? { id: i.member.id, name: i.member.name } : null,
   }));
 
-  return <CobrancasClient invoices={invoices} chartAccounts={data.chartAccounts} members={data.members} />;
+  return <CobrancasClient invoices={invoices} chartAccounts={data.chartAccounts} members={data.members} collection={collection} />;
 }

@@ -1,13 +1,11 @@
 import { auth } from '@/lib/auth';
-import { createCustomer, createPayment } from '@/lib/asaas';
+import { createCustomer, createPayment, deletePayment } from '@/lib/asaas';
+import { isAsaasMode, normalizeBillingChoice } from '@/lib/collection';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
-
-type BillingType = 'BOLETO' | 'PIX' | 'CREDIT_CARD' | 'UNDEFINED';
-const BILLING_TYPES: BillingType[] = ['BOLETO', 'PIX', 'CREDIT_CARD', 'UNDEFINED'];
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -20,7 +18,6 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const invoiceId = String(body?.invoiceId ?? '').trim();
-  const billingType = (BILLING_TYPES.includes(body?.billingType) ? body.billingType : 'BOLETO') as BillingType;
 
   if (!invoiceId) {
     return NextResponse.json({ error: 'invoiceId é obrigatório.' }, { status: 400 });
@@ -30,7 +27,7 @@ export async function POST(request: Request) {
   const ctx = await withTenant(String(lodgeId), async (db) => {
     const lodge = await db.lodge.findUnique({
       where: { id: String(lodgeId) },
-      select: { asaasApiKeyEnc: true, asaasEnv: true },
+      select: { asaasApiKeyEnc: true, asaasEnv: true, collectionMode: true, asaasSettlementAccountId: true, asaasBillingType: true },
     });
     const invoice = await db.invoice.findFirst({
       where: { id: invoiceId, lodgeId: String(lodgeId) },
@@ -38,6 +35,17 @@ export async function POST(request: Request) {
     });
     return { lodge, invoice };
   });
+
+  // Modo de recebimento é escolha da loja: fora do Modo Asaas não se emite no Asaas.
+  if (!isAsaasMode(ctx.lodge)) {
+    return NextResponse.json({ error: 'Esta loja recebe no Modo Loja (direto na conta da loja). Para emitir no Asaas, mude o modo em Configurações da loja → Recebimento das cobranças.' }, { status: 409 });
+  }
+  // Todo recebimento cai na conta corrente da loja: sem a conta de repasse, o dinheiro do Asaas ficaria sem destino.
+  if (!ctx.lodge?.asaasSettlementAccountId) {
+    return NextResponse.json({ error: 'Escolha a conta corrente que recebe o repasse do Asaas em Configurações da loja → Recebimento das cobranças.' }, { status: 409 });
+  }
+  // Cartão fica fora: a emissão é sempre explícita em Pix ou boleto (o padrão vem da loja).
+  const billingType = normalizeBillingChoice(body?.billingType, normalizeBillingChoice(ctx.lodge.asaasBillingType));
 
   const config = buildLodgeAsaasConfig(ctx.lodge);
   if (!config) {
@@ -72,6 +80,11 @@ export async function POST(request: Request) {
 
     if (!customerId) {
       return NextResponse.json({ error: 'Falha ao criar/obter o cliente no Asaas.' }, { status: 502 });
+    }
+
+    // Reemissão: a cobrança anterior ainda existe no Asaas e poderia ser paga em duplicidade — cancela antes.
+    if (ctx.invoice.asaasPaymentId && ctx.invoice.status !== 'paid') {
+      await deletePayment(config, ctx.invoice.asaasPaymentId).catch(() => {});
     }
 
     const payment = await createPayment(config, {

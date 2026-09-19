@@ -96,7 +96,7 @@ const ROLE_LABEL: Record<string, string> = {
 const SEGMENT_LABELS: Record<string, string> = {
   configuracoes: 'Configurações da loja', relatorios: 'Resumo financeiro', hospitalaria: 'Hospitalaria',
   sessoes: 'Sessões', usuarios: 'Usuários & acessos', permissoes: 'Permissões',
-  fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', fundos: 'Fundos (Tronco e Doações)', portal: 'Meu portal', secretaria: 'Secretaria',
+  fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', tarifas: 'Tarifas de cobrança (Asaas)', fundos: 'Fundos (Tronco e Doações)', portal: 'Meu portal', secretaria: 'Secretaria',
   inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos',
   'fluxo-caixa': 'Fluxo de caixa projetado', orcamento: 'Orçamento anual',
   patrimonio: 'Patrimônio', 'conciliacao-bancaria': 'Conciliação bancária',

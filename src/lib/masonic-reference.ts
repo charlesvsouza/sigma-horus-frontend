@@ -264,6 +264,7 @@ export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   { code: '2.1.13', name: 'Água e Esgoto', type: 'EXPENSE', category: 'Despesas Administrativas' },
   { code: '2.1.14', name: 'Limpeza e Copa', type: 'EXPENSE', category: 'Despesas Administrativas' },
   { code: '2.1.15', name: 'Contribuição à Potência / Grande Loja', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.16', name: 'Tarifas de Cobrança (Asaas)', type: 'EXPENSE', category: 'Despesas Administrativas' },
   // 2.2 Investimentos
   { code: '2.2.02', name: 'Móveis e Utensílios', type: 'EXPENSE', category: 'Investimentos' },
   { code: '2.2.03', name: 'Equipamentos', type: 'EXPENSE', category: 'Investimentos' },

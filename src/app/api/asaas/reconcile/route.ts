@@ -56,6 +56,8 @@ export async function POST() {
           accountId: invoice.accountId,
           memberId: invoice.memberId,
           amount: Number(remote.value ?? invoice.amount),
+          netValue: remote.netValue != null ? Number(remote.netValue) : null,
+          billingType: remote.billingType ?? null,
           asaasPaymentId: invoice.asaasPaymentId!,
           userId: session.user.id,
         }),

@@ -3,6 +3,8 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { brl } from '@/lib/currency';
+import { payHint } from '@/lib/collection';
+import { formatDateOnly } from '@/lib/date-only';
 import { NextResponse } from 'next/server';
 
 // Lembrete manual de uma cobrança específica — complementa o lembrete
@@ -22,7 +24,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const data = await withTenant(String(lodgeId), async (db) => {
     const invoice = await db.invoice.findFirst({
       where: { id, lodgeId: String(lodgeId) },
-      include: { member: { select: { name: true, email: true } }, lodge: { select: { name: true } } },
+      include: { member: { select: { name: true, email: true } }, lodge: { select: { name: true, collectionMode: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true } } },
     });
     return invoice;
   });
@@ -32,12 +34,12 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   if (!data.member?.email) return NextResponse.json({ error: 'O membro desta cobrança não tem e-mail cadastrado.' }, { status: 400 });
 
   const valor = brl(data.amount);
-  const vencimento = new Date(data.dueDate).toLocaleDateString('pt-BR');
+  const vencimento = formatDateOnly(data.dueDate);
   const result = await dispatch(
     'email',
     data.member.email,
     `Lembrete de cobrança — ${data.lodge.name}`,
-    `Olá, ${data.member.name}.\n\nLembramos que a cobrança ${data.number}, no valor de ${valor}, com vencimento em ${vencimento}, ainda está em aberto.\n\nAtenciosamente,\n${data.lodge.name}`,
+    `Olá, ${data.member.name}.\n\nLembramos que a cobrança ${data.number}, no valor de ${valor}, com vencimento em ${vencimento}, ainda está em aberto.${payHint(data.lodge, data)}\n\nAtenciosamente,\n${data.lodge.name}`,
     EMPTY_CHANNELS,
   );
 

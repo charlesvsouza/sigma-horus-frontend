@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import ConfiguracoesClient from './ConfiguracoesClient';
+import { normalizeBillingChoice, normalizeCollectionMode } from '@/lib/collection';
 
 const EMPTY: Record<string, string> = {
   name: '', legalName: '', tradeName: '', cnpj: '', email: '', phone: '', crestUrl: '',
@@ -35,6 +36,29 @@ export default async function ConfiguracoesPage() {
       )
     : null;
 
+  // Recebimento das cobranças (Modo Loja / Modo Asaas) + contas correntes elegíveis ao repasse.
+  const collectionData = lodgeId
+    ? await withTenant(String(lodgeId), async (db) => ({
+        lodge: await db.lodge.findUnique({
+          where: { id: String(lodgeId) },
+          select: { collectionMode: true, asaasSettlementAccountId: true, asaasBillingType: true, asaasApiKeyEnc: true, pixKey: true, bankName: true, bankAccount: true },
+        }),
+        accounts: await db.financialAccount.findMany({
+          where: { lodgeId: String(lodgeId), active: true, kind: 'bank', isInvestment: false, purpose: 'general' },
+          select: { id: true, name: true },
+          orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+        }),
+      }))
+    : null;
+  const collection = {
+    mode: normalizeCollectionMode(collectionData?.lodge?.collectionMode),
+    settlementAccountId: collectionData?.lodge?.asaasSettlementAccountId ?? '',
+    billingType: normalizeBillingChoice(collectionData?.lodge?.asaasBillingType),
+    asaasConnected: Boolean(collectionData?.lodge?.asaasApiKeyEnc),
+    hasPaymentData: Boolean(collectionData?.lodge?.pixKey || collectionData?.lodge?.bankAccount),
+    accounts: collectionData?.accounts ?? [],
+  };
+
   const initialForm = { ...EMPTY };
   if (lodge) {
     for (const [k, v] of Object.entries(lodge)) {
@@ -42,5 +66,5 @@ export default async function ConfiguracoesPage() {
     }
   }
 
-  return <ConfiguracoesClient initialForm={initialForm} />;
+  return <ConfiguracoesClient initialForm={initialForm} collection={collection} />;
 }

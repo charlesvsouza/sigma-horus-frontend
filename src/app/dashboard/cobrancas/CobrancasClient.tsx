@@ -25,7 +25,9 @@ interface InvoiceItem {
   member?: MemberOption | null;
 }
 
-export default function CobrancasClient({ invoices, chartAccounts, members }: { invoices: InvoiceItem[]; chartAccounts: ChartOption[]; members: MemberOption[] }) {
+interface CollectionInfo { mode: 'lodge' | 'asaas'; settlementName: string | null; balance: number | null; instructions: string | null }
+
+export default function CobrancasClient({ invoices, chartAccounts, members, collection }: { invoices: InvoiceItem[]; chartAccounts: ChartOption[]; members: MemberOption[]; collection: CollectionInfo }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -92,7 +94,8 @@ export default function CobrancasClient({ invoices, chartAccounts, members }: { 
     const res = await fetch('/api/asaas/payment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ invoiceId, billingType: 'UNDEFINED' }),
+      // O método (Pix/boleto) vem da configuração da loja — cartão fica fora.
+      body: JSON.stringify({ invoiceId }),
     });
     const data = await res.json();
     setEmittingId('');
@@ -147,6 +150,35 @@ export default function CobrancasClient({ invoices, chartAccounts, members }: { 
         </div>
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+
+        {collection.mode === 'asaas' ? (
+          <Card className="max-w-2xl">
+            <h2 className="text-base font-semibold text-sand-light">Modo Asaas</h2>
+            <p className="mt-1 text-xs text-sand-dark">
+              As baixas caem na conta corrente <strong>{collection.settlementName ?? '— (escolha em Configurações da loja)'}</strong>. O repasse do Asaas para
+              o banco é feito manualmente pelo Tesoureiro, no painel do Asaas. A tarifa cobrada pelo Asaas é lançada como despesa e absorvida pela loja.
+            </p>
+            {collection.balance != null ? (
+              <p className="mt-3 text-sm text-sand-light">
+                Saldo no Asaas, a repassar: <strong className="tabular-nums text-gold">{brl(collection.balance)}</strong>
+                {collection.balance > 0 ? <span className="ml-2 text-xs text-sand-dark">— transfira para a conta corrente no painel do Asaas.</span> : null}
+              </p>
+            ) : (
+              <p className="mt-3 text-xs text-sand-dark">Saldo do Asaas indisponível no momento.</p>
+            )}
+            {!collection.settlementName ? <Alert intent="warn" className="mt-3">Escolha a conta corrente de repasse em Configurações da loja para poder emitir no Asaas.</Alert> : null}
+          </Card>
+        ) : (
+          <Card className="max-w-2xl">
+            <h2 className="text-base font-semibold text-sand-light">Modo Loja — recebimento direto na conta da loja</h2>
+            {collection.instructions ? (
+              <p className="mt-2 whitespace-pre-line text-sm text-sand">{collection.instructions}</p>
+            ) : (
+              <p className="mt-2 text-xs text-amber-300">Cadastre a chave Pix e/ou os dados bancários da loja em Configurações da loja para orientar os pagamentos.</p>
+            )}
+            <p className="mt-2 text-xs text-sand-dark">Confirmado o pagamento, o Tesoureiro dá a baixa em Pagamentos.</p>
+          </Card>
+        )}
 
         <Card className="flex max-w-2xl items-center justify-between gap-3">
           <div>
@@ -260,6 +292,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members }: { 
                     ) : null}
                     {invoice.status !== 'paid' ? (
                       <>
+                        {collection.mode === 'asaas' ? (
                         <button
                           onClick={() => emitAsaas(invoice.id)}
                           disabled={emittingId === invoice.id || !invoice.member}
@@ -268,6 +301,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members }: { 
                         >
                           {emittingId === invoice.id ? 'Emitindo…' : invoice.status === 'billed' ? 'Reemitir' : 'Emitir no Asaas'}
                         </button>
+                        ) : null}
                         <button onClick={() => void remindInvoice(invoice.id)} title="Envia um lembrete por e-mail ao membro" className="text-xs text-sand-dark transition hover:text-sand-light">Lembrar</button>
                         <button onClick={() => void cancelInvoice(invoice.id)} className="text-xs text-rose-300/60 transition hover:text-rose-300">Cancelar</button>
                       </>

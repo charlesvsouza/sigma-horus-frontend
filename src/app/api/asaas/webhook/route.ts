@@ -113,6 +113,8 @@ export async function POST(request: Request) {
         accountId: invoice.accountId,
         memberId: invoice.memberId,
         amount: payment.value,
+        netValue: payment.netValue ?? null,
+        billingType: payment.billingType ?? null,
         asaasPaymentId: payment.id,
         userId: 'system:asaas-webhook',
         source: event,
@@ -133,7 +135,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, settled: true });
   }
 
+  // Eventos de uma cobrança que já foi substituída (reemissão cancela a anterior no Asaas) não
+  // devem mexer na fatura: senão o PAYMENT_DELETED da antiga apagaria o vínculo da nova.
+  const isCurrentCharge = !invoice.asaasPaymentId || invoice.asaasPaymentId === payment.id;
+
   if (OVERDUE_EVENTS.has(event)) {
+    if (!isCurrentCharge) return NextResponse.json({ received: true, ignored: 'superseded charge' });
     if (invoice.status !== 'paid') {
       await prismaAdmin.invoice.update({ where: { id: invoice.id }, data: { status: 'overdue' } });
     }
@@ -141,6 +148,7 @@ export async function POST(request: Request) {
   }
 
   if (REVERSED_EVENTS.has(event)) {
+    if (!isCurrentCharge) return NextResponse.json({ received: true, ignored: 'superseded charge' });
     // Cobrança cancelada/estornada no Asaas. Se ela já estava baixada por FORA do
     // Asaas (recebimento manual), o cancelamento lá não desfaz o recebimento real —
     // só limpa o vínculo com a cobrança do Asaas.

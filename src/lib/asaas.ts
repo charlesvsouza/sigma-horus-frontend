@@ -65,6 +65,8 @@ export type AsaasWebhookEvent = {
     /** Eco do Invoice.id que enviamos em createPayment — usado para a baixa automática. */
     externalReference?: string | null;
     billingType?: string;
+    /** Valor líquido após a tarifa do Asaas (a tarifa real = value − netValue). */
+    netValue?: number;
   };
 };
 
@@ -110,4 +112,12 @@ export async function deletePayment(config: AsaasConfig, id: string) {
   const res = await fetch(`${config.baseUrl}/payments/${id}`, { method: 'DELETE', headers: headers(config) });
   if (!res.ok) throw new Error(`Asaas delete payment error: ${res.status} ${await res.text()}`);
   return res.json();
+}
+
+/** Saldo da conta Asaas (dinheiro confirmado e ainda não repassado à conta corrente da loja). */
+export async function getAccountBalance(config: AsaasConfig, timeoutMs = 4000): Promise<number> {
+  const res = await fetch(`${config.baseUrl}/finance/balance`, { headers: headers(config), signal: AbortSignal.timeout(timeoutMs) });
+  if (!res.ok) throw new Error(`Asaas balance error: ${res.status}`);
+  const data = await res.json();
+  return Number(data?.balance ?? 0);
 }
