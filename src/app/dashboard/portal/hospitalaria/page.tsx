@@ -20,6 +20,7 @@ const DONATION_PRESETS = [5, 10, 20, 50, 100];
 
 export default function HospitalariaPortalPage() {
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
+  const [troncoBalance, setTroncoBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
@@ -37,6 +38,7 @@ export default function HospitalariaPortalPage() {
       const res = await fetch('/api/campaigns');
       const data = await res.json();
       setCampaigns(data.items ?? []);
+      setTroncoBalance(data.tronco?.configured ? Number(data.tronco.balance) : null);
       setLoading(false);
     }
     load();
@@ -104,6 +106,14 @@ export default function HospitalariaPortalPage() {
         </div>
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+
+        {troncoBalance !== null ? (
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
+            <p className="text-xs uppercase tracking-[0.15em] text-sand-dark">Saldo do Tronco de Solidariedade</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-gold">{brl(troncoBalance)}</p>
+            <p className="mt-1 text-xs text-sand-dark">Valor disponível hoje para a benemerência da loja.</p>
+          </section>
+        ) : null}
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Doação para o Tronco de Solidariedade</h2>

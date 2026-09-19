@@ -249,7 +249,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.27</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.28</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -311,7 +311,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.27 — 19 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.28 — 19 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1544,7 +1544,8 @@ export function ManualBook() {
                 <p>
                   Em <UI>Hospitalaria</UI> você acompanha as <strong>campanhas de benemerência ativas</strong> da loja
                   (título, descrição, beneficiário e progresso da arrecadação) — mesma informação que o Hospitaleiro vê,
-                  em modo leitura.
+                  em modo leitura. No topo da tela aparece o <strong>Saldo do Tronco de Solidariedade</strong> — quanto a loja
+                  tem disponível hoje para a benemerência, visível a todos os irmãos (o extrato detalhado é da gestão).
                 </p>
                 <p>
                   Para propor uma campanha ou pedir um auxílio, clique em <UI>Propor campanha / solicitar auxílio</UI>,
@@ -1654,6 +1655,18 @@ export function ManualBook() {
                   dinheiro do dia a dia. As lojas novas já nascem com os dois caixas; nas lojas existentes eles foram criados com
                   saldo inicial zero (ajuste em <UI>Cadastros financeiros → Contas bancárias e Caixa → Editar</UI>, campo
                   <UI> Saldo inicial</UI>, com o que já havia guardado antes de usar o sistema).
+                </p>
+                <p>
+                  <strong>Registrar um aporte:</strong> para lançar dinheiro que entrou no fundo sem passar por campanha ou
+                  cobrança — o tronco passado na sessão, uma doação em espécie, um Pix direto na conta — abra o fundo em
+                  <UI> Hospitalaria → Fundos (Tronco e Doações)</UI> e clique em <UI>Registrar aporte</UI>. Informe o
+                  <UI> valor</UI>, a <UI>data do recebimento</UI> (não pode ser futura) e a <UI>forma</UI> (dinheiro, Pix,
+                  transferência ou outro). No Tronco, escolha a <UI>origem</UI>: <em>tronco passado em sessão</em> (selecione a
+                  sessão) ou <em>outra origem</em>. Em <UI>Quem doou</UI> marque não identificado (tronco coletivo), um irmão
+                  da loja, outra pessoa/instituição ou anônimo, e confira o <UI>caixa que recebeu</UI> (já vem o caixa do
+                  fundo). O aporte entra na hora no saldo, no extrato, nas <em>entradas por origem</em>, no livro-caixa e no
+                  DRE. Podem registrar o Administrador, o Venerável, o Secretário, o Tesoureiro e o Hospitaleiro; não é possível
+                  lançar com data dentro de um veneralato já encerrado, e cada aporte fica na auditoria.
                 </p>
                 <p><strong>Para onde o dinheiro vai sozinho</strong> — você não precisa escolher o caixa nestes casos:</p>
                 <Bullets>

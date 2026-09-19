@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import type { FundPurpose } from '@/lib/funds';
+import ContributionForm from './ContributionForm';
 
 interface Bucket { label: string; total: number; count: number }
 interface StrayRow { id: string; date: string; direction: 'in' | 'out'; amount: number; title: string; where: string }
@@ -90,7 +91,7 @@ function BucketTable({ rows, empty, head }: { rows: Bucket[]; empty: string; hea
 }
 
 export default function FundosClient({
-  fund, fundLabels, lodgeName, crestUrl, from, to, accounts, report, campaigns, canSeeDonors,
+  fund, fundLabels, lodgeName, crestUrl, from, to, accounts, report, campaigns, canSeeDonors, canRecord, members, sessions,
 }: {
   fund: FundPurpose;
   fundLabels: Record<FundPurpose, string>;
@@ -102,10 +103,14 @@ export default function FundosClient({
   report: Report;
   campaigns: CampaignRow[];
   canSeeDonors: boolean;
+  canRecord: boolean;
+  members: { id: string; name: string }[];
+  sessions: { id: string; label: string }[];
 }) {
   const router = useRouter();
   const [fromVal, setFromVal] = useState(from);
   const [toVal, setToVal] = useState(to);
+  const [showContribution, setShowContribution] = useState(false);
 
   const go = (f: string, t: string, fu: FundPurpose = fund) => router.push(`/dashboard/hospitalaria/fundos?fund=${fu}&from=${f}&to=${t}`);
   const today = new Date();
@@ -189,12 +194,27 @@ export default function FundosClient({
             ) : null}
 
             <div className="fundo-noprint flex flex-wrap items-center gap-3">
+              {canRecord && accounts.some((a) => a.active) ? (
+                <button onClick={() => setShowContribution((v) => !v)} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Registrar aporte</button>
+              ) : null}
               <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Salvar como PDF</button>
               <Link href="/dashboard/transferencias" className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-medium text-gold/90 transition-colors hover:border-gold/60 hover:text-gold">Transferir entre contas</Link>
               {accounts.map((a) => (
                 <Link key={a.id} href={`/dashboard/extratos?accountId=${a.id}`} className="text-xs text-sand-dark underline hover:text-gold">Extrato: {a.name}</Link>
               ))}
             </div>
+
+            {showContribution && canRecord ? (
+              <ContributionForm
+                key={fund}
+                fund={fund}
+                fundLabel={fundLabels[fund]}
+                accounts={accounts.filter((a) => a.active).map((a) => ({ id: a.id, name: a.name }))}
+                members={members}
+                sessions={sessions}
+                onClose={() => setShowContribution(false)}
+              />
+            ) : null}
 
             <div className="fundo-print space-y-8">
               <header className="text-center">

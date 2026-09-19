@@ -36,17 +36,23 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
     );
   }
 
-  const [byAccounts, byCampaigns] = await Promise.all([
-    requireLodgeAccess(String(lodgeId), role, 'accounts', 'read'),
-    requireLodgeAccess(String(lodgeId), role, 'campaigns', 'read'),
-  ]);
-  if (!byAccounts.ok && !byCampaigns.ok) {
+  // Extrato, saídas e doadores são de gestão (Contas). O Membro vê só o saldo do Tronco,
+  // no portal Hospitalaria.
+  const byAccounts = await requireLodgeAccess(String(lodgeId), role, 'accounts', 'read');
+  if (!byAccounts.ok) {
     return (
       <main className="min-h-screen px-6 py-10">
         <p className="text-sm text-sand-dark">Acesso negado.</p>
       </main>
     );
   }
+
+  const canRecord = (
+    await Promise.all([
+      requireLodgeAccess(String(lodgeId), role, 'accounts', 'write'),
+      requireLodgeAccess(String(lodgeId), role, 'campaigns', 'write'),
+    ])
+  ).some((a) => a.ok);
 
   const fund: FundPurpose = isFundPurpose(sp.fund) ? sp.fund : 'tronco';
   const today = todayBR();
@@ -57,9 +63,11 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const lid = String(lodgeId);
-    const [lodge, fundAccounts] = await Promise.all([
+    const [lodge, fundAccounts, members, recentSessions] = await Promise.all([
       db.lodge.findUnique({ where: { id: lid }, select: { name: true, crestUrl: true } }),
       db.financialAccount.findMany({ where: { lodgeId: lid, purpose: fund }, orderBy: [{ active: 'desc' }, { name: 'asc' }] }),
+      canRecord ? db.member.findMany({ where: { lodgeId: lid, status: 'active' }, select: { id: true, name: true }, orderBy: { name: 'asc' } }) : Promise.resolve([]),
+      canRecord ? db.session.findMany({ where: { lodgeId: lid, date: { lte: new Date() } }, select: { id: true, title: true, date: true }, orderBy: { date: 'desc' }, take: 20 }) : Promise.resolve([]),
     ]);
     const ids = fundAccounts.map((f) => f.id);
 
@@ -106,7 +114,7 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
     const donationCampaign = new Map<string, string>();
     for (const c of campaigns) for (const dn of c.donations) if (dn.paymentId) donationCampaign.set(dn.paymentId, c.title);
 
-    return { lodge, fundAccounts, ids, inCaixa, outside, transfers, campaigns, donationCampaign };
+    return { lodge, fundAccounts, members, recentSessions, ids, inCaixa, outside, transfers, campaigns, donationCampaign };
   });
 
   const idSet = new Set(data.ids);
@@ -199,6 +207,9 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
         },
       }}
       campaigns={campaignRows}
+      canRecord={canRecord}
+      members={data.members}
+      sessions={data.recentSessions.map((x) => ({ id: x.id, label: `${fmtBR(x.date)} — ${x.title}` }))}
       canSeeDonors={role === 'admin' || role === 'venerable' || role === 'treasurer'}
     />
   );
