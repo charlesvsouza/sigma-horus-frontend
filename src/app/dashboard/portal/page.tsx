@@ -458,7 +458,7 @@ export default function PortalPage() {
               {documents.length === 0 ? <p className="text-sm text-sand-dark">Nenhum documento registrado.</p> : documents.map((document) => (
                 <div key={document.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                   <p className="font-medium text-sand-light">{document.title}</p>
-                  <p className="mt-1 text-sand-dark">{DOCUMENT_KIND_LABEL[document.kind] ?? document.kind} • {new Date(document.createdAt).toLocaleDateString('pt-BR')}</p>
+                  <p className="mt-1 text-sand-dark">{DOCUMENT_KIND_LABEL[document.kind] ?? document.kind} • {new Date(document.createdAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
                   <a href={`/api/documents/${document.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-gold hover:text-gold-light">Abrir arquivo</a>
                 </div>
               ))}
@@ -472,7 +472,7 @@ export default function PortalPage() {
               {institutionalDocuments.length === 0 ? <p className="text-sm text-sand-dark">Nenhum documento institucional publicado ainda.</p> : institutionalDocuments.map((document) => (
                 <div key={document.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                   <p className="font-medium text-sand-light">{document.title}</p>
-                  <p className="mt-1 text-sand-dark">{document.category || (DOCUMENT_KIND_LABEL[document.kind] ?? document.kind)} • {new Date(document.createdAt).toLocaleDateString('pt-BR')}</p>
+                  <p className="mt-1 text-sand-dark">{document.category || (DOCUMENT_KIND_LABEL[document.kind] ?? document.kind)} • {new Date(document.createdAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
                   <a href={`/api/documents/${document.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-gold hover:text-gold-light">Abrir arquivo</a>
                 </div>
               ))}

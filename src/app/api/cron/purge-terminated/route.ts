@@ -1,5 +1,6 @@
 import { prismaAdmin } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { cronAuthorized } from '@/lib/platform-auth';
 
 /**
  * Cron job que anonimiza dados de lojas encerradas há mais de 90 dias.
@@ -13,13 +14,7 @@ import { NextResponse } from 'next/server';
  */
 const DATA_RETENTION_DAYS = 90;
 
-function authorized(request: Request): boolean {
-  const header = request.headers.get('authorization') ?? '';
-  const bearer = header.startsWith('Bearer ') ? header.slice(7) : '';
-  const qs = new URL(request.url).searchParams.get('token') ?? '';
-  const accepted = [process.env.CRON_SECRET, process.env.PLATFORM_OWNER_TOKEN].filter(Boolean) as string[];
-  return accepted.some((t) => t === bearer || t === qs);
-}
+const authorized = cronAuthorized;
 
 async function run() {
   const cutoff = new Date();

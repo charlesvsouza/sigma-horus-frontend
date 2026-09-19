@@ -11,6 +11,7 @@ import { dispatch } from '@/lib/messaging';
 import { buildLodgeChannels } from '@/lib/lodge-channels';
 import { brl } from '@/lib/currency';
 import { NextResponse } from 'next/server';
+import { lockKey } from '@/lib/locks';
 
 export async function GET() {
   const session = await auth();
@@ -86,6 +87,9 @@ export async function POST(request: Request) {
     if (!account) {
       return { notFound: true as const };
     }
+    // Uma baixa por vez por conta: sem isto, dois cliques simultâneos passam juntos pela
+    // conferência de saldo em aberto abaixo e a conta é paga em dobro.
+    await lockKey(db, `account:${accountId}`);
     if (account.type === 'PAYABLE' && account.approvalStatus === 'pending') {
       return { pendingApproval: true as const };
     }

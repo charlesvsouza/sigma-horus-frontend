@@ -15,6 +15,7 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import { backfillMemberRelatives } from '@/lib/relatives-backfill';
 import { buildObjectKey, getR2Client, getR2StorageSettings } from '@/lib/storage';
 import { NextResponse } from 'next/server';
+import { platformAuthorized } from '@/lib/platform-auth';
 
 // Passo final do wizard de importação — a ÚNICA rota que grava dados. Reexecuta
 // o parsing/mapeamento no servidor (não confia nas linhas já transformadas
@@ -24,15 +25,10 @@ import { NextResponse } from 'next/server';
 // entra nem atualiza o existente, e "ambiguous" (sem CPF confiável em algum
 // dos lados) só entra se a linha estiver em `approvedAmbiguousRows`, que o
 // admin escolhe na tela de revisão depois de olhar linha a linha.
-function platformAuthorized(request: Request): boolean {
-  const token = process.env.PLATFORM_OWNER_TOKEN;
-  if (!token) return false;
-  const header = request.headers.get('x-platform-token') ?? '';
-  return header.length > 0 && header === token;
-}
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
+  const formData = await request.formData().catch(() => null);
+  if (!formData) return NextResponse.json({ error: 'Envie o arquivo como formulário (multipart).' }, { status: 400 });
   const file = formData.get('file');
   const mappingRaw = formData.get('mapping');
   const overrideLodgeId = formData.get('lodgeId') ? String(formData.get('lodgeId')) : null;

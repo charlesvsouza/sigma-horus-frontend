@@ -50,7 +50,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const body = await request.json();
   const { code, name, type } = body;
 
-  await withTenant(String(lodgeId), async (db) => {
+  const found = await withTenant(String(lodgeId), async (db) => {
+    const existing = await db.chartAccount.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true } });
+    if (!existing) return false;
     const data: Record<string, unknown> = {};
     if (code) data.code = code;
     if (name) data.name = name;
@@ -64,7 +66,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       entityId: id,
       metadata: { ...data },
     });
+    return true;
   });
+  if (!found) return NextResponse.json({ error: 'Categoria não encontrada.' }, { status: 404 });
 
   return NextResponse.json({ ok: true });
 }

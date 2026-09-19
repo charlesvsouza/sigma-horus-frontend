@@ -1,16 +1,16 @@
 import { prismaAdmin } from '@/lib/prisma';
 
-export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns' | 'import' | 'materials';
+export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns' | 'import' | 'materials' | 'audit';
 export type Action = 'read' | 'write';
 
-// IMPORTANTE: ao adicionar um novo Resource aqui, lojas que já customizaram a
-// matriz em Configurações → Permissões (têm linhas em RolePermission) NÃO
-// ganham o novo recurso automaticamente — loadLodgePolicy só cai no
-// DEFAULT_POLICY quando a loja não tem NENHUMA linha persistida. É preciso
-// rodar um backfill (ver scripts/backfill-role-permissions.ts) inserindo as
-// linhas padrão do novo recurso pra essas lojas, ou o Admin delas fica sem
-// acesso até reabrir e salvar a tela de Permissões de novo.
-export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials'];
+// Ao adicionar um novo Resource aqui, lojas que já customizaram a matriz (têm
+// linhas em RolePermission) não têm linhas para ele. Nesse caso vale o padrão
+// (DEFAULT_POLICY) só para esse recurso — ver canLodgeAccess — até o Admin
+// reabrir e salvar a tela de Permissões, que passa a persistir a escolha.
+//
+// 'audit' (trilha de auditoria): por padrão só o Administrador. Outro cargo só
+// enxerga se o Administrador liberar em Configurações → Permissões.
+export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'audit'];
 export const ACTIONS: Action[] = ['read', 'write'];
 export const ROLES = ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] as const;
 export type Role = (typeof ROLES)[number];
@@ -19,7 +19,7 @@ export type Role = (typeof ROLES)[number];
 // É a fonte de verdade para semear o RBAC persistido de cada loja.
 const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = {
   admin: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'audit'],
     write: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials'],
   },
   venerable: {
@@ -90,7 +90,7 @@ export function requireAccess(role: string | undefined | null, resource: Resourc
 
 type PolicySet = Set<string>; // chaves "role:resource:action" permitidas
 
-const policyCache = new Map<string, { allowed: PolicySet; expires: number }>();
+const policyCache = new Map<string, { allowed: PolicySet; customized: Set<string>; expires: number }>();
 const POLICY_TTL_MS = 30_000;
 
 function keyOf(role: string, resource: string, action: string) {
@@ -127,16 +127,19 @@ export function invalidateLodgePolicy(lodgeId: string) {
   policyCache.delete(lodgeId);
 }
 
+type LodgePolicy = { allowed: PolicySet; customized: Set<string> };
+
 /**
- * Carrega o conjunto de permissões da loja. Usa prismaAdmin (filtrando por
+ * Carrega as permissões persistidas da loja. Usa prismaAdmin (filtrando por
  * lodgeId explicitamente) porque a checagem ocorre antes do withTenant.
- * Retorna null quando a loja ainda não personalizou (sem linhas) → o caller
- * deve usar o DEFAULT_POLICY.
+ * `customized` = recursos que a loja já tem linhas em RolePermission (recurso sem
+ * linhas — a loja não personalizou ou o recurso é novo — usa o DEFAULT_POLICY).
+ * Retorna null quando a loja não personalizou nada.
  */
-async function loadLodgePolicy(lodgeId: string): Promise<PolicySet | null> {
+async function loadLodgePolicy(lodgeId: string): Promise<LodgePolicy | null> {
   const cached = policyCache.get(lodgeId);
   if (cached && cached.expires > Date.now()) {
-    return cached.allowed.size > 0 ? cached.allowed : null;
+    return cached.customized.size > 0 ? { allowed: cached.allowed, customized: cached.customized } : null;
   }
 
   let rows: { role: string; resource: string; action: string; allowed: boolean }[] = [];
@@ -151,12 +154,20 @@ async function loadLodgePolicy(lodgeId: string): Promise<PolicySet | null> {
   }
 
   const allowed: PolicySet = new Set();
+  const customized = new Set<string>();
   for (const row of rows) {
+    customized.add(row.resource);
     if (row.allowed) allowed.add(keyOf(normalizeRole(row.role), row.resource, row.action));
   }
 
-  policyCache.set(lodgeId, { allowed, expires: Date.now() + POLICY_TTL_MS });
-  return rows.length > 0 ? allowed : null;
+  policyCache.set(lodgeId, { allowed, customized, expires: Date.now() + POLICY_TTL_MS });
+  return customized.size > 0 ? { allowed, customized } : null;
+}
+
+/** Decide uma permissão: persistida se a loja personalizou o recurso, senão o padrão. */
+function decide(policy: LodgePolicy | null, normalizedRole: string, resource: Resource, action: Action): boolean {
+  if (!policy || !policy.customized.has(resource)) return canAccess(normalizedRole, resource, action);
+  return policy.allowed.has(keyOf(normalizedRole, resource, action));
 }
 
 /** Versão DB-aware do canAccess. */
@@ -168,10 +179,7 @@ export async function canLodgeAccess(
 ): Promise<boolean> {
   const normalized = normalizeRole(role);
   if (!lodgeId) return canAccess(normalized, resource, action);
-
-  const policy = await loadLodgePolicy(lodgeId);
-  if (!policy) return canAccess(normalized, resource, action); // loja sem custom → padrão
-  return policy.has(keyOf(normalized, resource, action));
+  return decide(await loadLodgePolicy(lodgeId), normalized, resource, action);
 }
 
 /** Versão DB-aware do requireAccess, com o mesmo formato de retorno. */
@@ -202,14 +210,13 @@ export function canUnlockSession(role: string | undefined | null) {
 export async function getEffectiveMatrix(lodgeId: string) {
   const loaded = await loadLodgePolicy(lodgeId);
   const customized = loaded !== null;
-  const policy = loaded ?? defaultPolicySet();
   const matrix: Record<string, Record<string, Record<string, boolean>>> = {};
   for (const role of ROLES) {
     matrix[role] = {};
     for (const resource of RESOURCES) {
       matrix[role][resource] = {};
       for (const action of ACTIONS) {
-        matrix[role][resource][action] = policy.has(keyOf(role, resource, action));
+        matrix[role][resource][action] = decide(loaded, role, resource, action);
       }
     }
   }

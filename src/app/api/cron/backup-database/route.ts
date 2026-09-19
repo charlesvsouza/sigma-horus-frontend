@@ -1,5 +1,6 @@
 import { runFullBackup } from '@/lib/backup';
 import { NextResponse } from 'next/server';
+import { cronAuthorized } from '@/lib/platform-auth';
 
 /**
  * Backup completo e criptografado da plataforma (todas as lojas). Acionado
@@ -9,13 +10,7 @@ import { NextResponse } from 'next/server';
  */
 export const maxDuration = 60; // conforme a base cresce, ler 28 tabelas pode passar do padrão da função
 
-function authorized(request: Request): boolean {
-  const header = request.headers.get('authorization') ?? '';
-  const bearer = header.startsWith('Bearer ') ? header.slice(7) : '';
-  const qs = new URL(request.url).searchParams.get('token') ?? '';
-  const accepted = [process.env.CRON_SECRET, process.env.PLATFORM_OWNER_TOKEN].filter(Boolean) as string[];
-  return accepted.some((t) => t === bearer || t === qs);
-}
+const authorized = cronAuthorized;
 
 export async function GET(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

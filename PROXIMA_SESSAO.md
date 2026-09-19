@@ -28,6 +28,16 @@ Pendências herdadas do uplift de design (ver `AGENTS.md`): confirm dialog assí
 `useTransition`/validação inline, auditoria de cards. Avisos do IDE: `bg-gradient-to-*` → `bg-linear-to-*` (Tailwind v4).
 
 ### 1.2 Nova passada de debug ("pescar problemas ocultos")
+**Feito em 19/09 (parcial — itens 1, 2, 4, 6 parcial, 9 e 10 parcial):** RLS verificado no banco (33 tabelas com FORCE, papel da app sem BYPASSRLS, fecha sem tenant);
+ataque cruzado entre lojas (usuário da loja B em ids da loja A): nada vazou nem mudou; matriz de permissões por rota × papel; concorrência; integridade dos dados reais (só resta a conta de R$ 40 do Tronco, item 2.2).
+**Corrigido:** Stripe (portal/troca de plano/checkout) só Administrador — antes qualquer papel, inclusive Membro, abria o portal de cobrança; `reports/export` exige leitura de Contas;
+"Processar recorrentes" exige escrita em Contas; baixa em dobro por clique duplo (trava `lib/locks.ts`); numeração de cobrança duplicada; aprovação repetida de transferência;
+webhook/reconciliação do Asaas idempotentes; cancelamento de trial abandonado que falhava em silêncio; reemissão no Asaas sem cancelar a cobrança anterior; CSV sem injeção de fórmula (`lib/csv.ts`);
+upload de foto com lista de tipos e limite de 5 MB e 400 em vez de 500; contagem de presentes na lista de Sessões.
+**Fechado no mesmo dia (decisão do dono: cada cargo na sua área; cada loja só enxerga a si mesma):** recurso **Auditoria** na matriz de Permissões (padrão só Administrador; outro cargo só se o Admin liberar; loja já personalizada usa o padrão para recurso sem linhas — `lib/rbac.ts`);
+`GET /api/lodge` devolve só a identificação a quem não lê Contas; `backfill-office-rites` só da própria loja; PATCH/DELETE com id inexistente/de outra loja → 404 (sem auditoria falsa); tokens de cron/plataforma em tempo constante e **sem `?token=` na URL** (`lib/platform-auth.ts`);
+`withTenant` com `maxWait` 10 s e transação de 15 s (rajadas viram fila, não 500); datas de pagamento/criação com fuso de Brasília; migration `20260919150000` (revoga `sigma_app` de Invitation/BackupLog/_prisma_migrations + 12 índices) **já aplicada em produção**.
+**Ainda aberto:** (1) restauração real de backup — precisa das credenciais do R2 (só na Vercel) e de um banco vazio; (2) recorrência automática continua sem cron (decisão 9 da seção 3); (3) Stripe webhook revisado: só atualiza registros (idempotente), mas eventos fora de ordem podem regredir o estado — sem correção; (4) pool = 5 conexões por instância (`DB_POOL_MAX`) — observar sob carga real.
 Repetir o método da varredura de 18/09 (rotas sem guarda, RLS, integridade por SQL, algoritmos, E2E com servidor local +
 loja de teste), agora **além** do que já foi corrigido. Roteiro sugerido:
 

@@ -1,17 +1,16 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { normalizeRole } from '@/lib/rbac';
+import { canLodgeAccess } from '@/lib/rbac';
 import AuditoriaClient from './AuditoriaClient';
 
 // Server Component: carrega a trilha de auditoria no servidor (sem fetch-on-mount).
-// A trilha cruza vários recursos (contas, membros, cargos...) e não mapeia num
-// Resource só do RBAC — barra direto: qualquer papel exceto o obreiro comum.
+// Só o Administrador, salvo se ele liberar 'Auditoria' para outro cargo em Configurações → Permissões.
 export default async function AuditoriaPage() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
-  if (lodgeId && normalizeRole(session?.user?.role) === 'member') {
-    redirect('/dashboard/portal');
+  if (lodgeId && !(await canLodgeAccess(String(lodgeId), session?.user?.role, 'audit', 'read'))) {
+    redirect('/dashboard');
   }
   const items = lodgeId
     ? await withTenant(String(lodgeId), (db) =>

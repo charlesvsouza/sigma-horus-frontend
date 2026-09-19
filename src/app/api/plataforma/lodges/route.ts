@@ -1,15 +1,11 @@
 import { prismaAdmin } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { platformAuthorized } from '@/lib/platform-auth';
 
 // Lista de lojas ativas p/ o seletor de "Entrar como superadmin"
 // (/plataforma/entrar). Protegido pelo mesmo token de /plataforma/convites e
 // /plataforma/backups (x-platform-token).
-function authorized(request: Request): boolean {
-  const token = process.env.PLATFORM_OWNER_TOKEN;
-  if (!token) return false;
-  const header = request.headers.get('x-platform-token') ?? '';
-  return header.length > 0 && header === token;
-}
+const authorized = platformAuthorized;
 
 export async function GET(request: Request) {
   if (!authorized(request)) {

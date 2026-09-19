@@ -13,7 +13,8 @@ export async function POST() {
 
   const stats = { processed: 0, matched: 0, skipped: 0, errors: 0 };
 
-  const lodges = await prismaAdmin.lodge.findMany({ select: { id: true, name: true } });
+  // Só a loja de quem chamou: cada loja mexe apenas nos próprios dados, seja qual for o cargo.
+  const lodges = await prismaAdmin.lodge.findMany({ where: { id: String(session.user.lodgeId) }, select: { id: true, name: true } });
 
   for (const lodge of lodges) {
     const rites = await prismaAdmin.rite.findMany({ where: { lodgeId: lodge.id } });

@@ -205,6 +205,7 @@ model Member {
   hospitalityRequests HospitalityRequest[]
   materialLoans      MaterialLoan[]
   venerableGalleryEntries VenerableGalleryEntry[]
+  @@index([lodgeId])
 }
 
 // Família e dependentes do membro (mãe, pai, esposa, filhos, outros dependentes).
@@ -251,6 +252,7 @@ model Document {
 
   lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   member       Member?  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  @@index([lodgeId])
 }
 
 model MessageLog {
@@ -270,6 +272,7 @@ model MessageLog {
 
   lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   member    Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  @@index([lodgeId, createdAt])
 }
 
 model Account {
@@ -309,6 +312,8 @@ model Account {
   @@index([counterpartyId])
   @@index([bankAccountId])
   @@index([sessionId])
+  @@index([lodgeId, dueDate])
+  @@index([memberId])
 }
 
 // Cadastro de clientes/fornecedores — contrapartes de Account que não são
@@ -371,6 +376,9 @@ model Invoice {
   lodge              Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   account            Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   member             Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  @@index([lodgeId])
+  @@index([accountId])
+  @@index([memberId])
 }
 
 model Payment {
@@ -391,6 +399,8 @@ model Payment {
   bankTransactions BankTransaction[]
 
   @@index([bankAccountId])
+  @@index([lodgeId])
+  @@index([accountId])
 }
 
 // Cadastro das "contas financeiras" da loja — cada banco (com agência/conta,
@@ -624,6 +634,7 @@ model AuditLog {
 
   lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([lodgeId, createdAt])
 }
 
 model Session {
@@ -656,6 +667,7 @@ model Session {
   lodge      Lodge       @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   attendances Attendance[]
   accounts   Account[]
+  @@index([lodgeId, date])
 }
 
 // Pedido leve do obreiro à Hospitalaria (proposta de campanha ou solicitação

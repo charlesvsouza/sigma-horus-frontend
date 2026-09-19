@@ -1,18 +1,17 @@
 import { auth } from '@/lib/auth';
-import { normalizeRole } from '@/lib/rbac';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
-// A trilha de auditoria cruza vários recursos (contas, membros, cargos...) e
-// não mapeia num Resource só do RBAC — restringe direto: qualquer papel
-// exceto o obreiro comum (Membro só tem acesso a "portal" por padrão).
+// A trilha de auditoria mostra o que cada pessoa fez em todas as áreas da loja:
+// só o Administrador, salvo se ele liberar 'Auditoria' para outro cargo em
+// Configurações → Permissões.
 export async function GET() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ items: [] });
-  if (normalizeRole(session?.user?.role) === 'member') {
-    return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
-  }
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'audit', 'read');
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const items = await withTenant(String(lodgeId), (db) =>
     db.auditLog.findMany({

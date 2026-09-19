@@ -157,7 +157,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
               <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                 <span>Pagamento registrado</span>
                 <span>{brl(payment.amount)}</span>
-                <span>{new Date(payment.paidAt).toLocaleDateString('pt-BR')}</span>
+                <span>{new Date(payment.paidAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</span>
                 <span>{payment.method}</span>
               </div>
             ))}

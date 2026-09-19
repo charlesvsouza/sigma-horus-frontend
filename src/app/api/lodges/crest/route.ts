@@ -5,6 +5,7 @@ import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
 import { buildObjectKey, buildPublicUrl, deleteObject, getR2Client, getR2PublicStorageSettings } from '@/lib/storage';
 import { NextResponse } from 'next/server';
+import { imageUploadError } from '@/lib/upload-guards';
 
 // Brasão da loja: identidade visual exibida em relatórios, recibos e demais
 // documentos gerados/enviados (e no cabeçalho HTML dos e-mails). Reaproveita
@@ -19,14 +20,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Apenas administradores podem alterar o brasão da loja.' }, { status: 403 });
   }
 
-  const formData = await request.formData();
+  const formData = await request.formData().catch(() => null);
+  if (!formData) return NextResponse.json({ error: 'Envie o arquivo como formulário (multipart).' }, { status: 400 });
   const file = formData.get('file');
   if (!(file instanceof File) || !file.size) {
     return NextResponse.json({ error: 'Selecione uma imagem.' }, { status: 400 });
   }
-  if (!file.type.startsWith('image/')) {
-    return NextResponse.json({ error: 'O brasão precisa ser uma imagem (PNG, JPG ou SVG).' }, { status: 400 });
-  }
+  const invalid = imageUploadError(file, { allowSvg: true, label: 'O brasão' });
+  if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
   // Bucket público dedicado (nunca o de Documentos, que é privado por LGPD) —
   // o brasão precisa ser carregável direto num <img src>, em relatórios/e-mails.

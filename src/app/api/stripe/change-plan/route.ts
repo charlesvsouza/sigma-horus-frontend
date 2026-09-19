@@ -10,6 +10,7 @@ import {
   type PlanId,
 } from '@/lib/stripe';
 import { NextResponse } from 'next/server';
+import { normalizeRole } from '@/lib/rbac';
 
 // Troca de plano de uma assinatura de CARTÃO já ativa.
 // - Upgrade: imediato, com cobrança proporcional da diferença.
@@ -19,6 +20,10 @@ export async function POST(request: Request) {
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  // Cobrança da assinatura da loja: só o Administrador (a tela Assinatura já é só dele).
+  if (normalizeRole(session?.user?.role) !== 'admin') {
+    return NextResponse.json({ error: 'Apenas o Administrador gerencia a assinatura da loja.' }, { status: 403 });
   }
 
   const body = await request.json().catch(() => ({}));

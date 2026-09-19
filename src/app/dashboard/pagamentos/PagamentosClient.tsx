@@ -180,7 +180,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
                 </div>
                 <div className="text-right text-xs text-sand-dark">
                   <p className="tabular-nums">Valor: {brl(payment.amount)}</p>
-                  <p className="mt-0.5">Data: {new Date(payment.paidAt).toLocaleDateString('pt-BR')}</p>
+                  <p className="mt-0.5">Data: {new Date(payment.paidAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
                   <div className="mt-1 flex items-center justify-end gap-3">
                     <Link href={`/dashboard/pagamentos/${payment.id}/recibo`} target="_blank" className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Recibo</Link>
                     <button onClick={() => void handleEstorno(payment.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Estornar</button>

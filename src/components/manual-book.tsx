@@ -249,7 +249,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.29</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.30</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -311,7 +311,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.29 — 19 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.30 — 19 de setembro de 2026</p>
               </div>
             </div>
 
@@ -636,6 +636,20 @@ export function ManualBook() {
                   recurso × ação</strong> (ex.: quem pode ler/escrever em membros, documentos, mensagens, contas e
                   portal). A loja parte de uma configuração padrão e pode personalizá-la.
                 </p>
+                <p>
+                  <strong>Cada cargo fica na sua área.</strong> Nenhum cargo acessa a área de outro a menos que o
+                  Administrador libere aqui — nem mesmo o Venerável. Isso vale para a tela <strong>e</strong> para os
+                  relatórios e exportações: o CSV de pagamentos, por exemplo, exige acesso de leitura a Tesouraria, e
+                  o Membro comum não o baixa. A linha <UI>Auditoria</UI> controla quem vê a trilha de quem fez o quê:
+                  por padrão <strong>só o Administrador</strong>; marque <UI>Ver</UI> em Auditoria para o cargo que
+                  deve acompanhá-la (o item aparece no menu dele). Já a assinatura da plataforma (plano, cartão,
+                  cancelamento) é <strong>sempre e só do Administrador</strong>, não fazendo parte da matriz.
+                </p>
+                <p>
+                  <strong>Cada loja enxerga só a si mesma.</strong> Ser Administrador ou Venerável dá poder apenas
+                  dentro da própria loja: os dados, usuários e configurações de outra loja nunca aparecem nem podem
+                  ser alterados, e ações de manutenção (como aplicar cargos de um rito) valem só para a sua loja.
+                </p>
               </Sub>
 
               <Sub id="admin-assinatura" title="6.5 Assinatura da plataforma">
@@ -854,7 +868,7 @@ export function ManualBook() {
                 </Steps>
                 <p>
                   Para gerar as parcelas recorrentes que já venceram/estão previstas, use o botão <UI>Processar
-                  recorrentes</UI>, no alto da tela — ele cria as cobranças do período automaticamente, cada ocorrência com o seu próprio lançamento (pagar uma parcela não quita as seguintes).
+                  recorrentes</UI>, no alto da tela (só Tesoureiro e Administrador) — ele cria as cobranças do período automaticamente, cada ocorrência com o seu próprio lançamento (pagar uma parcela não quita as seguintes).
                 </p>
                 <p>
                   <strong>Cobrança em massa:</strong> para cobrar todos os irmãos de uma vez (ex.: mensalidade), use o
@@ -921,13 +935,14 @@ export function ManualBook() {
                   <li>Quando a conta é a receber (não a pagar), o membro recebe automaticamente um <strong>e-mail de confirmação</strong> do pagamento.</li>
                   <li><strong>Contas sem membro</strong> (fornecedor, energia, aluguel etc.): a conta passa a <strong>Paga</strong> assim que a soma dos pagamentos cobre o valor — e volta a <strong>Em aberto</strong> se um estorno deixar de cobri-lo.</li>
                   <li><strong>Conta com cobrança aberta no Asaas:</strong> a baixa manual pede a confirmação <UI>Recebido fora do Asaas</UI> (ver 7.4).</li>
+                  <li><strong>Clique duplo não paga em dobro:</strong> o sistema lança uma baixa por vez por conta; se o segundo clique chegar junto, ele é recusado com &quot;conta já quitada&quot;. O mesmo vale para a numeração das cobranças (sempre sequencial e sem repetir) e para a aprovação de transferências (só a primeira decisão vale).</li>
                 </Bullets>
               </Sub>
 
               <Sub id="tes-relatorios" title="7.6 Relatórios e fechamento">
                 <p>
                   Em <UI>Tesouraria → Relatórios → Resumo financeiro</UI> você acompanha <UI>Resumo de abertura</UI>,
-                  <UI> Próximos vencimentos</UI> e <UI>Últimos registros</UI>, com <strong>filtro por período</strong> e <UI>Exportar</UI> (CSV).
+                  <UI> Próximos vencimentos</UI> e <UI>Últimos registros</UI>, com <strong>filtro por período</strong> e <UI>Exportar</UI> (CSV — disponível a quem tem acesso de leitura a Tesouraria; campos que começam com = + - ou @ saem protegidos para não virarem fórmula na planilha).
                 </p>
                 <p>
                   Em <UI>Tesouraria → Relatórios → Fechamento</UI> está o <strong>relatório financeiro completo</strong> no formato livro
@@ -1489,7 +1504,7 @@ export function ManualBook() {
               <Bullets>
                 <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> e <strong>Ações rápidas</strong>: o pulso da loja.</li>
                 <li><UI>Relatórios</UI>: arrecadação, inadimplência, fluxo de caixa e frequência por período.</li>
-                <li><UI>Auditoria</UI> (se a loja conceder): a trilha imutável de quem fez o quê e quando — base para pareceres e aprovações.</li>
+                <li><UI>Auditoria</UI> (se o Administrador liberar em 6.4): a trilha imutável de quem fez o quê e quando — base para pareceres e aprovações.</li>
               </Bullets>
             </Chapter>
 

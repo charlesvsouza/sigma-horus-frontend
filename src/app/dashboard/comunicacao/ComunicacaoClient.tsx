@@ -122,7 +122,7 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
                   <div>
                     <p className="text-sm font-medium text-sand-light">{item.title}</p>
                     <p className="mt-1 text-xs text-sand-dark">
-                      {CHANNEL_LABEL[item.channel] ?? item.channel} • {item.member?.name ?? 'Todos'} • {new Date(item.createdAt).toLocaleDateString('pt-BR')}
+                      {CHANNEL_LABEL[item.channel] ?? item.channel} • {item.member?.name ?? 'Todos'} • {new Date(item.createdAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
                     </p>
                   </div>
                   <p className={`text-sm ${item.status === 'sent' ? 'text-sand-dark' : item.status === 'failed' ? 'text-rose-300' : 'text-amber-300'}`} title={item.error ?? undefined}>

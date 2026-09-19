@@ -121,7 +121,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
                       {r.title} <span className="ml-1 text-xs text-sand-dark">· {r.memberName}</span>
                     </p>
                     {r.description ? <p className="mt-1 text-xs text-sand-dark">{r.description}</p> : null}
-                    <p className="mt-1 text-xs text-sand-dark/70">{new Date(r.createdAt).toLocaleDateString('pt-BR')}</p>
+                    <p className="mt-1 text-xs text-sand-dark/70">{new Date(r.createdAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
                   </div>
                   <button
                     type="button"

@@ -21,7 +21,8 @@ export async function POST(request: Request, { params }: Ctx) {
   const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'members', 'write');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
-  const formData = await request.formData();
+  const formData = await request.formData().catch(() => null);
+  if (!formData) return NextResponse.json({ error: 'Envie o arquivo como formulário (multipart).' }, { status: 400 });
   const file = formData.get('file');
   if (!(file instanceof File) || !file.size) {
     return NextResponse.json({ error: 'Selecione um arquivo.' }, { status: 400 });

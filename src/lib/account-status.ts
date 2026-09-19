@@ -1,6 +1,7 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { coversAmount, remainingAmount } from '@/lib/money';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { lockKey } from '@/lib/locks';
 
 /**
  * "Conta simples": sem membro fixo e sem cobranças (Invoice) — despesa de
@@ -40,6 +41,7 @@ export async function settleAccountAsPaid(
   },
 ): Promise<SettleResult> {
   const { lodgeId, account, bankAccountId, paidAt } = params;
+  await lockKey(db, `account:${account.id}`);
 
   const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: account.id } });
   const remaining = remainingAmount(Number(account.amount), Number(aggregate._sum.amount ?? 0));

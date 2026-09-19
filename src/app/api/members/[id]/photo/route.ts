@@ -5,6 +5,7 @@ import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
 import { buildObjectKey, buildPublicUrl, deleteObject, getR2Client, getR2PublicStorageSettings } from '@/lib/storage';
 import { NextResponse } from 'next/server';
+import { imageUploadError } from '@/lib/upload-guards';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -24,14 +25,14 @@ export async function POST(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: 'Apenas Secretário, Venerável ou Administrador podem alterar a foto do membro.' }, { status: 403 });
   }
 
-  const formData = await request.formData();
+  const formData = await request.formData().catch(() => null);
+  if (!formData) return NextResponse.json({ error: 'Envie o arquivo como formulário (multipart).' }, { status: 400 });
   const file = formData.get('file');
   if (!(file instanceof File) || !file.size) {
     return NextResponse.json({ error: 'Selecione uma imagem.' }, { status: 400 });
   }
-  if (!file.type.startsWith('image/')) {
-    return NextResponse.json({ error: 'A foto precisa ser uma imagem (PNG ou JPG).' }, { status: 400 });
-  }
+  const invalid = imageUploadError(file, { label: 'A foto' });
+  if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
   const settings = getR2PublicStorageSettings();
   const client = getR2Client(settings);

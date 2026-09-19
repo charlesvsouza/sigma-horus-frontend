@@ -84,7 +84,16 @@ export async function POST(request: Request) {
 
     // Reemissão: a cobrança anterior ainda existe no Asaas e poderia ser paga em duplicidade — cancela antes.
     if (ctx.invoice.asaasPaymentId && ctx.invoice.status !== 'paid') {
-      await deletePayment(config, ctx.invoice.asaasPaymentId).catch(() => {});
+      try {
+        await deletePayment(config, ctx.invoice.asaasPaymentId);
+      } catch (error) {
+        // Cobrança que já não existe no Asaas não impede a reemissão; qualquer outra falha sim —
+        // seguir deixaria duas cobranças abertas para o mesmo irmão (pagamento em duplicidade).
+        const message = error instanceof Error ? error.message : String(error);
+        if (!/404|not.?found|n[ãa]o.?encontr/i.test(message)) {
+          return NextResponse.json({ error: `Não foi possível cancelar a cobrança anterior no Asaas: ${message}. Tente de novo.` }, { status: 502 });
+        }
+      }
     }
 
     const payment = await createPayment(config, {

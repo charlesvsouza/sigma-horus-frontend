@@ -203,7 +203,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   });
 
   if ('error' in result) {
-    if (result.error === 'notfound') return NextResponse.json({ success: true });
+    if (result.error === 'notfound') return NextResponse.json({ error: 'Lançamento não encontrado.' }, { status: 404 });
     if (result.error === 'locked') {
       return NextResponse.json(
         { error: `Período encerrado (${result.term.title}). Não é possível excluir lançamento dentro de um veneralato já fechado.` },

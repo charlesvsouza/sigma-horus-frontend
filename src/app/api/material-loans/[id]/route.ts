@@ -62,6 +62,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return { ok: true as const };
   });
 
-  if ('notFound' in result) return NextResponse.json({ success: true });
+  if ('notFound' in result) return NextResponse.json({ error: 'Empréstimo não encontrado.' }, { status: 404 });
   return NextResponse.json({ success: true });
 }

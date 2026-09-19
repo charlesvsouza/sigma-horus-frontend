@@ -2,15 +2,11 @@ import { NextResponse } from 'next/server';
 import { prismaAdmin } from '@/lib/prisma';
 import { createInvite } from '@/lib/invites';
 import { isPlanId } from '@/lib/plans';
+import { platformAuthorized } from '@/lib/platform-auth';
 
 // Endpoint do DONO DA PLATAFORMA (não é multi-tenant). Protegido por um token
 // secreto enviado no header `x-platform-token` (env PLATFORM_OWNER_TOKEN).
-function authorized(request: Request): boolean {
-  const token = process.env.PLATFORM_OWNER_TOKEN;
-  if (!token) return false;
-  const header = request.headers.get('x-platform-token') ?? '';
-  return header.length > 0 && header === token;
-}
+const authorized = platformAuthorized;
 
 export async function POST(request: Request) {
   if (!authorized(request)) {

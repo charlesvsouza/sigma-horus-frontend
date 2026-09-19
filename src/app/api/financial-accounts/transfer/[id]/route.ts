@@ -37,12 +37,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!transfer) return { notFound: true as const };
     if (transfer.status !== 'pending') return { alreadyDecided: true as const };
 
-    const updated = await db.accountTransfer.update({
-      where: { id },
+    // Só decide quem ainda encontra a transferência pendente: aprovações simultâneas
+    // (clique duplo) não repetem a decisão nem a auditoria.
+    const claimed = await db.accountTransfer.updateMany({
+      where: { id, lodgeId: String(lodgeId), status: 'pending' },
       data:
         action === 'approve'
           ? { status: 'approved', approvedById: session!.user.id, approvedAt: new Date() }
           : { status: 'rejected', approvedById: session!.user.id, approvedAt: new Date() },
+    });
+    if (claimed.count === 0) return { alreadyDecided: true as const };
+    const updated = await db.accountTransfer.findUniqueOrThrow({
+      where: { id },
       include: {
         from: { select: { id: true, name: true, kind: true } },
         to: { select: { id: true, name: true, kind: true } },

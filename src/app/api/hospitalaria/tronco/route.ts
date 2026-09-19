@@ -6,6 +6,7 @@ import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { lockKey } from '@/lib/locks';
 
 const PRESET_AMOUNTS = [5, 10, 20, 50, 100];
 
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
         sessionId: todaySession?.id ?? null,
       },
     });
+    await lockKey(db, `invoice-number:${String(lodgeId)}:DOA`);
     const number = await nextDonationNumber(db, String(lodgeId));
     const invoice = await db.invoice.create({
       data: {

@@ -35,7 +35,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   try {
-    await withTenant(String(lodgeId), async (db) => {
+    const outcome = await withTenant(String(lodgeId), async (db) => {
       const existing = await db.counterparty.findFirst({ where: { id, lodgeId: String(lodgeId) } });
       if (!existing) return { notFound: true as const };
       await db.counterparty.updateMany({ where: { id, lodgeId: String(lodgeId) }, data });
@@ -49,6 +49,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       });
       return { ok: true as const };
     });
+    if ('notFound' in outcome) return NextResponse.json({ error: 'Contraparte não encontrada.' }, { status: 404 });
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
       return NextResponse.json({ error: 'Já existe uma contraparte com esse documento nesta loja.' }, { status: 409 });

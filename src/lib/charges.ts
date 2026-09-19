@@ -1,5 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { lockKey } from '@/lib/locks';
 
 export function addInterval(date: Date, interval: string) {
   const next = new Date(date);
@@ -63,6 +64,8 @@ export async function createChargesWithAccounts(db: Prisma.TransactionClient, in
 
   const now = new Date();
   const prefix = `COB-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-`;
+  // Uma emissão por vez por loja/mês: a numeração sequencial conta as cobranças existentes.
+  await lockKey(db, `invoice-number:${lodgeId}:${prefix}`);
   const existing = await db.invoice.count({ where: { lodgeId, number: { startsWith: prefix } } });
 
   const accounts = await db.account.createManyAndReturn({

@@ -12,6 +12,7 @@ import {
   type FieldMapping,
 } from '@/lib/member-import';
 import { NextResponse } from 'next/server';
+import { platformAuthorized } from '@/lib/platform-auth';
 
 // Passo 1 do wizard de importação (somente leitura — não grava nada). Recebe o
 // arquivo e, opcionalmente, um mapeamento já ajustado pelo admin (para
@@ -19,15 +20,10 @@ import { NextResponse } from 'next/server';
 // análise (auto-detecção) quanto nas reanálises seguintes. Quando a loja já
 // tem membros, também classifica cada linha (novo/já existe/ambíguo, por CPF —
 // ver classifyRows) para a tela de revisão decidir o que entra.
-function platformAuthorized(request: Request): boolean {
-  const token = process.env.PLATFORM_OWNER_TOKEN;
-  if (!token) return false;
-  const header = request.headers.get('x-platform-token') ?? '';
-  return header.length > 0 && header === token;
-}
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
+  const formData = await request.formData().catch(() => null);
+  if (!formData) return NextResponse.json({ error: 'Envie o arquivo como formulário (multipart).' }, { status: 400 });
   const file = formData.get('file');
   const mappingRaw = formData.get('mapping');
   const overrideLodgeId = formData.get('lodgeId') ? String(formData.get('lodgeId')) : null;

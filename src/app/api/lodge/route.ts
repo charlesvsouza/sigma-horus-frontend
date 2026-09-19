@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
-import { normalizeRole } from '@/lib/rbac';
+import { canLodgeAccess, normalizeRole } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 const FIELDS = [
@@ -31,6 +31,13 @@ export async function GET() {
       },
     }),
   );
+
+  // Dados fiscais, bancários e as regras de cobrança/aprovação são de gestão: quem não lê Contas
+  // (ex.: o Membro) só recebe a identificação da loja.
+  if (lodge && !(await canLodgeAccess(String(lodgeId), session?.user?.role, 'accounts', 'read'))) {
+    const { name, crestUrl, riteName, powerName } = lodge;
+    return NextResponse.json({ lodge: { name, crestUrl, riteName, powerName } });
+  }
 
   return NextResponse.json({ lodge });
 }

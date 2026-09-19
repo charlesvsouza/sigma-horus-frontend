@@ -11,6 +11,7 @@ import {
 } from '@/lib/stripe';
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
+import { normalizeRole } from '@/lib/rbac';
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -18,6 +19,10 @@ export async function POST(request: Request) {
 
   if (!lodgeId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  // Cobrança da assinatura da loja: só o Administrador (a tela Assinatura já é só dele).
+  if (normalizeRole(session?.user?.role) !== 'admin') {
+    return NextResponse.json({ error: 'Apenas o Administrador gerencia a assinatura da loja.' }, { status: 403 });
   }
 
   const body = await request.json().catch(() => ({}));

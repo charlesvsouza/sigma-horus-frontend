@@ -10,7 +10,7 @@ export default async function SessoesPage() {
     ? await withTenant(String(lodgeId), (db) =>
         db.session.findMany({
           where: { lodgeId: String(lodgeId) },
-          include: { _count: { select: { attendances: true } } },
+          include: { _count: { select: { attendances: { where: { status: 'present' } } } } },
           orderBy: { date: 'desc' },
         }),
       )

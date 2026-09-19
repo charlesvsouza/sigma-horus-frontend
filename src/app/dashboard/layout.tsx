@@ -2,11 +2,12 @@ import { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import { canLodgeAccess, type Resource } from '@/lib/rbac';
 import { Alert } from '@/components/ui';
 import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import DashboardShell from './DashboardShell';
 
-interface NavEntry { href: string; label: string; roles: string[]; }
+interface NavEntry { href: string; label: string; roles: string[]; /** Se informado, o item aparece só para quem tem esta permissão (matriz de Permissões), em vez da lista fixa de papéis. */ resource?: Resource; }
 interface NavSubgroupDef { label: string; items: NavEntry[]; }
 interface NavGroupDef { category: string; items?: NavEntry[]; subgroups?: NavSubgroupDef[]; flat?: boolean; }
 
@@ -125,7 +126,7 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/configuracoes/importar', label: 'Importar cadastros', roles: ['admin', 'secretary'] },
       { href: '/dashboard/assinatura', label: 'Assinatura', roles: ['admin'] },
       { href: '/dashboard/integracoes', label: 'Integrações', roles: ['admin'] },
-      { href: '/dashboard/auditoria', label: 'Auditoria', roles: ['admin'] },
+      { href: '/dashboard/auditoria', label: 'Auditoria', roles: [], resource: 'audit' },
     ],
   },
 ];
@@ -190,13 +191,20 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const fmtDate = (d: Date | null) =>
     d ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d) : '';
 
+  // Itens ligados a uma permissão da matriz (ex.: Auditoria) aparecem só para quem a tem.
+  const allowedResources = new Set<string>();
+  for (const resource of ['audit'] as const) {
+    if (await canLodgeAccess(lodgeId ? String(lodgeId) : null, role, resource, 'read')) allowedResources.add(resource);
+  }
+  const visible = (i: NavEntry) => (i.resource ? allowedResources.has(i.resource) : i.roles.includes(role));
+
   const groups = NAV
     .map((g) => ({
       category: g.category,
       flat: g.flat ?? false,
-      items: (g.items ?? []).filter((i) => i.roles.includes(role)).map(({ href, label }) => ({ href, label })),
+      items: (g.items ?? []).filter(visible).map(({ href, label }) => ({ href, label })),
       subgroups: (g.subgroups ?? [])
-        .map((sg) => ({ label: sg.label, items: sg.items.filter((i) => i.roles.includes(role)).map(({ href, label }) => ({ href, label })) }))
+        .map((sg) => ({ label: sg.label, items: sg.items.filter(visible).map(({ href, label }) => ({ href, label })) }))
         .filter((sg) => sg.items.length > 0),
     }))
     .filter((g) => g.items.length > 0 || g.subgroups.length > 0);

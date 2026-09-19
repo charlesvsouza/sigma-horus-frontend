@@ -72,7 +72,7 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
             <tbody>
               {filtered.map((e) => (
                 <tr key={e.id} className="border-b border-white/5 transition-colors hover:bg-white/3">
-                  <td className="whitespace-nowrap px-4 py-3 text-sand-dark">{new Date(e.createdAt).toLocaleString('pt-BR')}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sand-dark">{new Date(e.createdAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</td>
                   <td className="px-4 py-3 text-sand-dark">
                     {e.userName ?? '—'}
                     {e.viaSuperadmin ? (

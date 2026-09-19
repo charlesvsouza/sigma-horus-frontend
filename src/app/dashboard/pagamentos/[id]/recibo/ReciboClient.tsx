@@ -58,7 +58,7 @@ export default function ReciboClient({ payment }: { payment: Payment }) {
             <p>
               Recebemos de <strong>{payment.memberName ?? 'contribuinte não vinculado'}</strong>
               {payment.memberCpf ? ` (CPF ${payment.memberCpf})` : ''} a quantia de <strong>{brl(payment.amount)}</strong>{' '}
-              referente a <strong>{payment.accountTitle}</strong>, paga em {new Date(payment.paidAt).toLocaleDateString('pt-BR')} via{' '}
+              referente a <strong>{payment.accountTitle}</strong>, paga em {new Date(payment.paidAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })} via{' '}
               {METHOD_LABEL[payment.method] ?? payment.method}.
             </p>
             {payment.note ? <p className="text-xs text-sand-dark">Observação: {payment.note}</p> : null}

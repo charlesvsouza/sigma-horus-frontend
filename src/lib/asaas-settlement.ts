@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { ASAAS_FEE_CHART, feeFromNet } from '@/lib/collection';
 import { coversAmount } from '@/lib/money';
 import { syncMemberArt002Status } from '@/lib/overdue';
+import { lockKey } from '@/lib/locks';
 
 /**
  * Baixa automática de uma cobrança paga no Asaas: cria o Payment, marca a
@@ -35,6 +36,12 @@ export async function settleAsaasInvoicePayment(
   },
 ) {
   const { lodgeId, invoiceId, accountId, memberId, amount, asaasPaymentId, userId, netValue, billingType, source = 'manual-reconcile' } = params;
+
+  // Idempotência: o Asaas reenvia webhooks e a reconciliação manual pode rodar junto. Uma baixa
+  // por cobrança do Asaas por vez, e se este pagamento já foi lançado devolve o existente.
+  await lockKey(db, `asaas-payment:${asaasPaymentId}`);
+  const already = await db.payment.findFirst({ where: { accountId, method: 'asaas', note: { contains: asaasPaymentId } } });
+  if (already) return already;
 
   const [invoice, account, lodge] = await Promise.all([
     db.invoice.findUnique({ where: { id: invoiceId } }),

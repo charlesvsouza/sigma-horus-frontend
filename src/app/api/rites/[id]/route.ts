@@ -15,9 +15,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { id } = await params;
-  await withTenant(String(lodgeId), (db) =>
+  const removed = await withTenant(String(lodgeId), (db) =>
     db.rite.deleteMany({ where: { id, lodgeId: String(lodgeId) } }),
   );
+  if (removed.count === 0) return NextResponse.json({ error: 'Rito não encontrado(a).' }, { status: 404 });
 
   return NextResponse.json({ ok: true });
 }

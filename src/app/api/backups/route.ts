@@ -1,18 +1,14 @@
 import { runFullBackup } from '@/lib/backup';
 import { prismaAdmin } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { platformAuthorized } from '@/lib/platform-auth';
 
 // Endpoint do DONO DA PLATAFORMA (não é multi-tenant) — histórico e disparo
 // manual do backup completo, consumido por /plataforma/backups. Protegido
 // pelo mesmo token secreto usado em /api/invites (x-platform-token).
 export const maxDuration = 60; // POST roda runFullBackup() — mesmo motivo do cron
 
-function authorized(request: Request): boolean {
-  const token = process.env.PLATFORM_OWNER_TOKEN;
-  if (!token) return false;
-  const header = request.headers.get('x-platform-token') ?? '';
-  return header.length > 0 && header === token;
-}
+const authorized = platformAuthorized;
 
 export async function GET(request: Request) {
   if (!authorized(request)) {

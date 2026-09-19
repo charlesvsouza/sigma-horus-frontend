@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { addInterval } from '@/lib/charges';
 import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { requireLodgeAccess } from '@/lib/rbac';
 
 export async function POST() {
   const session = await auth();
@@ -9,6 +10,9 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const lodgeId = String(session.user.lodgeId);
+  // Gera cobranças em nome da loja: exige escrita em Contas (Tesoureiro/Administrador).
+  const access = await requireLodgeAccess(lodgeId, session.user.role, 'accounts', 'write');
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const now = new Date();
 

@@ -55,7 +55,10 @@ export function withTenant<T>(
       await tx.$executeRaw`SELECT set_config('app.current_lodge_id', ${lodgeId}, true)`;
       return cb(tx);
     },
-    options?.timeoutMs ? { timeout: options.timeoutMs } : undefined,
+    // Padrões do Prisma (espera 2 s por conexão, transação de 5 s) estouram com poucas requisições
+    // simultâneas: o pool é pequeno de propósito e as travas de lib/locks.ts fazem quem chega depois
+    // esperar a vez. Mais folga = fila em vez de erro 500.
+    { maxWait: 10_000, timeout: options?.timeoutMs ?? 15_000 },
   );
 }
 

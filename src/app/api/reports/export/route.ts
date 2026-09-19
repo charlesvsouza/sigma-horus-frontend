@@ -1,7 +1,9 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
+import { csvRow } from '@/lib/csv';
 import { NextResponse } from 'next/server';
+import { requireLodgeAccess } from '@/lib/rbac';
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -9,6 +11,10 @@ export async function GET(request: Request) {
   if (!lodgeId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Lista todos os pagamentos da loja (com nome do membro): mesmo acesso da tela Pagamentos/Contas.
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'accounts', 'read');
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { searchParams } = new URL(request.url);
   const from = searchParams.get('from');
@@ -37,17 +43,17 @@ export async function GET(request: Request) {
     }),
   );
 
-  const header = 'Data;Valor;Método;Conta;Tipo;Membro;Observação';
+  const header = csvRow(['Data', 'Valor', 'Método', 'Conta', 'Tipo', 'Membro', 'Observação']);
   const rows = payments.map((p) =>
-    [
-      new Date(p.paidAt).toLocaleDateString('pt-BR'),
+    csvRow([
+      new Date(p.paidAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
       p.amount.toFixed(2),
       p.method,
       p.account?.title ?? '',
       p.account?.type === 'RECEIVABLE' ? 'Receber' : 'Pagar',
       p.member?.name ?? '',
       p.note ?? '',
-    ].join(';'),
+    ]),
   );
 
   const csv = `\uFEFF${header}\n${rows.join('\n')}`;

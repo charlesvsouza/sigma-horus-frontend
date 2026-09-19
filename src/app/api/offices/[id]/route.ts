@@ -11,10 +11,13 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'members', 'write');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
   const { id } = await params;
-  await withTenant(String(lodgeId), async (db) => {
+  const found = await withTenant(String(lodgeId), async (db) => {
     const prev = await db.office.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, name: true } });
-    if (prev) await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'office', entityId: id, metadata: { name: prev.name } });
+    if (!prev) return false;
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'office', entityId: id, metadata: { name: prev.name } });
     await db.office.deleteMany({ where: { id, lodgeId: String(lodgeId) } });
+    return true;
   });
+  if (!found) return NextResponse.json({ error: 'Cargo não encontrado.' }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

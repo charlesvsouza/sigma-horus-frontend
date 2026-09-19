@@ -351,7 +351,7 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
               <div key={loan.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{loan.member.name} — {loan.material.name} ({loan.quantity})</p>
-                  <p className="mt-1 text-xs text-sand-dark">desde {new Date(loan.issuedAt).toLocaleDateString('pt-BR')}{loan.notes ? ` • ${loan.notes}` : ''}</p>
+                  <p className="mt-1 text-xs text-sand-dark">desde {new Date(loan.issuedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}{loan.notes ? ` • ${loan.notes}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'returned')} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200 disabled:opacity-40">Marcar como devolvido</button>
@@ -398,7 +398,7 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
                       <tr key={loan.id}>
                         <td className="border-b border-white/5 px-2 py-1.5 text-sand">{loan.material.name}</td>
                         <td className="border-b border-white/5 px-2 py-1.5 text-right tabular-nums text-sand">{loan.quantity}</td>
-                        <td className="border-b border-white/5 px-2 py-1.5 text-sand-dark">{new Date(loan.issuedAt).toLocaleDateString('pt-BR')}</td>
+                        <td className="border-b border-white/5 px-2 py-1.5 text-sand-dark">{new Date(loan.issuedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</td>
                       </tr>
                     ))}
                   </tbody>
