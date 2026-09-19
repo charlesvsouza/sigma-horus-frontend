@@ -2,14 +2,18 @@ import type { Prisma } from '@/generated/prisma/client';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { lockKey } from '@/lib/locks';
 
-export function addInterval(date: Date, interval: string) {
-  const next = new Date(date);
-  switch (interval) {
-    case 'quarterly': next.setMonth(next.getMonth() + 3); break;
-    case 'yearly': next.setFullYear(next.getFullYear() + 1); break;
-    default: next.setMonth(next.getMonth() + 1);
-  }
-  return next;
+export { addInterval } from '@/lib/recurring-rules';
+import { addInterval } from '@/lib/recurring-rules';
+
+/**
+ * Reserva os próximos `count` números de cobrança da loja (COB-AAAAMM-NNNN, sequencial por
+ * loja/mês). Trava por loja/mês: duas emissões simultâneas não pegam o mesmo número.
+ */
+export async function nextInvoiceNumbers(db: Prisma.TransactionClient, lodgeId: string, count: number, now: Date = new Date()): Promise<string[]> {
+  const prefix = `COB-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-`;
+  await lockKey(db, `invoice-number:${lodgeId}:${prefix}`);
+  const existing = await db.invoice.count({ where: { lodgeId, number: { startsWith: prefix } } });
+  return Array.from({ length: count }, (_, i) => `${prefix}${String(existing + 1 + i).padStart(4, '0')}`);
 }
 
 export interface ChargeInput {
@@ -62,11 +66,7 @@ export async function createChargesWithAccounts(db: Prisma.TransactionClient, in
     return { ok: false, status: 409, error: `Período encerrado (${locked.title}). Não é possível cobrar com vencimento dentro de um veneralato já fechado.` };
   }
 
-  const now = new Date();
-  const prefix = `COB-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-`;
-  // Uma emissão por vez por loja/mês: a numeração sequencial conta as cobranças existentes.
-  await lockKey(db, `invoice-number:${lodgeId}:${prefix}`);
-  const existing = await db.invoice.count({ where: { lodgeId, number: { startsWith: prefix } } });
+  const numbers = await nextInvoiceNumbers(db, lodgeId, memberIds.length);
 
   const accounts = await db.account.createManyAndReturn({
     data: memberIds.map((memberId) => ({
@@ -89,7 +89,7 @@ export async function createChargesWithAccounts(db: Prisma.TransactionClient, in
       lodgeId,
       accountId: a.id,
       memberId: a.memberId,
-      number: memberIds.length === 1 && number ? number : `${prefix}${String(existing + 1 + i).padStart(4, '0')}`,
+      number: memberIds.length === 1 && number ? number : numbers[i],
       amount,
       dueDate,
       description,

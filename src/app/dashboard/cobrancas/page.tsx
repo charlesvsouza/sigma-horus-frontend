@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import CobrancasClient from './CobrancasClient';
+import { listHeldRecurring } from '@/lib/recurring';
 import { getAccountBalance } from '@/lib/asaas';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { isAsaasMode, paymentInstructions } from '@/lib/collection';
@@ -27,12 +28,13 @@ export default async function CobrancasPage() {
           select: { id: true, name: true },
           orderBy: { name: 'asc' },
         }),
+        held: await listHeldRecurring(db, String(lodgeId)),
         lodge: await db.lodge.findUnique({
           where: { id: String(lodgeId) },
           select: { collectionMode: true, asaasSettlementAccountId: true, asaasApiKeyEnc: true, asaasEnv: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true },
         }),
       }))
-    : { invoices: [], chartAccounts: [], members: [], lodge: null };
+    : { invoices: [], chartAccounts: [], members: [], held: [], lodge: null };
 
   // Modo de recebimento da loja. No Modo Asaas mostra o saldo que ainda está no Asaas (a repassar,
   // manualmente, à conta corrente); no Modo Loja, como os irmãos pagam.
@@ -66,5 +68,5 @@ export default async function CobrancasPage() {
     member: i.member ? { id: i.member.id, name: i.member.name } : null,
   }));
 
-  return <CobrancasClient invoices={invoices} chartAccounts={data.chartAccounts} members={data.members} collection={collection} />;
+  return <CobrancasClient invoices={invoices} chartAccounts={data.chartAccounts} members={data.members} collection={collection} heldRecurring={data.held} />;
 }

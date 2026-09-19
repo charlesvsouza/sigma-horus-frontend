@@ -249,7 +249,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.30</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.31</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -311,7 +311,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.30 — 19 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.31 — 19 de setembro de 2026</p>
               </div>
             </div>
 
@@ -867,8 +867,18 @@ export function ManualBook() {
                   <li>Clique em <UI>Criar cobrança</UI>.</li>
                 </Steps>
                 <p>
-                  Para gerar as parcelas recorrentes que já venceram/estão previstas, use o botão <UI>Processar
-                  recorrentes</UI>, no alto da tela (só Tesoureiro e Administrador) — ele cria as cobranças do período automaticamente, cada ocorrência com o seu próprio lançamento (pagar uma parcela não quita as seguintes).
+                  <strong>Cobranças recorrentes.</strong> O sistema gera sozinho, todo dia, a próxima cobrança de cada recorrência
+                  que venceu — não é preciso clicar em nada. Cada ocorrência tem o seu próprio lançamento (pagar uma parcela não quita as seguintes)
+                  e a recorrência <strong>continua mesmo que a cobrança anterior já esteja paga ou em atraso</strong>. O botão <UI>Processar
+                  recorrentes</UI>, no alto da tela (só Tesoureiro e Administrador), roda a mesma rotina na hora. Uma rodada gera, no máximo,
+                  <strong> uma</strong> cobrança por recorrência: parcelas acumuladas nunca são despejadas de uma vez.
+                </p>
+                <p>
+                  <strong>Irmão no Art. 002.</strong> Enquanto o irmão estiver enquadrado no Art. 002 (mensalidade vencida há mais de 60 dias), a recorrência
+                  dele fica <strong>parada</strong> e nada é gerado sozinho. Ele aparece no quadro <UI>Recorrências retidas — Art. 002</UI>, em
+                  Cobranças, com o número de parcelas pendentes e o valor. Depois de negociar com o irmão, o Tesoureiro (ou o Venerável, se a matriz de permissões
+                  der escrita em Contas) clica em <UI>Gerar parcelas pendentes</UI>: todas as parcelas que ficaram para trás são geradas de uma vez, com os vencimentos originais.
+                  Cada geração fica registrada na Auditoria.
                 </p>
                 <p>
                   <strong>Cobrança em massa:</strong> para cobrar todos os irmãos de uma vez (ex.: mensalidade), use o

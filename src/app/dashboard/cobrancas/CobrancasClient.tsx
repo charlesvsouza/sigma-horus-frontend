@@ -25,13 +25,16 @@ interface InvoiceItem {
   member?: MemberOption | null;
 }
 
+interface HeldRecurring { memberId: string; memberName: string; pending: number; total: number; oldestDueDate: string }
+
 interface CollectionInfo { mode: 'lodge' | 'asaas'; settlementName: string | null; balance: number | null; instructions: string | null }
 
-export default function CobrancasClient({ invoices, chartAccounts, members, collection }: { invoices: InvoiceItem[]; chartAccounts: ChartOption[]; members: MemberOption[]; collection: CollectionInfo }) {
+export default function CobrancasClient({ invoices, chartAccounts, members, collection, heldRecurring }: { invoices: InvoiceItem[]; chartAccounts: ChartOption[]; members: MemberOption[]; collection: CollectionInfo; heldRecurring: HeldRecurring[] }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [releasingId, setReleasingId] = useState('');
   const [emittingId, setEmittingId] = useState('');
   const [asaasLinks, setAsaasLinks] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -133,9 +136,32 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
     setMessage(null);
     const res = await fetch('/api/cron/recurring-invoices', { method: 'POST' });
     const data = await res.json();
-    setMessage({ kind: 'ok', text: `Processadas: ${data.processed} cobranças recorrentes.` });
+    if (!res.ok) {
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao processar as recorrentes.' });
+    } else {
+      const partes = [`${data.processed} cobrança(s) recorrente(s) gerada(s)`];
+      if (data.held > 0) partes.push(`${data.held} retida(s) por Art. 002 (aguardando liberação abaixo)`);
+      if (data.locked > 0) partes.push(`${data.locked} em período já encerrado`);
+      if (data.errors > 0) partes.push(`${data.errors} com erro`);
+      setMessage({ kind: data.errors > 0 ? 'error' : 'ok', text: partes.join(' · ') + '.' });
+    }
     setProcessing(false);
     router.refresh();
+  }
+
+  async function releaseHeld(row: HeldRecurring) {
+    if (!(await askConfirm({
+      title: 'Liberar recorrência',
+      message: `Gerar de uma vez as ${row.pending} parcela(s) pendente(s) de ${row.memberName} (${brl(row.total)})? Faça isso depois de negociar com o irmão — as cobranças nascem com os vencimentos originais.`,
+      confirmLabel: 'Gerar parcelas',
+    }))) return;
+    setReleasingId(row.memberId);
+    setMessage(null);
+    const res = await fetch(`/api/members/${row.memberId}/release-recurring`, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    setReleasingId('');
+    setMessage(res.ok ? { kind: 'ok', text: `${data.generated} parcela(s) gerada(s) para ${row.memberName}.` } : { kind: 'error', text: data.error ?? 'Erro ao liberar a recorrência.' });
+    if (res.ok) router.refresh();
   }
 
   const INPUT = inputClass; // fonte única do design system
@@ -294,6 +320,31 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
             <Button type="submit" disabled={submitting}>{submitting ? 'Criando…' : 'Criar cobrança'}</Button>
           </form>
         </FormCard>
+        ) : null}
+
+        {heldRecurring.length > 0 ? (
+          <Card>
+            <h2 className="text-base font-semibold text-sand-light">Recorrências retidas — Art. 002</h2>
+            <p className="mt-1 text-xs text-sand-dark">
+              Estes irmãos estão enquadrados no Art. 002: a cobrança recorrente deles ficou parada e não gera parcelas sozinha. Depois de negociar, o Tesoureiro
+              (ou o Venerável, se tiver permissão) libera e as parcelas pendentes são geradas de uma vez.
+            </p>
+            <div className="mt-4 space-y-2">
+              {heldRecurring.map((row) => (
+                <div key={row.memberId} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-sand-light">{row.memberName}</p>
+                    <p className="mt-0.5 text-xs text-sand-dark">
+                      {row.pending} parcela(s) pendente(s) • {brl(row.total)} • a mais antiga venceu em {formatDateOnly(row.oldestDueDate)}
+                    </p>
+                  </div>
+                  <Button type="button" variant="secondary" onClick={() => releaseHeld(row)} disabled={releasingId === row.memberId}>
+                    {releasingId === row.memberId ? 'Gerando…' : 'Gerar parcelas pendentes'}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </Card>
         ) : null}
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
