@@ -10,7 +10,7 @@ TODAS as lojas, automático, pra reconstrução em caso de problema grave; (2)
 backup sob demanda dos dados de UMA loja, pro próprio admin.
 
 ### (1) Backup completo da plataforma
-- **Motor**: `src/lib/backup.ts` — `BACKUP_MODELS` (28 tabelas, ordem que
+- **Motor**: `src/lib/backup.ts` — `BACKUP_MODELS` (35 tabelas, ordem que
   respeita FKs — fonte única usada por backup E restore) → lê tudo via
   `prismaAdmin` (sem RLS, cross-tenant) → `JSON.stringify` → `gzip` →
   **AES-256-GCM** com chave dedicada (`BACKUP_ENCRYPTION_KEY`, **não** reusa
@@ -48,7 +48,7 @@ backup sob demanda dos dados de UMA loja, pro próprio admin.
 
 ### (2) Backup por loja (self-service)
 - `GET /api/lodges/export` (era um export parcial de LGPD, esquecido, sem
-  UI) — **completado** pra cobrir as 26 tabelas da loja (financeiro, plano
+  UI) — **completado** pra cobrir as 33 tabelas da loja (financeiro, plano
   de contas, cargos, ritos/potências, sessões, documentos, auditoria etc.),
   restrito a `role === 'admin'` (antes não tinha checagem de papel nenhuma).
   Remove hashes/segredos (`passwordHash`, `asaasApiKeyEnc`,

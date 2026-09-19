@@ -25,7 +25,7 @@ export async function GET() {
 
   const id = String(lodgeId);
 
-  // Timeout maior que o padrão (5s): são ~26 consultas em paralelo, todas as
+  // Timeout maior que o padrão (5s): são ~33 consultas em paralelo, todas as
   // tabelas da loja — contra o Railway via proxy, o padrão estoura à toa.
   const data = await withTenant(id, async (db) => {
     const [
@@ -61,6 +61,18 @@ export async function GET() {
       db.power.findMany({ where: { lodgeId: id } }),
       db.office.findMany({ where: { lodgeId: id } }),
     ]);
+    const [
+      financialAccounts, accountTransfers, counterparties, hospitalityRequests,
+      materials, materialLoans, venerableGalleryEntries,
+    ] = await Promise.all([
+      db.financialAccount.findMany({ where: { lodgeId: id } }),
+      db.accountTransfer.findMany({ where: { lodgeId: id } }),
+      db.counterparty.findMany({ where: { lodgeId: id } }),
+      db.hospitalityRequest.findMany({ where: { lodgeId: id } }),
+      db.material.findMany({ where: { lodgeId: id } }),
+      db.materialLoan.findMany({ where: { lodgeId: id } }),
+      db.venerableGalleryEntry.findMany({ where: { lodgeId: id } }),
+    ]);
 
     // Remove os campos de credenciais/segredos criptografados — sem valor pro
     // admin (só o servidor consegue decifrar) e sem motivo pra sair da loja.
@@ -80,6 +92,8 @@ export async function GET() {
         payments, assets, bankTransactions, documents, messageLogs, sessions,
         attendances, terms, memberOffices, cashCloses, balancetes, budgets,
         campaigns, campaignDonations, rolePermissions, subscription, auditLogs,
+        financialAccounts, accountTransfers, counterparties, hospitalityRequests,
+        materials, materialLoans, venerableGalleryEntries,
       },
     };
   }, { timeoutMs: 45_000 });
