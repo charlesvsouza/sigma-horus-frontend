@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { NOT_INTERNAL_DOCUMENT } from '@/lib/documents';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -68,7 +69,7 @@ export async function GET() {
     ),
     withTenant(String(lodgeId), (db) =>
       db.document.findMany({
-        where: { lodgeId: String(lodgeId), memberId: String(memberId) },
+        where: { lodgeId: String(lodgeId), memberId: String(memberId), ...NOT_INTERNAL_DOCUMENT },
         select: { id: true, title: true, kind: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 5,
@@ -76,7 +77,7 @@ export async function GET() {
     ),
     withTenant(String(lodgeId), (db) =>
       db.document.findMany({
-        where: { lodgeId: String(lodgeId), memberId: null },
+        where: { lodgeId: String(lodgeId), memberId: null, ...NOT_INTERNAL_DOCUMENT },
         select: { id: true, title: true, kind: true, category: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
       }),

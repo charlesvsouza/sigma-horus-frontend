@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard, useConfirm } from '@/components/ui';
 import { DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 
-const DOCUMENT_CATEGORIES = ['Institucional', 'Ata', 'Financeiro', 'Geral'];
+import { DOCUMENT_CATEGORY_SUGGESTIONS as DOCUMENT_CATEGORIES, isInternalCategory } from '@/lib/documents';
 
 interface DocumentItem {
   id: string;
@@ -157,6 +157,9 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
               <datalist id="document-categories">
                 {DOCUMENT_CATEGORIES.map((c) => <option key={c} value={c} />)}
               </datalist>
+              {isInternalCategory(category) ? (
+                <p className="text-xs text-amber-300 md:col-span-2">Categoria <strong>Interno Loja</strong>: o documento fica só com a gestão da loja — não aparece no portal dos irmãos nem pode ser baixado por eles.</p>
+              ) : null}
               <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={INPUT}>
                 <option value="">Vincular a um membro (deixe em branco para documento institucional — visível a todos)</option>
                 {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}

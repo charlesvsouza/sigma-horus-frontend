@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { normalizeRole, requireLodgeAccess } from '@/lib/rbac';
+import { memberCanAccessDocument } from '@/lib/documents';
 import { getPresignedDownloadUrl } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
@@ -22,11 +23,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const item = await withTenant(String(lodgeId), (db) =>
     db.document.findFirst({
       where: { lodgeId: String(lodgeId), id },
-      select: { storageKey: true },
+      select: { storageKey: true, memberId: true, category: true },
     }),
   );
 
   if (!item?.storageKey) {
+    return NextResponse.json({ error: 'Arquivo não encontrado.' }, { status: 404 });
+  }
+
+  // Irmão (papel Membro) só baixa os próprios documentos e os institucionais — nunca os "Interno Loja".
+  if (normalizeRole(role) === 'member' && !memberCanAccessDocument(item, session?.user?.memberId)) {
     return NextResponse.json({ error: 'Arquivo não encontrado.' }, { status: 404 });
   }
 

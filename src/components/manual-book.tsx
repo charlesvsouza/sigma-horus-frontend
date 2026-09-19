@@ -249,7 +249,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.26</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.27</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -311,7 +311,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.26 — 19 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.27 — 19 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1444,6 +1444,13 @@ export function ManualBook() {
                   Potência: o Secretário sobe o arquivo uma vez e todo obreiro passa a ver e baixar em <UI>Meu portal →
                   Documentos da Loja</UI> (capítulo 10). Use o campo <UI>Categoria</UI> (ex.: &quot;Institucional&quot;)
                   pra organizar a lista.
+                </p>
+                <p>
+                  <strong>Documentos internos:</strong> escolha a categoria <strong>Interno Loja</strong> para documentos de uso
+                  só da gestão (atas da diretoria, papéis da tesouraria etc.). Eles ficam disponíveis em <UI>Documentos</UI> para
+                  quem administra a loja, mas <strong>não aparecem no portal dos irmãos e não podem ser baixados por eles</strong>
+                  — mesmo sem membro vinculado (que normalmente significa &quot;visível a todos&quot;). Além disso, cada irmão só
+                  baixa os próprios documentos e os institucionais.
                 </p>
                 <p>
                   Em <UI>Comunicação</UI>, escreva um <UI>Título</UI> e o <UI>Texto da comunicação</UI>, escolha o
