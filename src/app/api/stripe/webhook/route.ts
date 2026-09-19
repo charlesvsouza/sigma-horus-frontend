@@ -101,15 +101,21 @@ export async function POST(request: Request) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sub = await stripeObj.subscriptions.retrieve(subId) as any;
         const lodgeId = sub.metadata?.lodgeId;
-        if (lodgeId) {
-          await prismaAdmin.subscription.update({
-            where: { lodgeId },
+        // Evento fora de ordem: se a assinatura já foi cancelada/encerrada no Stripe,
+        // um invoice.paid atrasado não pode reativá-la. Só renova se ainda está viva
+        // e é a assinatura vigente da loja.
+        if (lodgeId && (sub.status === 'active' || sub.status === 'trialing')) {
+          await prismaAdmin.subscription.updateMany({
+            where: {
+              lodgeId,
+              OR: [{ stripeSubscriptionId: sub.id }, { stripeSubscriptionId: null }],
+            },
             data: {
               status: 'active',
               currentPeriodStart: tsToDate(sub.current_period_start),
               currentPeriodEnd: tsToDate(sub.current_period_end),
             },
-          }).catch(() => {});
+          });
         }
       }
       break;
@@ -119,12 +125,25 @@ export async function POST(request: Request) {
     // o schedule troca o price e dispara este evento com o novo plano).
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted': {
-      const customerId = obj.customer;
+      // Eventos podem chegar fora de ordem (ou repetidos). O payload é um retrato do
+      // momento em que foi emitido; o estado vigente vem do Stripe. Reconsultamos e
+      // aplicamos sempre o estado atual — assim um evento velho nunca regride a loja.
+      // Erro diferente de "não existe" propaga (500) e o Stripe reentrega o evento.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let live: any = obj;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        live = (await stripeObj.subscriptions.retrieve(obj.id)) as any;
+      } catch (err) {
+        const code = (err as { code?: string }).code;
+        if (code !== 'resource_missing') throw err;
+      }
+      const customerId = live.customer ?? obj.customer;
       // Preserva o trial: Stripe trialing → nosso 'trialing' (com trialEndsAt),
       // para o painel mostrar a contagem regressiva. active → 'active'.
-      const stripeStatus = obj.status;
+      const stripeStatus = live.status;
       const mappedStatus = stripeStatus === 'active' ? 'active' : stripeStatus === 'trialing' ? 'trialing' : 'inactive';
-      const priceMeta = obj.items?.data?.[0]?.price?.metadata;
+      const priceMeta = live.items?.data?.[0]?.price?.metadata;
       const newPlan = priceMeta?.plan;
       const newInterval = priceMeta?.interval === 'year' ? 'year' : priceMeta?.interval === 'month' ? 'month' : undefined;
 
@@ -132,9 +151,9 @@ export async function POST(request: Request) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data: any = {
           status: mappedStatus,
-          trialEndsAt: stripeStatus === 'trialing' ? tsToDate(obj.trial_end) ?? null : null,
-          currentPeriodStart: tsToDate(obj.current_period_start),
-          currentPeriodEnd: tsToDate(obj.current_period_end),
+          trialEndsAt: stripeStatus === 'trialing' ? tsToDate(live.trial_end) ?? null : null,
+          currentPeriodStart: tsToDate(live.current_period_start),
+          currentPeriodEnd: tsToDate(live.current_period_end),
         };
         // Se o price carrega o plano (downgrade aplicado / mudança), sincroniza.
         if (newPlan && isPlanId(newPlan)) {
@@ -147,8 +166,13 @@ export async function POST(request: Request) {
         if (event.type === 'customer.subscription.deleted') {
           data.status = 'inactive';
         }
+        // Só a assinatura vigente da loja: o cancelamento (ou atualização) de uma
+        // assinatura antiga do mesmo cliente não pode derrubar a nova.
         await prismaAdmin.subscription.updateMany({
-          where: { stripeCustomerId: customerId },
+          where: {
+            stripeCustomerId: customerId,
+            OR: [{ stripeSubscriptionId: obj.id }, { stripeSubscriptionId: null }],
+          },
           data,
         });
       }
