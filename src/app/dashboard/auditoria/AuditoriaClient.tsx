@@ -78,7 +78,7 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
                     {e.viaSuperadmin ? (
                       <span
                         title="Ação feita por alguém logado como esta pessoa via login de superadmin da plataforma, não pela própria pessoa"
-                        className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300"
+                        className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300"
                       >
                         via superadmin
                       </span>

@@ -69,13 +69,13 @@ export default function IrmaosConsultaPage() {
                     {open ? (
                       <div className="border-t border-white/5 bg-sigma-blue-deep/30 px-4 py-4 text-sm">
                         <div className="grid gap-2 md:grid-cols-3">
-                          <p className="text-sand-dark"><span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Situação:</span> <span className="text-sand">{STATUS[m.status] ?? m.status}</span></p>
-                          <p className="text-sand-dark"><span className="text-[11px] uppercase tracking-wide text-sand-dark/70">CIM:</span> <span className="text-sand">{m.masonicNumber || '—'}</span></p>
-                          <p className="text-sand-dark"><span className="text-[11px] uppercase tracking-wide text-sand-dark/70">CPF:</span> <span className="text-sand">{m.cpf || '—'}</span></p>
+                          <p className="text-sand-dark"><span className="text-xs uppercase tracking-wide text-sand-dark/70">Situação:</span> <span className="text-sand">{STATUS[m.status] ?? m.status}</span></p>
+                          <p className="text-sand-dark"><span className="text-xs uppercase tracking-wide text-sand-dark/70">CIM:</span> <span className="text-sand">{m.masonicNumber || '—'}</span></p>
+                          <p className="text-sand-dark"><span className="text-xs uppercase tracking-wide text-sand-dark/70">CPF:</span> <span className="text-sand">{m.cpf || '—'}</span></p>
                         </div>
                         {m.relatives && m.relatives.length > 0 ? (
                           <div className="mt-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Família (contatos)</p>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-gold">Família (contatos)</p>
                             <ul className="mt-1 space-y-0.5 text-sand">
                               {m.relatives.map((r, i) => (
                                 <li key={r.id ?? i}><span className="text-sand-dark">{KIND_LABEL[r.kind] ?? r.kind}:</span> {r.name}{r.phone ? ` · ${r.phone}` : ''}{r.email ? ` · ${r.email}` : ''}</li>

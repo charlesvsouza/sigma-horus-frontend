@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { Alert } from '@/components/ui';
 
 type Matrix = Record<string, Record<string, Record<string, boolean>>>;
 
@@ -93,7 +94,7 @@ export default function PermissoesClient({ initialMatrix, roles, resources, acti
         </div>
 
         {message ? (
-          <div className={`rounded-xl border px-4 py-3 text-sm ${message.kind === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/30 bg-rose-500/10 text-rose-200'}`}>{message.text}</div>
+          <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert>
         ) : null}
 
         {denied || roles.length === 0 ? null : (

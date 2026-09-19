@@ -152,10 +152,10 @@ export default function CadastrosClient({ rites, powers }: { rites: Item[]; powe
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <CollapsibleCard title="Ritos" count={rites.length} defaultOpen={rites.length <= 10}>
             <form onSubmit={createRite} className="flex gap-3">
-              <input value={riteName} onChange={(event) => setRiteName(event.target.value)} className={INPUT} placeholder="Nome do rito" />
+              <input aria-label="Nome do rito" value={riteName} onChange={(event) => setRiteName(event.target.value)} className={INPUT} placeholder="Nome do rito" />
               <button type="submit" className={ADD_BTN}>Adicionar</button>
             </form>
             {rites.length === 0 ? (

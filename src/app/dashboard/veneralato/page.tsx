@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Button, CollapsibleCard, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Alert, Button, CollapsibleCard, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -210,10 +210,18 @@ export default function VeneralatoPage() {
           <FormCard title="Novo período">
             <form onSubmit={create} className="mt-5 space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Ex: Gestão 2025-2026" required />
-                <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={INPUT} required />
-                <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={INPUT} />
-                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações" rows={3} />
+                <Field label="Ex: Gestão 2025-2026">
+                  <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} required />
+                </Field>
+                <Field label="Início">
+                  <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={INPUT} required />
+                </Field>
+                <Field label="Término">
+                  <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={INPUT} />
+                </Field>
+                <Field label="Observações" className="md:col-span-2">
+                  <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} rows={3} />
+                </Field>
               </div>
               <Button type="submit" disabled={creating}>{creating ? 'Criando…' : 'Criar período'}</Button>
             </form>
@@ -280,14 +288,18 @@ export default function VeneralatoPage() {
                 <div>
                   <h3 className="text-sm font-medium text-sand-dark">Vincular cargo</h3>
                   <div className="mt-2 grid grid-cols-3 gap-2">
-                    <select id="mo-member" aria-label="Membro" className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
-                      <option value="">Membro</option>
-                      {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
-                    <select id="mo-office" aria-label="Cargo" className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
-                      <option value="">Cargo</option>
-                      {offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-                    </select>
+                    <Field label="Membro">
+                      <select id="mo-member" className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
+                        <option value="">Selecione…</option>
+                        {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Cargo">
+                      <select id="mo-office" className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
+                        <option value="">Selecione…</option>
+                        {offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                      </select>
+                    </Field>
                     <Button size="sm" onClick={() => {
                       const memberId = (document.getElementById('mo-member') as HTMLSelectElement)?.value;
                       const officeId = (document.getElementById('mo-office') as HTMLSelectElement)?.value;

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { EmptyState, inputClass } from '@/components/ui';
+import { Alert, Button, EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import type { FundPurpose } from '@/lib/funds';
 import ContributionForm from './ContributionForm';
@@ -69,7 +69,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: 'in
 function BucketTable({ rows, empty, head }: { rows: Bucket[]; empty: string; head: [string, string] }) {
   if (rows.length === 0) return <p className="text-sm text-sand-dark">{empty}</p>;
   return (
-    <table className="w-full text-sm">
+    <div className="overflow-x-auto"><table className="w-full text-sm">
       <thead>
         <tr>
           <th className={TH}>{head[0]}</th>
@@ -86,7 +86,7 @@ function BucketTable({ rows, empty, head }: { rows: Bucket[]; empty: string; hea
           </tr>
         ))}
       </tbody>
-    </table>
+    </table></div>
   );
 }
 
@@ -159,7 +159,7 @@ export default function FundosClient({
               <input type="date" value={toVal} onChange={(e) => setToVal(e.target.value)} className={`mt-1 ${inputClass}`} />
             </label>
             <div className="flex items-end">
-              <button onClick={() => go(fromVal, toVal)} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Aplicar</button>
+              <Button type="button" variant="secondary" onClick={() => go(fromVal, toVal)}>Aplicar</Button>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -174,7 +174,7 @@ export default function FundosClient({
         ) : (
           <>
             {strayCount > 0 ? (
-              <div className="fundo-noprint rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-200">
+              <Alert intent="warn" className="fundo-noprint">
                 <p className="font-semibold">Conferência: {strayCount} lançamento(s) do fundo fora do lugar</p>
                 {report.strays.outsideCaixa.rows.length > 0 ? (
                   <p className="mt-1">
@@ -190,14 +190,14 @@ export default function FundosClient({
                     <li key={r.id}>{fmtDate(r.date)} — {r.title} — {r.direction === 'in' ? '+' : '−'}{brl(r.amount)} ({r.where})</li>
                   ))}
                 </ul>
-              </div>
+              </Alert>
             ) : null}
 
             <div className="fundo-noprint flex flex-wrap items-center gap-3">
               {canRecord && accounts.some((a) => a.active) ? (
-                <button onClick={() => setShowContribution((v) => !v)} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Registrar aporte</button>
+                <Button type="button" onClick={() => setShowContribution((v) => !v)}>Registrar aporte</Button>
               ) : null}
-              <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Salvar como PDF</button>
+              <Button type="button" variant="secondary" onClick={() => window.print()}>Salvar como PDF</Button>
               <Link href="/dashboard/transferencias" className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-medium text-gold/90 transition-colors hover:border-gold/60 hover:text-gold">Transferir entre contas</Link>
               {accounts.map((a) => (
                 <Link key={a.id} href={`/dashboard/extratos?accountId=${a.id}`} className="text-xs text-sand-dark underline hover:text-gold">Extrato: {a.name}</Link>
@@ -237,7 +237,7 @@ export default function FundosClient({
 
               <section className={CARD}>
                 <h3 className="text-base font-semibold text-sand-light">Caixas do fundo</h3>
-                <table className="mt-3 w-full text-sm">
+                <div className="overflow-x-auto"><table className="mt-3 w-full text-sm">
                   <thead><tr><th className={TH}>Caixa</th><th className={`${TH} num text-right`}>Saldo hoje</th></tr></thead>
                   <tbody>
                     {accounts.map((a) => (
@@ -247,7 +247,7 @@ export default function FundosClient({
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               </section>
 
               <section className={CARD}>
@@ -259,7 +259,7 @@ export default function FundosClient({
                 </div>
                 <p className="mt-2 text-xs text-sand-dark">Total de entradas de pagamentos no período: {brl(totalEntries)}.</p>
                 {report.entryDetail.length > 0 ? (
-                  <table className="mt-3 w-full text-sm">
+                  <div className="overflow-x-auto"><table className="mt-3 w-full text-sm">
                     <thead><tr><th className={TH}>Origem</th><th className={TH}>Detalhe</th><th className={`${TH} num text-right`}>Lançamentos</th><th className={`${TH} num text-right`}>Total</th></tr></thead>
                     <tbody>
                       {report.entryDetail.map((r) => (
@@ -271,7 +271,7 @@ export default function FundosClient({
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </table></div>
                 ) : null}
               </section>
 
@@ -296,7 +296,7 @@ export default function FundosClient({
                   {campaigns.length === 0 ? (
                     <p className="mt-2 text-sm text-sand-dark">Nenhuma campanha cadastrada.</p>
                   ) : (
-                    <table className="mt-3 w-full text-sm">
+                    <div className="overflow-x-auto"><table className="mt-3 w-full text-sm">
                       <thead>
                         <tr>
                           <th className={TH}>Campanha</th><th className={TH}>Situação</th>
@@ -323,14 +323,14 @@ export default function FundosClient({
                           );
                         })}
                       </tbody>
-                    </table>
+                    </table></div>
                   )}
                 </section>
               ) : null}
 
               <section className={CARD}>
                 <h3 className="text-base font-semibold text-sand-light">Evolução mensal (12 meses)</h3>
-                <table className="mt-3 w-full text-sm">
+                <div className="overflow-x-auto"><table className="mt-3 w-full text-sm">
                   <thead><tr><th className={TH}>Mês</th><th className={`${TH} num text-right`}>Entradas</th><th className={`${TH} num text-right`}>Saídas</th><th className={`${TH} num text-right`}>Resultado</th></tr></thead>
                   <tbody>
                     {report.monthly.map((m) => (
@@ -342,12 +342,12 @@ export default function FundosClient({
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               </section>
 
               <section className={CARD}>
                 <h3 className="text-base font-semibold text-sand-light">Extrato do período</h3>
-                <table className="mt-3 w-full text-sm">
+                <div className="overflow-x-auto"><table className="mt-3 w-full text-sm">
                   <thead>
                     <tr><th className={TH}>Data</th><th className={TH}>Histórico</th><th className={TH}>Doador / obs.</th><th className={TH}>Tipo</th><th className={`${TH} num text-right`}>Valor</th><th className={`${TH} num text-right`}>Saldo</th></tr>
                   </thead>
@@ -373,7 +373,7 @@ export default function FundosClient({
                       <td className="px-2 py-2 text-right num font-semibold tabular-nums text-gold">{brl(st.closingBalance)}</td>
                     </tr>
                   </tbody>
-                </table>
+                </table></div>
               </section>
             </div>
           </>

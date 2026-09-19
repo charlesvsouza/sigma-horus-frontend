@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
 
 interface MemberOption { id: string; name: string; }
@@ -114,27 +114,41 @@ export default function PagamentosClient({ accounts, members, payments, financia
         <FormCard title="Novo pagamento">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <select aria-label="Selecione uma conta" value={form.accountId} onChange={(event) => selectAccount(event.target.value)} className={INPUT} required>
-                <option value="">Selecione uma conta</option>
-                {accounts.map((account) => <option key={account.id} value={account.id}>{account.title}</option>)}
-              </select>
-              <select aria-label="Vincular a um membro" value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={INPUT}>
-                <option value="">Vincular a um membro</option>
-                {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-              </select>
-              <input aria-label="Valor" type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT} placeholder="Valor" required />
-              <input aria-label="Data do pagamento" type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className={INPUT} required />
-              <select aria-label="Método de pagamento" value={form.method} onChange={(event) => setForm({ ...form, method: event.target.value })} className={INPUT}>
-                <option value="manual">Manual</option>
-                <option value="pix">PIX</option>
-                <option value="cash">Dinheiro</option>
-                <option value="card">Cartão</option>
-              </select>
-              <select aria-label="Conta bancária/caixa que recebeu ou pagou" value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT} required>
-                <option value="">Conta bancária/caixa que recebeu ou pagou</option>
-                {financialAccounts.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-              </select>
-              <textarea aria-label="Observação" value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observação" rows={3} />
+              <Field label="Selecione uma conta">
+                <select value={form.accountId} onChange={(event) => selectAccount(event.target.value)} className={INPUT} required>
+                  <option value="">Selecione…</option>
+                  {accounts.map((account) => <option key={account.id} value={account.id}>{account.title}</option>)}
+                </select>
+              </Field>
+              <Field label="Vincular a um membro">
+                <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={INPUT}>
+                  <option value="">Selecione…</option>
+                  {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Valor">
+                <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT} required />
+              </Field>
+              <Field label="Data do pagamento">
+                <input type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className={INPUT} required />
+              </Field>
+              <Field label="Método de pagamento">
+                <select value={form.method} onChange={(event) => setForm({ ...form, method: event.target.value })} className={INPUT}>
+                  <option value="manual">Manual</option>
+                  <option value="pix">PIX</option>
+                  <option value="cash">Dinheiro</option>
+                  <option value="card">Cartão</option>
+                </select>
+              </Field>
+              <Field label="Conta bancária/caixa que recebeu ou pagou">
+                <select value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT} required>
+                  <option value="">Selecione…</option>
+                  {financialAccounts.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Observação" className="md:col-span-2">
+                <textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className={`${INPUT} md:col-span-2`} rows={3} />
+              </Field>
             </div>
             <label className="flex items-start gap-3 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-3">
               <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 h-4 w-4 accent-gold" />
@@ -151,7 +165,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Pagamentos recentes</h2>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por conta, membro ou forma…" className={`${INPUT} max-w-xs`} />
+            <input aria-label="Buscar por conta, membro ou forma" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por conta, membro ou forma…" className={`${INPUT} max-w-xs`} />
           </div>
           <div className="mt-5 space-y-3">
             {payments.length === 0 ? (
@@ -168,8 +182,8 @@ export default function PagamentosClient({ accounts, members, payments, financia
                   <p className="tabular-nums">Valor: {brl(payment.amount)}</p>
                   <p className="mt-0.5">Data: {new Date(payment.paidAt).toLocaleDateString('pt-BR')}</p>
                   <div className="mt-1 flex items-center justify-end gap-3">
-                    <Link href={`/dashboard/pagamentos/${payment.id}/recibo`} target="_blank" className="text-xs text-gold/70 transition hover:text-gold">Recibo</Link>
-                    <button onClick={() => void handleEstorno(payment.id)} className="text-xs text-rose-300/60 transition hover:text-rose-300">Estornar</button>
+                    <Link href={`/dashboard/pagamentos/${payment.id}/recibo`} target="_blank" className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Recibo</Link>
+                    <button onClick={() => void handleEstorno(payment.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Estornar</button>
                   </div>
                 </div>
               </div>

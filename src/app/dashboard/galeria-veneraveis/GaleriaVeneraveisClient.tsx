@@ -234,9 +234,9 @@ export default function GaleriaVeneraveisClient({
                   {entry.kind === 'manual' && canManage ? (
                     <div className="gv-noprint flex flex-wrap items-center justify-center gap-2">
                       {entry.memberId ? (
-                        <span className="text-[11px] text-sand-dark/70">Foto do cadastro do membro</span>
+                        <span className="text-xs text-sand-dark/70">Foto do cadastro do membro</span>
                       ) : (
-                        <label className="cursor-pointer text-[11px] text-gold/80 transition hover:text-gold">
+                        <label className="cursor-pointer text-xs text-gold/80 transition hover:text-gold">
                           {uploadingId === entry.id ? 'Enviando…' : entry.photoUrl ? 'Trocar foto' : 'Enviar foto'}
                           <input
                             type="file"
@@ -247,8 +247,8 @@ export default function GaleriaVeneraveisClient({
                           />
                         </label>
                       )}
-                      <button onClick={() => startEdit(entry)} className="text-[11px] text-gold/80 transition hover:text-gold">Editar</button>
-                      <button onClick={() => void removeEntry(entry.id, entry.name)} className="text-[11px] text-rose-300/70 transition hover:text-rose-300">Remover</button>
+                      <button onClick={() => startEdit(entry)} className="text-xs text-gold/80 transition hover:text-gold">Editar</button>
+                      <button onClick={() => void removeEntry(entry.id, entry.name)} className="text-xs text-rose-300/70 transition hover:text-rose-300">Remover</button>
                     </div>
                   ) : null}
                 </div>

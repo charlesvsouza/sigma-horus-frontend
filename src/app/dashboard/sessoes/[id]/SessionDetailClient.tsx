@@ -155,7 +155,7 @@ export default function SessionDetailClient({
           <div>
             <h1 className="text-2xl font-bold text-sand-light">
               {session.title}
-              {locked ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-300 align-middle">🔒 Trancada</span> : null}
+              {locked ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300 align-middle">🔒 Trancada</span> : null}
             </h1>
             <p className="mt-1 text-sm text-sand-dark">
               {new Date(session.date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' })}

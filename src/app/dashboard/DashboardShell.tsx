@@ -203,6 +203,12 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
 
   return (
     <div className="min-h-screen bg-sigma-blue-deep text-sand">
+      <a
+        href="#conteudo"
+        className="sr-only rounded-full bg-gold px-4 py-2 text-sm font-medium text-sigma-blue-deep focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
+      >
+        Pular para o conteúdo
+      </a>
       <div className="flex">
         {open ? (
           <div
@@ -346,7 +352,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
               </button>
               <div className="min-w-0">
                 <p className="text-[0.6rem] uppercase tracking-[0.25em] text-sand-dark/60">Loja maçônica</p>
-                <h1 className="truncate text-base font-semibold text-sand-light">{lodgeName}</h1>
+                <p className="truncate text-base font-semibold text-sand-light">{lodgeName}</p>
               </div>
             </div>
 
@@ -397,7 +403,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
           ) : null}
 
           <div className="fio-de-prumo mx-5 lg:mx-8" />
-          <div className="flex-1 bg-sigma-app"><ConfirmProvider>{children}</ConfirmProvider></div>
+          <div id="conteudo" tabIndex={-1} className="flex-1 bg-sigma-app outline-none"><ConfirmProvider>{children}</ConfirmProvider></div>
         </div>
       </div>
       <CommandPalette commands={commands} />

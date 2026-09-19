@@ -249,7 +249,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.28</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.29</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -311,7 +311,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.28 — 19 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.29 — 19 de setembro de 2026</p>
               </div>
             </div>
 
@@ -466,7 +466,7 @@ export function ManualBook() {
                 que espelham os quatro cargos de gestão da loja (mesma divisão dos capítulos 6 a 9 deste manual).
               </p>
               <Bullets>
-                <li><strong>Itens soltos (Visão geral):</strong> <UI>Visão geral</UI> (indicadores), <UI>Meu portal</UI>, <UI>Calendário de sessões</UI> (vale pra todo oficial, não só o obreiro) e <UI>Manual &amp; ajuda</UI>.</li>
+                <li><strong>Itens soltos (Visão geral):</strong> <UI>Visão geral</UI> (posição financeira: saldo em caixa e o que há a receber e a pagar), <UI>Meu portal</UI>, <UI>Calendário de sessões</UI> (vale pra todo oficial, não só o obreiro) e <UI>Manual &amp; ajuda</UI>.</li>
                 <li>
                   <strong>Secretaria:</strong> dividida em quatro grupos — <UI>Membros &amp; Cadastros</UI>
                   (<UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>),
@@ -507,6 +507,9 @@ export function ManualBook() {
                 <strong>Busca rápida (atalho):</strong> pressione <UI>Ctrl + K</UI> (ou <UI>⌘ + K</UI> no Mac), ou
                 clique em <UI>Buscar</UI> no topo, para abrir a <strong>paleta de comandos</strong>. Digite o nome de
                 uma tela, use as setas para escolher e <UI>Enter</UI> para ir direto — sem precisar do mouse.
+              </p>
+              <p>
+                <strong>Teclado e leitor de tela:</strong> ao apertar <UI>Tab</UI> logo que a tela abre, aparece o link <UI>Pular para o conteúdo</UI> — <UI>Enter</UI> leva direto ao conteúdo da página, sem percorrer o menu. Todos os campos dos formulários têm o nome visível acima e são lidos corretamente por leitores de tela.
               </p>
               <p>
                 <strong>Tema da interface:</strong> escolha entre Escuro, Papiro ou Sistema em <UI>Configurações →
@@ -812,7 +815,7 @@ export function ManualBook() {
               </Sub>
 
               <Sub id="tes-contas" title="7.2 Lançar contas a receber e a pagar">
-                <p>Em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, no bloco <UI>Nova conta</UI>:</p>
+                <p>Em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, a tela abre pela lista <UI>Contas cadastradas</UI>. Para lançar, clique em <UI>Nova conta</UI> (no alto, à direita) — o formulário abre e fecha sob demanda. Na lista, contas a receber aparecem em verde com <strong>+</strong> e contas a pagar em vermelho com <strong>−</strong>. Preencha:</p>
                 <Steps>
                   <li>Escolha a <UI>Categoria (plano de contas)</UI> — ela já sugere o título e o tipo.</li>
                   <li>Confira o <UI>Título da conta</UI> e o tipo: <strong>Conta a receber</strong> ou <strong>Conta a pagar</strong>.</li>
@@ -839,8 +842,7 @@ export function ManualBook() {
 
               <Sub id="tes-cobrancas" title="7.3 Criar cobranças e recorrência">
                 <p>
-                  Cobranças são os títulos que você gera para receber dos membros. Cada cobrança nasce com o seu próprio lançamento a receber, ligado ao membro. Em <UI>Tesouraria → Entradas e Saídas → Cobranças</UI>, no
-                  bloco <UI>Nova cobrança</UI>:
+                  Cobranças são os títulos que você gera para receber dos membros. Cada cobrança nasce com o seu próprio lançamento a receber, ligado ao membro. Em <UI>Tesouraria → Entradas e Saídas → Cobranças</UI>, a tela abre pela lista <UI>Cobranças cadastradas</UI> e tem três botões no alto: <UI>Nova cobrança</UI>, <UI>Cobrança em massa</UI> e <UI>Processar recorrentes</UI>. Clique em <UI>Nova cobrança</UI> e preencha:
                 </p>
                 <Steps>
                   <li>Selecione a <UI>categoria</UI> da cobrança (centro de custo do plano de contas: Mensalidades, Taxa de Iniciação, Taxa de Elevação, Taxa de Exaltação, eventos etc.). O <strong>lançamento a receber é criado automaticamente junto com a cobrança</strong>. O Tronco de Solidariedade não aparece aqui — a doação tem fluxo próprio na Hospitalaria.</li>
@@ -852,11 +854,11 @@ export function ManualBook() {
                 </Steps>
                 <p>
                   Para gerar as parcelas recorrentes que já venceram/estão previstas, use o botão <UI>Processar
-                  recorrentes</UI> no bloco <UI>Recorrência</UI> — ele cria as cobranças do período automaticamente, cada ocorrência com o seu próprio lançamento (pagar uma parcela não quita as seguintes).
+                  recorrentes</UI>, no alto da tela — ele cria as cobranças do período automaticamente, cada ocorrência com o seu próprio lançamento (pagar uma parcela não quita as seguintes).
                 </p>
                 <p>
                   <strong>Cobrança em massa:</strong> para cobrar todos os irmãos de uma vez (ex.: mensalidade), use o
-                  bloco <UI>Cobrança em massa</UI> — escolha a categoria, o público (membros ativos ou todos), o valor por
+                  botão <UI>Cobrança em massa</UI> — escolha a categoria, o público (membros ativos ou todos), o valor por
                   membro e o vencimento, e clique em <UI>Gerar para todos os membros</UI>. Cria, para cada membro, o lançamento a receber e uma cobrança numerada
                   automaticamente (e, se marcado, recorrente). Na categoria Mensalidades, membros isentos (Maçom Remido) ficam de fora.
                 </p>
@@ -1485,7 +1487,7 @@ export function ManualBook() {
                 O Venerável tem visão gerencial completa, sem lançar baixas financeiras. Acompanhe:
               </p>
               <Bullets>
-                <li><UI>Visão geral</UI>: <strong>Status financeiro</strong> e <strong>Ações rápidas</strong> — o pulso da loja.</li>
+                <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> e <strong>Ações rápidas</strong>: o pulso da loja.</li>
                 <li><UI>Relatórios</UI>: arrecadação, inadimplência, fluxo de caixa e frequência por período.</li>
                 <li><UI>Auditoria</UI> (se a loja conceder): a trilha imutável de quem fez o quê e quando — base para pareceres e aprovações.</li>
               </Bullets>

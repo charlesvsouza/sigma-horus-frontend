@@ -403,12 +403,12 @@ export default function PortalPage() {
             {extratoOpen ? (
               <div id="extrato-content">
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)} className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
+                  <select aria-label="Filtrar por tipo" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)} className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
                     <option value="all">Tudo</option>
                     <option value="RECEIVABLE">Devo</option>
                     <option value="PAYABLE">A Loja me deve</option>
                   </select>
-                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
+                  <select aria-label="Filtrar por situação" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
                     <option value="all">Qualquer status</option>
                     <option value="pending">Pendente</option>
                     <option value="paid">Pago</option>

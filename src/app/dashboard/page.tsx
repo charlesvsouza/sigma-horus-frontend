@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess } from '@/lib/rbac';
-import { MiniBar } from '@/components/mini-bar';
 import { brl } from '@/lib/currency';
+import { computeFinancialAccountBalances } from '@/lib/financial-accounts';
+import { remainingAmount, sumMoney } from '@/lib/money';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -38,11 +39,11 @@ export default async function DashboardPage() {
     );
   }
 
-  const [accounts, invoices, payments] = await withTenant(String(lodgeId), (db) =>
+  const [accounts, invoices, payments, financialAccounts, transfers] = await withTenant(String(lodgeId), (db) =>
     Promise.all([
       db.account.findMany({
         where: { lodgeId: String(lodgeId) },
-        select: { id: true, type: true, amount: true, status: true },
+        select: { id: true, type: true, amount: true, status: true, approvalStatus: true },
       }),
       db.invoice.findMany({
         where: { lodgeId: String(lodgeId) },
@@ -50,24 +51,41 @@ export default async function DashboardPage() {
       }),
       db.payment.findMany({
         where: { lodgeId: String(lodgeId) },
-        select: { id: true, amount: true },
+        select: { id: true, amount: true, accountId: true, bankAccountId: true, account: { select: { type: true } } },
       }),
+      db.financialAccount.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, openingBalance: true } }),
+      db.accountTransfer.findMany({ where: { lodgeId: String(lodgeId), status: 'approved' }, select: { fromId: true, toId: true, amount: true } }),
     ]),
   );
 
-  const receivableTotal = accounts
-    .filter((a) => a.type === 'RECEIVABLE')
-    .reduce((s, a) => s + Number(a.amount ?? 0), 0);
+  // Em aberto = valor da conta menos o que já foi pago dela (conta recebida/paga não conta mais).
+  const paidByAccount = new Map<string, number>();
+  for (const p of payments) {
+    if (p.accountId) paidByAccount.set(p.accountId, sumMoney([paidByAccount.get(p.accountId) ?? 0, Number(p.amount ?? 0)]));
+  }
+  const openAmount = (type: string) =>
+    sumMoney(
+      accounts
+        .filter((a) => a.type === type && a.approvalStatus !== 'rejected')
+        .map((a) => remainingAmount(Number(a.amount ?? 0), paidByAccount.get(a.id) ?? 0)),
+    );
+  const receivableTotal = openAmount('RECEIVABLE');
+  const payableTotal = openAmount('PAYABLE');
 
-  const payableTotal = accounts
-    .filter((a) => a.type === 'PAYABLE')
-    .reduce((s, a) => s + Number(a.amount ?? 0), 0);
+  // Saldo em caixa = soma do saldo de todos os caixas e contas bancárias (mesma regra dos Extratos).
+  const cashBalance = sumMoney(
+    computeFinancialAccountBalances(
+      financialAccounts.map((f) => ({ id: f.id, openingBalance: Number(f.openingBalance) })),
+      payments.map((p) => ({ bankAccountId: p.bankAccountId, amount: Number(p.amount ?? 0), accountType: p.account?.type ?? 'RECEIVABLE' })),
+      transfers.map((t) => ({ fromId: t.fromId, toId: t.toId, amount: Number(t.amount) })),
+    ).map((b) => b.saldo),
+  );
 
-  const receivedTotal = payments.reduce((s, p) => s + Number(p.amount ?? 0), 0);
+  const receivedTotal = sumMoney(payments.filter((p) => p.account?.type === 'RECEIVABLE').map((p) => Number(p.amount ?? 0)));
   const pendingAccounts = accounts.filter((a) => a.status === 'pending').length;
   const overdueAccounts = accounts.filter((a) => a.status === 'overdue').length;
   const pendingInvoices = invoices.filter((i) => i.status === 'pending').length;
-  const netBalance = receivableTotal - payableTotal;
+  const netBalance = sumMoney([receivableTotal, -payableTotal]);
 
   const attention = [
     { href: '/dashboard/contas', label: 'Contas vencidas', value: overdueAccounts, tone: 'rose' as const },
@@ -87,28 +105,35 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        {/* Âncora: posição financeira da loja */}
+        {/* Posição financeira: o que há em caixa hoje e o que ainda está em aberto, com o mesmo peso */}
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6 lg:p-7">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-sand-dark">Posição financeira</p>
+            <h2 className="text-base font-semibold text-sand-light">Posição financeira</h2>
             <Link href="/dashboard/relatorios" className="text-xs font-medium text-gold transition hover:text-gold-light">Relatórios</Link>
           </div>
-          <p className={`mt-4 font-display text-4xl font-bold tabular-nums ${netBalance >= 0 ? 'text-sand-light' : 'text-rose-300'}`}>
-            {brl(netBalance)}
-          </p>
-          <p className="mt-1 text-sm text-sand-dark">Saldo líquido — a receber menos a pagar</p>
 
-          <div className="mt-6 space-y-1">
-            <MiniBar value={receivableTotal} total={receivableTotal + payableTotal} color="var(--color-emerald-500)" label="A receber" />
-            <MiniBar value={payableTotal} total={receivableTotal + payableTotal} color="var(--color-rose-500)" label="A pagar" />
+          <div className="mt-5 grid gap-px overflow-hidden rounded-lg border border-white/6 bg-white/6 sm:grid-cols-2">
+            <div className="bg-sigma-blue-deep/60 p-5">
+              <p className="text-xs text-sand-dark">Saldo em caixa</p>
+              <p className={`mt-2 font-display text-3xl font-bold tabular-nums ${cashBalance >= 0 ? 'text-sand-light' : 'text-rose-300'}`}>{brl(cashBalance)}</p>
+              <p className="mt-1 text-xs text-sand-dark">Somando todos os caixas e contas bancárias.</p>
+              <Link href="/dashboard/extratos" className="mt-3 inline-block text-xs font-medium text-gold transition hover:text-gold-light">Ver extratos</Link>
+            </div>
+            <div className="bg-sigma-blue-deep/60 p-5">
+              <p className="text-xs text-sand-dark">A receber menos a pagar (em aberto)</p>
+              <p className={`mt-2 font-display text-3xl font-bold tabular-nums ${netBalance >= 0 ? 'text-sand-light' : 'text-rose-300'}`}>{brl(netBalance)}</p>
+              <p className="mt-1 text-xs text-sand-dark">O que ainda vai entrar e sair.</p>
+              <Link href="/dashboard/contas" className="mt-3 inline-block text-xs font-medium text-gold transition hover:text-gold-light">Ver contas</Link>
+            </div>
           </div>
+
           <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/6 bg-white/6">
             <div className="bg-sigma-blue-deep/60 p-4">
-              <p className="text-xs text-sand-dark">A receber</p>
+              <p className="text-xs text-sand-dark">A receber (em aberto)</p>
               <p className="mt-1 text-lg font-semibold tabular-nums text-emerald-300">{brl(receivableTotal)}</p>
             </div>
             <div className="bg-sigma-blue-deep/60 p-4">
-              <p className="text-xs text-sand-dark">A pagar</p>
+              <p className="text-xs text-sand-dark">A pagar (em aberto)</p>
               <p className="mt-1 text-lg font-semibold tabular-nums text-rose-300">{brl(payableTotal)}</p>
             </div>
           </div>

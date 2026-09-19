@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard, useConfirm } from '@/components/ui';
+import { Alert, Badge, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 
 import { DOCUMENT_CATEGORY_SUGGESTIONS as DOCUMENT_CATEGORIES, isInternalCategory } from '@/lib/documents';
@@ -146,30 +146,40 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
         <FormCard title="Novo documento">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <input value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT} placeholder="Título" required />
-              <select value={kind} onChange={(event) => setKind(event.target.value)} className={INPUT}>
-                <option value="document">Documento</option>
-                <option value="minutes">Ata</option>
-                <option value="certificate">Certificado</option>
-                <option value="receipt">Comprovante</option>
-              </select>
-              <input value={category} onChange={(event) => setCategory(event.target.value)} className={INPUT} placeholder="Categoria (opcional)" list="document-categories" />
+              <Field label="Título">
+                <input value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT} required />
+              </Field>
+              <Field label="Tipo">
+                <select value={kind} onChange={(event) => setKind(event.target.value)} className={INPUT}>
+                  <option value="document">Documento</option>
+                  <option value="minutes">Ata</option>
+                  <option value="certificate">Certificado</option>
+                  <option value="receipt">Comprovante</option>
+                </select>
+              </Field>
+              <Field label="Categoria (opcional)">
+                <input value={category} onChange={(event) => setCategory(event.target.value)} className={INPUT} list="document-categories" />
+              </Field>
               <datalist id="document-categories">
                 {DOCUMENT_CATEGORIES.map((c) => <option key={c} value={c} />)}
               </datalist>
               {isInternalCategory(category) ? (
                 <p className="text-xs text-amber-300 md:col-span-2">Categoria <strong>Interno Loja</strong>: o documento fica só com a gestão da loja — não aparece no portal dos irmãos nem pode ser baixado por eles.</p>
               ) : null}
-              <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={INPUT}>
-                <option value="">Vincular a um membro (deixe em branco para documento institucional — visível a todos)</option>
-                {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-              </select>
+              <Field label="Vínculo com membro">
+                <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={INPUT}>
+                  <option value="">Vincular a um membro (deixe em branco para documento institucional — visível a todos)</option>
+                  {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+                </select>
+              </Field>
               <label className="rounded-lg border border-dashed border-white/8 bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand md:col-span-2">
                 <span className="mb-2 block font-medium text-sand-light">Arquivo(s)</span>
                 <input type="file" multiple onChange={(event) => setFiles(Array.from(event.target.files ?? []))} className="w-full" />
                 {files.length > 1 ? <span className="mt-2 block text-xs text-sand-dark">{files.length} arquivos selecionados — cada um vira um documento, com o título acima seguido do nome do arquivo.</span> : null}
               </label>
-              <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Resumo ou conteúdo do documento" rows={4} />
+              <Field label="Resumo ou conteúdo do documento" className="md:col-span-2">
+                <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} rows={4} />
+              </Field>
             </div>
             <Button type="submit" disabled={submitting}>{submitting ? 'Enviando…' : files.length > 1 ? `Enviar ${files.length} documentos` : 'Enviar e salvar documento'}</Button>
           </form>

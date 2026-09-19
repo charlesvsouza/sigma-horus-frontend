@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard } from '@/components/ui';
+import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass } from '@/components/ui';
 import { MESSAGE_STATUS_LABEL } from '@/lib/status-labels';
 
 interface MessageItem {
@@ -82,17 +82,25 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
         <FormCard title="Nova comunicação">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <input value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT} placeholder="Título da mensagem" required />
-              <select value={channel} onChange={(event) => setChannel(event.target.value)} className={INPUT}>
-                <option value="email">E-mail</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="sms">SMS</option>
-              </select>
-              <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={`${INPUT} md:col-span-2`}>
-                <option value="">Enviar a todos ou a um membro</option>
-                {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-              </select>
-              <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Texto da comunicação" rows={4} />
+              <Field label="Título da mensagem">
+                <input value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT} required />
+              </Field>
+              <Field label="Canal">
+                <select value={channel} onChange={(event) => setChannel(event.target.value)} className={INPUT}>
+                  <option value="email">E-mail</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="sms">SMS</option>
+                </select>
+              </Field>
+              <Field label="Destinatário" className="md:col-span-2">
+                <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={`${INPUT} md:col-span-2`}>
+                  <option value="">Enviar a todos ou a um membro</option>
+                  {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Texto da comunicação" className="md:col-span-2">
+                <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} rows={4} />
+              </Field>
             </div>
             <Button type="submit" disabled={submitting}>{submitting ? 'Enviando…' : 'Enviar'}</Button>
           </form>
@@ -101,7 +109,7 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
         <CollapsibleCard
           title="Histórico"
           count={items.length}
-          headerAction={items.length > 0 ? <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por título, membro ou canal…" className={`${INPUT} max-w-56`} /> : undefined}
+          headerAction={items.length > 0 ? <input aria-label="Buscar por título, membro ou canal" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por título, membro ou canal…" className={`${INPUT} max-w-56`} /> : undefined}
         >
           <div className="max-h-128 space-y-3 overflow-y-auto pr-1">
             {items.length === 0 ? (

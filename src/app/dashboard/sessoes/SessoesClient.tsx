@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert, CollapsibleCard, useConfirm } from '@/components/ui';
+import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 
 interface SessionItem { id: string; title: string; date: string; type: string; grade?: string | null; notes?: string | null; agenda?: string | null; _count: { attendances: number }; }
 
@@ -65,7 +65,9 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
         <FormCard title="Nova sessão">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} placeholder="Título da sessão" required />
+              <Field label="Título da sessão">
+                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT} required />
+              </Field>
               <label className="block">
                 <span className="text-xs uppercase tracking-wide text-sand-dark/70">Início</span>
                 <input type="datetime-local" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={`mt-1.5 ${INPUT}`} required />
@@ -74,15 +76,23 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
                 <span className="text-xs uppercase tracking-wide text-sand-dark/70">Término (a presença só pode ser marcada depois)</span>
                 <input type="datetime-local" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={`mt-1.5 ${INPUT}`} required />
               </label>
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={INPUT}>
-                <option value="ordinary">Ordinária</option>
-                <option value="magnificent">Magna</option>
-                <option value="emergency">Extraordinária</option>
-                <option value="other">Outra</option>
-              </select>
-              <input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} className={INPUT} placeholder="Grau (opcional)" />
-              <textarea value={form.agenda} onChange={(e) => setForm({ ...form, agenda: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Ordem do dia (visível ao obreiro na Secretaria)" rows={3} />
-              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações internas (não aparece pro obreiro)" rows={2} />
+              <Field label="Tipo de sessão">
+                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={INPUT}>
+                  <option value="ordinary">Ordinária</option>
+                  <option value="magnificent">Magna</option>
+                  <option value="emergency">Extraordinária</option>
+                  <option value="other">Outra</option>
+                </select>
+              </Field>
+              <Field label="Grau (opcional)">
+                <input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} className={INPUT} />
+              </Field>
+              <Field label="Ordem do dia (visível ao obreiro na Secretaria)" className="md:col-span-2">
+                <textarea value={form.agenda} onChange={(e) => setForm({ ...form, agenda: e.target.value })} className={`${INPUT} md:col-span-2`} rows={3} />
+              </Field>
+              <Field label="Observações internas (não aparece pro obreiro)" className="md:col-span-2">
+                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} rows={2} />
+              </Field>
             </div>
             <Button type="submit" disabled={submitting}>{submitting ? 'Criando…' : 'Criar sessão'}</Button>
           </form>

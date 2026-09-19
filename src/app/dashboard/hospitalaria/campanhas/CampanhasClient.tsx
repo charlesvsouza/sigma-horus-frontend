@@ -104,7 +104,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Pedidos dos obreiros</h2>
             {requests.some((r) => r.status === 'pending') ? (
-              <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-[11px] font-medium text-gold">
+              <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-gold">
                 {requests.filter((r) => r.status === 'pending').length} pendente(s)
               </span>
             ) : null}
@@ -121,7 +121,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
                       {r.title} <span className="ml-1 text-xs text-sand-dark">· {r.memberName}</span>
                     </p>
                     {r.description ? <p className="mt-1 text-xs text-sand-dark">{r.description}</p> : null}
-                    <p className="mt-1 text-[11px] text-sand-dark/70">{new Date(r.createdAt).toLocaleDateString('pt-BR')}</p>
+                    <p className="mt-1 text-xs text-sand-dark/70">{new Date(r.createdAt).toLocaleDateString('pt-BR')}</p>
                   </div>
                   <button
                     type="button"
@@ -148,7 +148,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
             <h2 className="text-base font-semibold text-sand-light">Nova campanha</h2>
             <form onSubmit={createCampaign} className="mt-5 space-y-4">
               <div>
-                <span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Modelo (opcional)</span>
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Modelo (opcional)</span>
                 <select className={inputClass} value="" onChange={(e) => { const t = TEMPLATES.find((x) => x.title === e.target.value); if (t) setForm((f) => ({ ...f, title: t.title, description: t.description })); }}>
                   <option value="">Exemplos de campanha…</option>
                   {TEMPLATES.map((t) => <option key={t.title} value={t.title}>{t.title}</option>)}
@@ -258,7 +258,7 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
       <div className="grid gap-5 md:grid-cols-2">
         {/* Doação voluntária */}
         <form onSubmit={addDonation} className="space-y-2 rounded-lg border border-white/6 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Registrar doação</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gold">Registrar doação</p>
           <input type="number" step="0.01" value={donation.amount} onChange={(e) => setDonation({ ...donation, amount: e.target.value })} className={inputClass} placeholder="Valor *" required />
           <input value={donation.donorName} onChange={(e) => setDonation({ ...donation, donorName: e.target.value })} className={inputClass} placeholder="Nome do doador" disabled={donation.anonymous} />
           <label className="flex items-center gap-2 text-xs text-sand-dark"><input type="checkbox" checked={donation.anonymous} onChange={(e) => setDonation({ ...donation, anonymous: e.target.checked })} className="accent-gold" /> Doador anônimo</label>
@@ -267,7 +267,7 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
 
         {/* Custeio pelo Tronco */}
         <form onSubmit={fundFromTronco} className="space-y-2 rounded-lg border border-white/6 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Custear pelo Tronco</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gold">Custear pelo Tronco</p>
           <p className="text-xs text-sand-dark">Disponível: {tronco?.configured ? brl(tronco.balance) : '—'}. Já custeado: {brl(Number(campaign.fundAllocated))}.</p>
           <input type="number" step="0.01" value={fund} onChange={(e) => setFund(e.target.value)} className={inputClass} placeholder="Valor a custear" disabled={!tronco?.configured} />
           <Button type="submit" size="sm" variant="secondary" disabled={!tronco?.configured}>Custear</Button>
@@ -277,7 +277,7 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
       {/* Doações registradas */}
       {campaign.donations && campaign.donations.length > 0 ? (
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Doações ({campaign.donations.length})</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gold">Doações ({campaign.donations.length})</p>
           <ul className="mt-1 divide-y divide-white/5">
             {campaign.donations.map((d) => (
               <li key={d.id} className="flex items-center justify-between py-1.5">
@@ -291,7 +291,7 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
 
       {/* Convocação dos irmãos */}
       <div className="rounded-lg border border-white/6 p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Convocar os irmãos</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gold">Convocar os irmãos</p>
         <div className="mt-2 flex flex-wrap items-center gap-4">
           {(['email', 'whatsapp', 'sms'] as const).map((c) => (
             <label key={c} className="flex items-center gap-2 text-xs text-sand">

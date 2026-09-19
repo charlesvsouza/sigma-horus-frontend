@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, CollapsibleCard, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { MATERIAL_CATEGORIES } from '@/lib/masonic-reference';
 import { symbolicSituation, isEligibleForDegree, type SymbolicSituation } from '@/lib/masonic-degree';
 
@@ -249,19 +249,31 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
           >
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <input aria-label="Nome do material" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={INPUT_CLASS} placeholder="Nome do material" required />
-                <input aria-label="Categoria" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={INPUT_CLASS} placeholder="Categoria" list="material-categories" />
+                <Field label="Nome do material">
+                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={INPUT_CLASS} required />
+                </Field>
+                <Field label="Categoria">
+                  <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={INPUT_CLASS} list="material-categories" />
+                </Field>
                 <datalist id="material-categories">{MATERIAL_CATEGORIES.map((c) => <option key={c} value={c} />)}</datalist>
-                <input aria-label="Quantidade" type="number" min="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className={INPUT_CLASS} placeholder="Quantidade" required />
-                <select aria-label="Grau exigido" value={form.requiredDegree} onChange={(e) => setForm({ ...form, requiredDegree: e.target.value })} className={INPUT_CLASS}>
-                  <option value="">Sem grau exigido</option>
-                  {DEGREE_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
-                <select aria-label="Rito" value={form.riteId} onChange={(e) => setForm({ ...form, riteId: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
-                  <option value="">Genérico (qualquer rito)</option>
-                  {rites.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-                <textarea aria-label="Observações" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Observações" rows={2} />
+                <Field label="Quantidade">
+                  <input type="number" min="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className={INPUT_CLASS} required />
+                </Field>
+                <Field label="Grau exigido">
+                  <select value={form.requiredDegree} onChange={(e) => setForm({ ...form, requiredDegree: e.target.value })} className={INPUT_CLASS}>
+                    <option value="">Sem grau exigido</option>
+                    {DEGREE_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </Field>
+                <Field label="Rito" className="md:col-span-2">
+                  <select value={form.riteId} onChange={(e) => setForm({ ...form, riteId: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
+                    <option value="">Genérico (qualquer rito)</option>
+                    {rites.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                </Field>
+                <Field label="Observações" className="md:col-span-2">
+                  <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} rows={2} />
+                </Field>
               </div>
               <Button type="submit" disabled={submitting}>{submitting ? 'Salvando…' : editingId ? 'Salvar alterações' : 'Cadastrar material'}</Button>
             </form>
@@ -271,7 +283,7 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
             title="Catálogo de materiais"
             count={materials.length}
             defaultOpen
-            headerAction={materials.length > 0 ? <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome ou categoria…" className={`${INPUT_CLASS} max-w-xs`} /> : undefined}
+            headerAction={materials.length > 0 ? <input aria-label="Buscar por nome ou categoria" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome ou categoria…" className={`${INPUT_CLASS} max-w-xs`} /> : undefined}
           >
             <div className="space-y-3">
               {materials.length === 0 ? (
@@ -283,8 +295,8 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
                   <div>
                     <p className="text-sm font-medium text-sand-light">
                       {material.name}
-                      {material.category ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">{material.category}</span> : null}
-                      {material.requiredDegree ? <span className="ml-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[10px] font-medium text-sky-300">{material.requiredDegree}</span> : null}
+                      {material.category ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">{material.category}</span> : null}
+                      {material.requiredDegree ? <span className="ml-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-xs font-medium text-sky-300">{material.requiredDegree}</span> : null}
                     </p>
                     <p className="mt-1 text-xs text-sand-dark">
                       {material.quantity} em estoque · {material.availableQuantity} disponível{material.availableQuantity !== 1 ? 'is' : ''}
@@ -292,9 +304,9 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => startEdit(material)} className="text-xs text-gold/70 transition hover:text-gold">Editar</button>
+                    <button onClick={() => startEdit(material)} className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Editar</button>
                     <button onClick={() => toggleActive(material)} className="text-xs text-sand-dark hover:text-sand-light">{material.active ? 'Inativar' : 'Ativar'}</button>
-                    <button onClick={() => void handleDelete(material.id)} className="text-xs text-rose-300/60 transition hover:text-rose-300">Remover</button>
+                    <button onClick={() => void handleDelete(material.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Remover</button>
                   </div>
                 </div>
               ))}
@@ -304,16 +316,24 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
 
         <CollapsibleCard title="Fornecimento de materiais" count={loans.length} defaultOpen={loans.length > 0}>
           <form onSubmit={handleLoanSubmit} className="mb-5 grid gap-4 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4 md:grid-cols-2">
-            <select aria-label="Material" value={loanForm.materialId} onChange={(e) => setLoanForm({ ...loanForm, materialId: e.target.value })} className={INPUT_CLASS} required>
-              <option value="">Material</option>
-              {availableForLoan.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.availableQuantity} disponível)</option>)}
-            </select>
-            <select aria-label="Membro" value={loanForm.memberId} onChange={(e) => setLoanForm({ ...loanForm, memberId: e.target.value })} className={INPUT_CLASS} required>
-              <option value="">Membro</option>
-              {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
-            <input aria-label="Quantidade" type="number" min="1" value={loanForm.quantity} onChange={(e) => setLoanForm({ ...loanForm, quantity: e.target.value })} className={INPUT_CLASS} placeholder="Quantidade" required />
-            <input aria-label="Observação" value={loanForm.notes} onChange={(e) => setLoanForm({ ...loanForm, notes: e.target.value })} className={INPUT_CLASS} placeholder="Observação (opcional)" />
+            <Field label="Material">
+              <select value={loanForm.materialId} onChange={(e) => setLoanForm({ ...loanForm, materialId: e.target.value })} className={INPUT_CLASS} required>
+                <option value="">Selecione…</option>
+                {availableForLoan.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.availableQuantity} disponível)</option>)}
+              </select>
+            </Field>
+            <Field label="Membro">
+              <select value={loanForm.memberId} onChange={(e) => setLoanForm({ ...loanForm, memberId: e.target.value })} className={INPUT_CLASS} required>
+                <option value="">Selecione…</option>
+                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Quantidade">
+              <input type="number" min="1" value={loanForm.quantity} onChange={(e) => setLoanForm({ ...loanForm, quantity: e.target.value })} className={INPUT_CLASS} required />
+            </Field>
+            <Field label="Observação">
+              <input value={loanForm.notes} onChange={(e) => setLoanForm({ ...loanForm, notes: e.target.value })} className={INPUT_CLASS} placeholder="Observação (opcional)" />
+            </Field>
             {!loanEligibility ? (
               <p className="text-xs text-rose-300 md:col-span-2">
                 Este membro ainda não atingiu o grau exigido ({selectedLoanMaterial?.requiredDegree}) para este material.
@@ -334,8 +354,8 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
                   <p className="mt-1 text-xs text-sand-dark">desde {new Date(loan.issuedAt).toLocaleDateString('pt-BR')}{loan.notes ? ` • ${loan.notes}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'returned')} className="text-xs text-emerald-300/80 transition hover:text-emerald-300 disabled:opacity-40">Marcar como devolvido</button>
-                  <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'lost')} className="text-xs text-rose-300/60 transition hover:text-rose-300 disabled:opacity-40">Marcar como extraviado</button>
+                  <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'returned')} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200 disabled:opacity-40">Marcar como devolvido</button>
+                  <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'lost')} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200 disabled:opacity-40">Marcar como extraviado</button>
                 </div>
               </div>
             ))}

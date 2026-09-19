@@ -27,8 +27,9 @@ export function FiltrosRelatorios({ from, to }: { from: string; to: string }) {
     <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
       <div className="flex flex-wrap items-end gap-4">
         <div>
-          <label className="mb-2 block text-sm text-sand-dark">De</label>
+          <label htmlFor="filtro-de" className="mb-2 block text-sm text-sand-dark">De</label>
           <input
+            id="filtro-de"
             type="date"
             value={fromVal}
             onChange={(e) => setFromVal(e.target.value)}
@@ -36,8 +37,9 @@ export function FiltrosRelatorios({ from, to }: { from: string; to: string }) {
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm text-sand-dark">Até</label>
+          <label htmlFor="filtro-ate" className="mb-2 block text-sm text-sand-dark">Até</label>
           <input
+            id="filtro-ate"
             type="date"
             value={toVal}
             onChange={(e) => setToVal(e.target.value)}

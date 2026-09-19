@@ -118,6 +118,7 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
             <input
               ref={fileRef}
               type="file"
+              aria-label="Arquivo do extrato (OFX ou CSV)"
               accept=".ofx,.csv,text/plain"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f); }}
               disabled={importing}

@@ -6,6 +6,7 @@ export { CollapsibleCard } from './collapsible-card';
 export { Badge } from './badge';
 export type { BadgeVariant } from './badge';
 export { Input } from './input';
+export { Field } from './field';
 export { MaskedInput } from './masked-input';
 export { inputClass, inputBase, inputBorder, inputBorderError } from './field-styles';
 export { Skeleton, SkeletonCard } from './skeleton';

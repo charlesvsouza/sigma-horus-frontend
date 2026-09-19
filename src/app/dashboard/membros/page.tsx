@@ -412,7 +412,7 @@ export default function MembrosPage() {
 
           <div className="mt-4 overflow-hidden rounded-lg border border-white/6">
             {/* Cabeçalho */}
-            <div className="hidden grid-cols-[1.6fr_0.9fr_0.7fr_0.9fr_1fr_auto] gap-3 border-b border-white/6 bg-sigma-blue-deep/40 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-sand-dark md:grid">
+            <div className="hidden grid-cols-[1.6fr_0.9fr_0.7fr_0.9fr_1fr_auto] gap-3 border-b border-white/6 bg-sigma-blue-deep/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-sand-dark md:grid">
               <span>Nome</span><span>Grau</span><span>Status</span><span>Rito</span><span>Telefone</span><span className="text-right">Ações</span>
             </div>
 
@@ -509,12 +509,12 @@ export default function MembrosPage() {
                               <Detail label="Loja de origem" value={m.originLodge} />
                             </div>
                             <div>
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Evolução maçônica</p>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-gold">Evolução maçônica</p>
                               <p className="mt-1 text-sand">{formatEvolution(m)}</p>
                             </div>
                             {m.relatives && m.relatives.length > 0 ? (
                               <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Família e dependentes</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gold">Família e dependentes</p>
                                 <ul className="mt-1 space-y-0.5 text-sand">
                                   {m.relatives.map((r, i) => (
                                     <li key={r.id ?? i}>
@@ -539,7 +539,7 @@ export default function MembrosPage() {
                                   {grantingId === m.id ? 'Enviando…' : m.user ? 'Reenviar acesso' : 'Conceder acesso'}
                                 </button>
                               ) : null}
-                              {m.user ? <span className="text-[11px] text-emerald-300/80">✓ acesso ativo{m.user.mustChangePassword ? ' (senha provisória)' : ''}</span> : null}
+                              {m.user ? <span className="text-xs text-emerald-300/80">✓ acesso ativo{m.user.mustChangePassword ? ' (senha provisória)' : ''}</span> : null}
                               <button onClick={() => deleteMember(m)} className="rounded-full border border-rose-500/40 px-4 py-2 text-xs font-medium text-rose-300 transition-all hover:border-rose-500/60 hover:text-rose-200">Excluir cadastro</button>
                             </div>
                           </div>
@@ -591,7 +591,7 @@ export default function MembrosPage() {
 
 function Detail({ label, value }: { label: string; value?: string | null }) {
   return (
-    <p className="text-sand-dark"><span className="text-[11px] uppercase tracking-wide text-sand-dark/70">{label}:</span> <span className="text-sand">{value || '—'}</span></p>
+    <p className="text-sand-dark"><span className="text-xs uppercase tracking-wide text-sand-dark/70">{label}:</span> <span className="text-sand">{value || '—'}</span></p>
   );
 }
 
@@ -608,9 +608,9 @@ function Collapsible({ title, defaultOpen = false, badge, children }: { title: s
         <span className="flex items-center gap-2">
           <span className={`text-gold transition-transform duration-200 ${open ? 'rotate-90' : ''}`}>▸</span>
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">{title}</span>
-          {badge ? <span className="rounded-full bg-gold/12 px-2 py-0.5 text-[10px] font-medium text-gold">{badge}</span> : null}
+          {badge ? <span className="rounded-full bg-gold/12 px-2 py-0.5 text-xs font-medium text-gold">{badge}</span> : null}
         </span>
-        <span className="text-[11px] text-sand-dark/60">{open ? 'recolher' : 'expandir'}</span>
+        <span className="text-xs text-sand-dark/60">{open ? 'recolher' : 'expandir'}</span>
       </button>
       {open ? <div className="border-t border-white/6 px-5 pb-5 pt-4">{children}</div> : null}
     </div>
@@ -757,7 +757,7 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
 
       <Collapsible title="Dados pessoais" defaultOpen={hasPersonal}>
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="block"><span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Nascimento</span>
+          <label className="block"><span className="text-xs uppercase tracking-wide text-sand-dark/70">Nascimento</span>
             <input type="date" value={form.birthDate} onChange={(e) => set('birthDate', clampDateYear(e.target.value, form.birthDate))} className={INPUT} /></label>
           <MaskedInput value={form.cpf} onChange={(v) => set('cpf', v)} mask={maskCPF} inputMode="numeric" className={INPUT} placeholder="CPF" />
           <MaskedInput value={form.rg} onChange={(v) => set('rg', v)} mask={maskRG} className={INPUT} placeholder="RG" />
@@ -857,18 +857,18 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
           ))}
           <div className="mt-3 grid gap-4 border-t border-white/6 pt-4 md:grid-cols-2">
             <label className="block">
-              <span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Situação simbólica (automática)</span>
+              <span className="text-xs uppercase tracking-wide text-sand-dark/70">Situação simbólica (automática)</span>
               <div className={`${INPUT} flex items-center text-sand`}>{formSituation ?? 'Defina os marcos acima'}</div>
             </label>
             <label className="block">
-              <span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Grau Filosófico atual (REAA)</span>
+              <span className="text-xs uppercase tracking-wide text-sand-dark/70">Grau Filosófico atual (REAA)</span>
               <select value={form.currentDegree} onChange={(e) => set('currentDegree', e.target.value)} className={INPUT}>
                 <option value="">— (segue a situação simbólica)</option>
                 {PHILOSOPHICAL_DEGREES.map((g) => <option key={g} value={String(g)}>Grau {g}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-[11px] uppercase tracking-wide text-sand-dark/70">Tempo de Ordem (automático)</span>
+              <span className="text-xs uppercase tracking-wide text-sand-dark/70">Tempo de Ordem (automático)</span>
               <div className={`${INPUT} flex items-center text-sand`}>{timeInOrderLabel(form.initiationDate) ?? 'Defina a data de iniciação'}</div>
             </label>
             <input value={form.masonicNumber} onChange={(e) => set('masonicNumber', e.target.value)} className={INPUT} placeholder="Número maçônico (CIM)" />

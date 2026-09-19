@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -116,25 +116,41 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
         >
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={INPUT_CLASS} placeholder="Nome do bem" required />
-              <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={INPUT_CLASS} placeholder="Categoria" list="asset-categories" />
+              <Field label="Nome do bem">
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={INPUT_CLASS} required />
+              </Field>
+              <Field label="Categoria">
+                <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={INPUT_CLASS} list="asset-categories" />
+              </Field>
               <datalist id="asset-categories">{CATEGORIES.map((c) => <option key={c} value={c} />)}</datalist>
               <label className="block text-xs text-sand-dark">Data de aquisição
                 <input type="date" value={form.acquisitionDate} onChange={(e) => setForm({ ...form, acquisitionDate: e.target.value })} className={`mt-1.5 ${INPUT_CLASS}`} />
               </label>
-              <input type="number" step="0.01" min="0" value={form.acquisitionValue} onChange={(e) => setForm({ ...form, acquisitionValue: e.target.value })} className={INPUT_CLASS} placeholder="Valor de aquisição" required />
-              <input type="number" step="0.01" min="0" value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: e.target.value })} className={INPUT_CLASS} placeholder="Valor atual estimado (opcional)" />
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={INPUT_CLASS}>
-                <option value="active">Em uso</option>
-                <option value="disposed">Baixado/alienado</option>
-                <option value="lost">Perdido/sinistrado</option>
-              </select>
-              <select value={form.chartAccountId} onChange={(e) => setForm({ ...form, chartAccountId: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
-                <option value="">Vincular ao plano de contas (opcional — categoria Investimentos)</option>
-                {chartAccounts.map((c) => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
-              </select>
-              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Descrição" rows={2} />
-              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} placeholder="Observações" rows={2} />
+              <Field label="Valor de aquisição">
+                <input type="number" step="0.01" min="0" value={form.acquisitionValue} onChange={(e) => setForm({ ...form, acquisitionValue: e.target.value })} className={INPUT_CLASS} required />
+              </Field>
+              <Field label="Valor atual estimado (opcional)">
+                <input type="number" step="0.01" min="0" value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: e.target.value })} className={INPUT_CLASS} />
+              </Field>
+              <Field label="Situação">
+                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={INPUT_CLASS}>
+                  <option value="active">Em uso</option>
+                  <option value="disposed">Baixado/alienado</option>
+                  <option value="lost">Perdido/sinistrado</option>
+                </select>
+              </Field>
+              <Field label="Categoria no plano de contas" className="md:col-span-2">
+                <select value={form.chartAccountId} onChange={(e) => setForm({ ...form, chartAccountId: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`}>
+                  <option value="">Vincular ao plano de contas (opcional — categoria Investimentos)</option>
+                  {chartAccounts.map((c) => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Descrição" className="md:col-span-2">
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} rows={2} />
+              </Field>
+              <Field label="Observações" className="md:col-span-2">
+                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT_CLASS} md:col-span-2`} rows={2} />
+              </Field>
             </div>
             <Button type="submit" disabled={submitting}>{submitting ? 'Salvando…' : editingId ? 'Salvar alterações' : 'Cadastrar bem'}</Button>
           </form>
@@ -143,7 +159,7 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Bens cadastrados</h2>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome ou categoria…" className={`${INPUT_CLASS} max-w-xs`} />
+            <input aria-label="Buscar por nome ou categoria" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome ou categoria…" className={`${INPUT_CLASS} max-w-xs`} />
           </div>
           <div className="mt-5 space-y-3">
             {assets.length === 0 ? (
@@ -155,7 +171,7 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
                 <div>
                   <p className="text-sm font-medium text-sand-light">
                     {asset.name}
-                    {asset.category ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">{asset.category}</span> : null}
+                    {asset.category ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">{asset.category}</span> : null}
                   </p>
                   <p className="mt-1 text-xs text-sand-dark">
                     {STATUS_LABEL[asset.status] ?? asset.status}
@@ -166,12 +182,12 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
                 <div className="text-right text-xs text-sand-dark">
                   <p className="tabular-nums">{brl(asset.currentValue ?? asset.acquisitionValue)}</p>
                   {asset.currentValue != null && asset.currentValue !== asset.acquisitionValue ? (
-                    <p className="mt-0.5 text-[11px]">Aquisição: {brl(asset.acquisitionValue)}</p>
+                    <p className="mt-0.5 text-xs">Aquisição: {brl(asset.acquisitionValue)}</p>
                   ) : null}
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => startEdit(asset)} className="text-xs text-gold/70 transition hover:text-gold">Editar</button>
-                  <button onClick={() => void handleDelete(asset.id)} className="text-xs text-rose-300/60 transition hover:text-rose-300">Remover</button>
+                  <button onClick={() => startEdit(asset)} className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Editar</button>
+                  <button onClick={() => void handleDelete(asset.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Remover</button>
                 </div>
               </div>
             ))}

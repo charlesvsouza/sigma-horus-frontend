@@ -138,6 +138,7 @@ export default function HospitalariaPortalPage() {
               value={customAmount}
               onChange={(e) => { setCustomAmount(e.target.value); setDonationAmount(null); setDonationResult(null); }}
               placeholder="Outro valor"
+              aria-label="Outro valor da doação"
               inputMode="decimal"
               className={`${inputClass} w-32`}
             />
@@ -187,7 +188,7 @@ export default function HospitalariaPortalPage() {
                 <div key={c.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4 text-sm text-sand">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-medium text-sand-light">{c.title}</p>
-                    <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[11px] font-medium text-gold">{STATUS_LABEL[c.status] ?? c.status}</span>
+                    <span className="rounded-full bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">{STATUS_LABEL[c.status] ?? c.status}</span>
                   </div>
                   {c.description ? <p className="mt-1 text-sand-dark">{c.description}</p> : null}
                   {c.beneficiaryName ? <p className="mt-1 text-xs text-sand-dark">Beneficiário: {c.beneficiaryName}</p> : null}

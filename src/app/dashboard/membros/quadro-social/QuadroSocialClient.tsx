@@ -70,7 +70,7 @@ export default function QuadroSocialClient({ lodgeName, crestUrl, members }: { l
       <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="qs-noprint">
-          <Link href="/dashboard/membros" className="text-xs text-gold/70 transition hover:text-gold">&larr; Voltar a Membros</Link>
+          <Link href="/dashboard/membros" className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">&larr; Voltar a Membros</Link>
           <h1 className="mt-2 font-display text-2xl font-bold text-sand-light">Quadro social</h1>
           <p className="mt-1 text-sm text-sand-dark">
             Fotografia atual do quadro por grau simbólico — formato pensado pra prestação de contas à Potência.

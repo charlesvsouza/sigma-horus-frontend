@@ -113,14 +113,14 @@ export default function SecretariaPage() {
                       key={day.toISOString()}
                       className={`min-h-[72px] rounded-lg border p-1.5 text-left ${inMonth ? 'border-white/6 bg-sigma-blue-deep/40' : 'border-white/3 bg-transparent opacity-40'} ${isToday ? 'ring-1 ring-gold/50' : ''}`}
                     >
-                      <p className={`text-[11px] ${inMonth ? 'text-sand-dark' : 'text-sand-dark/50'}`}>{day.getDate()}</p>
+                      <p className={`text-xs ${inMonth ? 'text-sand-dark' : 'text-sand-dark/50'}`}>{day.getDate()}</p>
                       <div className="mt-1 space-y-1">
                         {items.map((s) => (
                           <button
                             key={s.id}
                             type="button"
                             onClick={() => setSelected(s)}
-                            className="block w-full truncate rounded bg-gold/15 px-1.5 py-0.5 text-left text-[11px] font-medium text-gold hover:bg-gold/25"
+                            className="block w-full truncate rounded bg-gold/15 px-1.5 py-0.5 text-left text-xs font-medium text-gold hover:bg-gold/25"
                             title={s.title}
                           >
                             {new Date(s.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })} {s.title}

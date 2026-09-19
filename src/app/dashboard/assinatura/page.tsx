@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { PLANS, type PlanId } from '@/lib/plans';
+import { Alert } from '@/components/ui';
 import { SubscriptionManager } from './SubscriptionManager';
 
 function fmtDate(d: Date | null | undefined) {
@@ -68,10 +69,10 @@ export default async function AssinaturaPage() {
       </div>
 
       {sub?.pendingPlan ? (
-        <div className="mt-4 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-200">
+        <Alert intent="info" className="mt-4">
           Downgrade para <strong>{PLANS[sub.pendingPlan as PlanId]?.name}</strong> agendado para{' '}
           {fmtDate(sub.pendingPlanEffectiveAt)}. Você mantém o plano atual até essa data.
-        </div>
+        </Alert>
       ) : null}
 
       <SubscriptionManager

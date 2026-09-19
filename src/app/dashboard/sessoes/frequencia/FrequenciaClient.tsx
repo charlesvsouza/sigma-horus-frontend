@@ -101,7 +101,7 @@ export default function FrequenciaClient({
       <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="freq-noprint">
-          <Link href="/dashboard/sessoes" className="text-xs text-gold/70 transition hover:text-gold">&larr; Voltar às sessões</Link>
+          <Link href="/dashboard/sessoes" className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">&larr; Voltar às sessões</Link>
           <h1 className="mt-2 font-display text-2xl font-bold text-sand-light">Frequência às sessões</h1>
           <p className="mt-1 text-sm text-sand-dark">Presença dos obreiros ativos no período — quem falta seguido aparece primeiro na lista.</p>
         </div>

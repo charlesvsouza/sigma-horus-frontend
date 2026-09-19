@@ -193,7 +193,7 @@ export default function BalancetesClient({
                 <span className="text-xs uppercase tracking-wide text-sand-dark/70">Até</span>
                 <input type="date" value={form.periodTo} onChange={(e) => setForm({ ...form, periodTo: e.target.value })} className={`mt-1.5 ${INPUT}`} required />
               </label>
-              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações (opcional)" rows={2} />
+              <textarea aria-label="Observações" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={`${INPUT} md:col-span-2`} placeholder="Observações (opcional)" rows={2} />
             </div>
             <Button type="submit" disabled={generating}>{generating ? 'Gerando…' : 'Gerar balancete'}</Button>
           </form>
@@ -219,7 +219,7 @@ export default function BalancetesClient({
                       <span className="rounded-full border border-gold/20 bg-gold/10 px-2.5 py-0.5 text-xs text-gold">Aguardando aprovação</span>
                     )}
                     {!b.approved && canApprove ? (
-                      <button onClick={() => void handleApprove(b.id)} className="text-xs text-emerald-300/80 transition hover:text-emerald-300">Aprovar</button>
+                      <button onClick={() => void handleApprove(b.id)} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Aprovar</button>
                     ) : null}
                   </div>
                 </div>

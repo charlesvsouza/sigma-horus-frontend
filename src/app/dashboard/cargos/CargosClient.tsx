@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Alert } from '@/components/ui';
+import { Alert, Field } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 
 interface Office { id: string; name: string; order: number; }
@@ -40,7 +40,9 @@ export default function CargosClient({ offices }: { offices: Office[] }) {
         {message ? <Alert intent="warn">{message}</Alert> : null}
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <form onSubmit={create} className="flex gap-3">
-            <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20" placeholder="Nome do cargo" required />
+            <Field label="Nome do cargo">
+              <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20" required />
+            </Field>
             <button type="submit" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Adicionar</button>
           </form>
           <div className="mt-6 space-y-2">

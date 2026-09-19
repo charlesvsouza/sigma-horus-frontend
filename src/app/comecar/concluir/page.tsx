@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { BRAZILIAN_RITES } from '@/lib/masonic-reference';
 import { PLANS } from '@/lib/plans';
 import { validateLodgeSignup } from '@/lib/validation';
-import { Button, Input, inputClass, inputBase, inputBorderError } from '@/components/ui';
+import { Alert, Button, Input, inputBase, inputBorderError, inputClass } from '@/components/ui';
 
 const slugify = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
@@ -66,9 +66,9 @@ function Concluir() {
 
   if (loadError) {
     return (
-      <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-6 text-sm text-rose-200">
+      <Alert intent="danger" className="p-6">
         {loadError} <Link href="/#planos" className="font-medium underline">Voltar aos planos</Link>
-      </div>
+      </Alert>
     );
   }
   if (summary?.alreadyUsed) {

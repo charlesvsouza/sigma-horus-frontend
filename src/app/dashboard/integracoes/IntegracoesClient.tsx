@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, inputClass, useConfirm } from '@/components/ui';
+import { Alert, Button, Field, inputClass, useConfirm } from '@/components/ui';
 
 export interface AsaasStatus {
   configured: boolean;
@@ -103,15 +103,14 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
           </div>
 
           {message && (
-            <div className={`mt-4 rounded-lg border px-4 py-3 text-sm ${message.kind === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/30 bg-rose-500/10 text-rose-200'}`}>
-              {message.text}
-            </div>
+            <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'} className="mt-4">{message.text}</Alert>
           )}
 
           <form onSubmit={save} className="mt-5 space-y-4">
             <div>
-              <label className="block text-xs uppercase tracking-wide text-sand-dark/70">Chave da API do Asaas</label>
+              <label htmlFor="asaas-api-key" className="block text-xs uppercase tracking-wide text-sand-dark/70">Chave da API do Asaas</label>
               <input
+                id="asaas-api-key"
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
@@ -120,15 +119,16 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
               />
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-wide text-sand-dark/70">Ambiente</label>
-              <select value={env} onChange={(e) => setEnv(e.target.value)} className={`mt-1.5 ${INPUT}`}>
+              <label htmlFor="asaas-env" className="block text-xs uppercase tracking-wide text-sand-dark/70">Ambiente</label>
+              <select id="asaas-env" value={env} onChange={(e) => setEnv(e.target.value)} className={`mt-1.5 ${INPUT}`}>
                 <option value="sandbox">Sandbox (testes)</option>
                 <option value="production">Produção</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-wide text-sand-dark/70">Token do webhook (opcional, recomendado)</label>
+              <label htmlFor="asaas-webhook-token" className="block text-xs uppercase tracking-wide text-sand-dark/70">Token do webhook (opcional, recomendado)</label>
               <input
+                id="asaas-webhook-token"
                 type="text"
                 value={webhookToken}
                 onChange={(e) => setWebhookToken(e.target.value)}
@@ -218,7 +218,7 @@ function MessagingIntegration({ initial }: { initial: MsgStatus }) {
       </div>
 
       {msg && (
-        <div className={`mt-4 rounded-lg border px-4 py-3 text-sm ${msg.kind === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/30 bg-rose-500/10 text-rose-200'}`}>{msg.text}</div>
+        <Alert intent={msg.kind === 'ok' ? 'ok' : 'danger'} className="mt-4">{msg.text}</Alert>
       )}
 
       {/* WhatsApp */}
@@ -229,10 +229,18 @@ function MessagingIntegration({ initial }: { initial: MsgStatus }) {
         </div>
         <p className="mt-1 text-xs text-sand-dark">Mensagens proativas exigem um <strong>template aprovado</strong> pela Meta (corpo com 1 variável).</p>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <input value={wa.phoneId} onChange={(e) => setWa({ ...wa, phoneId: e.target.value })} className={inputClass} placeholder="Phone Number ID" />
-          <input type="password" value={wa.token} onChange={(e) => setWa({ ...wa, token: e.target.value })} className={inputClass} placeholder={st?.whatsapp.configured ? 'Novo token (substitui)' : 'Token (System User)'} />
-          <input value={wa.template} onChange={(e) => setWa({ ...wa, template: e.target.value })} className={inputClass} placeholder="Nome do template (ex.: aviso_loja)" />
-          <input value={wa.lang} onChange={(e) => setWa({ ...wa, lang: e.target.value })} className={inputClass} placeholder="Idioma do template (pt_BR)" />
+          <Field label="Phone Number ID">
+            <input value={wa.phoneId} onChange={(e) => setWa({ ...wa, phoneId: e.target.value })} className={inputClass} />
+          </Field>
+          <Field label="Token de acesso">
+            <input type="password" value={wa.token} onChange={(e) => setWa({ ...wa, token: e.target.value })} className={inputClass} placeholder={st?.whatsapp.configured ? 'Novo token (substitui)' : 'Token (System User)'} />
+          </Field>
+          <Field label="Nome do template">
+            <input placeholder="ex.: aviso_loja" value={wa.template} onChange={(e) => setWa({ ...wa, template: e.target.value })} className={inputClass} />
+          </Field>
+          <Field label="Idioma do template (pt_BR)">
+            <input value={wa.lang} onChange={(e) => setWa({ ...wa, lang: e.target.value })} className={inputClass} />
+          </Field>
         </div>
         <div className="mt-3 flex flex-wrap gap-3">
           <Button type="button" size="sm" disabled={busy} onClick={() => saveChannel('whatsapp', wa)}>{st?.whatsapp.configured ? 'Atualizar' : 'Conectar WhatsApp'}</Button>
@@ -247,9 +255,15 @@ function MessagingIntegration({ initial }: { initial: MsgStatus }) {
           {badge(Boolean(st?.sms.configured), st?.sms.configured ? 'Conectado' : 'Não conectado')}
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <input value={sms.sid} onChange={(e) => setSms({ ...sms, sid: e.target.value })} className={inputClass} placeholder="Account SID" />
-          <input type="password" value={sms.token} onChange={(e) => setSms({ ...sms, token: e.target.value })} className={inputClass} placeholder={st?.sms.configured ? 'Novo Auth Token (substitui)' : 'Auth Token'} />
-          <input value={sms.from} onChange={(e) => setSms({ ...sms, from: e.target.value })} className={`${inputClass} md:col-span-2`} placeholder="Número remetente (ex.: +5521...)" />
+          <Field label="Account SID">
+            <input value={sms.sid} onChange={(e) => setSms({ ...sms, sid: e.target.value })} className={inputClass} />
+          </Field>
+          <Field label="Auth Token">
+            <input type="password" value={sms.token} onChange={(e) => setSms({ ...sms, token: e.target.value })} className={inputClass} placeholder={st?.sms.configured ? 'Novo Auth Token (substitui)' : 'Auth Token'} />
+          </Field>
+          <Field label="Número remetente" className="md:col-span-2">
+            <input placeholder="ex.: +5521…" value={sms.from} onChange={(e) => setSms({ ...sms, from: e.target.value })} className={`${inputClass} md:col-span-2`} />
+          </Field>
         </div>
         <div className="mt-3 flex flex-wrap gap-3">
           <Button type="button" size="sm" disabled={busy} onClick={() => saveChannel('sms', sms)}>{st?.sms.configured ? 'Atualizar' : 'Conectar SMS'}</Button>

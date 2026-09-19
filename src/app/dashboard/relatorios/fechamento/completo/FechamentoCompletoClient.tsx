@@ -38,7 +38,7 @@ export default function FechamentoCompletoClient({ data, initialFrom, initialTo 
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="report-noprint flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Link href="/dashboard/relatorios/fechamento" className="text-xs text-gold/70 transition hover:text-gold">&larr; Voltar ao painel de fechamento</Link>
+            <Link href="/dashboard/relatorios/fechamento" className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">&larr; Voltar ao painel de fechamento</Link>
             <h1 className="mt-2 font-display text-2xl font-bold text-sand-light">Fechamento do veneralato — relatório completo</h1>
             <p className="mt-1 text-sm text-sand-dark">Relatório financeiro completo no formato livro caixa.</p>
           </div>

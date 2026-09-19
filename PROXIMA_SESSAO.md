@@ -1,12 +1,17 @@
 # Retomada — Sigma Horus (pausa em 2026-09-19)
 
 > Ponto de retomada da sessão de 18–19/09/2026. Tudo abaixo já está **commitado e enviado** para `main`
-> (HEAD `f51a3d5`), com as 3 migrations aplicadas no banco de produção (Railway). Manual do usuário na **v1.28**.
+> (HEAD `f51a3d5`), com as 3 migrations aplicadas no banco de produção (Railway). Manual do usuário na **v1.29**.
 > Testes: 116 passando · `tsc` e `eslint` limpos.
 
 ## 1. Sessões marcadas para a volta
 
-### 1.1 Crítica de design com a skill `impeccable`
+### 1.1 Crítica de design com a skill `impeccable` — FEITA em 19/09 (repasse geral, 27/40)
+Resumo em `.impeccable/critique/2026-09-19T18-54-36Z__src-app-dashboard.md`. **Aplicado** (sem tocar no tema): rótulos visíveis (componente `Field`),
+Contas/Cobranças abrindo pela lista, Visão geral com saldo em caixa + posição em aberto (e correção do cálculo de a receber/recebido),
+um dourado por vista, tabelas com rolagem no celular, um `h1` por tela, "Pular para o conteúdo", `loading.tsx`/`error.tsx`, texto mínimo de 12px, `Alert` no lugar de alertas soltos.
+**Ficou de fora:** `bg-gradient-to-*` → `bg-linear-to-*` (dono vetou estilo), `h1` duplicado nos relatórios com cabeçalho de impressão (13 telas), `<script>` anti-flash do tema no layout.
+Abaixo, a lista original de telas para referência (Fundos, Tarifas etc. já passaram pelo repasse; uma nova rodada pode medir de novo):
 Rodar `/impeccable` (modo *critique*) — a última foi em 2026-06-30 (nota ~28/40, ver `impeccable-critique-2026-06-30.md`
 e `design_refinado.md`). Telas **novas desta sessão**, nunca criticadas:
 

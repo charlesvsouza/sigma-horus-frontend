@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, CollapsibleCard, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -49,10 +49,13 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
     paidAt: '',
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  // O formulário abre sob demanda: a lista é o que o Tesoureiro usa todo dia. Sem contas ainda, já vem aberto.
+  const [formOpen, setFormOpen] = useState(accounts.length === 0);
   const [search, setSearch] = useState('');
 
   function startEdit(account: AccountItem) {
     setEditingId(account.id);
+    setFormOpen(true);
     setForm({
       title: account.title,
       type: account.type,
@@ -72,6 +75,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
 
   function cancelEdit() {
     setEditingId(null);
+    setFormOpen(false);
     setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', bankAccountId: '', isDues: false, paidAt: '' });
   }
 
@@ -167,13 +171,17 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   return (
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-sand-light">Contas a receber e pagar</h1>
-          <p className="mt-1 text-sm text-sand-dark">Registre contas financeiras e acompanhe vencimentos com base no fluxo do MVP.</p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-sand-light">Contas a receber e pagar</h1>
+            <p className="mt-1 text-sm text-sand-dark">Registre o que a loja tem a receber e a pagar e acompanhe os vencimentos.</p>
+          </div>
+          {!formOpen ? <Button type="button" onClick={() => setFormOpen(true)}>Nova conta</Button> : null}
         </div>
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
+        {formOpen ? (
         <FormCard
           title={editingId ? 'Editar conta' : 'Nova conta'}
           headerAction={editingId ? <button type="button" onClick={cancelEdit} className="rounded text-xs text-sand-dark outline-none hover:text-sand focus-visible:ring-2 focus-visible:ring-gold/60">Cancelar edição</button> : undefined}
@@ -182,26 +190,40 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Detalhes</h3>
               <div className="mt-3 grid gap-4 md:grid-cols-2">
-                <select aria-label="Categoria (plano de contas)" value={form.chartAccountId} onChange={(e) => selectChart(e.target.value)} className={INPUT_CLASS}>
-                  <option value="">Categoria (plano de contas)</option>
-                  {filteredCharts.map((c) => (
-                    <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
-                  ))}
-                </select>
-                <input aria-label="Título da conta" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className={INPUT_CLASS} placeholder="Título da conta" required />
-                <select aria-label="Tipo da conta" value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className={INPUT_CLASS}>
-                  <option value="RECEIVABLE">Conta a receber</option>
-                  <option value="PAYABLE">Conta a pagar</option>
-                </select>
-                <input aria-label="Valor" type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT_CLASS} placeholder="Valor" required />
-                <input aria-label="Data de vencimento" type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT_CLASS} required />
-                <select aria-label="Status" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className={INPUT_CLASS}>
-                  <option value="pending">Pendente</option>
-                  <option value="paid">Pago</option>
-                  <option value="overdue">Vencido</option>
-                </select>
+                <Field label="Categoria (plano de contas)">
+                  <select value={form.chartAccountId} onChange={(e) => selectChart(e.target.value)} className={INPUT_CLASS}>
+                    <option value="">Selecione…</option>
+                    {filteredCharts.map((c) => (
+                      <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Título da conta">
+                  <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className={INPUT_CLASS} required />
+                </Field>
+                <Field label="Tipo da conta">
+                  <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className={INPUT_CLASS}>
+                    <option value="RECEIVABLE">Conta a receber</option>
+                    <option value="PAYABLE">Conta a pagar</option>
+                  </select>
+                </Field>
+                <Field label="Valor">
+                  <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT_CLASS} required />
+                </Field>
+                <Field label="Data de vencimento">
+                  <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT_CLASS} required />
+                </Field>
+                <Field label="Status">
+                  <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className={INPUT_CLASS}>
+                    <option value="pending">Pendente</option>
+                    <option value="paid">Pago</option>
+                    <option value="overdue">Vencido</option>
+                  </select>
+                </Field>
                 {form.status === 'paid' ? (
-                  <input aria-label="Data do pagamento" type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className={INPUT_CLASS} title="Data do pagamento (vazio = hoje)" />
+                  <Field label="Data do pagamento">
+                    <input type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className={INPUT_CLASS} title="Data do pagamento (vazio = hoje)" />
+                  </Field>
                 ) : null}
               </div>
               {form.status === 'paid' ? (
@@ -212,43 +234,52 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Vínculo e observações</h3>
               <div className="mt-3 grid gap-4">
-                <select aria-label="Vincular a um membro" value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value, counterpartyId: event.target.value ? '' : form.counterpartyId })} className={INPUT_CLASS}>
-                  <option value="">Vincular a um membro (opcional)</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>{member.name}</option>
-                  ))}
-                </select>
-                <select aria-label="Vincular a um cliente/fornecedor" value={form.counterpartyId} onChange={(event) => setForm({ ...form, counterpartyId: event.target.value, memberId: event.target.value ? '' : form.memberId })} className={INPUT_CLASS}>
-                  <option value="">Vincular a um cliente/fornecedor (opcional)</option>
-                  {counterparties.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-                <select aria-label="Conta bancária/caixa" value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT_CLASS} required={form.status === 'paid' && !editingId}>
-                  <option value="">{form.status === 'paid' ? 'Conta bancária/caixa do pagamento (obrigatória)' : 'Conta bancária/caixa prevista (opcional)'}</option>
-                  {financialAccounts.map((f) => (
-                    <option key={f.id} value={f.id}>{f.name}</option>
-                  ))}
-                </select>
+                <Field label="Vincular a um membro">
+                  <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value, counterpartyId: event.target.value ? '' : form.counterpartyId })} className={INPUT_CLASS}>
+                    <option value="">Nenhum</option>
+                    {members.map((member) => (
+                      <option key={member.id} value={member.id}>{member.name}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Vincular a um cliente/fornecedor">
+                  <select value={form.counterpartyId} onChange={(event) => setForm({ ...form, counterpartyId: event.target.value, memberId: event.target.value ? '' : form.memberId })} className={INPUT_CLASS}>
+                    <option value="">Nenhum</option>
+                    {counterparties.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Conta bancária/caixa">
+                  <select value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT_CLASS} required={form.status === 'paid' && !editingId}>
+                    <option value="">{form.status === 'paid' ? 'Conta bancária/caixa do pagamento (obrigatória)' : 'Conta bancária/caixa prevista (opcional)'}</option>
+                    {financialAccounts.map((f) => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                  </select>
+                </Field>
                 {form.type === 'RECEIVABLE' && form.memberId ? (
                   <label className="flex items-center gap-2 text-sm text-sand-dark">
                     <input type="checkbox" checked={form.isDues} onChange={(event) => setForm({ ...form, isDues: event.target.checked })} />
                     É mensalidade do membro (conta para a regra do Art. 002 — 60 dias de inadimplência)
                   </label>
                 ) : null}
-                <textarea aria-label="Descrição" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={INPUT_CLASS} placeholder="Descrição" rows={3} />
+                <Field label="Descrição">
+                  <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={INPUT_CLASS} rows={3} />
+                </Field>
               </div>
             </div>
 
             <Button type="submit" disabled={submitting}>{submitting ? 'Salvando…' : editingId ? 'Salvar alterações' : 'Salvar conta'}</Button>
           </form>
         </FormCard>
+        ) : null}
 
         <CollapsibleCard
           title="Contas cadastradas"
           count={accounts.length}
           defaultOpen={accounts.length > 0}
-          headerAction={accounts.length > 0 ? <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por título, membro ou status…" className={`${INPUT_CLASS} max-w-xs`} /> : undefined}
+          headerAction={accounts.length > 0 ? <input aria-label="Buscar por título, membro ou status" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por título, membro ou status…" className={`${INPUT_CLASS} max-w-xs`} /> : undefined}
         >
           <div className="space-y-3">
             {accounts.length === 0 ? (
@@ -256,31 +287,33 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
             ) : filteredAccounts.length === 0 ? (
               <p className="text-sm text-sand-dark">Nenhuma conta encontrada para &quot;{search}&quot;.</p>
             ) : filteredAccounts.map((account) => (
-              <div key={account.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
+              <div key={account.id} className="grid items-center gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto] rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>
                   <p className="text-sm font-medium text-sand-light">
                     {account.title}
-                    {account.isDues ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">Mensalidade</span> : null}
-                    <span className={`ml-2 rounded-full border px-2 py-0.5 text-[10px] font-medium ${account.status === 'paid' ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300' : account.status === 'overdue' ? 'border-rose-500/20 bg-rose-500/12 text-rose-300' : 'border-gold/15 bg-gold/10 text-gold'}`}>
+                    {account.isDues ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">Mensalidade</span> : null}
+                    <span className={`ml-2 rounded-full border px-2 py-0.5 text-xs font-medium ${account.status === 'paid' ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300' : account.status === 'overdue' ? 'border-rose-500/20 bg-rose-500/12 text-rose-300' : 'border-gold/15 bg-gold/10 text-gold'}`}>
                       {account.status === 'paid' ? (account.type === 'RECEIVABLE' ? 'Recebida' : 'Paga') : account.status === 'overdue' ? 'Vencida' : 'Em aberto'}
                     </span>
-                    {account.awaitingAsaas && account.status !== 'paid' ? <span className="ml-2 rounded-full border border-sky-500/20 bg-sky-500/12 px-2 py-0.5 text-[10px] font-medium text-sky-200">Aguardando Asaas</span> : null}
-                    {account.approvalStatus === 'pending' ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300">Aguardando aprovação</span> : null}
+                    {account.awaitingAsaas && account.status !== 'paid' ? <span className="ml-2 rounded-full border border-sky-500/20 bg-sky-500/12 px-2 py-0.5 text-xs font-medium text-sky-200">Aguardando Asaas</span> : null}
+                    {account.approvalStatus === 'pending' ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">Aguardando aprovação</span> : null}
                   </p>
                   <p className="mt-1 text-xs text-sand-dark">
                     {account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} • {account.member?.name ?? account.counterparty?.name ?? 'Sem vínculo'}
                   </p>
                 </div>
-                <div className="text-right text-xs text-sand-dark">
-                  <p className="tabular-nums">{brl(account.amount)}</p>
-                  <p className="mt-0.5">{formatDateOnly(account.dueDate)}</p>
+                <div className="min-w-28 text-right">
+                  <p className={`text-sm font-medium tabular-nums ${account.type === 'RECEIVABLE' ? 'text-emerald-300' : 'text-rose-300'}`}>
+                    {account.type === 'RECEIVABLE' ? '+' : '−'}{brl(account.amount)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-sand-dark">{formatDateOnly(account.dueDate)}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   {account.approvalStatus === 'pending' && canApprove ? (
-                    <button onClick={() => void handleApprove(account.id)} className="text-xs text-emerald-300/80 transition hover:text-emerald-300">Aprovar</button>
+                    <button onClick={() => void handleApprove(account.id)} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Aprovar</button>
                   ) : null}
-                  <button onClick={() => startEdit(account)} className="text-xs text-gold/70 transition hover:text-gold">Editar</button>
-                  <button onClick={() => void handleDelete(account.id)} className="text-xs text-rose-300/60 transition hover:text-rose-300">Remover</button>
+                  <button onClick={() => startEdit(account)} className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Editar</button>
+                  <button onClick={() => void handleDelete(account.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Remover</button>
                 </div>
               </div>
             ))}

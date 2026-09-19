@@ -60,7 +60,7 @@ function RenegotiateForm({ memberId, onDone }: { memberId: string; onDone: () =>
           {busy ? 'Gerando…' : 'Confirmar parcelamento'}
         </button>
       </div>
-      <p className="mt-2 text-[11px] text-sand-dark">
+      <p className="mt-2 text-xs text-sand-dark">
         Redistribui o valor em aberto (mensalidades vencidas) nas mesmas contas, com vencimentos mensais a partir da
         data acima. O Art. 002 deixa de contar assim que os vencimentos ficam no futuro.
       </p>
