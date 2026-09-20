@@ -1,19 +1,22 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { lockKey } from '@/lib/locks';
+import { nextSequenceNumbers } from '@/lib/invoice-number';
 
 export { addInterval } from '@/lib/recurring-rules';
 import { addInterval } from '@/lib/recurring-rules';
 
 /**
  * Reserva os próximos `count` números de cobrança da loja (COB-AAAAMM-NNNN, sequencial por
- * loja/mês). Trava por loja/mês: duas emissões simultâneas não pegam o mesmo número.
+ * loja/mês). Trava por loja/mês: duas emissões simultâneas não pegam o mesmo número. Parte do
+ * maior número existente (não da contagem), então apagar uma cobrança não repete número; o
+ * índice único (lodgeId, number) é a última barreira.
  */
 export async function nextInvoiceNumbers(db: Prisma.TransactionClient, lodgeId: string, count: number, now: Date = new Date()): Promise<string[]> {
   const prefix = `COB-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-`;
   await lockKey(db, `invoice-number:${lodgeId}:${prefix}`);
-  const existing = await db.invoice.count({ where: { lodgeId, number: { startsWith: prefix } } });
-  return Array.from({ length: count }, (_, i) => `${prefix}${String(existing + 1 + i).padStart(4, '0')}`);
+  const existing = await db.invoice.findMany({ where: { lodgeId, number: { startsWith: prefix } }, select: { number: true } });
+  return nextSequenceNumbers(prefix, existing.map((i) => i.number), count);
 }
 
 export interface ChargeInput {
@@ -64,6 +67,12 @@ export async function createChargesWithAccounts(db: Prisma.TransactionClient, in
   const locked = await findClosedTermForDate(db, lodgeId, dueDate);
   if (locked) {
     return { ok: false, status: 409, error: `Período encerrado (${locked.title}). Não é possível cobrar com vencimento dentro de um veneralato já fechado.` };
+  }
+
+  const manualNumber = memberIds.length === 1 ? input.number?.trim() : undefined;
+  if (manualNumber) {
+    const taken = await db.invoice.findFirst({ where: { lodgeId, number: manualNumber }, select: { id: true } });
+    if (taken) return { ok: false, status: 409, error: `Já existe uma cobrança com o número ${manualNumber}. Deixe o campo em branco para numerar automaticamente.` };
   }
 
   const numbers = await nextInvoiceNumbers(db, lodgeId, memberIds.length);

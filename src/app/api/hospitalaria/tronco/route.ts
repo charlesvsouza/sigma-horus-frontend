@@ -8,18 +8,19 @@ import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { lockKey } from '@/lib/locks';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
+import { nextSequenceNumbers } from '@/lib/invoice-number';
 
 const PRESET_AMOUNTS = [5, 10, 20, 50, 100];
 
 // Número de referência da doação, mesmo esquema de nextInvoiceNumber em
 // api/invoices/route.ts (COB-AAAAMM-NNNN), com prefixo próprio (DOA-) pra não
 // colidir com a numeração de cobranças normais.
-async function nextDonationNumber(db: { invoice: { count: (args: { where: Record<string, unknown> }) => Promise<number> } }, lodgeId: string) {
+async function nextDonationNumber(db: { invoice: { findMany: (args: { where: Record<string, unknown>; select: { number: true } }) => Promise<{ number: string }[]> } }, lodgeId: string) {
   const now = new Date();
   const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
   const prefix = `DOA-${ym}-`;
-  const count = await db.invoice.count({ where: { lodgeId, number: { startsWith: prefix } } });
-  return `${prefix}${String(count + 1).padStart(4, '0')}`;
+  const existing = await db.invoice.findMany({ where: { lodgeId, number: { startsWith: prefix } }, select: { number: true } });
+  return nextSequenceNumbers(prefix, existing.map((i) => i.number), 1)[0];
 }
 
 // Doação ao Tronco de Solidariedade, aberta a qualquer membro logado (não é

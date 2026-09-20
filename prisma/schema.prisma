@@ -376,6 +376,7 @@ model Invoice {
   lodge              Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   account            Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   member             Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  @@unique([lodgeId, number])
   @@index([lodgeId])
   @@index([accountId])
   @@index([memberId])
