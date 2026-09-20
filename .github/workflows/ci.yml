@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # O postinstall roda `prisma generate` (não precisa de banco nem de segredos).
+      - run: npm ci
+
+      - name: Tipos (inclui os testes)
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src
+
+      - name: Testes
+        run: npm test
+
+      - name: Schema do Prisma
+        run: npx prisma validate
