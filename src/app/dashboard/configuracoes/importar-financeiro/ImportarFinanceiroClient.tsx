@@ -1,8 +1,8 @@
 'use client';
 
 import { UploadCloud } from 'lucide-react';
-import { useRef, useState, type ChangeEvent } from 'react';
-import { Alert, Badge, Button, Card, CardDescription, CardTitle, EmptyState, Field, inputClass } from '@/components/ui';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Alert, Badge, Button, Card, CardDescription, CardTitle, EmptyState, Field, inputClass, useConfirm } from '@/components/ui';
 
 interface FileReport { name: string; kind: string; kindLabel: string; status: 'used' | 'ignored' | 'error'; detail: string; }
 interface Check { label: string; ok: boolean; detail: string; }
@@ -40,8 +40,14 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
   const [files, setFiles] = useState<File[]>([]);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [result, setResult] = useState<CommitResult | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false); // gravando ou desfazendo
+  const [analyzing, setAnalyzing] = useState(false); // lendo e conferindo os arquivos
   const [error, setError] = useState<string | null>(null);
+  const [undoneMsg, setUndoneMsg] = useState<string | null>(null);
+  const askConfirm = useConfirm();
+  const inflight = useRef<AbortController | null>(null);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { inflight.current?.abort(); if (debounce.current) clearTimeout(debounce.current); }, []);
   const [memberMatching, setMemberMatching] = useState<'none' | 'exact' | 'fuzzy'>('exact');
   const [openingAsBalance, setOpeningAsBalance] = useState(true);
   const [includeOpen, setIncludeOpen] = useState(true);
@@ -68,12 +74,18 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
     return fd;
   }
 
+  // Cada análise reenvia e relê os arquivos: a mais recente cancela a anterior, para que uma resposta
+  // atrasada nunca sobrescreva a tela com dados de uma escolha antiga.
   async function analyze(list: File[], next?: Record<string, string | null>) {
-    setBusy(true);
+    inflight.current?.abort();
+    const controller = new AbortController();
+    inflight.current = controller;
+    setAnalyzing(true);
     setError(null);
     try {
-      const res = await fetch('/api/import/financial/analyze', { method: 'POST', body: buildForm(list, next) });
+      const res = await fetch('/api/import/financial/analyze', { method: 'POST', body: buildForm(list, next), signal: controller.signal });
       const data = await res.json();
+      if (controller.signal.aborted) return;
       if (!res.ok) {
         setError(data?.error ?? 'Não foi possível analisar os arquivos.');
         if (data?.reports) setAnalysis(null);
@@ -81,9 +93,9 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
       }
       setAnalysis(data as Analysis);
     } catch {
-      setError('Não foi possível analisar os arquivos. Tente novamente.');
+      if (!controller.signal.aborted) setError('Não foi possível analisar os arquivos. Verifique a conexão e tente de novo.');
     } finally {
-      setBusy(false);
+      if (inflight.current === controller) setAnalyzing(false);
     }
   }
 
@@ -92,6 +104,7 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
     if (list.length === 0) return;
     setFiles(list);
     setResult(null);
+    setUndoneMsg(null);
     setOverrides({});
     setAcceptFailed(false);
     void analyze(list, {});
@@ -100,7 +113,9 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
   function changeCategory(key: string, code: string) {
     const next = { ...overrides, [key]: code === '' ? null : code };
     setOverrides(next);
-    void analyze(files, next);
+    // Várias trocas seguidas viram uma só análise.
+    if (debounce.current) clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => void analyze(files, next), 450);
   }
 
   async function commit() {
@@ -123,7 +138,13 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
   }
 
   async function undo(batchId: string) {
-    if (!window.confirm('Remover tudo o que este lote importou (lançamentos, pagamentos, transferências, clientes/fornecedores e o balancete)? O que foi digitado à mão não é tocado.')) return;
+    const ok = await askConfirm({
+      title: `Desfazer o lote ${batchId}?`,
+      message: 'Remove tudo o que este lote importou: lançamentos, pagamentos, transferências, clientes e fornecedores e o balancete. O que foi digitado à mão não é tocado.',
+      confirmLabel: 'Desfazer lote',
+      intent: 'danger',
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
@@ -134,7 +155,7 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
       setAnalysis(null);
       setFiles([]);
       setError(null);
-      window.alert(`Lote ${batchId} desfeito: ${data.removed.accounts} conta(s), ${data.removed.transfers} transferência(s), ${data.removed.counterparties} cadastro(s), ${data.removed.balancetes} balancete(s) removidos.`);
+      setUndoneMsg(`Lote ${batchId} desfeito: ${data.removed.accounts} conta(s), ${data.removed.transfers} transferência(s), ${data.removed.counterparties} cadastro(s) e ${data.removed.balancetes} balancete(s) removidos.`);
     } finally {
       setBusy(false);
     }
@@ -142,7 +163,7 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
 
   const failed = analysis?.checks.filter((c) => !c.ok) ?? [];
   const usable = analysis?.reports.some((r) => r.status === 'used');
-  const canCommit = !!analysis && usable && !busy && (failed.length === 0 || acceptFailed) && (analysis.existingBatches.length === 0 || allowRepeat);
+  const canCommit = !!analysis && usable && !busy && !analyzing && (failed.length === 0 || acceptFailed) && (analysis.existingBatches.length === 0 || allowRepeat);
 
   return (
     <div className="space-y-6">
@@ -155,7 +176,9 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
         </CardDescription>
       </Card>
 
+      <p className="sr-only" role="status" aria-live="polite">{analyzing ? 'Lendo e conferindo os arquivos…' : ''}</p>
       {error ? <Alert intent="danger">{error}</Alert> : null}
+      {undoneMsg ? <Alert intent="ok">{undoneMsg}</Alert> : null}
 
       {result ? (
         <Card className="space-y-3">
@@ -185,8 +208,8 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
           <EmptyState
             icon={<UploadCloud className="h-7 w-7" strokeWidth={1.5} />}
             title={files.length ? `${files.length} arquivo(s) selecionado(s)` : 'Nenhum arquivo selecionado'}
-            description={busy && !analysis ? 'Lendo e conferindo os arquivos…' : 'Selecione de uma vez todos os relatórios do backup. Se o mesmo relatório vier em CSV e em Excel, o CSV é o usado.'}
-            action={<Button type="button" onClick={() => inputRef.current?.click()} disabled={busy}>{files.length ? 'Trocar arquivos' : 'Selecionar arquivos'}</Button>}
+            description={analyzing && !analysis ? 'Lendo e conferindo os arquivos…' : 'Selecione de uma vez todos os relatórios do backup, em CSV ou Excel (.xlsx). Se o mesmo relatório vier nos dois formatos, o CSV é o usado. Arquivos .xls antigos precisam ser salvos como .xlsx ou CSV.'}
+            action={<Button type="button" onClick={() => inputRef.current?.click()} disabled={busy || analyzing}>{files.length ? 'Trocar arquivos' : 'Selecionar arquivos'}</Button>}
           />
           <input ref={inputRef} type="file" multiple accept=".csv,.xlsx,.xls" className="hidden" onChange={onPick} />
         </Card>
@@ -253,19 +276,24 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
           <Card className="space-y-3">
             <CardTitle>Opções</CardTitle>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Ligar nomes a membros da loja">
-                <select className={inputClass} value={memberMatching} disabled={busy} onChange={(e) => { const v = e.target.value as 'none' | 'exact' | 'fuzzy'; setMemberMatching(v); }}>
-                  <option value="exact">Só nome idêntico (recomendado)</option>
-                  <option value="fuzzy">Também nome abreviado ou truncado (conferir depois)</option>
-                  <option value="none">Nunca — tudo vira cliente/fornecedor</option>
-                </select>
-              </Field>
+              <div>
+                <Field label="Vincular nomes aos membros da loja">
+                  <select className={inputClass} value={memberMatching} disabled={busy} onChange={(e) => { const v = e.target.value as 'none' | 'exact' | 'fuzzy'; setMemberMatching(v); }}>
+                    <option value="exact">Só nome idêntico (recomendado)</option>
+                    <option value="fuzzy">Também nome abreviado ou cortado (conferir depois)</option>
+                    <option value="none">Não vincular — tudo vira cliente ou fornecedor</option>
+                  </select>
+                </Field>
+                <p className="mt-1.5 text-xs text-sand-dark">
+                  Mensalidade em aberto vinculada a um membro conta no Art. 002 (mais de 60 dias) e pode mudar a situação dele.
+                </p>
+              </div>
               <div className="space-y-2 text-sm text-sand-light">
-                <label className="flex items-center gap-2"><input type="checkbox" checked={openingAsBalance} onChange={(e) => setOpeningAsBalance(e.target.checked)} /> &quot;Abertura de saldo&quot; vira saldo inicial da conta (não receita)</label>
-                <label className="flex items-center gap-2"><input type="checkbox" checked={includeOpen} onChange={(e) => setIncludeOpen(e.target.checked)} /> Importar contas a pagar/receber em aberto</label>
+                <label className="flex items-center gap-2 py-1"><input type="checkbox" className="h-4 w-4 accent-gold" checked={openingAsBalance} onChange={(e) => setOpeningAsBalance(e.target.checked)} /> &quot;Abertura de saldo&quot; vira saldo inicial da conta (não receita)</label>
+                <label className="flex items-center gap-2 py-1"><input type="checkbox" className="h-4 w-4 accent-gold" checked={includeOpen} onChange={(e) => setIncludeOpen(e.target.checked)} /> Importar contas a pagar/receber em aberto</label>
               </div>
             </div>
-            <Button variant="secondary" type="button" disabled={busy} onClick={() => void analyze(files)}>Reaplicar opções</Button>
+            <Button variant="secondary" type="button" disabled={busy || analyzing} onClick={() => void analyze(files)}>{analyzing ? 'Conferindo…' : 'Reaplicar opções'}</Button>
           </Card>
 
           {analysis.categories.length > 0 ? (
@@ -273,22 +301,22 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
               <CardTitle>Categorias</CardTitle>
               <CardDescription>Como cada categoria do sistema antigo vira uma categoria do plano de contas da loja. A sugestão pode ser trocada; &quot;sem categoria&quot; deixa o lançamento para classificar depois.</CardDescription>
               <div className="overflow-x-auto rounded-xl border border-white/6">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-white/6 bg-sigma-card">
+                <table className="w-full text-left text-sm max-md:block">
+                  <thead className="border-b border-white/6 bg-sigma-card max-md:hidden">
                     <tr>
-                      <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Categoria no sistema antigo</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold uppercase text-sand-dark">Lançamentos</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold uppercase text-sand-dark">Total</th>
-                      <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Categoria no Sigma Horus</th>
+                      <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Categoria no sistema antigo</th>
+                      <th scope="col" className="px-3 py-3 text-right text-xs font-semibold uppercase text-sand-dark">Lançamentos</th>
+                      <th scope="col" className="px-3 py-3 text-right text-xs font-semibold uppercase text-sand-dark">Total</th>
+                      <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Categoria no Sigma Horus</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="max-md:block">
                     {analysis.categories.map((c) => (
-                      <tr key={c.key} className="border-b border-white/5 last:border-0">
-                        <td className="px-3 py-2 text-sand-light">{c.key}</td>
-                        <td className="px-3 py-2 text-right">{c.count}</td>
-                        <td className="px-3 py-2 text-right">{money(c.total)}</td>
-                        <td className="px-3 py-2">
+                      <tr key={c.key} className="border-b border-white/5 last:border-0 max-md:block max-md:space-y-1 max-md:p-3">
+                        <td className="px-3 py-2 text-sand-light max-md:block max-md:p-0 max-md:font-medium">{c.key}</td>
+                        <td className="px-3 py-2 text-right max-md:block max-md:p-0 max-md:text-left max-md:text-xs max-md:text-sand-dark"><span className="md:hidden">{c.count} lançamento(s) · {money(c.total)}</span><span className="max-md:hidden">{c.count}</span></td>
+                        <td className="hidden px-3 py-2 text-right md:table-cell">{money(c.total)}</td>
+                        <td className="px-3 py-2 max-md:block max-md:p-0">
                           <select className={inputClass} value={c.chosenCode ?? ''} disabled={busy} onChange={(e) => changeCategory(c.key, e.target.value)} aria-label={`Categoria para ${c.key}`}>
                             <option value="">Sem categoria</option>
                             {analysis.chartOptions.map((o) => <option key={o.code} value={o.code}>{o.code} — {o.name}</option>)}
@@ -325,7 +353,7 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
             {failed.length > 0 ? (
               <Alert intent="danger">
                 {failed.length} conferência(s) não fecharam. Recomendo não importar até entender a diferença.
-                <label className="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={acceptFailed} onChange={(e) => setAcceptFailed(e.target.checked)} /> Entendi e quero importar mesmo assim</label>
+                <label className="mt-2 flex items-center gap-2 py-1 text-sm"><input type="checkbox" className="h-4 w-4 accent-gold" checked={acceptFailed} onChange={(e) => setAcceptFailed(e.target.checked)} /> Entendi e quero importar mesmo assim</label>
               </Alert>
             ) : (
               <Alert intent="ok">Todos os totais conferem com os relatórios de origem.</Alert>
@@ -333,7 +361,7 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
             {analysis.existingBatches.length > 0 ? (
               <Alert intent="warn">
                 Esta loja já tem uma importação anterior (lote {analysis.existingBatches.join(', ')}). Importar de novo duplicaria o histórico.
-                <label className="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={allowRepeat} onChange={(e) => setAllowRepeat(e.target.checked)} /> Importar de novo mesmo assim</label>
+                <label className="mt-2 flex items-center gap-2 py-1 text-sm"><input type="checkbox" className="h-4 w-4 accent-gold" checked={allowRepeat} onChange={(e) => setAllowRepeat(e.target.checked)} /> Importar de novo mesmo assim</label>
               </Alert>
             ) : null}
             <Button type="button" disabled={!canCommit} onClick={() => void commit()}>{busy ? 'Importando…' : 'Confirmar e importar'}</Button>

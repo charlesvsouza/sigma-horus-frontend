@@ -372,11 +372,16 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
               </button>
               <Link href="/dashboard/minha-conta" className="hidden text-right transition hover:opacity-80 sm:block" title="Minha conta">
                 <p className="text-sm font-medium text-sand-light">{userName}</p>
-                <p className="text-xs text-gold/70">{ROLE_LABEL[role] ?? role} · Minha conta</p>
+                <p className="text-xs text-gold/70">{ROLE_LABEL[role] ?? role}</p>
               </Link>
-              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/30 bg-gold/10 text-xs font-semibold text-gold">
+              <Link
+                href="/dashboard/minha-conta"
+                aria-label="Minha conta"
+                title="Minha conta"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-gold/30 bg-gold/10 text-xs font-semibold text-gold transition hover:bg-gold/20 sm:h-9 sm:w-9"
+              >
                 {initials}
-              </div>
+              </Link>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
                 className="rounded-full border border-white/8 px-3.5 py-1.5 text-xs text-sand/60 transition hover:border-rose-500/30 hover:text-rose-300"

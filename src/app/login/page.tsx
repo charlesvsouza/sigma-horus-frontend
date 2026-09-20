@@ -216,7 +216,7 @@ export default function LoginPage() {
                 </div>
 
                 {emailChange ? (
-                  <p className={`rounded-lg px-3 py-2 text-xs ${emailChange === "ok" ? "bg-emerald-500/10 text-emerald-300" : "bg-rose-500/10 text-rose-300"}`}>
+                  <p role="status" className={`rounded-lg px-3 py-2 text-xs ${emailChange === "ok" ? "bg-emerald-500/10 text-emerald-300" : "bg-rose-500/10 text-rose-300"}`}>
                     {emailChange === "ok"
                       ? "E-mail de acesso alterado. Entre com o novo e-mail."
                       : emailChange === "taken"

@@ -116,21 +116,21 @@ export default function UsuariosClient({ users, denied }: { users: AppUser[]; de
               <div>
                 <h2 className="text-base font-semibold text-sand-light">Administradores ({activeAdmins} de {MAX_ADMINS})</h2>
                 <p className="mt-1 text-xs text-sand-dark">
-                  O papel de Administrador é fixo: ninguém é promovido a ele nem rebaixado dele. Para ter outro Administrador, crie um novo aqui.
-                  Cada papel tem o seu próprio login — <strong>se a pessoa também é obreiro, o Administrador deve usar um e-mail diferente do cadastro de membro</strong>.
+                  O papel de Administrador é fixo: ninguém é promovido a ele nem rebaixado dele. Para ter outro, crie-o aqui com um
+                  <strong> e-mail próprio</strong> — nunca o de um membro.
                 </p>
               </div>
-              <Button type="button" variant="secondary" disabled={activeAdmins >= MAX_ADMINS} onClick={() => setShowNewAdmin((v) => !v)}>
+              <Button type="button" variant="secondary" aria-expanded={showNewAdmin} aria-controls="novo-admin" disabled={activeAdmins >= MAX_ADMINS} onClick={() => setShowNewAdmin((v) => !v)}>
                 Novo administrador
               </Button>
             </div>
             {activeAdmins >= MAX_ADMINS ? <p className="mt-2 text-xs text-amber-300">Limite de {MAX_ADMINS} Administradores ativos atingido. Desative um para criar outro.</p> : null}
             {showNewAdmin ? (
-              <form onSubmit={createAdmin} className="mt-4 grid gap-3 sm:grid-cols-2">
+              <form id="novo-admin" onSubmit={createAdmin} className="mt-4 grid gap-3 sm:grid-cols-2">
                 <Field label="Nome completo">
                   <input className={inputClass} value={newAdmin.name} onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })} required minLength={3} />
                 </Field>
-                <Field label="E-mail do Administrador (não pode ser o de um membro)">
+                <Field label="E-mail de acesso do Administrador">
                   <input className={inputClass} type="email" value={newAdmin.email} onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })} required />
                 </Field>
                 <div className="sm:col-span-2">

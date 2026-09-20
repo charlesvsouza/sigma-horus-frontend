@@ -16,18 +16,17 @@ async function inChunks<T>(rows: T[], fn: (chunk: T[]) => Promise<unknown>) {
   for (let i = 0; i < rows.length; i += CHUNK) await fn(rows.slice(i, i + CHUNK));
 }
 
-/** Lotes de importação já gravados nesta loja (para avisar antes de duplicar). */
+/**
+ * Lotes de importação já gravados nesta loja (para avisar antes de duplicar). Feito no banco
+ * (DISTINCT sobre a marca) em vez de trazer todas as contas do lote — um lote tem milhares de linhas
+ * e esta consulta roda a cada análise.
+ */
 export async function findLegacyBatches(db: Prisma.TransactionClient, lodgeId: string): Promise<string[]> {
-  const rows = await db.account.findMany({
-    where: { lodgeId, description: { contains: `[${LEGACY_TAG_PREFIX}` } },
-    select: { description: true },
-  });
-  const ids = new Set<string>();
-  for (const r of rows) {
-    const m = r.description?.match(/\[import:legacy:([^\]]+)\]/);
-    if (m) ids.add(m[1]);
-  }
-  return [...ids];
+  const rows = await db.$queryRaw<{ batch: string }[]>`
+    SELECT DISTINCT substring("description" from '\\[import:legacy:([^\\]]+)\\]') AS batch
+    FROM "Account"
+    WHERE "lodgeId" = ${lodgeId} AND "description" LIKE '%[import:legacy:%'`;
+  return rows.map((r) => r.batch).filter(Boolean);
 }
 
 export interface CommitResult {

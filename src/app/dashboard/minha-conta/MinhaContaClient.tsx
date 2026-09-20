@@ -74,15 +74,16 @@ export default function MinhaContaClient({ name, email, role, isMember }: { name
               <Field label="Nome completo">
                 <input className={inputClass} value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} required minLength={3} />
               </Field>
-              <Field label={`E-mail de acesso atual: ${email}`}>
-                <input className={inputClass} type="email" placeholder="Novo e-mail (deixe em branco para não trocar)" value={profile.newEmail} onChange={(e) => setProfile({ ...profile, newEmail: e.target.value })} />
+              <p className="text-sm text-sand-dark">E-mail de acesso atual: <strong className="text-sand-light">{email}</strong></p>
+              <Field label="Novo e-mail de acesso (deixe em branco para manter o atual)">
+                <input className={inputClass} type="email" autoComplete="email" value={profile.newEmail} onChange={(e) => setProfile({ ...profile, newEmail: e.target.value })} />
               </Field>
               {profile.newEmail.trim() ? (
                 <Field label="Senha atual (para confirmar a troca de e-mail)">
                   <input className={inputClass} type="password" autoComplete="current-password" value={profile.currentPassword} onChange={(e) => setProfile({ ...profile, currentPassword: e.target.value })} required />
                 </Field>
               ) : null}
-              <Button type="submit" disabled={busy === 'profile'}>{busy === 'profile' ? 'Salvando…' : 'Salvar'}</Button>
+              <Button type="submit" disabled={busy === 'profile'}>{busy === 'profile' ? 'Salvando…' : 'Salvar alterações'}</Button>
             </form>
           )}
         </Card>

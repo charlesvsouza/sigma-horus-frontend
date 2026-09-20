@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Badge, Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -230,7 +230,7 @@ export default function BalancetesClient({
                   </div>
                   <div className="flex items-center gap-3">
                     {b.source === 'import' ? (
-                      <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-0.5 text-xs text-sky-200">Importado</span>
+                      <Badge variant="info">Importado</Badge>
                     ) : null}
                     {b.approved ? (
                       <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-300">Aprovado {b.approvedAt ? `em ${fmt(b.approvedAt)}` : ''}</span>
@@ -255,7 +255,7 @@ export default function BalancetesClient({
                       <table className="w-full text-left text-xs">
                         <thead className="border-b border-white/6 bg-sigma-card">
                           <tr>
-                            <th className="px-3 py-2 font-semibold uppercase text-sand-dark">Conta</th>
+                            <th scope="col" className="px-3 py-2 font-semibold uppercase text-sand-dark">Conta</th>
                             <th className="px-3 py-2 text-right font-semibold uppercase text-sand-dark">Saldo inicial</th>
                             <th className="px-3 py-2 text-right font-semibold uppercase text-sand-dark">Débitos</th>
                             <th className="px-3 py-2 text-right font-semibold uppercase text-sand-dark">Créditos</th>
