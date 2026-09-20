@@ -205,6 +205,9 @@ Papel `hospitaller` (admin/venerável também acessam). **Irmãos (consulta)** r
 ### 5.12 Centro de Documentos
 Repositório de arquivos (atas, comprovantes, certificados) em **Cloudflare R2** (S3-compatible), isolado por tenant (RLS) e RBAC. Upload real para o bucket, registro `Document` por loja, download via **presigned GET URL (5 min, bucket privado/LGPD)**, cleanup automático no DELETE (sem órfãos).
 
+### 5.13 Importação de backup financeiro (sistema legado)
+`src/lib/legacy-import/` + `api/import/financial/{analyze,commit,undo}` + tela **Administração → Importar backup financeiro** (Administrador/Tesoureiro, `accounts:write`). Lê CSV/XLSX de relatórios do Cenize/Loje (extrato de conta, livro razão, balancete, clientes, fornecedores, contas a pagar/receber; `.xls` binário não é suportado). O **razão dá a categoria** de cada lançamento do **extrato** (casamento 1:1 por data+valor); "Abertura de Saldo" vira `FinancialAccount.openingBalance`; transferências entre contas próprias viram `AccountTransfer` aprovadas; XLSX convertidos de PDF são **realinhados** por fichas tipadas e conferidos contra totais/dias de atraso/dígitos de CPF. Toda importação confere os totais declarados nos relatórios **antes** de gravar; o commit é atômico e cada lote leva a marca `[import:legacy:<lote>]` (desfazer = `undo`). `Balancete.source` ('system'|'import') + `detail Json` guardam o balancete arquivado. CLI: `scripts/import-legacy-backup.ts` (simulação por padrão; lojas reais protegidas em `scripts/protected-lodges.ts`).
+
 ---
 
 ## 6. Papéis e Permissões (RBAC)
@@ -213,7 +216,7 @@ Permissões associadas ao cargo dentro de um período de veneralato. Um membro p
 
 | Perfil | Acesso principal |
 |--------|------------------|
-| Administrador (plataforma) | Conta da loja, usuários, configurações, integrações |
+| Administrador | Conta da loja, usuários, configurações, integrações; altera todos os cadastros e configurações. Papel **fixo** (ver regras abaixo) |
 | Venerável | Visão gerencial completa; relatórios; aprovação; sem lançar baixas |
 | Tesoureiro | Lançar/baixar contas, emitir boletos, fechar caixa, relatórios financeiros |
 | Secretário | Cadastro de membros, cargos, períodos; relatórios não financeiros |
@@ -221,6 +224,14 @@ Permissões associadas ao cargo dentro de um período de veneralato. Um membro p
 | Membro comum | Próprio extrato, débitos e histórico |
 
 **Granular por recurso × ação** (ex.: `receivable:create`, `payable:delete`, `report:view`, `cash:close`). Verificação em duas camadas: API (toda rota valida permissão + tenant) e UI (esconde o que não pode). **RBAC persistido por loja** (`RolePermission`): matriz papel × recurso × ação **editável** em `/dashboard/configuracoes/permissoes` (`/api/permissions`), com fallback para a matriz default em código (`src/lib/rbac.ts`). O escopo de tenant (`lodge_id`) é sempre aplicado junto, garantido pelo RLS.
+
+**Regras do papel de Administrador** (decisão do dono, 2026-09-20; `src/lib/admin-policy.ts`, cobertas por `admin-policy.test.ts`):
+1. **Papel fixo:** ninguém é promovido a Administrador e o Administrador não é rebaixado (`PATCH /api/users/[id]` recusa nos dois sentidos, 409). Quem precisa de outra função recebe **outro usuário com outro e-mail**.
+2. **Novo administrador:** `POST /api/users` (só Administrador) cria o login sem vínculo com membro, senha provisória por e-mail, `mustChangePassword`; **teto de 2 Administradores ativos** (vale também para reativar).
+3. **Um e-mail, um papel:** o e-mail do Administrador não pode ser e-mail de cadastro de membro da mesma loja — bloqueado em criar/editar/importar membro (`api/members`, `api/import/commit`) e ao criar o Administrador; `grant-access` recusa e-mail de Administrador (antes religava o usuário Administrador ao membro).
+4. **Matriz não restringe o Administrador:** em `rbac.ts` (`decide`) e em `PUT /api/permissions` a linha `admin` é sempre o padrão; a coluna é travada na UI.
+5. **Minha conta** (`/dashboard/minha-conta`, `PATCH /api/account/profile`): quem não é obreiro edita nome e e-mail; troca de e-mail exige senha atual e **link de confirmação ao novo e-mail** (`lib/email-change-token.ts`, HMAC sem estado, 1h, invalidado por troca de senha; confirma em `GET /api/account/confirm-email`).
+6. Migração de lojas que já tinham Administrador = obreiro (login único): `scripts/separate-admin-from-member.ts` (cria o novo Administrador e devolve o antigo a `member`; senha por variável de ambiente; simulação por padrão; loja real exige `--i-know-this-is-a-real-lodge`). Aplicado na `amm139` em 2026-09-20.
 
 ---
 
