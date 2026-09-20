@@ -84,6 +84,14 @@ loja de teste), agora **além** do que já foi corrigido. Roteiro sugerido:
 - [ ] **Rate limit** só por conta (login) e por e-mail (redefinição de senha); nada por IP.
 - [ ] `paidAt`/`createdAt` ainda formatados no fuso do navegador (só datas "só dia" foram corrigidas).
 
+### 2.4 Importador de backup financeiro (19/09, **não commitado**)
+Código pronto e testado (153 testes; ponta a ponta num Postgres descartável): `src/lib/legacy-import/`, `api/import/financial/*`, tela **Administração → Importar backup financeiro**, `scripts/import-legacy-backup.ts`, manual v1.32.
+- [ ] **Aplicar a migration em produção** (aditiva: `Balancete.source` + `detail`): `cd apps/frontend && env -u DATABASE_URL -u APP_DATABASE_URL npx prisma migrate deploy` (o `DATABASE_URL` do ambiente aponta para localhost e sombreia o `.env`).
+- [ ] **Migrar `c:\backup Amm` para a Tim Maia (`horus-reaa`)**: simulação já conferida (todas as somas batem). Gravar: `env -u DATABASE_URL -u APP_DATABASE_URL node --env-file=.env --import ./test/setup.mjs scripts/import-legacy-backup.ts horus-reaa "C:/backup Amm" --yes --confirm-host kodama.proxy.rlwy.net` (desfazer: `--undo <lote>`). Ligará mensalidades em aberto a 19 membros de mesmo nome → o cron `sync-art002` mudará o status deles (reversível).
+- [ ] Conferir com o tesoureiro os **10 itens só da Previsão do Fluxo de Caixa (R$ 3.710)** e os **23 lançamentos sem categoria** (maioria "Grande Loja").
+- [ ] Commit + deploy do código; `.xls` binário não é lido (salvar como .xlsx/CSV).
+- Arquivo alinhado para conferência: `C:\backup Amm\alinhado\BACKUP_AMM_alinhado.xlsx`.
+
 ## 3. Dúvidas de funcionamento (decisões do dono)
 
 > Decidido em 19/09: o **saldo do Tronco é visível a todos** os irmãos (extrato, saídas e doadores continuam só para a gestão).

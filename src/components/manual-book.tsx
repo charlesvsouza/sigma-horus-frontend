@@ -35,6 +35,7 @@ const INDEX: IndexEntry[] = [
       { id: 'admin-importar', label: '6.7 Importar cadastro de outro sistema' },
       { id: 'admin-backup', label: '6.8 Backup dos dados da loja' },
       { id: 'admin-recebimento', label: '6.9 Modo de recebimento das cobranças' },
+      { id: 'admin-importar-financeiro', label: '6.10 Importar backup financeiro de outro sistema' },
     ],
   },
   {
@@ -249,7 +250,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.31</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.32</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -311,7 +312,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.31 — 19 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.32 — 19 de setembro de 2026</p>
               </div>
             </div>
 
@@ -484,7 +485,7 @@ export function ManualBook() {
                   periódicos</UI>, <UI>Fluxo de caixa projetado</UI>, <UI>Orçamento anual</UI>).
                 </li>
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI> e <UI>Campanhas</UI> de benemerência.</li>
-                <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Importar cadastros</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
+                <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Importar cadastros</UI>, <UI>Importar backup financeiro</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
               </Bullets>
               <p>O topo mostra o nome da loja, o usuário logado e o status da assinatura (teste, ativa ou pendente).</p>
               <p>
@@ -785,6 +786,41 @@ export function ManualBook() {
                   nem chaves de integração (Asaas, WhatsApp, SMS), que ficam só no servidor. Além desse backup sob
                   demanda, a plataforma também mantém um backup automático diário e criptografado de toda a base, para
                   recuperação em caso de problema grave com a infraestrutura (capítulo 14).
+                </Note>
+              </Sub>
+
+              <Sub id="admin-importar-financeiro" title="6.10 Importar backup financeiro de outro sistema">
+                <p>
+                  Para trazer o <strong>histórico financeiro</strong> de outro sistema (extrato das contas, livro razão,
+                  balancete, cadastro de clientes e fornecedores e contas a pagar/receber em aberto), use{' '}
+                  <UI>Administração → Importar backup financeiro</UI> (Administrador e Tesoureiro).
+                </p>
+                <Steps>
+                  <li>Selecione <strong>de uma só vez</strong> todos os relatórios do backup, em <strong>CSV</strong> ou
+                    <strong> Excel (.xlsx)</strong>. O sistema descobre sozinho que relatório é cada arquivo. Se o mesmo
+                    relatório vier em CSV e em Excel, o CSV é o usado (o Excel convertido de PDF costuma vir com as
+                    células misturadas). Arquivos no formato antigo <strong>.xls</strong> precisam ser salvos como .xlsx
+                    ou CSV antes.</li>
+                  <li>Confira <UI>Conferência de totais</UI>: o sistema soma tudo o que leu e compara com os totais que o
+                    próprio relatório declara (nº de lançamentos, saldo final por conta, total em aberto…). Cada linha
+                    aparece como <strong>Confere</strong> ou <strong>Diverge</strong>. Se algo divergir, não importe
+                    antes de entender a diferença.</li>
+                  <li>Em <UI>Categorias</UI>, veja como cada categoria do sistema antigo vira uma categoria do seu plano
+                    de contas e troque as que quiser. O que ficar <UI>Sem categoria</UI> entra com valor, data e
+                    contraparte corretos, para você classificar depois em <UI>Contas → Editar</UI>.</li>
+                  <li>Em <UI>Opções</UI>, escolha se nomes idênticos aos dos membros da loja devem ser ligados ao membro
+                    (recomendado) e se o lançamento &quot;Abertura de saldo&quot; deve virar o <strong>saldo inicial</strong>
+                    da conta (recomendado — não é receita do período).</li>
+                  <li>Clique em <UI>Confirmar e importar</UI>. Os lançamentos entram já pagos, cada um na sua conta
+                    bancária/caixa (os saldos de cada conta passam a bater com o extrato antigo); as transferências entre
+                    contas próprias entram como transferências aprovadas; as contas em aberto entram como pendentes; os
+                    clientes e fornecedores entram no cadastro; e o balancete fica arquivado em <UI>Relatórios →
+                    Balancetes periódicos</UI> com o detalhe por conta.</li>
+                </Steps>
+                <Note>
+                  Cada importação é um <strong>lote</strong>. Se algo não saiu como esperado, <UI>Desfazer este lote</UI>
+                  remove tudo o que ele criou (e só isso — nada digitado à mão é tocado). Numa loja que já tem um lote, o
+                  sistema recusa importar de novo para não duplicar o histórico.
                 </Note>
               </Sub>
             </Chapter>

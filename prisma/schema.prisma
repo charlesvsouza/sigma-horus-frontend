@@ -840,6 +840,8 @@ model Balancete {
   notes            String?
   createdById      String?
   createdAt        DateTime  @default(now())
+  source           String    @default("system") // system (gerado pelo Sigma Horus) | import (arquivado de outro sistema)
+  detail           Json?     // balancete importado: linhas por conta do plano (abertura, débitos, créditos, saldo)
 
   lodge Lodge @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
 

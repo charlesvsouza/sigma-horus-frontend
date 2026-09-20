@@ -69,6 +69,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/configuracoes': Settings,
   '/dashboard/configuracoes/usuarios': KeyRound,
   '/dashboard/configuracoes/importar': Upload,
+  '/dashboard/configuracoes/importar-financeiro': Upload,
   '/dashboard/assinatura': Gem,
   '/dashboard/integracoes': Plug,
   '/dashboard/auditoria': ScrollText,
@@ -95,7 +96,7 @@ const ROLE_LABEL: Record<string, string> = {
 // Rótulos de segmentos de rota para a trilha (breadcrumb) que não vêm do menu.
 const SEGMENT_LABELS: Record<string, string> = {
   configuracoes: 'Configurações da loja', relatorios: 'Resumo financeiro', hospitalaria: 'Hospitalaria',
-  sessoes: 'Sessões', usuarios: 'Usuários & acessos', permissoes: 'Permissões',
+  sessoes: 'Sessões', usuarios: 'Usuários & acessos', permissoes: 'Permissões', 'importar-financeiro': 'Importar backup financeiro',
   fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', tarifas: 'Tarifas de cobrança (Asaas)', fundos: 'Fundos (Tronco e Doações)', portal: 'Meu portal', secretaria: 'Secretaria',
   inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos',
   'fluxo-caixa': 'Fluxo de caixa projetado', orcamento: 'Orçamento anual',

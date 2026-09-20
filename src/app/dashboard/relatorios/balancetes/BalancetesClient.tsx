@@ -6,6 +6,16 @@ import { Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/c
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
+export interface BalanceteLine {
+  path: string[];
+  level: number;
+  opening: number;
+  debit: number;
+  credit: number;
+  closing: number;
+  entries: number;
+}
+
 interface BalanceteItem {
   id: string;
   periodFrom: string;
@@ -18,7 +28,13 @@ interface BalanceteItem {
   approved: boolean;
   approvedAt?: string | null;
   notes?: string | null;
+  /** 'import' = arquivado de um backup de outro sistema (traz o detalhe por conta). */
+  source?: string;
+  detail?: BalanceteLine[] | null;
 }
+
+// A marca do lote importado ("[import:legacy:abc]") serve ao desfazer — não é texto para o leitor.
+const cleanNotes = (n: string) => n.replace(/\s*\[import:legacy:[^\]]+\]/g, '').trim();
 
 const fmt = (d: string) => formatDateOnly(d);
 
@@ -210,9 +226,12 @@ export default function BalancetesClient({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-sand-light">{fmt(b.periodFrom)} — {fmt(b.periodTo)}</p>
-                    <p className="mt-1 text-xs text-sand-dark">Apresentado em {fmt(b.presentedAt)}{b.notes ? ` • ${b.notes}` : ''}</p>
+                    <p className="mt-1 text-xs text-sand-dark">Apresentado em {fmt(b.presentedAt)}{b.notes && cleanNotes(b.notes) ? ` • ${cleanNotes(b.notes)}` : ''}</p>
                   </div>
                   <div className="flex items-center gap-3">
+                    {b.source === 'import' ? (
+                      <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-0.5 text-xs text-sky-200">Importado</span>
+                    ) : null}
                     {b.approved ? (
                       <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-300">Aprovado {b.approvedAt ? `em ${fmt(b.approvedAt)}` : ''}</span>
                     ) : (
@@ -229,6 +248,35 @@ export default function BalancetesClient({
                   <span>Pagamentos: <span className="text-sand-light">{brl(b.totalPayments)}</span></span>
                   <span>Saldo líquido: <span className={b.netBalance >= 0 ? 'text-emerald-300' : 'text-rose-300'}>{brl(b.netBalance)}</span></span>
                 </div>
+                {b.detail && b.detail.length > 0 ? (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-xs text-sand hover:text-sand-light">Detalhe por conta do plano ({b.detail.length})</summary>
+                    <div className="mt-2 overflow-x-auto rounded-lg border border-white/6">
+                      <table className="w-full text-left text-xs">
+                        <thead className="border-b border-white/6 bg-sigma-card">
+                          <tr>
+                            <th className="px-3 py-2 font-semibold uppercase text-sand-dark">Conta</th>
+                            <th className="px-3 py-2 text-right font-semibold uppercase text-sand-dark">Saldo inicial</th>
+                            <th className="px-3 py-2 text-right font-semibold uppercase text-sand-dark">Débitos</th>
+                            <th className="px-3 py-2 text-right font-semibold uppercase text-sand-dark">Créditos</th>
+                            <th className="px-3 py-2 text-right font-semibold uppercase text-sand-dark">Saldo atual</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {b.detail.filter((l) => l.entries > 0 || l.level < 2).map((l, i) => (
+                            <tr key={i} className="border-b border-white/5 last:border-0">
+                              <td className={`px-3 py-1.5 ${l.level < 2 ? 'font-medium text-sand-light' : 'text-sand'}`} style={{ paddingLeft: `${12 + l.level * 16}px` }}>{l.path[l.path.length - 1]}</td>
+                              <td className="px-3 py-1.5 text-right text-sand-dark">{brl(l.opening)}</td>
+                              <td className="px-3 py-1.5 text-right text-sand-dark">{brl(l.debit)}</td>
+                              <td className="px-3 py-1.5 text-right text-sand-dark">{brl(l.credit)}</td>
+                              <td className="px-3 py-1.5 text-right text-sand-light">{brl(l.closing)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                ) : null}
               </div>
             ))}
           </div>

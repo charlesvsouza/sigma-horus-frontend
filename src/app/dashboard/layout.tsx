@@ -124,6 +124,7 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/configuracoes', label: 'Configurações da loja', roles: ['admin'] },
       { href: '/dashboard/configuracoes/usuarios', label: 'Usuários & acessos', roles: ['admin'] },
       { href: '/dashboard/configuracoes/importar', label: 'Importar cadastros', roles: ['admin', 'secretary'] },
+      { href: '/dashboard/configuracoes/importar-financeiro', label: 'Importar backup financeiro', roles: ['admin', 'treasurer'] },
       { href: '/dashboard/assinatura', label: 'Assinatura', roles: ['admin'] },
       { href: '/dashboard/integracoes', label: 'Integrações', roles: ['admin'] },
       { href: '/dashboard/auditoria', label: 'Auditoria', roles: [], resource: 'audit' },

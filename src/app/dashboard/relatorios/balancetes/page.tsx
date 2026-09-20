@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
-import BalancetesClient from './BalancetesClient';
+import BalancetesClient, { type BalanceteLine } from './BalancetesClient';
 
 // Server Component: histórico de balancetes periódicos (trimestral/semestral)
 // apresentados em sessão, independente do encerramento do veneralato.
@@ -50,6 +50,8 @@ export default async function BalancetesPage() {
     approved: b.approved,
     approvedAt: b.approvedAt ? b.approvedAt.toISOString() : null,
     notes: b.notes,
+    source: b.source,
+    detail: Array.isArray(b.detail) ? (b.detail as unknown as BalanceteLine[]) : null,
   }));
 
   const normalizedRole = (role ?? 'member').toLowerCase();
