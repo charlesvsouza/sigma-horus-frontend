@@ -3,7 +3,17 @@ import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prismaAdmin, withTenant } from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
-import { isAccountUsable, isLockedOut, LOGIN_WINDOW_MS, SESSION_REVALIDATE_TTL_MS } from '@/lib/auth-policy';
+import {
+  IMPERSONATE_IP_MAX_FAILURES,
+  isAccountUsable,
+  isLockedOut,
+  LOGIN_IP_MAX_FAILURES,
+  LOGIN_WINDOW_MS,
+  SESSION_REVALIDATE_TTL_MS,
+} from '@/lib/auth-policy';
+import { safeEqual } from '@/lib/platform-auth';
+import { hitRateLimit, peekRateLimit } from '@/lib/rate-limit';
+import { clientIp, rateLimitKey } from '@/lib/rate-limit-core';
 import type { DefaultSession } from 'next-auth';
 
 declare module 'next-auth' {
@@ -54,10 +64,21 @@ export const authOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
+
+        // Limite por IP: toda tentativa que falha (e-mail inexistente, conta inativa, senha errada)
+        // conta; passado o teto, nem consulta a conta. Complementa a trava por conta abaixo, que não
+        // enxerga quem testa uma senha em várias contas ou e-mails que nem existem.
+        const ip = clientIp(request?.headers);
+        const ipKey = ip ? rateLimitKey('login-fail', ip) : null;
+        if (ipKey && ((await peekRateLimit(ipKey))?.count ?? 0) >= LOGIN_IP_MAX_FAILURES) return null;
+        const fail = async () => {
+          if (ipKey) await hitRateLimit(ipKey, LOGIN_WINDOW_MS);
+          return null;
+        };
 
         // E-mails são gravados em minúsculas (cadastro); normaliza o digitado.
         const user = await prismaAdmin.user.findUnique({
@@ -65,23 +86,23 @@ export const authOptions = {
           include: { lodge: { select: { status: true } } },
         });
 
-        if (!user) return null;
+        if (!user) return fail();
         // Usuário desativado (ou loja encerrada) não entra.
-        if (!isAccountUsable(user, user.lodge)) return null;
+        if (!isAccountUsable(user, user.lodge)) return fail();
 
         // Trava contra força bruta: muitas senhas erradas seguidas bloqueiam a conta
         // por alguns minutos (contagem via AuditLog, sem coluna nova).
         const failures = await prismaAdmin.auditLog.count({
           where: { userId: user.id, entity: 'login_failed', createdAt: { gte: new Date(Date.now() - LOGIN_WINDOW_MS) } },
         });
-        if (isLockedOut(failures)) return null;
+        if (isLockedOut(failures)) return fail();
 
         const valid = await bcrypt.compare(String(credentials.password), user.passwordHash);
         if (!valid) {
           await prismaAdmin.auditLog
             .create({ data: { lodgeId: user.lodgeId, userId: user.id, action: 'CREATE', entity: 'login_failed', entityId: user.id } })
             .catch(() => {});
-          return null;
+          return fail();
         }
 
         return {
@@ -105,10 +126,19 @@ export const authOptions = {
         platformToken: { label: 'Token', type: 'password' },
         lodgeId: { label: 'Loja', type: 'text' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const secret = process.env.PLATFORM_OWNER_TOKEN;
         const token = credentials?.platformToken ? String(credentials.platformToken) : '';
-        if (!secret || !token || token !== secret) return null;
+        if (!secret || !token) return null;
+
+        // Tentativas de token erradas por IP: o token abre QUALQUER loja, então o teto é baixo.
+        const ip = clientIp(request?.headers);
+        const ipKey = ip ? rateLimitKey('impersonate-fail', ip) : null;
+        if (ipKey && ((await peekRateLimit(ipKey))?.count ?? 0) >= IMPERSONATE_IP_MAX_FAILURES) return null;
+        if (!safeEqual(secret, token)) {
+          if (ipKey) await hitRateLimit(ipKey, LOGIN_WINDOW_MS);
+          return null;
+        }
 
         const lodgeId = credentials?.lodgeId ? String(credentials.lodgeId) : '';
         if (!lodgeId) return null;

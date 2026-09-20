@@ -2,6 +2,7 @@ import { prismaAdmin } from '@/lib/prisma';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { signResetToken } from '@/lib/reset-token';
 import { NextResponse } from 'next/server';
+import { limitByIp } from '@/lib/rate-limit';
 
 // Recuperação de senha self-service (público). Dado um e-mail, se houver um
 // usuário ativo, envia por e-mail (Resend) um LINK de redefinição (válido por 1h,
@@ -14,6 +15,10 @@ const WINDOW_MS = 15 * 60_000;
 
 export async function POST(request: Request) {
   const generic = NextResponse.json({ ok: true });
+
+  // Por IP, além do limite por conta: sem isso dá para disparar e-mails para muitas contas de uma vez.
+  // Resposta genérica mesmo quando bloqueia (anti-enumeração).
+  if (await limitByIp(request, 'forgot-password', 10, 15 * 60_000)) return generic;
 
   let email = '';
   try {

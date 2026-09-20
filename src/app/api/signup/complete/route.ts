@@ -3,6 +3,7 @@ import { seedLodgeDefaults } from '@/lib/seed-lodge';
 import { getStripe, isPlanId } from '@/lib/stripe';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
+import { limitByIp } from '@/lib/rate-limit';
 import type Stripe from 'stripe';
 
 // Recupera a Checkout Session de self-service e valida que é elegível.
@@ -21,6 +22,8 @@ const tsToDate = (s?: number | null) => (s ? new Date(s * 1000) : null);
 
 // GET: resumo da sessão para preencher a tela de conclusão (e-mail, plano, trial).
 export async function GET(request: Request) {
+  const limited = await limitByIp(request, 'signup-complete', 60, 60 * 60_000);
+  if (limited) return limited;
   const sessionId = new URL(request.url).searchParams.get('session_id') ?? '';
   if (!sessionId) return NextResponse.json({ error: 'session_id ausente.' }, { status: 400 });
 
@@ -41,6 +44,8 @@ export async function GET(request: Request) {
 
 // POST: cria a loja + admin + assinatura ligada ao Stripe (customer/subscription reais).
 export async function POST(request: Request) {
+  const limited = await limitByIp(request, 'signup-complete', 60, 60 * 60_000);
+  if (limited) return limited;
   const body = await request.json().catch(() => ({}));
   const sessionId = String(body?.sessionId ?? '');
   const name = String(body?.name ?? '').trim();

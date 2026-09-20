@@ -963,3 +963,14 @@ model RolePermission {
   @@unique([lodgeId, role, resource, action])
   @@index([lodgeId])
 }
+
+// Contador do limite de tentativas por IP (rotas públicas e login). Tabela de PLATAFORMA: sem loja e
+// sem RLS; só o cliente administrativo (prismaAdmin) a usa — o papel da aplicação não tem acesso.
+// Janela fixa: a linha é reiniciada quando resetAt vence. Ver lib/rate-limit.ts.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime @db.Timestamptz(3)
+
+  @@index([resetAt])
+}

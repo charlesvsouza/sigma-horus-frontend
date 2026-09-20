@@ -1,11 +1,16 @@
 import { ensurePrice, getStripe, isPlanId, TRIAL_DAYS, type BillingInterval } from '@/lib/stripe';
 import { NextResponse } from 'next/server';
+import { limitByIp } from '@/lib/rate-limit';
 
 // Checkout PÚBLICO de self-service (sem login): o visitante escolhe o plano,
 // põe o cartão e ganha trial de TRIAL_DAYS dias. O cartão é capturado já no
 // início (payment_method_collection: 'always'); ao fim do trial o Stripe cobra
 // automaticamente, salvo cancelamento. A loja é criada na volta (/comecar/concluir).
 export async function POST(request: Request) {
+  // Cada chamada cria uma sessão de checkout no Stripe: teto por IP contra abuso.
+  const limited = await limitByIp(request, 'signup-checkout', 10, 60 * 60_000);
+  if (limited) return limited;
+
   const body = await request.json().catch(() => ({}));
   const planId = String(body?.plan ?? 'oficina');
   const interval: BillingInterval = body?.interval === 'year' ? 'year' : 'month';

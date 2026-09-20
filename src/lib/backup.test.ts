@@ -7,8 +7,9 @@ const schema = readFileSync('prisma/schema.prisma', 'utf-8');
 const source = readFileSync('src/lib/backup.ts', 'utf-8');
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
-// BackupLog é o próprio registro do backup — fica de fora de propósito.
-const EXCLUDED = new Set(['backupLog']);
+// Fora de propósito: BackupLog é o próprio registro do backup; RateLimit são contadores efêmeros
+// (janelas de minutos) — restaurá-los só bloquearia gente sem motivo.
+const EXCLUDED = new Set(['backupLog', 'rateLimit']);
 
 const schemaModels = [...schema.matchAll(/^model (\w+) \{/gm)].map((m) => lowerFirst(m[1]));
 const listBlock = source.match(/BACKUP_MODELS = \[([\s\S]*?)\] as const/)?.[1] ?? '';

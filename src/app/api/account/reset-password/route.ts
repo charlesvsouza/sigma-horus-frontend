@@ -3,11 +3,15 @@ import { isStrongEnough } from '@/lib/password';
 import { readResetTokenUser, verifyResetToken } from '@/lib/reset-token';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
+import { limitByIp } from '@/lib/rate-limit';
 
 // Conclui a redefinição: valida o link (assinatura + validade + ainda vinculado
 // à senha atual) e grava a nova senha. Mensagem de erro única para não revelar
 // se o usuário existe.
 export async function POST(request: Request) {
+  const limited = await limitByIp(request, 'reset-password', 20, 15 * 60_000);
+  if (limited) return limited;
+
   const invalid = () => NextResponse.json({ error: 'Link inválido ou expirado. Peça um novo em "Esqueceu a senha?".' }, { status: 400 });
 
   let token = '';
