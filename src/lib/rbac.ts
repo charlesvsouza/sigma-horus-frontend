@@ -166,6 +166,8 @@ async function loadLodgePolicy(lodgeId: string): Promise<LodgePolicy | null> {
 
 /** Decide uma permissão: persistida se a loja personalizou o recurso, senão o padrão. */
 function decide(policy: LodgePolicy | null, normalizedRole: string, resource: Resource, action: Action): boolean {
+  // O Administrador é fixo: a matriz personalizada da loja nunca o restringe (evita se trancar para fora).
+  if (normalizedRole === 'admin') return canAccess('admin', resource, action);
   if (!policy || !policy.customized.has(resource)) return canAccess(normalizedRole, resource, action);
   return policy.allowed.has(keyOf(normalizedRole, resource, action));
 }

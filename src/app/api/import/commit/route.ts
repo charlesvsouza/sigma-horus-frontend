@@ -11,6 +11,7 @@ import {
   type FieldMapping,
 } from '@/lib/member-import';
 import { withTenant } from '@/lib/prisma';
+import { adminEmails, normalizeEmail } from '@/lib/admin-policy';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { backfillMemberRelatives } from '@/lib/relatives-backfill';
 import { buildObjectKey, getR2Client, getR2StorageSettings } from '@/lib/storage';
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
       db.power.findMany({ where: { lodgeId: finalLodgeId }, select: { id: true, name: true } }),
     ]);
 
+    const adminEmailSet = new Set(await adminEmails(finalLodgeId));
     const data = toImport.map((r) => {
       const body: Record<string, unknown> = { ...r.body };
       if (r.riteName) {
@@ -119,7 +121,10 @@ export async function POST(request: Request) {
         const match = resolveByName(r.powerName, powers);
         if (match.id) body.powerId = match.id;
       }
-      return { lodgeId: finalLodgeId, ...parseMemberFields(body) };
+      const fields = parseMemberFields(body);
+      // Um e-mail, um papel: e-mail do Administrador não entra como e-mail de obreiro.
+      if (fields.email && adminEmailSet.has(normalizeEmail(fields.email))) fields.email = null;
+      return { lodgeId: finalLodgeId, ...fields };
     });
 
     const created = data.length > 0 ? await db.member.createMany({ data }) : { count: 0 };

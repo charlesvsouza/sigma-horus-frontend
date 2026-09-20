@@ -96,7 +96,7 @@ const ROLE_LABEL: Record<string, string> = {
 // Rótulos de segmentos de rota para a trilha (breadcrumb) que não vêm do menu.
 const SEGMENT_LABELS: Record<string, string> = {
   configuracoes: 'Configurações da loja', relatorios: 'Resumo financeiro', hospitalaria: 'Hospitalaria',
-  sessoes: 'Sessões', usuarios: 'Usuários & acessos', permissoes: 'Permissões', 'importar-financeiro': 'Importar backup financeiro',
+  sessoes: 'Sessões', usuarios: 'Usuários & acessos', 'minha-conta': 'Minha conta', permissoes: 'Permissões', 'importar-financeiro': 'Importar backup financeiro',
   fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', tarifas: 'Tarifas de cobrança (Asaas)', fundos: 'Fundos (Tronco e Doações)', portal: 'Meu portal', secretaria: 'Secretaria',
   inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos',
   'fluxo-caixa': 'Fluxo de caixa projetado', orcamento: 'Orçamento anual',
@@ -370,10 +370,10 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                 <span className="hidden md:inline">Buscar</span>
                 <kbd className="hidden rounded border border-white/15 px-1.5 py-0.5 font-mono text-[0.6rem] md:inline">⌘K</kbd>
               </button>
-              <div className="hidden text-right sm:block">
+              <Link href="/dashboard/minha-conta" className="hidden text-right transition hover:opacity-80 sm:block" title="Minha conta">
                 <p className="text-sm font-medium text-sand-light">{userName}</p>
-                <p className="text-xs text-gold/70">{ROLE_LABEL[role] ?? role}</p>
-              </div>
+                <p className="text-xs text-gold/70">{ROLE_LABEL[role] ?? role} · Minha conta</p>
+              </Link>
               <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/30 bg-gold/10 text-xs font-semibold text-gold">
                 {initials}
               </div>

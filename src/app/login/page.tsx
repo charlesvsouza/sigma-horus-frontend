@@ -14,6 +14,8 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Resultado do link de troca de e-mail (/api/account/confirm-email → /login?emailChange=…).
+  const [emailChange, setEmailChange] = useState<string | null>(null);
 
   // Recuperação de senha (painel inline)
   const [forgot, setForgot] = useState(false);
@@ -24,11 +26,11 @@ export default function LoginPage() {
   // Prefill do e-mail lembrado (localStorage). Effect para não quebrar a
   // hidratação SSR (localStorage só existe no cliente).
   useEffect(() => {
+    // Init hidratação-safe (query string e localStorage só existem no cliente); não é fetch-on-mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEmailChange(new URLSearchParams(window.location.search).get("emailChange"));
     const saved = localStorage.getItem(REMEMBER_KEY);
     if (saved) {
-      // Init hidratação-safe do e-mail lembrado (localStorage só no cliente);
-      // não é fetch-on-mount.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEmail(saved);
       setRemember(true);
     }
@@ -212,6 +214,16 @@ export default function LoginPage() {
                     Esqueceu a senha?
                   </button>
                 </div>
+
+                {emailChange ? (
+                  <p className={`rounded-lg px-3 py-2 text-xs ${emailChange === "ok" ? "bg-emerald-500/10 text-emerald-300" : "bg-rose-500/10 text-rose-300"}`}>
+                    {emailChange === "ok"
+                      ? "E-mail de acesso alterado. Entre com o novo e-mail."
+                      : emailChange === "taken"
+                        ? "Este e-mail não pode mais ser usado (já está em uso). Peça outra troca em Minha conta."
+                        : "Link de confirmação inválido ou expirado. Peça a troca de novo em Minha conta."}
+                  </p>
+                ) : null}
 
                 {error ? (
                   <p className="flex items-center gap-2 rounded-lg bg-rose-500/10 px-3 py-2 text-xs text-rose-300">

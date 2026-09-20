@@ -151,6 +151,10 @@ export default function OnboardingPage() {
                 placeholder="ex: joao@email.com"
                 error={errors.adminEmail}
               />
+              <p className="-mt-2 text-xs text-sand-dark md:col-span-2">
+                Este será o <strong>login de Administrador</strong> da loja. Se você também é membro, use aqui um e-mail
+                <strong> diferente</strong> do seu cadastro de obreiro — os papéis não se confundem.
+              </p>
 
               <div className="md:col-span-2">
                 <Input

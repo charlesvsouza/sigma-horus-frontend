@@ -36,6 +36,7 @@ const INDEX: IndexEntry[] = [
       { id: 'admin-backup', label: '6.8 Backup dos dados da loja' },
       { id: 'admin-recebimento', label: '6.9 Modo de recebimento das cobranças' },
       { id: 'admin-importar-financeiro', label: '6.10 Importar backup financeiro de outro sistema' },
+      { id: 'admin-minha-conta', label: '6.11 Minha conta (seus dados de acesso)' },
     ],
   },
   {
@@ -250,7 +251,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 19 de setembro de 2026 · versão 1.32</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 20 de setembro de 2026 · versão 1.33</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -312,7 +313,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.32 — 19 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.33 — 20 de setembro de 2026</p>
               </div>
             </div>
 
@@ -361,14 +362,21 @@ export function ManualBook() {
               <Steps>
                 <li>Na página inicial (<code>sigmahorus.com.br</code>), escolha um plano e clique em <UI>Assinar agora</UI>.</li>
                 <li>Você é levado ao <strong>checkout seguro</strong>, informa o cartão e ganha <strong>10 dias de teste grátis</strong> — nada é cobrado agora.</li>
-                <li>De volta ao site, na tela <UI>Quase lá</UI>, crie a loja: nome, endereço (slug), seu nome, e-mail, senha e o <strong>rito praticado</strong>.</li>
+                <li>De volta ao site, na tela <UI>Quase lá</UI>, crie a loja: nome, endereço (slug), seu nome, e-mail, senha e o <strong>rito praticado</strong>. O nome, o e-mail e a senha desta etapa são os do <strong>Administrador</strong> da loja (veja o quadro abaixo).</li>
                 <li>Pronto: a loja já nasce no período de teste, ligada ao seu plano. Ao fim dos 10 dias, a cobrança ocorre automaticamente <strong>se você não cancelar</strong>.</li>
               </Steps>
               <p><strong>B) Por convite</strong> (quando a loja recebe um código da equipe):</p>
               <Steps>
                 <li>Abra o link do convite (<code>/onboarding?invite=SEU-CÓDIGO</code>) ou informe o código na tela de criação de loja.</li>
-                <li>Informe o <strong>nome da loja</strong>, escolha o <strong>rito praticado</strong> e crie o administrador (nome, e-mail e senha).</li>
+                <li>Informe o <strong>nome da loja</strong>, escolha o <strong>rito praticado</strong> e crie o Administrador (nome, e-mail e senha). O convite deve ser enviado ao <strong>e-mail de quem será o Administrador</strong>.</li>
               </Steps>
+              <Note>
+                <strong>Um e-mail, um papel.</strong> Quem contrata o pacote (ou recebe o convite) passa a ser o
+                <strong> Administrador</strong> da loja, e o e-mail usado nessa etapa é o <strong>login de Administrador</strong>.
+                Se essa pessoa também é obreiro da loja, o cadastro dela como <strong>membro</strong> deve ter um <strong>outro e-mail</strong>:
+                os papéis não se confundem, cada um tem o seu login, e o sistema <strong>não aceita</strong> o mesmo e-mail nos dois.
+                O mesmo vale para o Venerável, o Tesoureiro e os demais: o acesso de obreiro é sempre o do e-mail do cadastro de membro.
+              </Note>
               <p>
                 Em qualquer caminho, a loja já nasce semeada com ritos, potências, os <strong>cargos do rito escolhido</strong>
                 e um <strong>plano de contas</strong> padrão, e começa o <strong>período de teste de 10 dias</strong> com
@@ -440,8 +448,14 @@ export function ManualBook() {
                 papel permite, e sempre dentro da sua loja (isolamento por <em>tenant</em>). O Administrador atribui os
                 papéis.
               </p>
+              <Note>
+                <strong>Papéis não se misturam.</strong> O papel de <strong>Administrador é fixo</strong>: ninguém é promovido a
+                Administrador e o Administrador também não é rebaixado. Cada papel tem o seu próprio login e o seu próprio e-mail —
+                quem acumula funções (por exemplo, é Venerável e também administra a conta) tem <strong>dois logins</strong>, com
+                dois e-mails, e entra no sistema com aquele que corresponde à função que vai exercer naquele momento.
+              </Note>
               <Bullets>
-                <li><strong>Administrador:</strong> conta, usuários, assinatura, integrações e configurações.</li>
+                <li><strong>Administrador:</strong> conta, usuários, assinatura, integrações e configurações. Altera todos os cadastros e configurações da loja e é o <strong>único</strong> que cria outro Administrador (no máximo <strong>2 Administradores ativos</strong> por loja).</li>
                 <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações (despesas, prestação de contas e transferências entre contas bancárias); não lança baixas financeiras.</li>
                 <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, fecha o caixa, solicita transferências entre contas bancárias/Caixa e vê relatórios financeiros.</li>
                 <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença, materiais e patrimônio da loja, documentos institucionais; relatórios não financeiros.</li>
@@ -526,7 +540,7 @@ export function ManualBook() {
                 Abaixo, o papel de cada um e como ele se reflete no Sigma Horus.
               </p>
               <div className="grid gap-4">
-                <Office name="Venerável Mestre" light tradition="Preside e governa os trabalhos da loja, máxima autoridade da gestão durante o veneralato." system="Costuma receber o papel Venerável (visão gerencial, relatórios e aprovações). Quando também administra a conta, acumula o papel Administrador." />
+                <Office name="Venerável Mestre" light tradition="Preside e governa os trabalhos da loja, máxima autoridade da gestão durante o veneralato." system="Costuma receber o papel Venerável (visão gerencial, relatórios e aprovações). Se também administra a conta, isso é feito com um login de Administrador separado, com outro e-mail (capítulo 3)." />
                 <Office name="1º Vigilante" light tradition="Segunda Luz, dirige a Coluna dos Companheiros e substitui o Venerável em seus impedimentos." system="Em geral papel Membro (com portal próprio) ou ampliado, conforme a loja decidir." />
                 <Office name="2º Vigilante" light tradition="Terceira Luz, dirige a Coluna dos Aprendizes e zela pela instrução dos obreiros mais novos." system="Normalmente papel Membro; apoia o acompanhamento de presença e frequência." />
                 <Office name="Orador" tradition="Guardião da lei e da justiça nos trabalhos; zela pelo cumprimento dos estatutos." system="Papel Membro, com leitura do que lhe couber; apoia-se na auditoria e nos relatórios." />
@@ -620,13 +634,24 @@ export function ManualBook() {
                 </Steps>
                 <p>
                   Em <UI>Administração → Usuários &amp; acessos</UI> o Administrador define o <strong>papel (cargo de
-                  permissão)</strong> de cada usuário — Administrador, Venerável, Tesoureiro, Secretário, Hospitaleiro ou
-                  Membro —, reenvia senha e ativa/desativa logins.
+                  permissão)</strong> de cada usuário — Venerável, Tesoureiro, Secretário, Hospitaleiro ou Membro —, reenvia
+                  senha e ativa/desativa logins. <strong>Administrador não está nessa lista de propósito:</strong> o papel é fixo,
+                  ninguém é promovido a ele nem rebaixado dele.
                 </p>
+                <p><strong>Criar outro Administrador.</strong> Ainda em <UI>Usuários &amp; acessos</UI>, no quadro
+                  <UI>Administradores</UI>, clique em <UI>Novo administrador</UI>, informe <strong>nome e e-mail</strong> e confirme. O
+                  sistema cria o login de Administrador, <strong>sem vínculo com cadastro de membro</strong>, e envia a senha provisória
+                  por e-mail (troca obrigatória no primeiro acesso). Regras:</p>
+                <Bullets>
+                  <li>Só o Administrador cria Administrador, e a loja tem no <strong>máximo 2 ativos</strong>. Para criar ou reativar um terceiro, desative antes um dos dois.</li>
+                  <li>O e-mail <strong>não pode ser o de um membro</strong> da loja. Se a pessoa também é obreiro, use outro e-mail para o Administrador.</li>
+                  <li>Quem precisa de outra função (Venerável, Tesoureiro…) recebe outro login, com outro e-mail — não muda o papel do Administrador.</li>
+                </Bullets>
                 <Note>
                   Quem faz o quê: <strong>só o Administrador</strong> define papéis e concede acesso. O <strong>obreiro</strong>
                   edita o próprio cadastro (contato, endereço, família) e troca a própria senha, mas <strong>nunca</strong> o
-                  próprio papel. Conceda sempre o <strong>menor privilégio necessário</strong>. A loja precisa de ao menos um
+                  próprio papel. <strong>O e-mail do Administrador não pode ser cadastrado em nenhum membro</strong>, e <UI>Conceder acesso</UI>
+                  recusa um e-mail que já é de um Administrador. Conceda sempre o <strong>menor privilégio necessário</strong>. A loja precisa de ao menos um
                   Administrador (o sistema impede remover o último).
                 </Note>
               </Sub>
@@ -821,6 +846,23 @@ export function ManualBook() {
                   Cada importação é um <strong>lote</strong>. Se algo não saiu como esperado, <UI>Desfazer este lote</UI>
                   remove tudo o que ele criou (e só isso — nada digitado à mão é tocado). Numa loja que já tem um lote, o
                   sistema recusa importar de novo para não duplicar o histórico.
+                </Note>
+              </Sub>
+
+              <Sub id="admin-minha-conta" title="6.11 Minha conta (seus dados de acesso)">
+                <p>
+                  Todo usuário tem a página <UI>Minha conta</UI> (clique no seu nome, no alto da tela). Ela é <strong>separada do
+                  cadastro de membro</strong> e não muda o seu papel.
+                </p>
+                <Bullets>
+                  <li><strong>Administrador</strong> (e qualquer usuário sem cadastro de obreiro): edita o próprio <strong>nome</strong> e o <strong>e-mail de acesso</strong>.
+                    Para trocar o e-mail, informe o novo e a <strong>senha atual</strong>; o sistema envia um <strong>link de confirmação ao novo e-mail</strong> e a troca só vale depois
+                    de você abrir o link (vale por 1 hora). Até lá, você continua entrando com o e-mail antigo.</li>
+                  <li><strong>Obreiro</strong> (com cadastro de membro): o nome e o e-mail de acesso são os do cadastro — altere em <UI>Meu portal → Editar meus dados</UI>. Em <UI>Minha conta</UI> você troca a senha.</li>
+                  <li><strong>Senha:</strong> troque a qualquer momento informando a senha atual.</li>
+                </Bullets>
+                <Note>
+                  O e-mail de acesso do Administrador <strong>nunca</strong> pode ser o mesmo do seu cadastro de obreiro (se você também for membro): o sistema recusa.
                 </Note>
               </Sub>
             </Chapter>
@@ -1839,6 +1881,9 @@ export function ManualBook() {
                 <li><strong>Não consigo emitir boleto.</strong> Verifique se o Asaas está conectado (6.2) e se o membro tem CPF (7.4).</li>
                 <li><strong>O pagamento não baixou sozinho.</strong> Confirme o webhook e o token no painel do Asaas (6.2-C).</li>
                 <li><strong>Meu acesso foi pausado.</strong> O teste de 10 dias terminou — contrate um plano em <UI>Assinatura</UI>; seus dados continuam guardados.</li>
+                <li><strong>Sou Administrador e também membro. Como faço?</strong> Use <strong>dois logins com dois e-mails</strong>: um de Administrador (o da contratação ou o criado em <UI>Novo administrador</UI>) e outro de obreiro (o e-mail do seu cadastro de membro, liberado com <UI>Conceder acesso</UI>). Entre com o login da função que vai exercer. O sistema não aceita o mesmo e-mail nos dois (6.3).</li>
+                <li><strong>Por que não consigo promover alguém a Administrador (nem rebaixar um)?</strong> O papel de Administrador é fixo, de propósito, para que as prerrogativas não se misturem. Para ter outro Administrador, crie-o em <UI>Usuários &amp; acessos → Novo administrador</UI> (limite de 2 ativos).</li>
+                <li><strong>Preciso trocar o e-mail do Administrador.</strong> Em <UI>Minha conta</UI> (6.11): informe o novo e-mail e a senha atual, e confirme pelo link enviado ao novo endereço.</li>
                 <li><strong>Não vejo um item do menu.</strong> Ele não está liberado para o seu papel; fale com o Administrador (6.3 / 6.4).</li>
                 <li><strong>O saldo do Tronco aparece indisponível.</strong> Em Cadastros, clique em <UI>Atualizar plano de contas</UI> (7.1) para habilitar as contas do Tronco de Solidariedade.</li>
                 <li><strong>A convocação não chegou aos irmãos.</strong> O e-mail sai pela plataforma; WhatsApp/SMS exigem a loja conectar a própria conta em <UI>Integrações</UI> (6.6). Até lá, ficam registrados e enfileirados.</li>

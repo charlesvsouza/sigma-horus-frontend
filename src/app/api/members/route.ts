@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, validateMemberFields, validateRelatives } from '@/lib/member-fields';
 import { withTenant } from '@/lib/prisma';
+import { adminEmails, memberEmailIsAdminMessage, normalizeEmail } from '@/lib/admin-policy';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
@@ -51,6 +52,11 @@ export async function POST(request: Request) {
   const validationError = validateMemberFields(fields) ?? validateRelatives(relatives);
   if (validationError) {
     return NextResponse.json({ error: validationError }, { status: 400 });
+  }
+
+  const newEmail = normalizeEmail(fields.email);
+  if (newEmail && (await adminEmails(String(lodgeId))).includes(newEmail)) {
+    return NextResponse.json({ error: memberEmailIsAdminMessage() }, { status: 409 });
   }
 
   const item = await withTenant(String(lodgeId), async (db) => {

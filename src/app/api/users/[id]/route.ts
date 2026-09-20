@@ -3,6 +3,7 @@ import { invalidateSessionUser } from '@/app/api/auth/[...nextauth]/auth';
 import { prismaAdmin } from '@/lib/prisma';
 import { normalizeRole, ROLES } from '@/lib/rbac';
 import { generateTempPassword } from '@/lib/password';
+import { activeAdminCount, checkAdminCap, checkRoleChange } from '@/lib/admin-policy';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
@@ -10,6 +11,7 @@ import { NextResponse } from 'next/server';
 type Ctx = { params: Promise<{ id: string }> };
 
 // Admin ajusta papel/status de um usuário, ou reemite a senha provisória.
+// Papel de Administrador é fixo: sem promoção e sem rebaixamento (lib/admin-policy).
 // O "cargo" (papel de permissão) só é definido aqui — o próprio obreiro nunca
 // edita o próprio papel.
 export async function PATCH(request: Request, { params }: Ctx) {
@@ -56,13 +58,9 @@ export async function PATCH(request: Request, { params }: Ctx) {
     if (!ROLES.includes(role as (typeof ROLES)[number])) {
       return NextResponse.json({ error: 'Papel inválido.' }, { status: 400 });
     }
-    // Trava de segurança: não permitir remover o último administrador da loja.
-    if (target.role === 'admin' && role !== 'admin') {
-      const admins = await prismaAdmin.user.count({ where: { lodgeId: String(lodgeId), role: 'admin', status: 'active' } });
-      if (admins <= 1) {
-        return NextResponse.json({ error: 'A loja precisa de pelo menos um Administrador.' }, { status: 409 });
-      }
-    }
+    // O papel de Administrador é fixo nos dois sentidos (ninguém é promovido, ninguém é rebaixado).
+    const change = checkRoleChange(target.role, role);
+    if (!change.ok) return NextResponse.json({ error: change.error }, { status: 409 });
     data.role = role;
   }
   if (typeof body.status === 'string' && ['active', 'inactive'].includes(body.status)) {
@@ -72,6 +70,11 @@ export async function PATCH(request: Request, { params }: Ctx) {
       if (admins <= 1) {
         return NextResponse.json({ error: 'A loja precisa de pelo menos um Administrador ativo.' }, { status: 409 });
       }
+    }
+    // Reativar um Administrador também respeita o teto de Administradores ativos.
+    if (body.status === 'active' && target.role === 'admin' && target.status !== 'active') {
+      const cap = checkAdminCap(await activeAdminCount(String(lodgeId)));
+      if (!cap.ok) return NextResponse.json({ error: cap.error }, { status: 409 });
     }
     data.status = body.status;
   }

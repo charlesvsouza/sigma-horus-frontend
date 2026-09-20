@@ -1,7 +1,8 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, parseSelfEditFields, validateMemberFields, validateRelatives } from '@/lib/member-fields';
-import { withTenant } from '@/lib/prisma';
+import { withTenant, prismaAdmin } from '@/lib/prisma';
+import { adminEmails, memberEmailIsAdminMessage, normalizeEmail } from '@/lib/admin-policy';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
@@ -33,6 +34,16 @@ export async function PUT(request: Request, { params }: Ctx) {
   const relativesError = validateRelatives(relatives);
   if (relativesError) {
     return NextResponse.json({ error: relativesError }, { status: 400 });
+  }
+
+  // Um e-mail, um papel: o e-mail do Administrador não pode virar e-mail de cadastro de obreiro.
+  // Só conta quando o e-mail MUDA (quem já tinha o mesmo e-mail antes da regra não fica travado).
+  const incomingEmail = normalizeEmail(isSelf ? parseSelfEditFields(body).email : parseMemberFields(body).email);
+  if (incomingEmail) {
+    const current = await prismaAdmin.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { email: true } });
+    if (current && normalizeEmail(current.email) !== incomingEmail && (await adminEmails(String(lodgeId))).includes(incomingEmail)) {
+      return NextResponse.json({ error: memberEmailIsAdminMessage() }, { status: 409 });
+    }
   }
 
   if (isSelf) {

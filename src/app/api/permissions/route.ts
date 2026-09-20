@@ -5,6 +5,7 @@ import {
   ACTIONS,
   RESOURCES,
   ROLES,
+  canAccess,
   getEffectiveMatrix,
   invalidateLodgePolicy,
   normalizeRole,
@@ -50,7 +51,8 @@ export async function PUT(request: Request) {
     for (const r of ROLES) {
       for (const resource of RESOURCES) {
         for (const action of ACTIONS) {
-          const allowed = Boolean(incoming?.[r]?.[resource]?.[action]);
+          // A linha do Administrador é fixa (padrão); o que vier do navegador para ela é ignorado.
+          const allowed = r === 'admin' ? canAccess('admin', resource as Resource, action as Action) : Boolean(incoming?.[r]?.[resource]?.[action]);
           await db.rolePermission.upsert({
             where: {
               lodgeId_role_resource_action: {

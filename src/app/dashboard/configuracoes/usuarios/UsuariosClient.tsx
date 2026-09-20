@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, inputClass } from '@/components/ui';
+import { Alert, Button, Field, inputClass } from '@/components/ui';
 
 type AppUser = {
   id: string;
@@ -24,7 +24,9 @@ const ROLE_LABELS: Record<string, string> = {
   hospitaller: 'Hospitaleiro',
   member: 'Membro',
 };
-const ROLE_OPTIONS = Object.entries(ROLE_LABELS);
+// Administrador não é opção de promoção: quem precisa de outro Administrador usa "Novo administrador".
+const ROLE_OPTIONS = Object.entries(ROLE_LABELS).filter(([value]) => value !== 'admin');
+const MAX_ADMINS = 2;
 
 export default function UsuariosClient({ users, denied }: { users: AppUser[]; denied: boolean }) {
   const router = useRouter();
@@ -32,6 +34,9 @@ export default function UsuariosClient({ users, denied }: { users: AppUser[]; de
     denied ? { kind: 'error', text: 'Sem permissão para gerenciar usuários.' } : null,
   );
   const [busy, setBusy] = useState<string | null>(null);
+  const [showNewAdmin, setShowNewAdmin] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ name: '', email: '' });
+  const activeAdmins = users.filter((u) => u.role === 'admin' && u.status === 'active').length;
 
   async function patch(id: string, body: Record<string, unknown>) {
     setBusy(id);
@@ -60,6 +65,32 @@ export default function UsuariosClient({ users, denied }: { users: AppUser[]; de
     router.refresh();
   }
 
+  async function createAdmin(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy('new-admin');
+    setMessage(null);
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newAdmin),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(null);
+    if (!res.ok) {
+      setMessage({ kind: 'error', text: data.error ?? 'Não foi possível criar o Administrador.' });
+      return;
+    }
+    setMessage({
+      kind: 'ok',
+      text: data.emailStatus === 'sent'
+        ? `Administrador criado. A senha provisória foi enviada para ${newAdmin.email}.`
+        : `Administrador criado. Senha provisória: ${data.tempPassword} (e-mail não enviado — repasse manualmente).`,
+    });
+    setNewAdmin({ name: '', email: '' });
+    setShowNewAdmin(false);
+    router.refresh();
+  }
+
   return (
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-4xl space-y-8">
@@ -77,6 +108,37 @@ export default function UsuariosClient({ users, denied }: { users: AppUser[]; de
 
         {message ? (
           <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert>
+        ) : null}
+
+        {!denied ? (
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-sand-light">Administradores ({activeAdmins} de {MAX_ADMINS})</h2>
+                <p className="mt-1 text-xs text-sand-dark">
+                  O papel de Administrador é fixo: ninguém é promovido a ele nem rebaixado dele. Para ter outro Administrador, crie um novo aqui.
+                  Cada papel tem o seu próprio login — <strong>se a pessoa também é obreiro, o Administrador deve usar um e-mail diferente do cadastro de membro</strong>.
+                </p>
+              </div>
+              <Button type="button" variant="secondary" disabled={activeAdmins >= MAX_ADMINS} onClick={() => setShowNewAdmin((v) => !v)}>
+                Novo administrador
+              </Button>
+            </div>
+            {activeAdmins >= MAX_ADMINS ? <p className="mt-2 text-xs text-amber-300">Limite de {MAX_ADMINS} Administradores ativos atingido. Desative um para criar outro.</p> : null}
+            {showNewAdmin ? (
+              <form onSubmit={createAdmin} className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Field label="Nome completo">
+                  <input className={inputClass} value={newAdmin.name} onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })} required minLength={3} />
+                </Field>
+                <Field label="E-mail do Administrador (não pode ser o de um membro)">
+                  <input className={inputClass} type="email" value={newAdmin.email} onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })} required />
+                </Field>
+                <div className="sm:col-span-2">
+                  <Button type="submit" disabled={busy === 'new-admin'}>{busy === 'new-admin' ? 'Criando…' : 'Criar e enviar senha provisória'}</Button>
+                </div>
+              </form>
+            ) : null}
+          </section>
         ) : null}
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-2">
@@ -98,17 +160,23 @@ export default function UsuariosClient({ users, denied }: { users: AppUser[]; de
                     </div>
                   </div>
 
-                  <label className="flex items-center gap-2 text-xs text-sand-dark">
-                    Papel
-                    <select
-                      value={u.role}
-                      disabled={busy === u.id}
-                      onChange={(e) => patch(u.id, { role: e.target.value })}
-                      className={inputClass + ' py-1.5'}
-                    >
-                      {ROLE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                    </select>
-                  </label>
+                  {u.role === 'admin' ? (
+                    <span className="flex items-center gap-2 text-xs text-sand-dark">
+                      Papel <span className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-gold">Administrador (fixo)</span>
+                    </span>
+                  ) : (
+                    <label className="flex items-center gap-2 text-xs text-sand-dark">
+                      Papel
+                      <select
+                        value={u.role}
+                        disabled={busy === u.id}
+                        onChange={(e) => patch(u.id, { role: e.target.value })}
+                        className={inputClass + ' py-1.5'}
+                      >
+                        {ROLE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    </label>
+                  )}
 
                   <div className="flex items-center gap-2">
                     <button

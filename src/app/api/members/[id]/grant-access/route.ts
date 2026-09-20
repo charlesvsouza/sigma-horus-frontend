@@ -33,30 +33,34 @@ export async function POST(_request: Request, { params }: Ctx) {
   }
 
   // E-mail já usado por outro usuário (de outra pessoa)? Bloqueia.
-  const emailOwner = await prismaAdmin.user.findUnique({ where: { email }, select: { id: true, memberId: true, lodgeId: true } });
+  const emailOwner = await prismaAdmin.user.findUnique({ where: { email }, select: { id: true, memberId: true, lodgeId: true, role: true } });
   // Usuário de OUTRA loja com esse e-mail: nunca religar (isso religaria memberId sem
   // atualizar lodgeId, sequestrando a conta e misturando contexto entre tenants).
   if (emailOwner && emailOwner.lodgeId !== String(lodgeId)) {
     return NextResponse.json({ error: 'Este e-mail já pertence a um usuário de outra loja.' }, { status: 409 });
   }
-  if (emailOwner && emailOwner.memberId && emailOwner.memberId !== member.id) {
-    return NextResponse.json({ error: 'Este e-mail já pertence a outro usuário.' }, { status: 409 });
+  // Um e-mail, um papel: e-mail de outro usuário (inclusive o do Administrador) nunca é religado ao
+  // obreiro — antes, o usuário existente com esse e-mail era vinculado ao membro e os papéis se misturavam.
+  if (emailOwner && emailOwner.memberId !== member.id) {
+    const isAdminOwner = emailOwner.role === 'admin';
+    return NextResponse.json({
+      error: isAdminOwner
+        ? 'Este e-mail é o do Administrador da loja. Cadastre no obreiro um e-mail diferente: os papéis não se confundem.'
+        : 'Este e-mail já pertence a outro usuário.',
+    }, { status: 409 });
   }
 
   const tempPassword = generateTempPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-  const existing = await prismaAdmin.user.findFirst({ where: { memberId: member.id }, select: { id: true } });
+  const existing = await prismaAdmin.user.findFirst({ where: { memberId: member.id }, select: { id: true, role: true } });
+  if (existing?.role === 'admin') {
+    return NextResponse.json({ error: 'Este cadastro está ligado a um usuário Administrador. O Administrador não é reemitido por aqui — use Usuários & acessos.' }, { status: 409 });
+  }
   if (existing) {
     await prismaAdmin.user.update({
       where: { id: existing.id },
       data: { passwordHash, mustChangePassword: true, status: 'active', email, name: member.name },
-    });
-  } else if (emailOwner) {
-    // Já existe um usuário com esse e-mail (ex.: o próprio admin da loja); vincula ao membro.
-    await prismaAdmin.user.update({
-      where: { id: emailOwner.id },
-      data: { memberId: member.id, passwordHash, mustChangePassword: true, status: 'active' },
     });
   } else {
     await prismaAdmin.user.create({
