@@ -91,6 +91,7 @@ export default function PermissoesClient({ initialMatrix, roles, resources, acti
               Defina o que cada papel pode <strong>ver</strong> e <strong>editar</strong> em cada módulo.
               {customized ? ' Esta loja usa permissões personalizadas.' : ' Esta loja usa os padrões do sistema (ainda não personalizados).'}
             </p>
+            <p className="mt-1 text-xs text-sand-dark">A coluna do Administrador é fixa: o papel não pode ser reduzido, para que a loja nunca fique sem gestão.</p>
           </div>
           <Link href="/dashboard/configuracoes" className="text-sm text-gold hover:text-gold-light">← Configurações</Link>
         </div>
