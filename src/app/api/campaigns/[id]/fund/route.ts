@@ -6,6 +6,7 @@ import { findFundAccount } from '@/lib/funds';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { isValidMoney } from '@/lib/money';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -24,8 +25,8 @@ export async function POST(request: Request, { params }: Ctx) {
 
   const body = await request.json().catch(() => ({}));
   const amount = Number(body?.amount ?? 0);
-  if (!amount || Number.isNaN(amount) || amount <= 0) {
-    return NextResponse.json({ error: 'Informe um valor válido.' }, { status: 400 });
+  if (!isValidMoney(amount)) {
+    return NextResponse.json({ error: 'Informe um valor válido (maior que zero, com no máximo 2 casas decimais).' }, { status: 400 });
   }
 
   const result = await withTenant(String(lodgeId), async (db) => {

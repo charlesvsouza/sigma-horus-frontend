@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { hasAtMostCents } from '@/lib/money';
 
 export async function GET() {
   const session = await auth();
@@ -45,6 +46,9 @@ export async function POST(request: Request) {
 
   if (!name || Number.isNaN(acquisitionValue)) {
     return NextResponse.json({ error: 'Informe ao menos o nome e o valor de aquisição.' }, { status: 400 });
+  }
+  if (!hasAtMostCents(acquisitionValue) || acquisitionValue < 0 || (currentValue !== null && (!hasAtMostCents(currentValue) || currentValue < 0))) {
+    return NextResponse.json({ error: 'Informe valores em reais, não negativos, com no máximo 2 casas decimais.' }, { status: 400 });
   }
 
   const item = await withTenant(String(lodgeId), async (db) => {

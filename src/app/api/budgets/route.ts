@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { getBudgetComparison } from '@/lib/budget';
 import { NextResponse } from 'next/server';
+import { hasAtMostCents } from '@/lib/money';
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
   const chartAccountId = String(body?.chartAccountId ?? '');
   const plannedAmount = Number(body?.plannedAmount ?? 0);
 
-  if (!year || !chartAccountId || Number.isNaN(plannedAmount) || plannedAmount < 0) {
+  if (!year || !chartAccountId || !hasAtMostCents(plannedAmount) || plannedAmount < 0) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
   }
 

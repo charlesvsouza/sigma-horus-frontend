@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { NextResponse } from 'next/server';
+import { isValidMoney } from '@/lib/money';
 
 // Transferência entre contas financeiras da loja (ex.: sacar do banco pro
 // caixa). Passo 1: o Tesoureiro (ou Admin) cria — nasce "pending" e ainda NÃO
@@ -49,8 +50,8 @@ export async function POST(request: Request) {
   const date = body?.date ? new Date(body.date) : new Date();
   const note = String(body?.note ?? '').trim();
 
-  if (!fromId || !toId || fromId === toId || Number.isNaN(amount) || amount <= 0) {
-    return NextResponse.json({ error: 'Dados inválidos: escolha duas contas diferentes e um valor positivo.' }, { status: 400 });
+  if (!fromId || !toId || fromId === toId || !isValidMoney(amount)) {
+    return NextResponse.json({ error: 'Dados inválidos: escolha duas contas diferentes e um valor positivo, com no máximo 2 casas decimais.' }, { status: 400 });
   }
 
   const result = await withTenant(String(lodgeId), async (db) => {

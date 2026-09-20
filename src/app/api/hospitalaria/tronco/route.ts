@@ -6,6 +6,7 @@ import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { isValidMoney } from '@/lib/money';
 import { lockKey } from '@/lib/locks';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
 import { nextSequenceNumbers } from '@/lib/invoice-number';
@@ -39,8 +40,8 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const amount = Number(body?.amount ?? 0);
-  if (!amount || Number.isNaN(amount) || amount <= 0) {
-    return NextResponse.json({ error: 'Informe um valor de doação válido.' }, { status: 400 });
+  if (!isValidMoney(amount)) {
+    return NextResponse.json({ error: 'Informe um valor de doação válido (maior que zero, com no máximo 2 casas decimais).' }, { status: 400 });
   }
 
   const ctx = await withTenant(String(lodgeId), async (db) => {

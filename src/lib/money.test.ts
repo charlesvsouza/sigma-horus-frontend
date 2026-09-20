@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { coversAmount, isValidMoney, remainingAmount, round2, sumMoney } from './money.ts';
+import { coversAmount, hasAtMostCents, isValidMoney, remainingAmount, round2, sumMoney } from './money.ts';
 
 test('o caso que quebrava: 10,10 + 20,20 cobre 30,30', () => {
   assert.equal(10.1 + 20.2 >= 30.3, false); // a soma crua falha
@@ -35,4 +35,20 @@ test('round2', () => {
 test('valor válido: positivo, finito, até 2 casas', () => {
   for (const ok of [0.01, 1, 40, 99.99, 1234.5]) assert.equal(isValidMoney(ok), true, String(ok));
   for (const bad of [0, -5, NaN, Infinity, 1.005, 1e13, '10', null, undefined]) assert.equal(isValidMoney(bad), false, String(bad));
+});
+
+test('hasAtMostCents aceita até 2 casas e tolera ruído de ponto flutuante', () => {
+  for (const n of [0, 10, 10.5, 10.55, -7.25, 0.1 * 3, 0.1 + 0.2, 1e12]) assert.equal(hasAtMostCents(n), true, String(n));
+});
+
+test('hasAtMostCents recusa 3+ casas, NaN, Infinity e valor grande demais', () => {
+  for (const n of [10.123, 0.001, -5.555, NaN, Infinity, -Infinity, 1e12 + 1]) assert.equal(hasAtMostCents(n), false, String(n));
+});
+
+test('isValidMoney continua exigindo valor positivo', () => {
+  assert.equal(isValidMoney(0), false);
+  assert.equal(isValidMoney(-1), false);
+  assert.equal(isValidMoney(10.123), false);
+  assert.equal(isValidMoney('10'), false);
+  assert.equal(isValidMoney(10.1), true);
 });

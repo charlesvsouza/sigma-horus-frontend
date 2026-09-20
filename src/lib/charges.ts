@@ -1,6 +1,7 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { lockKey } from '@/lib/locks';
+import { isValidMoney } from '@/lib/money';
 import { nextSequenceNumbers } from '@/lib/invoice-number';
 
 export { addInterval } from '@/lib/recurring-rules';
@@ -51,8 +52,8 @@ export async function createChargesWithAccounts(db: Prisma.TransactionClient, in
   const isRecurring = Boolean(input.isRecurring);
   const recurringInterval = input.recurringInterval ?? 'monthly';
 
-  if (!chartAccountId || !Number.isFinite(amount) || amount <= 0) {
-    return { ok: false, status: 400, error: 'Selecione a categoria e informe um valor válido.' };
+  if (!chartAccountId || !isValidMoney(amount)) {
+    return { ok: false, status: 400, error: 'Selecione a categoria e informe um valor válido (maior que zero, com no máximo 2 casas decimais).' };
   }
   if (memberIds.length === 0) return { ok: false, status: 400, error: 'Nenhum membro para cobrar.' };
   if (Number.isNaN(dueDate.getTime())) return { ok: false, status: 400, error: 'Vencimento inválido.' };

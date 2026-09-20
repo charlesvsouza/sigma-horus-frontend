@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { hasAtMostCents } from '@/lib/money';
 
 const KINDS = ['bank', 'cash'];
 const PURPOSES = ['general', 'tronco', 'donations'];
@@ -45,6 +46,8 @@ export async function POST(request: Request) {
   if (!KINDS.includes(kind)) return NextResponse.json({ error: 'Tipo deve ser bank ou cash.' }, { status: 400 });
   const purpose = body?.purpose == null || body.purpose === '' ? 'general' : String(body.purpose);
   if (!PURPOSES.includes(purpose)) return NextResponse.json({ error: 'Finalidade inválida.' }, { status: 400 });
+  const openingBalance = Number(body?.openingBalance) || 0;
+  if (!hasAtMostCents(openingBalance)) return NextResponse.json({ error: 'Saldo inicial inválido: use no máximo 2 casas decimais.' }, { status: 400 });
 
   const created = await withTenant(String(lodgeId), async (db) => {
     const item = await db.financialAccount.create({
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
         isInvestment: kind === 'bank' ? Boolean(body?.isInvestment) : false,
         agency: kind === 'bank' && body?.agency ? String(body.agency).trim() : null,
         accountNumber: kind === 'bank' && body?.accountNumber ? String(body.accountNumber).trim() : null,
-        openingBalance: Number(body?.openingBalance) || 0,
+        openingBalance,
         isDefault: Boolean(body?.isDefault),
       },
     });

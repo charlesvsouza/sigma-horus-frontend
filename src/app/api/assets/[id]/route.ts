@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { hasAtMostCents } from '@/lib/money';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -15,6 +16,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await request.json();
+  const moneyInputs = [body?.acquisitionValue, body?.currentValue].filter((v) => v !== undefined && v !== null && v !== '').map(Number);
+  if (moneyInputs.some((v) => !hasAtMostCents(v) || v < 0)) {
+    return NextResponse.json({ error: 'Informe valores em reais, não negativos, com no máximo 2 casas decimais.' }, { status: 400 });
+  }
 
   const item = await withTenant(String(lodgeId), async (db) => {
     const existing = await db.asset.findFirst({ where: { id, lodgeId: String(lodgeId) } });

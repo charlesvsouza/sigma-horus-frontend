@@ -23,8 +23,15 @@ export function remainingAmount(amount: number, paid: number): number {
   return Math.max(0, (Math.round(amount * 100) - Math.round(paid * 100)) / 100);
 }
 
+/**
+ * Finito, com no máximo 2 casas decimais (tolera o ruído de ponto flutuante, ex.: 0.1 * 3) e
+ * dentro do que cabe em numeric(14,2). Aceita zero e negativo — quem chama decide o sinal.
+ */
+export function hasAtMostCents(n: number): boolean {
+  return Number.isFinite(n) && Math.abs(n) <= 1e12 && Math.abs(n * 100 - Math.round(n * 100)) < 1e-6;
+}
+
 /** Valor monetário válido para lançar: número finito, maior que zero e com no máximo 2 casas. */
 export function isValidMoney(n: unknown): n is number {
-  if (typeof n !== 'number' || !Number.isFinite(n) || n <= 0 || n > 1e12) return false;
-  return Math.abs(n * 100 - Math.round(n * 100)) < 1e-6;
+  return typeof n === 'number' && n > 0 && hasAtMostCents(n);
 }

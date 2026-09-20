@@ -6,6 +6,7 @@ import { channelsAvailable } from '@/lib/messaging';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { hasAtMostCents } from '@/lib/money';
 
 const str = (v: unknown) => { const s = v == null ? '' : String(v).trim(); return s || null; };
 const BENEFICIARY = ['person', 'company', 'institution'];
@@ -55,6 +56,9 @@ export async function POST(request: Request) {
   const fundingSource = FUNDING.includes(body?.fundingSource) ? body.fundingSource : 'donations';
   const goalAmount = body?.goalAmount != null && body.goalAmount !== '' ? Number(body.goalAmount) : null;
   if (!title) return NextResponse.json({ error: 'Informe o título da campanha.' }, { status: 400 });
+  if (goalAmount !== null && (!hasAtMostCents(goalAmount) || goalAmount < 0)) {
+    return NextResponse.json({ error: 'A meta deve ser um valor em reais, não negativo, com no máximo 2 casas decimais.' }, { status: 400 });
+  }
 
   const item = await withTenant(String(lodgeId), async (db) => {
     const created = await db.campaign.create({

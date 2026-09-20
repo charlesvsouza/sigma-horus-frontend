@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { hasAtMostCents } from '@/lib/money';
 
 const KINDS = ['bank', 'cash'];
 const PURPOSES = ['general', 'tronco', 'donations'];
@@ -36,7 +37,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const data: Record<string, unknown> = {};
   for (const f of fields) {
     if (body?.[f] === undefined) continue;
-    if (f === 'openingBalance') { data[f] = Number(body[f]) || 0; continue; }
+    if (f === 'openingBalance') {
+      const value = Number(body[f]) || 0;
+      if (!hasAtMostCents(value)) return NextResponse.json({ error: 'Saldo inicial inválido: use no máximo 2 casas decimais.' }, { status: 400 });
+      data[f] = value;
+      continue;
+    }
     data[f] = typeof body[f] === 'string' ? body[f].trim() || null : body[f];
   }
 

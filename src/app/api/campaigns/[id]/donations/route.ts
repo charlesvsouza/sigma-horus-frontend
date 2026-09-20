@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findFundAccount } from '@/lib/funds';
 import { NextResponse } from 'next/server';
+import { isValidMoney } from '@/lib/money';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -26,8 +27,8 @@ export async function POST(request: Request, { params }: Ctx) {
   const anonymous = Boolean(body?.anonymous);
   const donorName = String(body?.donorName ?? '').trim() || null;
   const note = String(body?.note ?? '').trim() || null;
-  if (!amount || Number.isNaN(amount) || amount <= 0) {
-    return NextResponse.json({ error: 'Informe um valor de doação válido.' }, { status: 400 });
+  if (!isValidMoney(amount)) {
+    return NextResponse.json({ error: 'Informe um valor de doação válido (maior que zero, com no máximo 2 casas decimais).' }, { status: 400 });
   }
 
   const result = await withTenant(String(lodgeId), async (db) => {
