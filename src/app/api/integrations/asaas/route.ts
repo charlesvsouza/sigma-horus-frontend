@@ -5,6 +5,7 @@ import { encryptSecret, decryptSecret, maskSecret } from '@/lib/crypto';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 export async function GET() {
   const session = await auth();
@@ -30,6 +31,8 @@ export async function POST(request: Request) {
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (normalizeRole(role) !== 'admin') {
     return NextResponse.json({ error: 'Apenas administradores podem configurar integrações.' }, { status: 403 });
   }
@@ -71,6 +74,8 @@ export async function DELETE() {
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (normalizeRole(role) !== 'admin') {
     return NextResponse.json({ error: 'Apenas administradores podem configurar integrações.' }, { status: 403 });
   }

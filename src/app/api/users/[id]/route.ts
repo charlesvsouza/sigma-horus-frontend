@@ -7,6 +7,7 @@ import { activeAdminCount, checkAdminCap, checkRoleChange } from '@/lib/admin-po
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -19,6 +20,8 @@ export async function PATCH(request: Request, { params }: Ctx) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (normalizeRole(session?.user?.role) !== 'admin') {
     return NextResponse.json({ error: 'Apenas o Administrador pode gerenciar usuários.' }, { status: 403 });
   }

@@ -1,4 +1,5 @@
 import { prismaAdmin } from '@/lib/prisma';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns' | 'import' | 'materials' | 'audit';
 export type Action = 'read' | 'write';
@@ -194,6 +195,8 @@ export async function requireLodgeAccess(
   if (!(await canLodgeAccess(lodgeId, role, resource, action))) {
     return { ok: false, status: 403, error: 'Acesso negado.' } as const;
   }
+  // Escrita exige assinatura vigente (a leitura segue liberada). Ver lib/subscription-guard.ts.
+  if (action === 'write') return requireActiveSubscription(lodgeId);
   return { ok: true } as const;
 }
 

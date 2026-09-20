@@ -6,6 +6,7 @@ import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { activeAdminCount, adminEmailIsMemberMessage, checkAdminCap, memberUsesEmail, normalizeEmail } from '@/lib/admin-policy';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 // Gestão de usuários da loja (apenas Administrador). Lista os logins e o papel
 // de cada um. A criação de login do obreiro é feita por "Conceder acesso" no
@@ -42,6 +43,8 @@ export async function POST(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
   if (!lodgeId || !session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (normalizeRole(session.user.role) !== 'admin') {
     return NextResponse.json({ error: 'Apenas o Administrador pode criar outro Administrador.' }, { status: 403 });
   }

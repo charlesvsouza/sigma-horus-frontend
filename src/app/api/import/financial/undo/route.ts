@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
 import { undoLegacyBatch } from '@/lib/legacy-import/commit';
 import { resolveActor } from '../shared';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 // Desfaz um lote importado: remove só o que ele criou (marca [import:legacy:<lote>]).
 export async function POST(request: Request) {
@@ -12,6 +13,8 @@ export async function POST(request: Request) {
 
   const actor = await resolveActor(request, typeof body?.lodgeId === 'string' ? body.lodgeId : null);
   if ('error' in actor) return NextResponse.json({ error: actor.error }, { status: actor.status });
+  const subscription = await requireActiveSubscription(actor.lodgeId);
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
 
   const removed = await withTenant(actor.lodgeId, async (db) => {
     const res = await undoLegacyBatch(db, actor.lodgeId, batchId);

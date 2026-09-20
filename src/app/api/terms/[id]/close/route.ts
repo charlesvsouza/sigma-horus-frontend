@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -16,6 +17,8 @@ export async function POST(_request: Request, { params }: Ctx) {
   const s = await auth();
   const lodgeId = s?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (normalizeRole(s?.user?.role) !== 'admin') {
     return NextResponse.json({ error: 'Apenas o Administrador pode encerrar o veneralato.' }, { status: 403 });
   }

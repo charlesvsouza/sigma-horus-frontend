@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
 import { commitPlan, findLegacyBatches } from '@/lib/legacy-import/commit';
 import { parseOptions, planFor, readUploads, resolveActor } from '../shared';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 export const maxDuration = 60;
 
@@ -16,6 +17,8 @@ export async function POST(request: Request) {
 
   const actor = await resolveActor(request, formData.get('lodgeId') ? String(formData.get('lodgeId')) : null);
   if ('error' in actor) return NextResponse.json({ error: actor.error }, { status: actor.status });
+  const subscription = await requireActiveSubscription(actor.lodgeId);
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
 
   const options = parseOptions(formData.get('options'));
   if ('error' in options) return NextResponse.json({ error: options.error }, { status: 400 });

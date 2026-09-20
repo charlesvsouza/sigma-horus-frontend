@@ -2,11 +2,14 @@ import { prismaAdmin } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { OFFICES_BY_RITE } from '@/lib/masonic-reference';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 export async function POST() {
   const session = await auth();
   const role = session?.user?.role;
   if (!session?.user?.lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(session.user.lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (role !== 'admin' && role !== 'venerable') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

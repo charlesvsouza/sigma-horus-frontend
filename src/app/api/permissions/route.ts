@@ -13,6 +13,7 @@ import {
   type Resource,
 } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 // Apenas o admin da loja gerencia a matriz de permissões.
 function isAdmin(role?: string | null) {
@@ -37,6 +38,8 @@ export async function PUT(request: Request) {
   const role = session?.user?.role;
 
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (!isAdmin(role)) return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const body = await request.json();

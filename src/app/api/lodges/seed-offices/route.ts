@@ -5,6 +5,7 @@ import { normalizeRole } from '@/lib/rbac';
 import { seedOfficesForRite } from '@/lib/seed-lodge';
 import { OFFICES_BY_RITE } from '@/lib/masonic-reference';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 // Semeia (ou completa) os cargos do rito da loja, sem apagar cargos existentes.
 // Usa o riteName enviado no corpo ou, na falta, o rito salvo na loja.
@@ -13,6 +14,8 @@ export async function POST(request: Request) {
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (normalizeRole(role) !== 'admin') {
     return NextResponse.json({ error: 'Apenas administradores podem semear os cargos.' }, { status: 403 });
   }

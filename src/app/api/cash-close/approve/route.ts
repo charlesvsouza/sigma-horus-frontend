@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 // PASSO 2 do encerramento: o Venerável aprova a prestação de contas do período.
 // Sem esta aprovação o Admin não consegue encerrar o veneralato.
@@ -11,6 +12,8 @@ export async function POST(request: Request) {
   const lodgeId = s?.user?.lodgeId;
   const role = normalizeRole(s?.user?.role);
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (role !== 'venerable' && role !== 'admin') {
     return NextResponse.json({ error: 'Apenas o Venerável (ou Administrador) pode aprovar a prestação de contas.' }, { status: 403 });
   }

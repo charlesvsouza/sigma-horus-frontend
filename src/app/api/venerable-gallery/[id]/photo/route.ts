@@ -6,6 +6,7 @@ import { normalizeRole } from '@/lib/rbac';
 import { buildObjectKey, buildPublicUrl, deleteObject, getR2Client, getR2PublicStorageSettings } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 import { imageUploadError } from '@/lib/upload-guards';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -16,6 +17,8 @@ export async function POST(request: Request, { params }: Ctx) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (!ALLOWED_ROLES.includes(normalizeRole(session?.user?.role))) {
     return NextResponse.json({ error: 'Apenas Secretário, Venerável ou Administrador podem editar a galeria.' }, { status: 403 });
   }

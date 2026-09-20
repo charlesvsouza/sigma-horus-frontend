@@ -7,6 +7,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { lockKey } from '@/lib/locks';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 const PRESET_AMOUNTS = [5, 10, 20, 50, 100];
 
@@ -32,6 +33,8 @@ export async function POST(request: Request) {
   const lodgeId = session?.user?.lodgeId;
   const memberId = session?.user?.memberId;
   if (!lodgeId || !memberId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
 
   const body = await request.json().catch(() => ({}));
   const amount = Number(body?.amount ?? 0);

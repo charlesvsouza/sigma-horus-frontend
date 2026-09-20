@@ -4,12 +4,15 @@ import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
 import { COLLECTION_MODES, normalizeBillingChoice, type CollectionMode } from '@/lib/collection';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 // Modo de recebimento das cobranças — decisão da própria loja (só o Administrador altera).
 export async function PUT(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (normalizeRole(session?.user?.role) !== 'admin') {
     return NextResponse.json({ error: 'Apenas o Administrador pode alterar o modo de recebimento.' }, { status: 403 });
   }

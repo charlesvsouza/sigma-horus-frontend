@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 // Aprovação em sessão do balancete periódico (Venerável/Admin) — registra que
 // foi apresentado e aprovado pela Loja, conforme exige o regulamento.
@@ -11,6 +12,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const lodgeId = session?.user?.lodgeId;
   const role = normalizeRole(session?.user?.role);
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
 
   if (role !== 'venerable' && role !== 'admin') {
     return NextResponse.json({ error: 'Apenas o Venerável Mestre ou o Administrador podem aprovar o balancete.' }, { status: 403 });

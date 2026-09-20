@@ -6,6 +6,7 @@ import { normalizeRole } from '@/lib/rbac';
 import { buildObjectKey, buildPublicUrl, deleteObject, getR2Client, getR2PublicStorageSettings } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 import { imageUploadError } from '@/lib/upload-guards';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 
 // Brasão da loja: identidade visual exibida em relatórios, recibos e demais
 // documentos gerados/enviados (e no cabeçalho HTML dos e-mails). Reaproveita
@@ -16,6 +17,8 @@ export async function POST(request: Request) {
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (normalizeRole(role) !== 'admin') {
     return NextResponse.json({ error: 'Apenas administradores podem alterar o brasão da loja.' }, { status: 403 });
   }
@@ -72,6 +75,8 @@ export async function DELETE() {
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const subscription = await requireActiveSubscription(String(lodgeId));
+  if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (normalizeRole(role) !== 'admin') {
     return NextResponse.json({ error: 'Apenas administradores podem alterar o brasão da loja.' }, { status: 403 });
   }

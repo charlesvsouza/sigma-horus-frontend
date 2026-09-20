@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess, type Resource } from '@/lib/rbac';
 import { Alert } from '@/components/ui';
+import { subscriptionAccess } from '@/lib/subscription-access';
 import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import DashboardShell from './DashboardShell';
 
@@ -186,8 +187,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const trialDaysLeft = trialEnds ? Math.ceil((trialEnds - now) / (24 * 60 * 60 * 1000)) : 0;
   const isTrialing = sub?.status === 'trialing' && trialEnds !== null && trialEnds > now;
   const isActive = sub?.status === 'active';
-  const trialExpired = sub?.status === 'trialing' && trialEnds !== null && trialEnds <= now;
-  const blocked = !isActive && !isTrialing; // inativo, trial expirado, etc.
+  const access = subscriptionAccess(sub, now); // mesma regra que a API usa para travar escrita
+  const trialExpired = access.reason === 'trial_expired';
+  const blocked = access.blocked; // inativo, trial expirado, etc.
 
   const fmtDate = (d: Date | null) =>
     d ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d) : '';
