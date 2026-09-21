@@ -17,6 +17,13 @@ type Ctx = { params: Promise<{ id: string }> };
 // (que por padrão não dá write ao Venerável), daí o checkView direto abaixo.
 const ALLOWED_ROLES = ['admin', 'secretary', 'venerable'];
 
+// O próprio obreiro também troca a SUA foto (Meu portal) — é o único dado do cadastro que ele altera
+// além de contato/endereço/família; o restante segue com a Secretaria.
+const DENIED = 'Apenas o próprio obreiro, o Secretário, o Venerável ou o Administrador podem alterar a foto do membro.';
+function canManagePhoto(session: { user?: { role?: string | null; memberId?: string | null } } | null, memberId: string) {
+  return ALLOWED_ROLES.includes(normalizeRole(session?.user?.role)) || session?.user?.memberId === memberId;
+}
+
 export async function POST(request: Request, { params }: Ctx) {
   const { id } = await params;
   const session = await auth();
@@ -24,8 +31,8 @@ export async function POST(request: Request, { params }: Ctx) {
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const subscription = await requireActiveSubscription(String(lodgeId));
   if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
-  if (!ALLOWED_ROLES.includes(normalizeRole(session?.user?.role))) {
-    return NextResponse.json({ error: 'Apenas Secretário, Venerável ou Administrador podem alterar a foto do membro.' }, { status: 403 });
+  if (!canManagePhoto(session, id)) {
+    return NextResponse.json({ error: DENIED }, { status: 403 });
   }
 
   const formData = await request.formData().catch(() => null);
@@ -63,7 +70,7 @@ export async function POST(request: Request, { params }: Ctx) {
     const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { photoStorageKey: true } });
     if (!existing) return undefined;
     await db.member.update({ where: { id }, data: { photoUrl: publicUrl, photoStorageKey: storageKey } });
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session!.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { field: 'photo' } });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session!.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { field: 'photo', ...(session!.user.memberId === id ? { selfEdit: true } : {}) } });
     return existing;
   });
 
@@ -85,15 +92,15 @@ export async function DELETE(_request: Request, { params }: Ctx) {
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const subscription = await requireActiveSubscription(String(lodgeId));
   if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
-  if (!ALLOWED_ROLES.includes(normalizeRole(session?.user?.role))) {
-    return NextResponse.json({ error: 'Apenas Secretário, Venerável ou Administrador podem alterar a foto do membro.' }, { status: 403 });
+  if (!canManagePhoto(session, id)) {
+    return NextResponse.json({ error: DENIED }, { status: 403 });
   }
 
   const previous = await withTenant(String(lodgeId), async (db) => {
     const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { photoStorageKey: true } });
     if (!existing) return undefined;
     await db.member.update({ where: { id }, data: { photoUrl: null, photoStorageKey: null } });
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session!.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { field: 'photo', removed: true } });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session!.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { field: 'photo', removed: true, ...(session!.user.memberId === id ? { selfEdit: true } : {}) } });
     return existing;
   });
 

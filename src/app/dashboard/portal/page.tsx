@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { UserRound } from 'lucide-react';
 import { degreeShort } from '@/lib/masonic-degree';
 import { clampDateYear, fetchCep, maskCEP, maskPhone } from '@/lib/masks';
 import { ACCOUNT_STATUS_LABEL, DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
@@ -21,6 +22,7 @@ interface MemberSummary {
   exaltationDate?: string | null;
   installationDate?: string | null;
   gradeName?: string | null;
+  photoUrl?: string | null;
   addressLine?: string | null;
   addressNumber?: string | null;
   complement?: string | null;
@@ -262,6 +264,7 @@ export default function PortalPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid' | 'overdue'>('all');
   const [extratoOpen, setExtratoOpen] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   const filteredAccounts = accounts
     .filter((a) => typeFilter === 'all' || a.type === typeFilter)
@@ -292,6 +295,36 @@ export default function PortalPage() {
     load();
   }, []);
 
+  // A foto é o único dado do cadastro (além de contato/endereço/família) que o obreiro troca sozinho;
+  // o restante é da Secretaria. A rota confere que o membro da sessão é o dono da foto.
+  async function sendPhoto(file: File) {
+    if (!member) return;
+    setPhotoBusy(true);
+    setSavedMessage('');
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`/api/members/${member.id}/photo`, { method: 'POST', body: formData });
+    const data = await res.json().catch(() => ({}));
+    setPhotoBusy(false);
+    if (!res.ok) { setLoadError(data.error ?? 'Erro ao enviar a foto.'); return; }
+    setLoadError('');
+    setSavedMessage('Foto atualizada.');
+    void load();
+  }
+
+  async function removePhoto() {
+    if (!member) return;
+    setPhotoBusy(true);
+    setSavedMessage('');
+    const res = await fetch(`/api/members/${member.id}/photo`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    setPhotoBusy(false);
+    if (!res.ok) { setLoadError(data.error ?? 'Erro ao remover a foto.'); return; }
+    setLoadError('');
+    setSavedMessage('Foto removida.');
+    void load();
+  }
+
   return (
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -319,7 +352,27 @@ export default function PortalPage() {
             {loading ? (
               <p className="mt-6 text-sm text-sand-dark">Carregando...</p>
             ) : member ? (
-              editing ? (
+              <>
+              <div className="mt-5 flex flex-wrap items-center gap-4">
+                {member.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={member.photoUrl} alt={`Foto de ${member.name}`} className="h-20 w-20 rounded-full border border-white/8 bg-sigma-blue-deep/60 object-cover" />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-white/15 text-sand-dark/50">
+                    <UserRound className="h-8 w-8" aria-hidden="true" />
+                  </div>
+                )}
+                <div className="flex items-center gap-3">
+                  <label className="cursor-pointer rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold">
+                    {photoBusy ? 'Enviando…' : member.photoUrl ? 'Trocar minha foto' : 'Enviar minha foto'}
+                    <input type="file" accept="image/*" className="hidden" disabled={photoBusy} onChange={(e) => { const f = e.target.files?.[0]; if (f) void sendPhoto(f); e.target.value = ''; }} />
+                  </label>
+                  {member.photoUrl ? (
+                    <button type="button" onClick={() => void removePhoto()} disabled={photoBusy} className="text-xs text-rose-300/70 transition hover:text-rose-300 disabled:opacity-40">Remover</button>
+                  ) : null}
+                </div>
+              </div>
+              {editing ? (
                 <SelfEditForm
                   member={member}
                   onCancel={() => setEditing(false)}
@@ -353,7 +406,8 @@ export default function PortalPage() {
                     </div>
                   </div>
                 </div>
-              )
+              )}
+              </>
             ) : (
               <p className="mt-6 text-sm text-sand-dark">Nenhum membro encontrado para este usuário.</p>
             )}

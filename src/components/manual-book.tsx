@@ -252,7 +252,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 21 de setembro de 2026 · versão 1.41</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 21 de setembro de 2026 · versão 1.42</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1370,7 +1370,7 @@ export function ManualBook() {
                 </p>
                 <p>
                   Com um membro já cadastrado expandido (em modo de visualização ou já em <UI>Editar</UI>), o
-                  Secretário, o Venerável ou o Administrador podem enviar a <UI>Foto</UI> do irmão (<UI>Enviar
+                  Secretário, o Venerável ou o Administrador podem enviar a <UI>Foto</UI> do irmão (o próprio obreiro também envia a sua, em <UI>Meu portal</UI>, ver 10.1) (<UI>Enviar
                   foto</UI>/<UI>Trocar foto</UI>/<UI>Remover</UI>) — o botão fica logo acima dos dados do membro,
                   independente do modo. Essa foto alimenta automaticamente a
                   <Link className="text-gold hover:text-gold-light" href="#sec-galeria-veneraveis"> Galeria de Veneráveis</Link> (quando o
@@ -1692,6 +1692,7 @@ export function ManualBook() {
                 <Bullets>
                   <li><strong>Primeiro acesso:</strong> entre com o e-mail e a senha provisória recebida por e-mail; o sistema pede para você <strong>definir uma nova senha</strong>.</li>
                   <li><strong>Editar meus dados:</strong> clique em <UI>Editar meus dados</UI> no topo do Resumo do obreiro para atualizar contato, endereço e família (mãe, pai, cônjuge, dependentes) — inclusive marcar <UI>Falecido(a)</UI> um familiar, o que já para as felicitações de aniversário automáticas para ele. O seu <strong>papel/cargo</strong>, CPF, rito/potência e evolução maçônica só são alterados pelo Administrador ou Secretaria.</li>
+                  <li><strong>Minha foto:</strong> logo acima do Resumo do obreiro, use <UI>Enviar minha foto</UI> (ou <UI>Trocar minha foto</UI>/<UI>Remover</UI>). A foto é a única parte do cadastro, além de contato, endereço e família, que você mesmo altera; ela aparece no <UI>Quadro social</UI>, no <UI>Quadro da Gestão</UI> e na <UI>Galeria de Veneráveis</UI>. Prefira uma foto de rosto, em traje de rigor. Se uma foto for inadequada, a Secretaria pode trocá-la ou removê-la.</li>
                   <li><strong>Trocar senha:</strong> a qualquer momento, em <UI>/trocar-senha</UI>, informando a senha atual.</li>
                   <li><strong>Tema Papiro:</strong> prefere a interface clara? Veja a seção Aparência (capítulo 6.1) — a escolha vale para o seu navegador.</li>
                 </Bullets>

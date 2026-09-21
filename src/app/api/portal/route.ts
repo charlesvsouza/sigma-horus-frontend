@@ -42,6 +42,7 @@ export async function GET() {
           exaltationDate: true,
           installationDate: true,
           gradeName: true,
+          photoUrl: true,
           addressLine: true,
           addressNumber: true,
           complement: true,
