@@ -252,7 +252,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 20 de setembro de 2026 · versão 1.40</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 21 de setembro de 2026 · versão 1.41</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -501,12 +501,15 @@ export function ManualBook() {
                 <li>
                   <strong>Tesouraria:</strong> dividida em três grupos — <UI>Entradas e Saídas</UI> (<UI>Contas</UI>,
                   <UI> Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de
-                  contas</UI>), <UI>Cadastros e Conferência</UI> (<UI>Cadastros financeiros</UI>, <UI>Conciliação
-                  bancária</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (<UI>Resumo financeiro</UI>, <UI>DRE
+                  contas</UI>; o sub-item <UI>Lançamento</UI> aparece recuado logo abaixo de <UI>Contas</UI>),
+                  <UI> Cadastros e Conferência</UI> (<UI>Cadastros financeiros</UI>, <UI>Conciliação
+                  bancária</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (<UI>Resumo financeiro</UI>, <UI>Contas a
+                  receber</UI>, <UI>Contas a pagar</UI>, <UI>Contas recebidas</UI>, <UI>Contas pagas</UI>, <UI>DRE
                   comparativo</UI>, <UI>Fechamento</UI>, <UI>Inadimplência (Art. 002)</UI>, <UI>Balancetes
-                  periódicos</UI>, <UI>Fluxo de caixa projetado</UI>, <UI>Orçamento anual</UI>).
+                  periódicos</UI>, <UI>Fluxo de caixa projetado</UI>, <UI>Orçamento anual</UI>, <UI>Tarifas de
+                  cobrança (Asaas)</UI>).
                 </li>
-                <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI> e <UI>Campanhas</UI> de benemerência.</li>
+                <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI>, <UI>Campanhas</UI> de benemerência e <UI>Fundos (Tronco e Doações)</UI>. O obreiro comum vê aqui só o item <UI>Hospitalaria</UI>, onde doa ao Tronco de Solidariedade, faz um pedido e acompanha as campanhas ativas.</li>
                 <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Importar cadastros</UI>, <UI>Importar backup financeiro</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
               </Bullets>
               <p>O topo mostra o nome da loja, o usuário logado e o status da assinatura (teste, ativa ou pendente).</p>
@@ -929,14 +932,14 @@ export function ManualBook() {
               </Sub>
 
               <Sub id="tes-contas" title="7.2 Lançar contas a receber e a pagar">
-                <p>Em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, a tela abre pela lista <UI>Contas cadastradas</UI>. Para lançar, use o sub-menu <UI>Lançamento</UI> (logo abaixo de Contas): a mesma tela abre com o formulário <UI>Lançamentos</UI> já aberto, pronto para o próximo lançamento. Na lista, o botão <UI>Editar</UI> abre o formulário com a conta escolhida. Na lista, contas a receber aparecem em verde com <strong>+</strong> e contas a pagar em vermelho com <strong>−</strong>. Preencha:</p>
+                <p>Em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, a tela abre pela lista <UI>Contas cadastradas</UI>. Para lançar, use o sub-menu <UI>Lançamento</UI> (logo abaixo de Contas): a mesma tela abre com o formulário <UI>Lançamentos</UI> já aberto, pronto para o próximo lançamento. O botão <UI>Editar</UI> de uma conta da lista também abre o formulário, com os dados dela. Na lista, contas a receber aparecem em verde com <strong>+</strong> e contas a pagar em vermelho com <strong>−</strong>. Preencha:</p>
                 <Steps>
                   <li>Escolha a <UI>Categoria (plano de contas)</UI> — ela já sugere o título e o tipo.</li>
                   <li>Confira o <UI>Título da conta</UI> e o tipo: <strong>Conta a receber</strong> ou <strong>Conta a pagar</strong>.</li>
                   <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> de vencimento.</li>
                   <li>Defina o <UI>Status</UI> (Pendente, Pago ou Vencido). Ao escolher <strong>Pago</strong>, aparecem a <UI>Data do pagamento</UI> (em branco = hoje) e a <UI>Conta bancária/caixa do pagamento</UI>, que passa a ser <strong>obrigatória</strong> — ver o quadro abaixo.</li>
                   <li>Opcional: <UI>Vincular a um membro</UI> ou <UI>Vincular a um cliente/fornecedor</UI> (cadastro de quem não é membro — ver 7.13), escolher a <UI>Conta bancária/caixa prevista</UI> (ver 7.14) e escrever uma <UI>Descrição</UI>.</li>
-                  <li>Clique em <UI>Salvar conta</UI>. A conta aparece na lista <UI>Contas cadastradas</UI>; use <UI>Remover</UI> para excluir.</li>
+                  <li>Clique em <UI>Salvar conta</UI>. A conta aparece na lista <UI>Contas cadastradas</UI> e o formulário fica limpo e aberto para o próximo lançamento; use <UI>Remover</UI> para excluir.</li>
                 </Steps>
                 <Bullets>
                   <li><strong>Editar:</strong> clique em <UI>Editar</UI> na linha da conta para corrigir valor, vencimento, título ou vínculo — não precisa excluir e recriar. Contas de um veneralato já encerrado não podem ser editadas nem excluídas.</li>
@@ -1053,6 +1056,11 @@ export function ManualBook() {
                 <p>
                   Em <UI>Tesouraria → Relatórios → Resumo financeiro</UI> você acompanha <UI>Resumo de abertura</UI>,
                   <UI> Próximos vencimentos</UI> e <UI>Últimos registros</UI>, com <strong>filtro por período</strong> e <UI>Exportar</UI> (CSV — disponível a quem tem acesso de leitura a Tesouraria; campos que começam com = + - ou @ saem protegidos para não virarem fórmula na planilha).
+                </p>
+                <p>
+                  Quatro relatórios listam as contas em uma só tela, cada um com filtros de <UI>De</UI>/<UI>Até</UI>, <UI>Pessoa</UI> (membro ou cliente/fornecedor) e busca por descrição ou categoria, e o botão <UI>Salvar como PDF</UI>:
+                  <UI> Contas a receber</UI> e <UI>Contas a pagar</UI> mostram o que está <strong>em aberto</strong>, por data de vencimento;
+                  <UI> Contas recebidas</UI> e <UI>Contas pagas</UI> mostram o que <strong>já foi liquidado</strong>, por data de recebimento ou de pagamento. Ficam em <UI>Tesouraria → Relatórios</UI>.
                 </p>
                 <p>
                   Em <UI>Tesouraria → Relatórios → Fechamento</UI> está o <strong>relatório financeiro completo</strong> no formato livro

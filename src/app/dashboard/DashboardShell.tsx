@@ -14,7 +14,8 @@ import {
   MessageSquare, Contact, HeartHandshake, PiggyBank, Settings, KeyRound, Gem, Plug, ScrollText,
   PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart,
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
-  Scale, Users2, Images, LayoutGrid, UsersRound, PencilLine, type LucideIcon,
+  Scale, Users2, Images, LayoutGrid, UsersRound, PencilLine,
+  ArrowDownToLine, ArrowUpFromLine, HandCoins, Banknote, Percent, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -53,6 +54,11 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/patrimonio': Landmark,
   '/dashboard/conciliacao-bancaria': ArrowLeftRight,
   '/dashboard/relatorios': ChartColumn,
+  '/dashboard/relatorios/contas-a-receber': ArrowDownToLine,
+  '/dashboard/relatorios/contas-a-pagar': ArrowUpFromLine,
+  '/dashboard/relatorios/contas-recebidas': HandCoins,
+  '/dashboard/relatorios/contas-pagas': Banknote,
+  '/dashboard/relatorios/tarifas': Percent,
   '/dashboard/relatorios/dre': Scale,
   '/dashboard/relatorios/fechamento': BookCheck,
   '/dashboard/relatorios/inadimplencia': TriangleAlert,
