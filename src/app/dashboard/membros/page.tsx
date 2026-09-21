@@ -451,6 +451,13 @@ export default function MembrosPage() {
                       <span className="flex items-center gap-2 text-sm font-medium text-sand-light">
                         <span className={`text-gold transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
                         {m.name}
+                        {m.user && m.user.status === 'active' ? (
+                          m.user.mustChangePassword ? (
+                            <span title="Acesso concedido — ainda não trocou a senha provisória" className="text-xs text-sand-dark" aria-label="Acesso concedido, aguardando primeiro login">☆</span>
+                          ) : (
+                            <span title="Acesso ativo — já definiu a própria senha" className="text-xs text-gold" aria-label="Acesso ativo">★</span>
+                          )
+                        ) : null}
                       </span>
                       <span className="text-xs text-sand-dark md:text-sm md:text-sand">{degreeShort(m)}</span>
                       <span className="text-xs"><span className={`rounded-full px-2 py-0.5 ${TONE_BADGE[memberStatusTone(m.status)]}`}>{memberStatusLabel(m.status)}</span></span>
