@@ -252,7 +252,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 20 de setembro de 2026 · versão 1.39</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 20 de setembro de 2026 · versão 1.40</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -929,7 +929,7 @@ export function ManualBook() {
               </Sub>
 
               <Sub id="tes-contas" title="7.2 Lançar contas a receber e a pagar">
-                <p>Em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, a tela abre pela lista <UI>Contas cadastradas</UI>. Para lançar, clique em <UI>Nova conta</UI> (no alto, à direita) — o formulário abre e fecha sob demanda. Na lista, contas a receber aparecem em verde com <strong>+</strong> e contas a pagar em vermelho com <strong>−</strong>. Preencha:</p>
+                <p>Em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, a tela abre pela lista <UI>Contas cadastradas</UI>. Para lançar, use o sub-menu <UI>Lançamento</UI> (logo abaixo de Contas): a mesma tela abre com o formulário <UI>Lançamentos</UI> já aberto, pronto para o próximo lançamento. Na lista, o botão <UI>Editar</UI> abre o formulário com a conta escolhida. Na lista, contas a receber aparecem em verde com <strong>+</strong> e contas a pagar em vermelho com <strong>−</strong>. Preencha:</p>
                 <Steps>
                   <li>Escolha a <UI>Categoria (plano de contas)</UI> — ela já sugere o título e o tipo.</li>
                   <li>Confira o <UI>Título da conta</UI> e o tipo: <strong>Conta a receber</strong> ou <strong>Conta a pagar</strong>.</li>
@@ -1488,7 +1488,7 @@ export function ManualBook() {
                   <li>Em <UI>Secretaria → Cargos</UI> fica só a <strong>lista de cargos</strong> da loja (Venerável, Secretário, Arquiteto…). Ali você não escolhe quem os exerce.</li>
                   <li>Em <UI>Secretaria → Veneralato &amp; Sessões → Veneralato</UI>, o período em exercício já abre selecionado. Se houver mais de um, <strong>clique no período</strong> desejado na lista <UI>Períodos</UI>.</li>
                   <li>No bloco <UI>Vincular cargo a um obreiro</UI>, escolha o <UI>Membro</UI> e o <UI>Cargo</UI> e clique em <UI>Vincular</UI>. Um obreiro pode acumular vários cargos.</li>
-                  <li>Os vínculos aparecem em <UI>Cargos deste período</UI>, sempre na <strong>ordem cerimonial</strong>: Venerável Mestre, as duas Luzes (1º e 2º Vigilante), Orador, Secretário, Tesoureiro, Mestre de Cerimônias e, depois, os demais cargos. A mesma ordem vale no Quadro da Gestão, na Composição da loja e na lista de Cargos. Para desfazer um vínculo feito por engano, ou trocar o titular, use <UI>Remover</UI> ao lado dele — só é possível enquanto o período está em exercício; veneralato encerrado não muda.</li>
+                  <li>Os vínculos aparecem em <UI>Cargos deste período</UI>, sempre na <strong>ordem cerimonial</strong>: Venerável Mestre, as duas Luzes (1º e 2º Vigilante), Orador, Secretário, Tesoureiro, Mestre de Cerimônias e, depois, os demais cargos. A mesma ordem vale no Quadro da Gestão, na Composição da loja e na lista de Cargos. Para <strong>corrigir</strong> um vínculo feito por engano (obreiro ou cargo errado), use <UI>Editar</UI> ao lado dele, troque o <UI>Membro</UI> e/ou o <UI>Cargo</UI> e clique em <UI>Salvar</UI> — o sistema avisa se o obreiro já tiver aquele cargo no período. Para desfazer de vez, use <UI>Remover</UI>. As duas ações só valem enquanto o período está em exercício; veneralato encerrado não muda.</li>
                 </Steps>
                 <Note>
                   Os vínculos alimentam o Social (Quadro da Gestão e Composição da loja) e, no caso do <strong>Arquiteto</strong>, concedem o acesso ao

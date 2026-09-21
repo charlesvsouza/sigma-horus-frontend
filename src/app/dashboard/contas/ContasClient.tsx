@@ -28,7 +28,7 @@ interface AccountItem {
 
 const INPUT_CLASS = inputClass; // fonte única do design system
 
-export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, role }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string }) {
+export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, role, startWithForm = false }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string; startWithForm?: boolean }) {
   const canApprove = role === 'venerable' || role === 'admin';
   const router = useRouter();
   const askConfirm = useConfirm();
@@ -49,8 +49,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
     paidAt: '',
   });
   const [editingId, setEditingId] = useState<string | null>(null);
-  // O formulário abre sob demanda: a lista é o que o Tesoureiro usa todo dia. Sem contas ainda, já vem aberto.
-  const [formOpen, setFormOpen] = useState(accounts.length === 0);
+  // O formulário de lançamento abre pelo item "Lançamento" do menu (startWithForm) — e fica aberto
+  // entre um lançamento e outro. Em /contas (só a lista) abre ao editar uma conta; sem contas ainda, já vem aberto.
+  const [formOpen, setFormOpen] = useState(startWithForm || accounts.length === 0);
   const [search, setSearch] = useState('');
 
   function startEdit(account: AccountItem) {
@@ -75,7 +76,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
 
   function cancelEdit() {
     setEditingId(null);
-    setFormOpen(false);
+    setFormOpen(startWithForm);
     setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', bankAccountId: '', isDues: false, paidAt: '' });
   }
 
@@ -176,14 +177,13 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
             <h1 className="font-display text-2xl font-bold text-sand-light">Contas a receber e pagar</h1>
             <p className="mt-1 text-sm text-sand-dark">Registre o que a loja tem a receber e a pagar e acompanhe os vencimentos.</p>
           </div>
-          {!formOpen ? <Button type="button" onClick={() => setFormOpen(true)}>Nova conta</Button> : null}
         </div>
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
         {formOpen ? (
         <FormCard
-          title={editingId ? 'Editar conta' : 'Nova conta'}
+          title={editingId ? 'Editar conta' : 'Lançamentos'}
           headerAction={editingId ? <button type="button" onClick={cancelEdit} className="rounded text-xs text-sand-dark outline-none hover:text-sand focus-visible:ring-2 focus-visible:ring-gold/60">Cancelar edição</button> : undefined}
         >
           <form onSubmit={handleSubmit} className="mt-5 space-y-5">

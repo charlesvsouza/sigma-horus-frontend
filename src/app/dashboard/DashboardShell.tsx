@@ -14,7 +14,7 @@ import {
   MessageSquare, Contact, HeartHandshake, PiggyBank, Settings, KeyRound, Gem, Plug, ScrollText,
   PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart,
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
-  Scale, Users2, Images, LayoutGrid, UsersRound, type LucideIcon,
+  Scale, Users2, Images, LayoutGrid, UsersRound, PencilLine, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -45,6 +45,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/materiais': Archive,
   '/dashboard/cadastros-financeiros': FileSpreadsheet,
   '/dashboard/contas': Wallet,
+  '/dashboard/contas/lancamento': PencilLine,
   '/dashboard/cobrancas': ReceiptText,
   '/dashboard/pagamentos': CreditCard,
   '/dashboard/transferencias': Repeat,
@@ -75,6 +76,9 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/integracoes': Plug,
   '/dashboard/auditoria': ScrollText,
 };
+
+// Itens que aparecem como sub-menu do item acima (recuados na barra lateral).
+const SUB_ITEMS = new Set(['/dashboard/contas/lancamento']);
 
 interface Props {
   groups: NavGroup[];
@@ -263,7 +267,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
                     onClick={() => setOpen(false)}
                     title={rail ? item.label : undefined}
                     aria-label={item.label}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${rail ? 'lg:justify-center lg:px-0' : ''} ${
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${SUB_ITEMS.has(item.href) ? 'ml-4' : ''} ${rail ? 'lg:ml-0 lg:justify-center lg:px-0' : ''} ${
                       active
                         ? 'bg-gold/10 font-medium text-gold'
                         : 'text-sand/70 hover:bg-white/3 hover:text-sand'

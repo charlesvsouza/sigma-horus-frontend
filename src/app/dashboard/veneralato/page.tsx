@@ -48,6 +48,9 @@ export default function VeneralatoPage() {
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [termDetail, setTermDetail] = useState<TermDetail | null>(null);
   const [role, setRole] = useState('');
+  // Edição inline de um vínculo cargo × obreiro (corrigir engano sem apagar e refazer).
+  const [editingMo, setEditingMo] = useState<{ id: string; memberId: string; officeId: string } | null>(null);
+  const [savingMo, setSavingMo] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth/session').then((r) => r.json()).then((s) => setRole(String(s?.user?.role ?? '').toLowerCase())).catch(() => {});
@@ -156,6 +159,33 @@ export default function VeneralatoPage() {
       setMessage({ kind: 'error', text: data.error ?? 'Não foi possível vincular o cargo.' });
     }
     await loadTermDetail(termId);
+  }
+
+  async function saveOfficeEdit(termId: string, mo: MemberOfficeItem) {
+    if (!editingMo) return;
+    if (editingMo.memberId === mo.member.id && editingMo.officeId === mo.office.id) {
+      setEditingMo(null);
+      return;
+    }
+    setSavingMo(true);
+    try {
+      const res = await fetch(`/api/member-offices/${mo.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: editingMo.memberId, officeId: editingMo.officeId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMessage({ kind: 'ok', text: 'Vínculo atualizado.' });
+        setEditingMo(null);
+        await loadTerms();
+      } else {
+        setMessage({ kind: 'error', text: data.error ?? 'Não foi possível atualizar o vínculo.' });
+      }
+      await loadTermDetail(termId);
+    } finally {
+      setSavingMo(false);
+    }
   }
 
   async function removeOffice(termId: string, mo: MemberOfficeItem) {
@@ -342,16 +372,40 @@ export default function VeneralatoPage() {
                   <h3 className="text-sm font-medium text-sand-dark">Cargos deste período</h3>
                   <div className="mt-2 space-y-2">
                     {[...(termDetail.memberOffices ?? [])].sort((a, b) => compareOffices(a.office, b.office) || a.member.name.localeCompare(b.member.name, 'pt-BR')).map((mo) => (
-                      <div key={mo.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
-                        <div>
-                          <span className="text-gold">{mo.office.name}</span>
-                          <span className="mx-2 text-sand-dark">—</span>
-                          <span>{mo.member.name}</span>
+                      editingMo?.id === mo.id ? (
+                        <div key={mo.id} className="space-y-3 rounded-lg border border-gold/30 bg-sigma-blue-deep/50 px-4 py-3 text-sm text-sand">
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <Field label="Membro">
+                              <select value={editingMo.memberId} onChange={(e) => setEditingMo({ ...editingMo, memberId: e.target.value })} className={INPUT}>
+                                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                              </select>
+                            </Field>
+                            <Field label="Cargo">
+                              <select value={editingMo.officeId} onChange={(e) => setEditingMo({ ...editingMo, officeId: e.target.value })} className={INPUT}>
+                                {offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                              </select>
+                            </Field>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Button size="sm" disabled={savingMo} onClick={() => void saveOfficeEdit(termDetail.id, mo)}>{savingMo ? 'Salvando…' : 'Salvar'}</Button>
+                            <button onClick={() => setEditingMo(null)} disabled={savingMo} className="rounded text-xs text-sand-dark outline-none transition hover:text-sand focus-visible:ring-2 focus-visible:ring-gold/60">Cancelar</button>
+                          </div>
                         </div>
-                        {termDetail.status !== 'closed' ? (
-                          <button onClick={() => void removeOffice(termDetail.id, mo)} className="rounded text-xs text-rose-300/70 outline-none transition hover:text-rose-300 focus-visible:ring-2 focus-visible:ring-rose-400/60">Remover</button>
-                        ) : null}
-                      </div>
+                      ) : (
+                        <div key={mo.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
+                          <div>
+                            <span className="text-gold">{mo.office.name}</span>
+                            <span className="mx-2 text-sand-dark">—</span>
+                            <span>{mo.member.name}</span>
+                          </div>
+                          {termDetail.status !== 'closed' ? (
+                            <div className="flex items-center gap-3">
+                              <button onClick={() => setEditingMo({ id: mo.id, memberId: mo.member.id, officeId: mo.office.id })} className="rounded text-xs text-gold outline-none transition hover:text-gold-light focus-visible:ring-2 focus-visible:ring-gold/60">Editar</button>
+                              <button onClick={() => void removeOffice(termDetail.id, mo)} className="rounded text-xs text-rose-300/70 outline-none transition hover:text-rose-300 focus-visible:ring-2 focus-visible:ring-rose-400/60">Remover</button>
+                            </div>
+                          ) : null}
+                        </div>
+                      )
                     ))}
                     {(!termDetail.memberOffices || termDetail.memberOffices.length === 0) && (
                       <p className="text-sm text-sand-dark">Nenhum cargo vinculado.</p>

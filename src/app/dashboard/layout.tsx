@@ -82,6 +82,8 @@ const NAV: NavGroupDef[] = [
         label: 'Entradas e Saídas',
         items: [
           { href: '/dashboard/contas', label: 'Contas', roles: ['admin', 'venerable', 'treasurer'] },
+          // Sub-item de Contas (recuado no menu): abre a mesma tela com o formulário de lançamento aberto.
+          { href: '/dashboard/contas/lancamento', label: 'Lançamento', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/cobrancas', label: 'Cobranças', roles: ['admin', 'treasurer'] },
           { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
           { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
