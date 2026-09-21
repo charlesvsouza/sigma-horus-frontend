@@ -26,6 +26,7 @@ const RESOURCE_LABELS: Record<string, string> = {
   import: 'Importação de dados',
   materials: 'Materiais — cadastro e baixa',
   inventory: 'Inventário — ocorrências e empréstimos',
+  social: 'Social — quadros e composição da loja',
   audit: 'Auditoria',
 };
 

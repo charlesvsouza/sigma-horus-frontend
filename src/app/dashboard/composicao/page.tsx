@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
 import { degreeShort } from '@/lib/masonic-degree';
 import ComposicaoClient from './ComposicaoClient';
 
@@ -21,7 +21,7 @@ export default async function ComposicaoPage({ searchParams }: { searchParams: P
     );
   }
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'read');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'social', 'read');
   if (!access.ok) {
     return (
       <main className="min-h-screen px-6 py-10">
@@ -31,6 +31,9 @@ export default async function ComposicaoPage({ searchParams }: { searchParams: P
   }
 
   const { termo } = await searchParams;
+  // Telefone e e-mail são dado de cadastro: só quem lê Membros os recebe.
+  const canSeeContacts = await canLodgeAccess(String(lodgeId), role, 'members', 'read');
+  const canManage = await canLodgeAccess(String(lodgeId), role, 'members', 'write');
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, terms] = await Promise.all([
@@ -76,8 +79,8 @@ export default async function ComposicaoPage({ searchParams }: { searchParams: P
       id: m.id,
       name: m.name,
       photoUrl: m.photoUrl,
-      phone: m.phone,
-      email: m.email,
+      phone: canSeeContacts ? m.phone : null,
+      email: canSeeContacts ? m.email : null,
       status: m.status,
       degree: degreeShort(m),
       offices: [],
@@ -102,6 +105,8 @@ export default async function ComposicaoPage({ searchParams }: { searchParams: P
       }))}
       selectedTermId={data.selected?.id ?? null}
       members={members}
+      showContacts={canSeeContacts}
+      canManage={canManage}
       vacant={data.vacant.map((o) => ({ id: o.id, name: o.name, riteName: o.rite?.name ?? null }))}
     />
   );

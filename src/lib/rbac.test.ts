@@ -60,3 +60,13 @@ test('materiais: Administrador, Venerável e Secretário cadastram; Tesoureiro/H
     assert.equal(canAccess(role, 'inventory', 'write'), false, role);
   }
 });
+
+test('Social: todo papel enxerga os quadros, mas ninguém ganha o cadastro de membros por isso', () => {
+  for (const role of ['admin', 'venerable', 'treasurer', 'secretary', 'hospitaller', 'member']) {
+    assert.equal(canAccess(role, 'social', 'read'), true, role);
+    assert.equal(canAccess(role, 'social', 'write'), false, role); // os quadros são só leitura
+  }
+  // O obreiro comum continua SEM ler o cadastro de membros (CPF, contatos, situação)
+  assert.equal(canAccess('member', 'members', 'read'), false);
+  assert.equal(canAccess('member', 'accounts', 'read'), false);
+});

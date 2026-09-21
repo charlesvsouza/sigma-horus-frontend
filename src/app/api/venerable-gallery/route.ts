@@ -15,7 +15,7 @@ export async function GET() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ items: [] });
-  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'members', 'read');
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'social', 'read');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
   const items = await withTenant(String(lodgeId), (db) =>
     db.venerableGalleryEntry.findMany({

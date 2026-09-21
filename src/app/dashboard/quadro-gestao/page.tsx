@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
 import QuadroGestaoClient from './QuadroGestaoClient';
 
 // Quadro da Gestão: cargos do período em exercício, com foto — só existe
@@ -18,7 +18,7 @@ export default async function QuadroGestaoPage() {
     );
   }
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'read');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'social', 'read');
   if (!access.ok) {
     return (
       <main className="min-h-screen px-6 py-10">
@@ -26,6 +26,8 @@ export default async function QuadroGestaoPage() {
       </main>
     );
   }
+
+  const canManage = await canLodgeAccess(String(lodgeId), role, 'members', 'write');
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, term] = await Promise.all([
@@ -61,5 +63,5 @@ export default async function QuadroGestaoPage() {
       }
     : null;
 
-  return <QuadroGestaoClient lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} term={term} />;
+  return <QuadroGestaoClient lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} term={term} canManage={canManage} />;
 }

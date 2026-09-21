@@ -35,6 +35,17 @@ const NAV: NavGroupDef[] = [
   // manual já usa por capítulo) — Secretaria concentra Membros/Cadastros/
   // Veneralato/Sessões/Social/Documentos, que antes viviam espalhados em
   // 3 categorias soltas ("Loja & cadastros", "Social", "Atividades").
+  // Social: os quadros da loja — visíveis a todo obreiro (permissão 'social' da matriz),
+  // não só à Secretaria. Ver comentário do recurso em lib/rbac.ts.
+  {
+    category: 'Social',
+    items: [
+      { href: '/dashboard/membros/quadro-social', label: 'Quadro social', roles: [], resource: 'social' },
+      { href: '/dashboard/galeria-veneraveis', label: 'Galeria de Veneráveis', roles: [], resource: 'social' },
+      { href: '/dashboard/quadro-gestao', label: 'Quadro da Gestão', roles: [], resource: 'social' },
+      { href: '/dashboard/composicao', label: 'Composição da loja', roles: [], resource: 'social' },
+    ],
+  },
   {
     category: 'Secretaria',
     subgroups: [
@@ -53,15 +64,6 @@ const NAV: NavGroupDef[] = [
           { href: '/dashboard/veneralato', label: 'Veneralato', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/sessoes', label: 'Sessões', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/sessoes/frequencia', label: 'Frequência às sessões', roles: ['admin', 'venerable', 'secretary'] },
-        ],
-      },
-      {
-        label: 'Social',
-        items: [
-          { href: '/dashboard/membros/quadro-social', label: 'Quadro social', roles: ['admin', 'venerable', 'secretary'] },
-          { href: '/dashboard/galeria-veneraveis', label: 'Galeria de Veneráveis', roles: ['admin', 'venerable', 'secretary'] },
-          { href: '/dashboard/quadro-gestao', label: 'Quadro da Gestão', roles: ['admin', 'venerable', 'secretary'] },
-          { href: '/dashboard/composicao', label: 'Composição da loja', roles: ['admin', 'venerable', 'secretary'] },
         ],
       },
       {
@@ -199,7 +201,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   // Itens ligados a uma permissão da matriz (ex.: Auditoria) aparecem só para quem a tem.
   const allowedResources = new Set<string>();
-  for (const resource of ['audit', 'materials', 'inventory'] as const) {
+  for (const resource of ['audit', 'materials', 'inventory', 'social'] as const) {
     if (await canLodgeAccessFor({ lodgeId: lodgeId ? String(lodgeId) : null, role, memberId: memberId ? String(memberId) : null }, resource, 'read')) allowedResources.add(resource);
   }
   const visible = (i: NavEntry) =>

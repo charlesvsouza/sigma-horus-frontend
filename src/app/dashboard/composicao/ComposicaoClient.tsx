@@ -43,6 +43,8 @@ export default function ComposicaoClient({
   selectedTermId,
   members,
   vacant,
+  showContacts,
+  canManage,
 }: {
   lodgeName: string;
   crestUrl: string | null;
@@ -50,6 +52,9 @@ export default function ComposicaoClient({
   selectedTermId: string | null;
   members: Holder[];
   vacant: VacantOffice[];
+  showContacts: boolean;
+  /** Quem gere o veneralato vê o atalho para vincular cargos. */
+  canManage: boolean;
 }) {
   const router = useRouter();
   const term = terms.find((t) => t.id === selectedTermId) ?? null;
@@ -63,7 +68,7 @@ export default function ComposicaoClient({
           <div>
             <h1 className="font-display text-2xl font-bold text-sand-light">Composição da loja</h1>
             <p className="mt-1 text-sm text-sand-dark">
-              Todos os obreiros que desempenham cargos no período, com o(s) cargo(s) de cada um, grau e contato.
+              Todos os obreiros que desempenham cargos no período, com o(s) cargo(s) de cada um e o grau{showContacts ? ' e o contato' : ''}.
               Para o mural com fotos, veja o <Link href="/dashboard/quadro-gestao" className="text-gold hover:text-gold-light">Quadro da Gestão</Link>.
             </p>
           </div>
@@ -86,14 +91,14 @@ export default function ComposicaoClient({
         {!term ? (
           <EmptyState
             title="Nenhum veneralato cadastrado."
-            description="Crie um período em Veneralato e vincule os cargos para que a composição apareça aqui."
-            action={<Link href="/dashboard/veneralato" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Ir para Veneralato</Link>}
+            description={canManage ? 'Crie um período em Veneralato e vincule os cargos para que a composição apareça aqui.' : 'A Secretaria ainda não cadastrou o veneralato desta loja.'}
+            action={canManage ? <Link href="/dashboard/veneralato" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Ir para Veneralato</Link> : undefined}
           />
         ) : members.length === 0 ? (
           <EmptyState
             title="Nenhum cargo vinculado neste período."
-            description={`O período "${term.title}" não tem cargos vinculados. Faça isso em Veneralato.`}
-            action={<Link href="/dashboard/veneralato" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Ir para Veneralato</Link>}
+            description={canManage ? `O período "${term.title}" não tem cargos vinculados. Faça isso em Veneralato.` : `O período "${term.title}" ainda não tem cargos vinculados.`}
+            action={canManage ? <Link href="/dashboard/veneralato" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Ir para Veneralato</Link> : undefined}
           />
         ) : (
           <>
@@ -124,7 +129,7 @@ export default function ComposicaoClient({
                       <th className="border-b border-white/10 px-2 py-2">Obreiro</th>
                       <th className="border-b border-white/10 px-2 py-2">Cargo(s)</th>
                       <th className="border-b border-white/10 px-2 py-2">Grau</th>
-                      <th className="border-b border-white/10 px-2 py-2">Contato</th>
+                      {showContacts ? <th className="border-b border-white/10 px-2 py-2">Contato</th> : null}
                     </tr>
                   </thead>
                   <tbody>
@@ -142,7 +147,7 @@ export default function ComposicaoClient({
                             )}
                             <div>
                               <p className="font-medium text-sand-light">{m.name}</p>
-                              {m.status !== 'active' ? <p className="text-xs text-amber-300">{memberStatusLabel(m.status)}</p> : null}
+                              {showContacts && m.status !== 'active' ? <p className="text-xs text-amber-300">{memberStatusLabel(m.status)}</p> : null}
                             </div>
                           </div>
                         </td>
@@ -150,11 +155,13 @@ export default function ComposicaoClient({
                           {m.offices.map((o) => o.name).join(' · ')}
                         </td>
                         <td className="border-b border-white/5 px-2 py-2.5 align-top text-sand">{m.degree}</td>
-                        <td className="border-b border-white/5 px-2 py-2.5 align-top text-xs text-sand-dark">
-                          {m.phone ? <p>{m.phone}</p> : null}
-                          {m.email ? <p>{m.email}</p> : null}
-                          {!m.phone && !m.email ? '—' : null}
-                        </td>
+                        {showContacts ? (
+                          <td className="border-b border-white/5 px-2 py-2.5 align-top text-xs text-sand-dark">
+                            {m.phone ? <p>{m.phone}</p> : null}
+                            {m.email ? <p>{m.email}</p> : null}
+                            {!m.phone && !m.email ? '—' : null}
+                          </td>
+                        ) : null}
                       </tr>
                     ))}
                   </tbody>

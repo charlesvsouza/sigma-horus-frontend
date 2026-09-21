@@ -45,7 +45,7 @@ const PRINT_CSS = `
 }
 `;
 
-export default function QuadroSocialClient({ lodgeName, crestUrl, members }: { lodgeName: string; crestUrl: string | null; members: MemberInput[] }) {
+export default function QuadroSocialClient({ lodgeName, crestUrl, members, canSeeAllStatuses = true }: { lodgeName: string; crestUrl: string | null; members: MemberInput[]; canSeeAllStatuses?: boolean }) {
   const [includeAll, setIncludeAll] = useState(false);
 
   const visible = includeAll ? members : members.filter((m) => m.status === 'active');
@@ -81,10 +81,12 @@ export default function QuadroSocialClient({ lodgeName, crestUrl, members }: { l
           </p>
         </div>
 
-        <label className="qs-noprint flex w-fit items-center gap-2 text-sm text-sand-dark">
-          <input type="checkbox" checked={includeAll} onChange={(e) => setIncludeAll(e.target.checked)} />
-          Incluir afastados/suspensos/inativos (não só ativos)
-        </label>
+        {canSeeAllStatuses ? (
+          <label className="qs-noprint flex w-fit items-center gap-2 text-sm text-sand-dark">
+            <input type="checkbox" checked={includeAll} onChange={(e) => setIncludeAll(e.target.checked)} />
+            Incluir afastados/suspensos/inativos (não só ativos)
+          </label>
+        ) : null}
 
         {members.length === 0 ? (
           <EmptyState title="Nenhum membro cadastrado ainda." description="Cadastre membros em Membros para ver o quadro social." />

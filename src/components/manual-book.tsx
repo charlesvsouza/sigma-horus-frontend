@@ -251,7 +251,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 20 de setembro de 2026 · versão 1.35</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 20 de setembro de 2026 · versão 1.36</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -461,7 +461,8 @@ export function ManualBook() {
                 <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença, materiais e patrimônio da loja, documentos institucionais; relatórios não financeiros.</li>
                 <li><strong>Hospitaleiro:</strong> consulta os irmãos (somente leitura, para contato), gerencia campanhas de benemerência e acompanha o Tronco de Solidariedade.</li>
                 <li><strong>Arquiteto (por cargo):</strong> não é um papel que se atribui em <UI>Usuários &amp; acessos</UI> — o obreiro que ocupa o cargo de Arquiteto no veneralato ativo ganha, <strong>além do papel que já tem</strong>, o acesso ao inventário em <UI>Materiais e patrimônio</UI>: vê a lista de materiais, registra desgaste, dano ou perda e fornece/recebe materiais. Não edita o cadastro, não decide baixa nem reposição e não acessa a Tesouraria. Quando o veneralato é encerrado, o acesso acaba sozinho. O Administrador pode ajustar isso em <UI>Configurações → Permissões</UI> (coluna <UI>Arquiteto (cargo)</UI>).</li>
-                <li><strong>Membro (obreiro):</strong> o próprio portal — extrato, débitos, histórico e documentos pertinentes.</li>
+                <li><strong>Membro (obreiro):</strong> o próprio portal — extrato, débitos, histórico e documentos pertinentes — e os quadros do menu <UI>Social</UI>.</li>
+                <li><strong>Menu Social (todos os papéis):</strong> <UI>Quadro social</UI>, <UI>Galeria de Veneráveis</UI>, <UI>Quadro da Gestão</UI> e <UI>Composição da loja</UI> ficam abertos a todo obreiro, para que a loja se enxergue. Quem não tem acesso ao cadastro de Membros vê apenas os ativos e não vê telefone nem e-mail; o cadastro em si segue restrito. O Administrador ajusta em <UI>Configurações → Permissões</UI> (módulo <UI>Social</UI>).</li>
               </Bullets>
               <p className="text-sm text-sand-dark">
                 O <strong>cargo maçônico</strong> (registrado em Cargos e Veneralato) é o registro cerimonial; o
@@ -1425,7 +1426,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-quadro-gestao" title="8.4 Quadro da Gestão e Composição da loja">
                 <p>
-                  Em <UI>Social → Quadro da Gestão</UI>, veja os cargos do <strong>período em exercício</strong>,
+                  Em <UI>Social → Quadro da Gestão</UI> (aberto a todos os obreiros), veja os cargos do <strong>período em exercício</strong>,
                   com foto — pronto pra mural, apresentações ou prestação de contas.
                 </p>
                 <Bullets>

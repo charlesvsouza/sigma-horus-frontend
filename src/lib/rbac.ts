@@ -1,7 +1,7 @@
 import { prismaAdmin } from '@/lib/prisma';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
 
-export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns' | 'import' | 'materials' | 'inventory' | 'audit';
+export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns' | 'import' | 'materials' | 'inventory' | 'social' | 'audit';
 export type Action = 'read' | 'write';
 
 // Ao adicionar um novo Resource aqui, lojas que já customizaram a matriz (têm
@@ -16,7 +16,12 @@ export type Action = 'read' | 'write';
 // reposição). 'inventory' = a operação do dia a dia sobre essa lista: registrar
 // ocorrências (desgaste, dano, perda) e fornecer/receber materiais emprestados.
 // Separados para o Arquiteto operar o inventário sem poder editar o cadastro.
-export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'audit'];
+//
+// 'social' = os quadros da loja (Quadro social, Galeria de Veneráveis, Quadro da
+// Gestão, Composição da loja): todo obreiro enxerga por padrão — é para a loja se
+// ver. NÃO dá acesso ao cadastro de membros ('members'), que guarda CPF, contatos
+// e situação financeira; as telas do Social só mostram o que é próprio de um quadro.
+export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social', 'audit'];
 export const ACTIONS: Action[] = ['read', 'write'];
 export const ROLES = ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] as const;
 export type Role = (typeof ROLES)[number];
@@ -36,32 +41,32 @@ const OFFICE_TO_CARGO_ROLE: Record<string, CargoRole> = { arquiteto: 'architect'
 // É a fonte de verdade para semear o RBAC persistido de cada loja.
 const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = {
   admin: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'audit'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social', 'audit'],
     write: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory'],
   },
   venerable: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'materials', 'inventory'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'materials', 'inventory', 'social'],
     // O Venerável preside a loja e precisa editar cadastro de membro, cargos,
     // veneralato e cadastros mestre (ritos/potências) — não só a Secretaria. Também
     // cadastra os materiais e decide baixa/reposição (junto com Admin e Secretário).
     write: ['members', 'documents', 'messages', 'portal', 'campaigns', 'materials', 'inventory'],
   },
   treasurer: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'social'],
     write: ['messages', 'accounts', 'portal'],
   },
   secretary: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social'],
     write: ['members', 'documents', 'messages', 'portal', 'import', 'materials', 'inventory'],
   },
   member: {
-    read: ['portal', 'campaigns', 'documents'],
+    read: ['portal', 'campaigns', 'documents', 'social'],
     write: ['portal'],
   },
   // Hospitaleiro: contato com irmãos (somente leitura), gestão de campanhas de
   // benemerência, leitura do Tronco (accounts) e envio de convocações (messages).
   hospitaller: {
-    read: ['members', 'accounts', 'portal', 'campaigns', 'messages', 'documents'],
+    read: ['members', 'accounts', 'portal', 'campaigns', 'messages', 'documents', 'social'],
     write: ['campaigns', 'messages', 'portal'],
   },
   // Arquiteto (papel por cargo, soma-se ao papel do obreiro): vê a lista de

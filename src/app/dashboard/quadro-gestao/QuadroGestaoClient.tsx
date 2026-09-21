@@ -30,7 +30,7 @@ const PRINT_CSS = `
 }
 `;
 
-export default function QuadroGestaoClient({ lodgeName, crestUrl, term }: { lodgeName: string; crestUrl: string | null; term: TermData | null }) {
+export default function QuadroGestaoClient({ lodgeName, crestUrl, term, canManage = true }: { lodgeName: string; crestUrl: string | null; term: TermData | null; canManage?: boolean }) {
   return (
     <main className="min-h-screen px-6 py-12">
       <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
@@ -43,14 +43,14 @@ export default function QuadroGestaoClient({ lodgeName, crestUrl, term }: { lodg
         {!term ? (
           <EmptyState
             title="Nenhum veneralato em exercício."
-            description="Crie um período em Veneralato e vincule os cargos para que o quadro apareça aqui."
-            action={<Link href="/dashboard/veneralato" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Ir para Veneralato</Link>}
+            description={canManage ? 'Crie um período em Veneralato e vincule os cargos para que o quadro apareça aqui.' : 'A Secretaria ainda não cadastrou o veneralato desta loja.'}
+            action={canManage ? <Link href="/dashboard/veneralato" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Ir para Veneralato</Link> : undefined}
           />
         ) : term.memberOffices.length === 0 ? (
           <EmptyState
             title="Nenhum cargo vinculado ainda."
-            description={`O período "${term.title}" está em exercício, mas nenhum cargo foi vinculado. Faça isso em Veneralato.`}
-            action={<Link href="/dashboard/veneralato" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Ir para Veneralato</Link>}
+            description={canManage ? `O período "${term.title}" está em exercício, mas nenhum cargo foi vinculado. Faça isso em Veneralato.` : `O período "${term.title}" está em exercício, mas ainda não tem cargos vinculados.`}
+            action={canManage ? <Link href="/dashboard/veneralato" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">Ir para Veneralato</Link> : undefined}
           />
         ) : (
           <>

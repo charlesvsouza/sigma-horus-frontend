@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
 import QuadroSocialClient from './QuadroSocialClient';
 
 export default async function QuadroSocialPage() {
@@ -16,7 +16,7 @@ export default async function QuadroSocialPage() {
     );
   }
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'read');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'social', 'read');
   if (!access.ok) {
     return (
       <main className="min-h-screen px-6 py-10">
@@ -25,11 +25,15 @@ export default async function QuadroSocialPage() {
     );
   }
 
+  // Situações como Art. 002 (inadimplência), Quit Placet ou suspensão são dado de
+  // cadastro: só quem lê Membros as vê. Os demais obreiros recebem só os ativos.
+  const canSeeAllStatuses = await canLodgeAccess(String(lodgeId), role, 'members', 'read');
+
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, members] = await Promise.all([
       db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
       db.member.findMany({
-        where: { lodgeId: String(lodgeId) },
+        where: { lodgeId: String(lodgeId), ...(canSeeAllStatuses ? {} : { status: 'active' }) },
         select: {
           id: true, name: true, status: true, photoUrl: true,
           initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true,
@@ -66,5 +70,5 @@ export default async function QuadroSocialPage() {
     };
   });
 
-  return <QuadroSocialClient lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} members={members} />;
+  return <QuadroSocialClient lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} members={members} canSeeAllStatuses={canSeeAllStatuses} />;
 }

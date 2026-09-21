@@ -21,7 +21,7 @@ export default async function GaleriaVeneraveisPage() {
     );
   }
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'read');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'social', 'read');
   if (!access.ok) {
     return (
       <main className="min-h-screen px-6 py-10">
@@ -48,7 +48,7 @@ export default async function GaleriaVeneraveisPage() {
         include: { member: { select: { id: true, name: true, photoUrl: true } } },
         orderBy: { sortDate: 'asc' },
       }),
-      db.member.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+      canManage ? db.member.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, name: true }, orderBy: { name: 'asc' } }) : Promise.resolve([]),
     ]);
     return { lodge, memberOffices, manualEntries, members };
   });
