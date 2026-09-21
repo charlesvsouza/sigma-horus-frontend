@@ -89,6 +89,7 @@ const INDEX: IndexEntry[] = [
       { id: 'membro-acesso', label: '10.1 Seu acesso e seus dados' },
       { id: 'membro-secretaria', label: '10.2 Calendário de sessões' },
       { id: 'membro-hospitalaria', label: '10.3 Hospitalaria' },
+      { id: 'membro-social', label: '10.4 Social: os quadros da loja' },
     ],
   },
   {
@@ -251,7 +252,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 20 de setembro de 2026 · versão 1.36</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 20 de setembro de 2026 · versão 1.39</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -485,12 +486,17 @@ export function ManualBook() {
               <Bullets>
                 <li><strong>Itens soltos (Visão geral):</strong> <UI>Visão geral</UI> (posição financeira: saldo em caixa e o que há a receber e a pagar), <UI>Meu portal</UI>, <UI>Calendário de sessões</UI> (vale pra todo oficial, não só o obreiro) e <UI>Manual &amp; ajuda</UI>.</li>
                 <li>
-                  <strong>Secretaria:</strong> dividida em quatro grupos — <UI>Membros &amp; Cadastros</UI>
+                  <strong>Social:</strong> os quadros da loja, <strong>abertos a todo obreiro</strong> —
+                  <UI> Quadro social</UI>, <UI>Galeria de Veneráveis</UI>, <UI>Quadro da Gestão</UI> e
+                  <UI> Composição da loja</UI> (ver 10.4 e 8.2 a 8.4).
+                </li>
+                <li>
+                  <strong>Secretaria:</strong> dividida em três grupos — <UI>Membros &amp; Cadastros</UI>
                   (<UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>),
                   <UI> Veneralato &amp; Sessões</UI> (<UI>Veneralato</UI>, <UI>Sessões</UI>, <UI>Frequência às
-                  sessões</UI>), <UI>Social</UI> (<UI>Quadro social</UI>, <UI>Galeria de Veneráveis</UI>, <UI>Quadro
-                  da Gestão</UI>) e <UI>Documentos &amp; Comunicação</UI> (<UI>Documentos</UI>, <UI>Comunicação</UI>).
+                  sessões</UI>) e <UI>Documentos &amp; Comunicação</UI> (<UI>Documentos</UI>, <UI>Comunicação</UI>).
                   Os grupos são só rótulos visuais dentro do menu já aberto — não precisam de um clique a mais.
+                  O Arquiteto (por cargo) vê aqui apenas <UI>Materiais e patrimônio</UI>.
                 </li>
                 <li>
                   <strong>Tesouraria:</strong> dividida em três grupos — <UI>Entradas e Saídas</UI> (<UI>Contas</UI>,
@@ -635,6 +641,12 @@ export function ManualBook() {
                   <li>Se precisar, use <UI>Reenviar acesso</UI> para gerar outra senha provisória.</li>
                 </Steps>
                 <p>
+                  Na lista de <UI>Membros</UI>, uma <strong>estrela ao lado do nome</strong> mostra em que pé está o acesso de cada
+                  obreiro: <strong>★ dourada</strong> = já trocou a senha provisória e definiu a própria; <strong>☆ apagada</strong> =
+                  acesso concedido, mas ainda não fez o primeiro login (bom momento para <UI>Reenviar acesso</UI>); <strong>sem estrela</strong> =
+                  o obreiro não tem acesso ativo.
+                </p>
+                <p>
                   Em <UI>Administração → Usuários &amp; acessos</UI> o Administrador define o <strong>papel (cargo de
                   permissão)</strong> de cada usuário — Venerável, Tesoureiro, Secretário, Hospitaleiro ou Membro —, reenvia
                   senha e ativa/desativa logins. <strong>Administrador não está nessa lista de propósito:</strong> o papel é fixo,
@@ -663,6 +675,14 @@ export function ManualBook() {
                   Em <UI>Administração → Configurações da loja → Permissões</UI> você ajusta a matriz <strong>papel ×
                   recurso × ação</strong> (ex.: quem pode ler/escrever em membros, documentos, mensagens, contas e
                   portal). A loja parte de uma configuração padrão e pode personalizá-la.
+                </p>
+                <p>
+                  Alguns módulos merecem atenção: <UI>Materiais — cadastro e baixa</UI> (quem cadastra materiais e decide
+                  baixa/reposição), <UI>Inventário — ocorrências e empréstimos</UI> (quem registra desgaste, dano, perda e fornece/recebe
+                  materiais) e <UI>Social — quadros e composição da loja</UI> (por padrão, <strong>todos os papéis</strong> veem os quadros).
+                  A coluna <UI>Arquiteto (cargo)</UI> não é um papel de usuário: vale para o obreiro que ocupa o cargo de Arquiteto no
+                  veneralato ativo, <strong>soma-se</strong> ao papel dele e some quando o veneralato encerra. Papéis e módulos novos
+                  usam o padrão até você salvar a matriz — as lojas que já a personalizaram não mudam de comportamento por surpresa.
                 </p>
                 <p>
                   <strong>Cada cargo fica na sua área.</strong> Nenhum cargo acessa a área de outro a menos que o
@@ -1395,6 +1415,11 @@ export function ManualBook() {
                   <li><UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
                 </Steps>
                 <Note>
+                  O Quadro social é aberto a <strong>todo obreiro</strong>. Quem não tem acesso ao cadastro de Membros (o obreiro comum,
+                  por exemplo) vê <strong>somente os ativos</strong> e não enxerga a opção de incluir afastados/suspensos/inativos —
+                  situações como Art. 002, Quit Placet ou suspensão são dado de cadastro e não aparecem no quadro.
+                </Note>
+                <Note>
                   É uma fotografia de <strong>hoje</strong>, não um relatório de admissões/desligamentos no ano — o
                   sistema não guarda a data de cada mudança de situação, só o valor atual.
                 </Note>
@@ -1407,8 +1432,8 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-galeria-veneraveis" title="8.3 Galeria de Veneráveis">
                 <p>
-                  Em <UI>Social → Galeria de Veneráveis</UI>, veja o mural com todos os Veneráveis da história da
-                  loja, organizado pela <strong>linha do tempo</strong>.
+                  Em <UI>Social → Galeria de Veneráveis</UI> (aberta a todos os obreiros), veja o mural com todos os Veneráveis da história da
+                  loja, organizado pela <strong>linha do tempo</strong>. Só o Secretário, o Venerável e o Administrador cadastram ou editam entradas.
                 </p>
                 <Bullets>
                   <li><strong>Entradas automáticas:</strong> qualquer irmão vinculado ao cargo de <UI>Venerável Mestre</UI> em algum período (em <UI>Veneralato</UI>) aparece aqui sozinho, com a foto cadastrada em Membros (se houver) e o período do veneralato.</li>
@@ -1459,6 +1484,16 @@ export function ManualBook() {
                   Em <UI>Veneralato</UI>, crie um <UI>Novo período</UI> (ex.: &quot;Gestão 2025-2026&quot;) e <UI>Vincular</UI> os
                   oficiais aos cargos daquele período.
                 </p>
+                <Steps>
+                  <li>Em <UI>Secretaria → Cargos</UI> fica só a <strong>lista de cargos</strong> da loja (Venerável, Secretário, Arquiteto…). Ali você não escolhe quem os exerce.</li>
+                  <li>Em <UI>Secretaria → Veneralato &amp; Sessões → Veneralato</UI>, o período em exercício já abre selecionado. Se houver mais de um, <strong>clique no período</strong> desejado na lista <UI>Períodos</UI>.</li>
+                  <li>No bloco <UI>Vincular cargo a um obreiro</UI>, escolha o <UI>Membro</UI> e o <UI>Cargo</UI> e clique em <UI>Vincular</UI>. Um obreiro pode acumular vários cargos.</li>
+                  <li>Os vínculos aparecem em <UI>Cargos deste período</UI>, sempre na <strong>ordem cerimonial</strong>: Venerável Mestre, as duas Luzes (1º e 2º Vigilante), Orador, Secretário, Tesoureiro, Mestre de Cerimônias e, depois, os demais cargos. A mesma ordem vale no Quadro da Gestão, na Composição da loja e na lista de Cargos. Para desfazer um vínculo feito por engano, ou trocar o titular, use <UI>Remover</UI> ao lado dele — só é possível enquanto o período está em exercício; veneralato encerrado não muda.</li>
+                </Steps>
+                <Note>
+                  Os vínculos alimentam o Social (Quadro da Gestão e Composição da loja) e, no caso do <strong>Arquiteto</strong>, concedem o acesso ao
+                  inventário de materiais — ao remover o vínculo, o acesso deixa de valer em instantes.
+                </Note>
                 <p>
                   O card <UI>Histórico de cargos</UI> junta os vínculos de <strong>todas as gestões</strong> (não só a
                   selecionada) agrupados por obreiro — clique em <UI>Ver histórico de cargos</UI> pra carregar. Útil
@@ -1536,7 +1571,8 @@ export function ManualBook() {
                   quantidade, e clique em <UI>Registrar fornecimento</UI>. Se o material exigir um grau (ex.: Ritual de
                   Companheiro) e o membro ainda não o tiver alcançado, o sistema recusa — um Mestre continua elegível a
                   material de um grau que já passou, só não dá pra pular pra frente. Quando o item voltar, use
-                  <UI> Marcar como devolvido</UI> (ou <UI>extraviado</UI>, se for o caso).
+                  <UI> Marcar como devolvido</UI> (ou <UI>extraviado</UI>, se for o caso). O Arquiteto também registra fornecimento e
+                  devolução; apagar um registro do histórico, porém, é de quem cuida do cadastro (Administrador, Venerável ou Secretário).
                 </p>
                 <Note>
                   Um material com fornecimento já registrado não pode ser excluído (preserva o histórico) — use
@@ -1681,6 +1717,22 @@ export function ManualBook() {
                   <strong> não vira uma campanha automaticamente</strong> — ele é uma mensagem direta para o Hospitaleiro
                   e a Administração da loja (chega por e-mail), que decidem se formalizam uma campanha a partir dele.
                 </p>
+              </Sub>
+              <Sub id="membro-social" title="10.4 Social: os quadros da loja">
+                <p>
+                  O menu <UI>Social</UI> é para a loja se enxergar — está aberto a <strong>todo obreiro</strong>:
+                </p>
+                <Bullets>
+                  <li><UI>Quadro social</UI>: os irmãos ativos agrupados por grau, com foto.</li>
+                  <li><UI>Galeria de Veneráveis</UI>: o mural de todos os Veneráveis da história da loja.</li>
+                  <li><UI>Quadro da Gestão</UI>: os cargos do período em exercício, com foto.</li>
+                  <li><UI>Composição da loja</UI>: a lista dos obreiros que desempenham cargos, com o(s) cargo(s) e o grau de cada um; o seletor <UI>Período</UI> abre gestões anteriores.</li>
+                </Bullets>
+                <Note>
+                  Telefone, e-mail e a situação cadastral dos irmãos não aparecem nesses quadros para quem não é da gestão — a
+                  informação de contato de um irmão fica no cadastro, que é restrito. Se a sua loja ainda não cadastrou o veneralato,
+                  a Composição e o Quadro da Gestão avisam que a Secretaria ainda não os preencheu.
+                </Note>
               </Sub>
             </Chapter>
 
@@ -1908,6 +1960,10 @@ export function ManualBook() {
                 <li><strong>Por que não consigo promover alguém a Administrador (nem rebaixar um)?</strong> O papel de Administrador é fixo, de propósito, para que as prerrogativas não se misturem. Para ter outro Administrador, crie-o em <UI>Usuários &amp; acessos → Novo administrador</UI> (limite de 2 ativos).</li>
                 <li><strong>Preciso trocar o e-mail do Administrador.</strong> Em <UI>Minha conta</UI> (6.11): informe o novo e-mail e a senha atual, e confirme pelo link enviado ao novo endereço.</li>
                 <li><strong>Não vejo um item do menu.</strong> Ele não está liberado para o seu papel; fale com o Administrador (6.3 / 6.4).</li>
+                <li><strong>Como sei quem já acessou o sistema?</strong> Na lista de <UI>Membros</UI>: <strong>★ dourada</strong> = já definiu a própria senha; <strong>☆</strong> = acesso concedido, aguardando o primeiro login (6.3).</li>
+                <li><strong>O Arquiteto não consegue editar o cadastro de materiais nem dar baixa.</strong> É de propósito: ele registra a ocorrência (desgaste, dano ou perda) e a Secretaria/Venerável/Administrador decide (8.9). Se o item de menu <UI>Materiais e patrimônio</UI> não aparece para ele, confira se o cargo de Arquiteto está vinculado no veneralato <strong>ativo</strong> (<UI>Veneralato</UI>).</li>
+                <li><strong>Registrei um dano e o material sumiu do disponível.</strong> Dano e perda pendentes saem do disponível até a decisão (8.9); se foi engano, quem cuida do cadastro usa <UI>Dispensar</UI> e a unidade volta.</li>
+                <li><strong>O obreiro não vê telefone nem e-mail na Composição da loja.</strong> É de propósito: os quadros do <UI>Social</UI> não expõem dados de contato a quem não tem acesso ao cadastro de Membros (10.4).</li>
                 <li><strong>O saldo do Tronco aparece indisponível.</strong> Em Cadastros, clique em <UI>Atualizar plano de contas</UI> (7.1) para habilitar as contas do Tronco de Solidariedade.</li>
                 <li><strong>A convocação não chegou aos irmãos.</strong> O e-mail sai pela plataforma; WhatsApp/SMS exigem a loja conectar a própria conta em <UI>Integrações</UI> (6.6). Até lá, ficam registrados e enfileirados.</li>
                 <li><strong>Quero o manual em PDF.</strong> Use o botão <strong>Salvar como PDF</strong> no topo desta página.</li>

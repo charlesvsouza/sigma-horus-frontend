@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, CollapsibleCard, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
+import { compareOffices } from '@/lib/office-order';
 
 interface TermItem { id: string; title: string; startDate: string; endDate?: string | null; status: string; _count: { memberOffices: number }; }
-interface MemberOfficeItem { id: string; office: { id: string; name: string }; member: { id: string; name: string }; }
+interface MemberOfficeItem { id: string; office: { id: string; name: string; order?: number }; member: { id: string; name: string }; }
 interface MemberHistoryItem {
   id: string;
   member: { id: string; name: string };
@@ -39,7 +40,7 @@ interface TermDetail {
 export default function VeneralatoPage() {
   const askConfirm = useConfirm();
   const [terms, setTerms] = useState<TermItem[]>([]);
-  const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
+  const [offices, setOffices] = useState<{ id: string; name: string; order?: number }[]>([]);
   const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [form, setForm] = useState({ title: '', startDate: '', endDate: '', notes: '' });
@@ -55,22 +56,28 @@ export default function VeneralatoPage() {
   const isVenerable = role === 'venerable';
   const canClose = isAdmin || role === 'treasurer';
 
-  async function loadTerms() {
+  async function loadTerms(): Promise<TermItem[]> {
     const res = await fetch('/api/terms');
     const data = await res.json();
-    setTerms(data.items ?? []);
+    const items: TermItem[] = data.items ?? [];
+    setTerms(items);
+    return items;
   }
 
   async function loadRefs() {
     const [offRes, memRes] = await Promise.all([fetch('/api/offices'), fetch('/api/members')]);
-    setOffices((await offRes.json()).items ?? []);
+    setOffices(((await offRes.json()).items ?? []).sort(compareOffices));
     setMembers((await memRes.json()).items ?? []);
   }
 
   useEffect(() => {
     void (async () => {
-      await loadTerms();
+      const items = await loadTerms();
       await loadRefs();
+      // Abre já o período em exercício (ou o mais recente): é nele que se vinculam
+      // os cargos aos obreiros — antes era preciso adivinhar que havia que clicar num período.
+      const current = items.find((t) => t.status !== 'closed') ?? items[0];
+      if (current) await loadTermDetail(current.id);
     })();
   }, []);
 
@@ -132,11 +139,31 @@ export default function VeneralatoPage() {
   }
 
   async function assignOffice(termId: string, memberId: string, officeId: string) {
-    await fetch('/api/member-offices', {
+    const res = await fetch('/api/member-offices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ termId, memberId, officeId }),
     });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: 'Cargo vinculado ao obreiro.' });
+      const memberSel = document.getElementById('mo-member') as HTMLSelectElement | null;
+      const officeSel = document.getElementById('mo-office') as HTMLSelectElement | null;
+      if (memberSel) memberSel.value = '';
+      if (officeSel) officeSel.value = '';
+      await loadTerms();
+    } else {
+      setMessage({ kind: 'error', text: data.error ?? 'Não foi possível vincular o cargo.' });
+    }
+    await loadTermDetail(termId);
+  }
+
+  async function removeOffice(termId: string, mo: MemberOfficeItem) {
+    if (!(await askConfirm({ title: 'Remover cargo', message: `Remover o cargo "${mo.office.name}" de ${mo.member.name} neste período? Se o cargo dava algum acesso (ex.: Arquiteto), ele deixa de valer.`, confirmLabel: 'Remover', intent: 'danger' }))) return;
+    const res = await fetch(`/api/member-offices/${mo.id}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    setMessage(res.ok ? { kind: 'ok', text: 'Cargo removido.' } : { kind: 'error', text: data.error ?? 'Não foi possível remover o cargo.' });
+    await loadTerms();
     await loadTermDetail(termId);
   }
 
@@ -229,7 +256,9 @@ export default function VeneralatoPage() {
 
           <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Períodos</h2>
+            <p className="mt-1 text-xs text-sand-dark">Clique em um período para <strong>vincular cargos aos obreiros</strong> e acompanhar o fechamento.</p>
             <div className="mt-5 space-y-3">
+              {terms.length === 0 ? <p className="text-sm text-sand-dark">Nenhum período ainda. Crie o primeiro em <strong>Novo período</strong> e depois vincule os cargos.</p> : null}
               {terms.map((t) => (
                 <button key={t.id} onClick={() => loadTermDetail(t.id)} className={`w-full rounded-lg border px-4 py-4 text-left transition-colors ${selectedTerm === t.id ? 'border-gold/40 bg-gold/10' : 'border-white/5 bg-sigma-blue-deep/50 hover:border-white/8'}`}>
                   <p className="text-sm font-medium text-sand-light">{t.title}</p>
@@ -286,7 +315,8 @@ export default function VeneralatoPage() {
 
               <div className="mt-5 space-y-4">
                 <div>
-                  <h3 className="text-sm font-medium text-sand-dark">Vincular cargo</h3>
+                  <h3 className="text-sm font-medium text-sand-dark">Vincular cargo a um obreiro</h3>
+                  <p className="mt-1 text-xs text-sand-dark">Escolha o obreiro e o cargo que ele exerce neste período. Um obreiro pode acumular mais de um cargo. Para cadastrar ou renomear os cargos da loja, use <strong>Secretaria → Cargos</strong>.</p>
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     <Field label="Membro">
                       <select id="mo-member" className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-3 py-2 text-sm text-sand-light outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20">
@@ -311,11 +341,16 @@ export default function VeneralatoPage() {
                 <div>
                   <h3 className="text-sm font-medium text-sand-dark">Cargos deste período</h3>
                   <div className="mt-2 space-y-2">
-                    {termDetail.memberOffices?.map((mo) => (
-                      <div key={mo.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
-                        <span className="text-gold">{mo.office.name}</span>
-                        <span className="mx-2 text-sand-dark">—</span>
-                        <span>{mo.member.name}</span>
+                    {[...(termDetail.memberOffices ?? [])].sort((a, b) => compareOffices(a.office, b.office) || a.member.name.localeCompare(b.member.name, 'pt-BR')).map((mo) => (
+                      <div key={mo.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-2 text-sm text-sand">
+                        <div>
+                          <span className="text-gold">{mo.office.name}</span>
+                          <span className="mx-2 text-sand-dark">—</span>
+                          <span>{mo.member.name}</span>
+                        </div>
+                        {termDetail.status !== 'closed' ? (
+                          <button onClick={() => void removeOffice(termDetail.id, mo)} className="rounded text-xs text-rose-300/70 outline-none transition hover:text-rose-300 focus-visible:ring-2 focus-visible:ring-rose-400/60">Remover</button>
+                        ) : null}
                       </div>
                     ))}
                     {(!termDetail.memberOffices || termDetail.memberOffices.length === 0) && (

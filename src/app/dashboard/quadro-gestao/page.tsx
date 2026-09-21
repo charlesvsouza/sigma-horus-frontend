@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
+import { compareOffices } from '@/lib/office-order';
 import QuadroGestaoClient from './QuadroGestaoClient';
 
 // Quadro da Gestão: cargos do período em exercício, com foto — só existe
@@ -55,11 +56,14 @@ export default async function QuadroGestaoPage() {
         title: data.term.title,
         startDate: data.term.startDate.toISOString(),
         endDate: data.term.endDate ? data.term.endDate.toISOString() : null,
-        memberOffices: data.term.memberOffices.map((mo) => ({
-          id: mo.id,
-          office: mo.office,
-          member: mo.member,
-        })),
+        // Cargos de gestão primeiro (Venerável, Vigilantes, Orador, Secretário, Tesoureiro, M. de Cerimônias).
+        memberOffices: [...data.term.memberOffices]
+          .sort((a, b) => compareOffices(a.office, b.office) || a.member.name.localeCompare(b.member.name, 'pt-BR'))
+          .map((mo) => ({
+            id: mo.id,
+            office: mo.office,
+            member: mo.member,
+          })),
       }
     : null;
 

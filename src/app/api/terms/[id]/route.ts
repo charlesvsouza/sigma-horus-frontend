@@ -15,7 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     db.term.findFirst({
       where: { id, lodgeId: String(lodgeId) },
       include: {
-        memberOffices: { include: { member: { select: { id: true, name: true } }, office: { select: { id: true, name: true } } } },
+        memberOffices: { include: { member: { select: { id: true, name: true } }, office: { select: { id: true, name: true, order: true } } } },
         cashCloses: true,
       },
     }),

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
 import { degreeShort } from '@/lib/masonic-degree';
+import { compareOffices } from '@/lib/office-order';
 import ComposicaoClient from './ComposicaoClient';
 
 // Composição da loja: todos os obreiros que desempenham cargos no período
@@ -89,8 +90,8 @@ export default async function ComposicaoPage({ searchParams }: { searchParams: P
     byMember.set(m.id, row);
   }
   const members = [...byMember.values()]
-    .map((m) => ({ ...m, offices: [...m.offices].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name)) }))
-    .sort((a, b) => a.offices[0].order - b.offices[0].order || a.name.localeCompare(b.name));
+    .map((m) => ({ ...m, offices: [...m.offices].sort(compareOffices) }))
+    .sort((a, b) => compareOffices(a.offices[0], b.offices[0]) || a.name.localeCompare(b.name, 'pt-BR'));
 
   return (
     <ComposicaoClient
@@ -107,7 +108,7 @@ export default async function ComposicaoPage({ searchParams }: { searchParams: P
       members={members}
       showContacts={canSeeContacts}
       canManage={canManage}
-      vacant={data.vacant.map((o) => ({ id: o.id, name: o.name, riteName: o.rite?.name ?? null }))}
+      vacant={[...data.vacant].sort(compareOffices).map((o) => ({ id: o.id, name: o.name, riteName: o.rite?.name ?? null }))}
     />
   );
 }

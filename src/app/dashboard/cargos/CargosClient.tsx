@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Alert, Field } from '@/components/ui';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 interface Office { id: string; name: string; order: number; }
@@ -36,6 +37,10 @@ export default function CargosClient({ offices }: { offices: Office[] }) {
         <div>
           <h1 className="font-display text-2xl font-bold text-sand-light">Cargos</h1>
           <p className="mt-1 text-sm text-sand-dark">Cadastre os cargos da loja (Venerável, Tesoureiro, Secretário...).</p>
+          <p className="mt-2 text-sm text-sand-dark">
+            Aqui fica só a <strong>lista de cargos</strong>. Para dizer <strong>qual obreiro exerce cada cargo</strong> (e assim montar a
+            Composição da loja), abra um período em <Link href="/dashboard/veneralato" className="text-gold hover:text-gold-light">Veneralato</Link> e use <strong>Vincular cargo</strong>.
+          </p>
         </div>
         {message ? <Alert intent="warn">{message}</Alert> : null}
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">

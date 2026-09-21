@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import { compareOffices } from '@/lib/office-order';
 import CargosClient from './CargosClient';
 
 // Server Component: carrega os cargos no servidor (sem fetch-on-mount no
@@ -13,5 +14,5 @@ export default async function CargosPage() {
         db.office.findMany({ where: { lodgeId: String(lodgeId) }, orderBy: { order: 'asc' } }),
       )
     : [];
-  return <CargosClient offices={offices.map((o) => ({ id: o.id, name: o.name, order: o.order }))} />;
+  return <CargosClient offices={[...offices].sort(compareOffices).map((o) => ({ id: o.id, name: o.name, order: o.order }))} />;
 }
