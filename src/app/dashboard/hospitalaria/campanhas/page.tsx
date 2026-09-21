@@ -12,7 +12,7 @@ export default async function CampanhasPage() {
 
   const data = lodgeId
     ? await withTenant(String(lodgeId), async (db) => {
-        const [campaigns, tronco, lodge, requests] = await Promise.all([
+        const [campaigns, tronco, lodge, requests, bankAccounts] = await Promise.all([
           db.campaign.findMany({
             where: { lodgeId: String(lodgeId) },
             include: { donations: { select: { amount: true } } },
@@ -24,6 +24,11 @@ export default async function CampanhasPage() {
             where: { lodgeId: String(lodgeId) },
             include: { member: { select: { name: true } } },
             orderBy: { createdAt: 'desc' },
+          }),
+          db.financialAccount.findMany({
+            where: { lodgeId: String(lodgeId), active: true },
+            select: { id: true, name: true, isDefault: true },
+            orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
           }),
         ]);
         const items = campaigns.map((c) => {
@@ -50,9 +55,9 @@ export default async function CampanhasPage() {
           createdAt: r.createdAt.toISOString(),
           memberName: r.member.name,
         }));
-        return { items, tronco, channels: channelsAvailable(buildLodgeChannels(lodge)), requests: requestItems };
+        return { items, tronco, channels: channelsAvailable(buildLodgeChannels(lodge)), requests: requestItems, bankAccounts };
       })
-    : { items: [], tronco: null, channels: { email: false, whatsapp: false, sms: false }, requests: [] };
+    : { items: [], tronco: null, channels: { email: false, whatsapp: false, sms: false }, requests: [], bankAccounts: [] };
 
-  return <CampanhasClient items={data.items} tronco={data.tronco} channels={data.channels} requests={data.requests} />;
+  return <CampanhasClient items={data.items} tronco={data.tronco} channels={data.channels} requests={data.requests} bankAccounts={data.bankAccounts} />;
 }

@@ -11,6 +11,7 @@ interface Campaign {
   goalAmount?: number | null; fundingSource: string; fundAllocated: number; status: string;
   raised?: number; totalApplied?: number; donations?: Donation[];
 }
+interface BankAccount { id: string; name: string; isDefault: boolean }
 interface Tronco { revenue: number; expense: number; balance: number; configured: boolean }
 interface HospitalityRequestItem { id: string; title: string; description: string | null; status: string; createdAt: string; memberName: string; }
 
@@ -26,7 +27,7 @@ const TEMPLATES = [
 ];
 const STATUS_LABEL: Record<string, string> = { active: 'Ativa', completed: 'Concluída', canceled: 'Cancelada' };
 
-export default function CampanhasClient({ items, tronco, channels, requests }: { items: Campaign[]; tronco: Tronco | null; channels: Record<string, boolean>; requests: HospitalityRequestItem[] }) {
+export default function CampanhasClient({ items, tronco, channels, requests, bankAccounts }: { items: Campaign[]; tronco: Tronco | null; channels: Record<string, boolean>; requests: HospitalityRequestItem[]; bankAccounts: BankAccount[] }) {
   const router = useRouter();
   const [message, setMessage] = useState('');
   const [creating, setCreating] = useState(false);
@@ -92,7 +93,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
           {tronco?.configured ? (
             <>
               <p className="mt-2 font-display text-3xl font-bold tabular-nums text-gold">{brl(tronco.balance)}</p>
-              <p className="mt-1 text-sm text-sand-dark">Saldo disponível para benemerência (entradas {brl(tronco.revenue)} − aplicado {brl(tronco.expense)}). Faz parte do caixa total, em conta separada.</p>
+              <p className="mt-1 text-sm text-sand-dark">Saldo disponível para benemerência (entradas {brl(tronco.revenue)} − aplicado {brl(tronco.expense)}). É a parte do dinheiro da loja reservada à benemerência: fica nos bancos e no caixa da loja e é identificada pela categoria do Tronco.</p>
             </>
           ) : (
             <p className="mt-2 text-sm text-sand-dark">As contas do Tronco ainda não estão configuradas. Em Cadastros, use <strong>“Atualizar plano de contas”</strong> para habilitar o fundo de solidariedade.</p>
@@ -191,7 +192,7 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
                       <span className={`text-gold transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
                     </button>
                     {pct != null ? <div className="mx-4 mb-3 h-1.5 overflow-hidden rounded-full bg-white/5"><div className="h-full rounded-full bg-gold" style={{ width: `${pct}%` }} /></div> : null}
-                    {open ? <CampaignDetail campaign={detail} tronco={tronco} channels={channels} onChange={reload} /> : null}
+                    {open ? <CampaignDetail campaign={detail} tronco={tronco} channels={channels} bankAccounts={bankAccounts} onChange={reload} /> : null}
                   </div>
                 );
               })
@@ -205,9 +206,10 @@ export default function CampanhasClient({ items, tronco, channels, requests }: {
 
 const CHAN_LABEL: Record<string, string> = { email: 'E-mail', whatsapp: 'WhatsApp', sms: 'SMS' };
 
-function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Campaign | null; tronco: Tronco | null; channels: Record<string, boolean>; onChange: () => void }) {
+function CampaignDetail({ campaign, tronco, channels, bankAccounts, onChange }: { campaign: Campaign | null; tronco: Tronco | null; channels: Record<string, boolean>; bankAccounts: BankAccount[]; onChange: () => void }) {
   const [donation, setDonation] = useState({ amount: '', donorName: '', anonymous: false });
   const [fund, setFund] = useState('');
+  const [bankAccountId, setBankAccountId] = useState(() => (bankAccounts.find((a) => a.isDefault) ?? bankAccounts[0])?.id ?? '');
   const [msg, setMsg] = useState('');
   const [conv, setConv] = useState({ email: true, whatsapp: false, sms: false, scope: 'active', message: '' });
   const [convResult, setConvResult] = useState('');
@@ -232,7 +234,7 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
   async function addDonation(e: React.FormEvent) {
     e.preventDefault();
     setMsg('');
-    const res = await fetch(`/api/campaigns/${campaign!.id}/donations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...donation, amount: Number(donation.amount) }) });
+    const res = await fetch(`/api/campaigns/${campaign!.id}/donations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...donation, amount: Number(donation.amount), bankAccountId: bankAccountId || undefined }) });
     const data = await res.json();
     if (res.ok) { setDonation({ amount: '', donorName: '', anonymous: false }); onChange(); }
     else setMsg(data.error ?? 'Erro ao registrar doação.');
@@ -240,7 +242,7 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
   async function fundFromTronco(e: React.FormEvent) {
     e.preventDefault();
     setMsg('');
-    const res = await fetch(`/api/campaigns/${campaign!.id}/fund`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: Number(fund) }) });
+    const res = await fetch(`/api/campaigns/${campaign!.id}/fund`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: Number(fund), bankAccountId: bankAccountId || undefined }) });
     const data = await res.json();
     if (res.ok) { setFund(''); onChange(); }
     else setMsg(data.error ?? 'Erro ao custear pelo Tronco.');
@@ -254,6 +256,13 @@ function CampaignDetail({ campaign, tronco, channels, onChange }: { campaign: Ca
     <div className="space-y-5 border-t border-white/5 bg-sigma-blue-deep/30 px-4 py-5 text-sm">
       {campaign.description ? <p className="text-sand">{campaign.description}</p> : null}
       {msg ? <p className="text-xs text-rose-300">{msg}</p> : null}
+      {bankAccounts.length > 0 ? (
+        <label className="block text-xs text-sand-dark">Conta ou caixa da loja (onde a doação entra ou de onde o custeio sai)
+          <select value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)} className={`mt-1 ${inputClass}`}>
+            {bankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        </label>
+      ) : null}
 
       <div className="grid gap-5 md:grid-cols-2">
         {/* Doação voluntária */}

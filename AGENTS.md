@@ -1,3 +1,14 @@
+# Handoff — Sessão 2026-09-21 (Tronco/Doações = categoria, sem caixa)
+
+**Decisão do dono/tesoureiro:** Tronco de Beneficência e Doações e Contribuições são **centros de custo (categorias do plano de contas)**, não contas financeiras. O dinheiro entra/sai pelos bancos e Caixa reais da loja.
+
+- ✅ `lib/funds.ts` reescrito: `fundChartWhere(fund)`, `findFundChart`, `resolveBankAccount` (conta escolhida ou a padrão). **Removidos** `ensureFundAccounts`, `findFundAccount(s)`, `fundAccountForChart` (seed não cria mais caixa de fundo; lançamento com categoria de fundo NÃO escolhe mais conta sozinho).
+- ✅ Saldo do Tronco (`getTroncoBalance`) e relatório do fundo (`funds-report.ts`, tela Fundos) = soma dos pagamentos nas **categorias** do fundo, em qualquer banco. Sem transferências/“divergências fora do caixa”.
+- ✅ Aporte, doação/custeio de campanha: o usuário escolhe a conta/caixa (ou vale a padrão). Pix do portal cai na conta de repasse do Asaas.
+- ✅ Contas financeiras: campo `purpose` virou legado (sempre `general`; UI/API não aceitam mais). Migration `20260921120000_remove_fund_caixas` apaga os caixas de fundo **vazios** e converte os demais em `general`. Verificado (só leitura) em 21/09: `amm139` e `horus-reaa` têm os 2 caixas com **zero** movimento/saldo.
+- ✅ **Novo relatório** `/dashboard/relatorios/categorias` — **Razão por categoria** (qualquer categoria, período, conta, entradas/saídas, saldo anterior + acumulado, PDF e CSV; atalhos Só Tronco / Só Doações). Lógica pura em `lib/category-ledger.ts` (+ teste). Manual v1.43 (7.14, 7.18, 11.2, 11.7).
+- ⏳ **Pendente (só o dono):** aplicar a migration em produção (`prisma migrate deploy`, com `env -u DATABASE_URL`) — enquanto isso, os 2 caixas vazios continuam listados como contas comuns (inofensivo).
+
 <!-- BEGIN:handoff-session-2026-09-06 -->
 # Handoff — Sessão 2026-09-06
 

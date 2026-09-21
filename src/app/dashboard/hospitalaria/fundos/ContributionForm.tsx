@@ -13,13 +13,14 @@ const METHODS = [
 ] as const;
 
 // Aporte avulso ao fundo: tronco passado em sessão, doação em espécie, Pix direto etc.
-// Registra a entrada já recebida no caixa do fundo (POST /api/funds/contributions).
+// Registra a entrada já recebida, na categoria do fundo, no banco/caixa escolhido
+// (POST /api/funds/contributions).
 export default function ContributionForm({
   fund, fundLabel, accounts, members, sessions, onClose,
 }: {
   fund: FundPurpose;
   fundLabel: string;
-  accounts: { id: string; name: string }[];
+  accounts: { id: string; name: string; isDefault: boolean }[];
   members: { id: string; name: string }[];
   sessions: { id: string; label: string }[];
   onClose: () => void;
@@ -34,7 +35,7 @@ export default function ContributionForm({
   const [donor, setDonor] = useState<'none' | 'member' | 'name' | 'anonymous'>('none');
   const [memberId, setMemberId] = useState('');
   const [donorName, setDonorName] = useState('');
-  const [bankAccountId, setBankAccountId] = useState(accounts[0]?.id ?? '');
+  const [bankAccountId, setBankAccountId] = useState((accounts.find((a) => a.isDefault) ?? accounts[0])?.id ?? '');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +51,7 @@ export default function ContributionForm({
     if (!value || value <= 0) return setError('Informe um valor maior que zero.');
     if (origin === 'session' && isTronco && !sessionId) return setError('Escolha a sessão em que o tronco foi passado (ou marque "Outra origem").');
     if (donor === 'member' && !memberId) return setError('Escolha o irmão que doou.');
+    if (!bankAccountId) return setError('Escolha em qual conta ou caixa da loja o dinheiro entrou.');
     setSaving(true);
     try {
       const res = await fetch('/api/funds/contributions', {
@@ -70,7 +72,7 @@ export default function ContributionForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return setError(data?.error ?? 'Não foi possível registrar o aporte.');
-      setDone('Aporte registrado no caixa do fundo.');
+      setDone('Aporte registrado.');
       setAmount('');
       setNote('');
       setDonorName('');
@@ -87,7 +89,7 @@ export default function ContributionForm({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-sand-light">Registrar aporte — {fundLabel}</h2>
-          <p className="mt-1 text-xs text-sand-dark">Entrada já recebida (tronco passado em sessão, dinheiro, Pix ou transferência). Entra no saldo, no extrato e no livro-caixa do fundo.</p>
+          <p className="mt-1 text-xs text-sand-dark">Entrada já recebida (tronco passado em sessão, dinheiro, Pix ou transferência). Fica na categoria do fundo (saldo e extrato do fundo) e na conta ou caixa escolhido (livro-caixa e extrato bancário).</p>
         </div>
         <button type="button" onClick={onClose} className="text-xs text-sand-dark underline hover:text-gold">Fechar</button>
       </div>
@@ -153,8 +155,9 @@ export default function ContributionForm({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-xs text-sand-dark">Caixa que recebeu
+        <label className="text-xs text-sand-dark">Conta ou caixa que recebeu
           <select value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)} className={`mt-1 ${inputClass}`}>
+            <option value="">Selecione…</option>
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </label>

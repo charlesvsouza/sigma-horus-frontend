@@ -6,7 +6,7 @@ import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
-interface ChartAccountOption { id: string; code: string; name: string; type: string; defaultBankAccountId?: string | null; }
+interface ChartAccountOption { id: string; code: string; name: string; type: string; }
 interface MemberOption { id: string; name: string; }
 interface CounterpartyOption { id: string; name: string; kind: string; }
 interface FinancialAccountOption { id: string; name: string; kind: string; }
@@ -83,7 +83,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   function selectChart(id: string) {
     const chart = chartAccounts.find((c) => c.id === id);
     if (chart) {
-      setForm((prev) => ({ ...prev, chartAccountId: id, title: chart.name, type: chart.type === 'REVENUE' ? 'RECEIVABLE' : 'PAYABLE', bankAccountId: prev.bankAccountId || chart.defaultBankAccountId || '' }));
+      setForm((prev) => ({ ...prev, chartAccountId: id, title: chart.name, type: chart.type === 'REVENUE' ? 'RECEIVABLE' : 'PAYABLE', bankAccountId: prev.bankAccountId }));
     }
   }
 

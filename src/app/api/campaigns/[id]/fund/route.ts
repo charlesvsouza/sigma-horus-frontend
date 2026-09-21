@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { brl } from '@/lib/currency';
 import { getTroncoBalance } from '@/lib/hospitalaria';
-import { findFundAccount } from '@/lib/funds';
+import { findFundChart, resolveBankAccount } from '@/lib/funds';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -25,6 +25,7 @@ export async function POST(request: Request, { params }: Ctx) {
 
   const body = await request.json().catch(() => ({}));
   const amount = Number(body?.amount ?? 0);
+  const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
   if (!isValidMoney(amount)) {
     return NextResponse.json({ error: 'Informe um valor válido (maior que zero, com no máximo 2 casas decimais).' }, { status: 400 });
   }
@@ -37,13 +38,12 @@ export async function POST(request: Request, { params }: Ctx) {
     if (!tronco.configured) return { error: 'no_tronco' as const };
     if (amount > tronco.balance) return { error: 'insufficient' as const, balance: tronco.balance };
 
-    const expenseAccount = await db.chartAccount.findFirst({
-      where: { lodgeId: String(lodgeId), isSolidarity: true, type: 'EXPENSE' },
-      select: { id: true },
-    });
+    const expenseAccount = await findFundChart(db, String(lodgeId), 'tronco', 'EXPENSE');
     if (!expenseAccount) return { error: 'no_tronco' as const };
 
-    const caixa = await findFundAccount(db, String(lodgeId), 'tronco');
+    // Banco/caixa real da loja de onde saiu o dinheiro: o escolhido ou o padrão.
+    const bank = await resolveBankAccount(db, String(lodgeId), bankAccountId);
+    if (bank.invalid) return { error: 'bad_bank' as const };
 
     const account = await db.account.create({
       data: {
@@ -54,12 +54,12 @@ export async function POST(request: Request, { params }: Ctx) {
         dueDate: new Date(),
         status: 'paid',
         chartAccountId: expenseAccount.id,
-        bankAccountId: caixa?.id ?? null,
+        bankAccountId: bank.id,
         description: 'Custeio pelo Tronco de Solidariedade',
       },
     });
     await db.payment.create({
-      data: { lodgeId: String(lodgeId), accountId: account.id, bankAccountId: caixa?.id ?? null, amount, method: 'fund', note: `Custeio: ${campaign.title}` },
+      data: { lodgeId: String(lodgeId), accountId: account.id, bankAccountId: bank.id, amount, method: 'fund', note: `Custeio: ${campaign.title}` },
     });
     const updated = await db.campaign.update({
       where: { id },
@@ -71,6 +71,7 @@ export async function POST(request: Request, { params }: Ctx) {
 
   if ('error' in result) {
     if (result.error === 'not_found') return NextResponse.json({ error: 'Campanha não encontrada.' }, { status: 404 });
+    if (result.error === 'bad_bank') return NextResponse.json({ error: 'Conta bancária/caixa inválida ou inativa.' }, { status: 400 });
     if (result.error === 'insufficient') return NextResponse.json({ error: `Saldo do Tronco insuficiente (disponível: ${brl(result.balance)}).` }, { status: 400 });
     return NextResponse.json({ error: 'Configure a conta do Tronco de Solidariedade: use "Atualizar plano de contas" em Cadastros.' }, { status: 400 });
   }

@@ -50,8 +50,8 @@ export async function settleAsaasInvoicePayment(
   ]);
 
   // Sem conta bancária o pagamento não entra no saldo de nenhuma conta: usa a
-  // prevista do lançamento (ex.: Caixa do Tronco numa doação por Pix) e, na falta
-  // dela, a conta corrente de repasse do Asaas escolhida pela loja.
+  // prevista do lançamento e, na falta dela, a conta corrente de repasse do Asaas
+  // escolhida pela loja (é onde o Pix de uma doação ao Tronco cai de fato).
   const bankAccountId = account?.bankAccountId ?? lodge?.asaasSettlementAccountId ?? null;
   const created = await db.payment.create({
     data: { lodgeId, accountId, memberId, bankAccountId, amount, method: 'asaas', note: `Baixa automática Asaas (${asaasPaymentId})` },

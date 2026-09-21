@@ -31,7 +31,7 @@ export default async function ContasView({ startWithForm = false }: { startWithF
         }),
         chartAccounts: await db.chartAccount.findMany({
           where: { lodgeId: String(lodgeId) },
-          select: { id: true, code: true, name: true, type: true, fundPurpose: true },
+          select: { id: true, code: true, name: true, type: true },
           orderBy: { code: 'asc' },
         }),
         counterparties: await db.counterparty.findMany({
@@ -66,13 +66,11 @@ export default async function ContasView({ startWithForm = false }: { startWithF
     };
   });
 
-  // Categoria de fundo (Tronco/Doações) já sugere o caixa do fundo como conta bancária.
   const chartAccounts = data.chartAccounts.map((c) => ({
     id: c.id,
     code: c.code,
     name: c.name,
     type: c.type,
-    defaultBankAccountId: c.fundPurpose ? data.financialAccounts.find((f) => f.purpose === c.fundPurpose)?.id ?? null : null,
   }));
 
   return <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} startWithForm={startWithForm} />;

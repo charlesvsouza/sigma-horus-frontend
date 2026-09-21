@@ -6,7 +6,6 @@ import { NextResponse } from 'next/server';
 import { hasAtMostCents } from '@/lib/money';
 
 const KINDS = ['bank', 'cash'];
-const PURPOSES = ['general', 'tronco', 'donations'];
 
 export async function GET() {
   const session = await auth();
@@ -44,8 +43,6 @@ export async function POST(request: Request) {
 
   if (!name) return NextResponse.json({ error: 'Nome é obrigatório.' }, { status: 400 });
   if (!KINDS.includes(kind)) return NextResponse.json({ error: 'Tipo deve ser bank ou cash.' }, { status: 400 });
-  const purpose = body?.purpose == null || body.purpose === '' ? 'general' : String(body.purpose);
-  if (!PURPOSES.includes(purpose)) return NextResponse.json({ error: 'Finalidade inválida.' }, { status: 400 });
   const openingBalance = Number(body?.openingBalance) || 0;
   if (!hasAtMostCents(openingBalance)) return NextResponse.json({ error: 'Saldo inicial inválido: use no máximo 2 casas decimais.' }, { status: 400 });
 
@@ -55,7 +52,6 @@ export async function POST(request: Request) {
         lodgeId: String(lodgeId),
         name,
         kind,
-        purpose,
         bankName: kind === 'bank' && body?.bankName ? String(body.bankName).trim() : null,
         isInvestment: kind === 'bank' ? Boolean(body?.isInvestment) : false,
         agency: kind === 'bank' && body?.agency ? String(body.agency).trim() : null,

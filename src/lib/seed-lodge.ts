@@ -1,5 +1,4 @@
 import type { Prisma } from '@/generated/prisma/client';
-import { ensureFundAccounts } from '@/lib/funds';
 import { BRAZILIAN_POWERS, BRAZILIAN_RITES, DEFAULT_MATERIALS, LEGACY_INITIATION_FEE_NAME, MASONIC_CHART_OF_ACCOUNTS, OFFICES_BY_RITE } from '@/lib/masonic-reference';
 
 /**
@@ -59,9 +58,6 @@ export async function seedLodgeDefaults(
       await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, fundPurpose: null }, data: { fundPurpose: c.fund } });
     }
   }
-
-  // Caixa próprio para o Tronco de Beneficência e para Doações e Contribuições.
-  await ensureFundAccounts(db, lodgeId);
 
   // Semeia cargos do rito escolhido (apenas se não houver cargos ainda).
   if (offices === 0 && riteName) {
@@ -141,9 +137,6 @@ export async function syncChartAccounts(
       await db.chartAccount.updateMany({ where: { lodgeId, code: c.code, fundPurpose: null }, data: { fundPurpose: c.fund } });
     }
   }
-
-  // Garante o caixa de cada fundo (Tronco e Doações) — idempotente.
-  await ensureFundAccounts(db, lodgeId);
 
   return { added: toAdd.length, removed: toRemove.length, kept: current.length - toRemove.length };
 }

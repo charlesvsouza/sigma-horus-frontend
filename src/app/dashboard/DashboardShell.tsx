@@ -14,7 +14,7 @@ import {
   MessageSquare, Contact, HeartHandshake, PiggyBank, Settings, KeyRound, Gem, Plug, ScrollText,
   PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart,
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
-  Scale, Users2, Images, LayoutGrid, UsersRound, PencilLine,
+  Scale, ListTree, Users2, Images, LayoutGrid, UsersRound, PencilLine,
   ArrowDownToLine, ArrowUpFromLine, HandCoins, Banknote, Percent, type LucideIcon,
 } from 'lucide-react';
 
@@ -60,6 +60,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/relatorios/contas-pagas': Banknote,
   '/dashboard/relatorios/tarifas': Percent,
   '/dashboard/relatorios/dre': Scale,
+  '/dashboard/relatorios/categorias': ListTree,
   '/dashboard/relatorios/fechamento': BookCheck,
   '/dashboard/relatorios/inadimplencia': TriangleAlert,
   '/dashboard/relatorios/balancetes': ClipboardCheck,
@@ -109,7 +110,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   configuracoes: 'Configurações da loja', relatorios: 'Resumo financeiro', hospitalaria: 'Hospitalaria',
   sessoes: 'Sessões', usuarios: 'Usuários & acessos', 'minha-conta': 'Minha conta', permissoes: 'Permissões', 'importar-financeiro': 'Importar backup financeiro',
   fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', tarifas: 'Tarifas de cobrança (Asaas)', fundos: 'Fundos (Tronco e Doações)', portal: 'Meu portal', secretaria: 'Secretaria',
-  inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos',
+  inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos', categorias: 'Razão por categoria',
   'fluxo-caixa': 'Fluxo de caixa projetado', orcamento: 'Orçamento anual',
   patrimonio: 'Patrimônio', 'conciliacao-bancaria': 'Conciliação bancária',
   completo: 'Relatório completo', balanco: 'Balanço Financeiro', balancete: 'Balancete de Verificação',

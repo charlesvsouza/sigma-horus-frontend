@@ -3,13 +3,12 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, EmptyState, inputClass } from '@/components/ui';
+import { Button, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import type { FundPurpose } from '@/lib/funds';
 import ContributionForm from './ContributionForm';
 
 interface Bucket { label: string; total: number; count: number }
-interface StrayRow { id: string; date: string; direction: 'in' | 'out'; amount: number; title: string; where: string }
 interface Report {
   statement: {
     openingBalance: number;
@@ -24,7 +23,6 @@ interface Report {
   exitsByTitle: Bucket[];
   donors: Bucket[];
   monthly: { month: string; in: number; out: number; net: number }[];
-  strays: { outsideCaixa: { net: number; rows: StrayRow[] }; foreignInCaixa: { net: number; rows: StrayRow[] } };
 }
 interface CampaignRow { id: string; title: string; status: string; goal: number | null; donated: number; donatedInPeriod: number; fundAllocated: number }
 
@@ -99,7 +97,7 @@ export default function FundosClient({
   crestUrl: string | null;
   from: string;
   to: string;
-  accounts: { id: string; name: string; active: boolean; balance: number }[];
+  accounts: { id: string; name: string; isDefault: boolean }[];
   report: Report;
   campaigns: CampaignRow[];
   canSeeDonors: boolean;
@@ -124,7 +122,6 @@ export default function FundosClient({
     go(range[0], range[1]);
   };
 
-  const strayCount = report.strays.outsideCaixa.rows.length + report.strays.foreignInCaixa.rows.length;
   const st = report.statement;
   const totalEntries = report.entriesByOrigin.campaign + report.entriesByOrigin.session + report.entriesByOrigin.other;
   const isTronco = fund === 'tronco';
@@ -135,7 +132,7 @@ export default function FundosClient({
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="fundo-noprint">
           <h1 className="font-display text-2xl font-bold text-sand-light">Fundos da loja</h1>
-          <p className="mt-1 text-sm text-sand-dark">Gestão do Tronco de Beneficência e das Doações e Contribuições — cada um com o seu caixa.</p>
+          <p className="mt-1 text-sm text-sand-dark">Gestão do Tronco de Beneficência e das Doações e Contribuições. São categorias do plano de contas: o dinheiro entra e sai pelos bancos e caixa da loja, e aqui aparece tudo o que foi lançado nelas.</p>
         </div>
 
         <div className="fundo-noprint flex flex-wrap gap-2">
@@ -169,39 +166,14 @@ export default function FundosClient({
           </div>
         </section>
 
-        {accounts.length === 0 ? (
-          <EmptyState title="Este fundo ainda não tem caixa." description={`Em Cadastros financeiros → Contas bancárias e Caixa, crie uma conta com a finalidade "${fundLabels[fund]}" (ou use "Atualizar plano de contas").`} />
-        ) : (
+        {(
           <>
-            {strayCount > 0 ? (
-              <Alert intent="warn" className="fundo-noprint">
-                <p className="font-semibold">Conferência: {strayCount} lançamento(s) do fundo fora do lugar</p>
-                {report.strays.outsideCaixa.rows.length > 0 ? (
-                  <p className="mt-1">
-                    {report.strays.outsideCaixa.rows.length} pagamento(s) de categoria do fundo não passaram pelo caixa do fundo (líquido {brl(report.strays.outsideCaixa.net)}).
-                    Para o dinheiro ficar no fundo, faça uma <Link href="/dashboard/transferencias" className="underline">transferência</Link> do caixa onde ele entrou.
-                  </p>
-                ) : null}
-                {report.strays.foreignInCaixa.rows.length > 0 ? (
-                  <p className="mt-1">{report.strays.foreignInCaixa.rows.length} pagamento(s) de outra categoria passaram pelo caixa do fundo (líquido {brl(report.strays.foreignInCaixa.net)}).</p>
-                ) : null}
-                <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs">
-                  {[...report.strays.outsideCaixa.rows, ...report.strays.foreignInCaixa.rows].slice(0, 8).map((r) => (
-                    <li key={r.id}>{fmtDate(r.date)} — {r.title} — {r.direction === 'in' ? '+' : '−'}{brl(r.amount)} ({r.where})</li>
-                  ))}
-                </ul>
-              </Alert>
-            ) : null}
-
             <div className="fundo-noprint flex flex-wrap items-center gap-3">
-              {canRecord && accounts.some((a) => a.active) ? (
+              {canRecord ? (
                 <Button type="button" onClick={() => setShowContribution((v) => !v)}>Registrar aporte</Button>
               ) : null}
               <Button type="button" variant="secondary" onClick={() => window.print()}>Salvar como PDF</Button>
-              <Link href="/dashboard/transferencias" className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-medium text-gold/90 transition-colors hover:border-gold/60 hover:text-gold">Transferir entre contas</Link>
-              {accounts.map((a) => (
-                <Link key={a.id} href={`/dashboard/extratos?accountId=${a.id}`} className="text-xs text-sand-dark underline hover:text-gold">Extrato: {a.name}</Link>
-              ))}
+              <Link href={`/dashboard/relatorios/categorias?fund=${fund}&from=${fromVal}&to=${toVal}`} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-medium text-gold/90 transition-colors hover:border-gold/60 hover:text-gold">Razão por categoria</Link>
             </div>
 
             {showContribution && canRecord ? (
@@ -209,7 +181,7 @@ export default function FundosClient({
                 key={fund}
                 fund={fund}
                 fundLabel={fundLabels[fund]}
-                accounts={accounts.filter((a) => a.active).map((a) => ({ id: a.id, name: a.name }))}
+                accounts={accounts}
                 members={members}
                 sessions={sessions}
                 onClose={() => setShowContribution(false)}
@@ -233,21 +205,6 @@ export default function FundosClient({
                 <Stat label="Entradas" value={brl(st.totalIn)} tone="in" />
                 <Stat label="Saídas" value={brl(st.totalOut)} tone="out" />
                 <Stat label="Saldo final do período" value={brl(st.closingBalance)} tone="gold" />
-              </section>
-
-              <section className={CARD}>
-                <h3 className="text-base font-semibold text-sand-light">Caixas do fundo</h3>
-                <div className="overflow-x-auto"><table className="mt-3 w-full text-sm">
-                  <thead><tr><th className={TH}>Caixa</th><th className={`${TH} num text-right`}>Saldo hoje</th></tr></thead>
-                  <tbody>
-                    {accounts.map((a) => (
-                      <tr key={a.id}>
-                        <td className={`${TD} text-sand`}>{a.name}{!a.active ? ' (inativa)' : ''}</td>
-                        <td className={`${TD} num text-right tabular-nums text-sand-light`}>{brl(a.balance)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table></div>
               </section>
 
               <section className={CARD}>

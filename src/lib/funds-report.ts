@@ -2,12 +2,13 @@ import { computeAccountStatement, type AccountStatement, type StatementMovementI
 import { sumMoney } from '@/lib/money';
 
 // Relatório de gestão de um fundo (Tronco de Beneficência / Doações e Contribuições):
-// tudo calculado a partir do que está lançado nos caixas do fundo (Payment.bankAccountId
-// + transferências aprovadas). Funções puras — o carregamento do banco fica na página.
+// tudo calculado a partir dos pagamentos lançados nas CATEGORIAS do fundo, em qualquer
+// banco/caixa da loja (o fundo não tem caixa próprio). Funções puras — o carregamento
+// do banco fica na página.
 
 export type FundOrigin = 'campaign' | 'session' | 'other';
 
-/** Um pagamento que passou por um caixa do fundo. */
+/** Um pagamento lançado em categoria do fundo. */
 export interface FundMovementRow {
   id: string;
   date: Date;
@@ -23,33 +24,8 @@ export interface FundMovementRow {
   donor: string | null;
 }
 
-export interface FundTransferRow {
-  id: string;
-  date: Date;
-  direction: 'in' | 'out'; // em relação ao caixa do fundo
-  amount: number;
-  note: string | null;
-  counterpart: string; // a outra conta da transferência
-}
-
-/** Pagamento de categoria do fundo que NÃO passou pelo caixa do fundo (ou o inverso). */
-export interface FundStrayRow {
-  id: string;
-  date: Date;
-  direction: 'in' | 'out';
-  amount: number;
-  title: string;
-  where: string; // em qual conta o dinheiro entrou/saiu de fato ("sem conta" se nenhuma)
-}
-
 export interface FundReportInput {
-  openingBalance: number; // soma dos saldos iniciais dos caixas do fundo
   movements: FundMovementRow[];
-  transfers: FundTransferRow[];
-  /** Movimento de categoria do fundo fora do caixa do fundo. */
-  outsideCaixa: FundStrayRow[];
-  /** Movimento no caixa do fundo de categoria que não é do fundo. */
-  foreignInCaixa: FundStrayRow[];
   from: Date;
   to: Date;
   now?: Date;
@@ -59,7 +35,7 @@ export interface Bucket { label: string; total: number; count: number }
 
 export interface FundReport {
   statement: AccountStatement;
-  /** Saldo do caixa hoje (todo o histórico), independente do período escolhido. */
+  /** Saldo do fundo hoje (todo o histórico), independente do período escolhido. */
   balanceNow: number;
   entriesByOrigin: { campaign: number; session: number; other: number };
   /** Detalhe das entradas por campanha / sessão, maior primeiro. */
@@ -67,7 +43,6 @@ export interface FundReport {
   exitsByTitle: Bucket[];
   donors: Bucket[];
   monthly: { month: string; in: number; out: number; net: number }[];
-  strays: { outsideCaixa: { rows: FundStrayRow[]; net: number }; foreignInCaixa: { rows: FundStrayRow[]; net: number } };
 }
 
 function inRange(d: Date, from: Date, to: Date) {
@@ -98,28 +73,19 @@ export function lastMonths(end: Date, n: number): string[] {
 }
 
 export function buildFundReport(input: FundReportInput): FundReport {
-  const { openingBalance, movements, transfers, from, to } = input;
+  const { movements, from, to } = input;
   const now = input.now ?? new Date();
 
-  const stmtInputs: StatementMovementInput[] = [
-    ...movements.map((m): StatementMovementInput => ({
-      date: m.date,
-      kind: m.direction === 'in' ? 'payment_in' : 'payment_out',
-      description: m.title,
-      reference: m.donor,
-      amount: m.amount,
-    })),
-    ...transfers.map((t): StatementMovementInput => ({
-      date: t.date,
-      kind: t.direction === 'in' ? 'transfer_in' : 'transfer_out',
-      description: t.direction === 'in' ? `Transferência recebida de ${t.counterpart}` : `Transferência enviada para ${t.counterpart}`,
-      reference: t.note,
-      amount: t.amount,
-    })),
-  ];
+  const stmtInputs: StatementMovementInput[] = movements.map((m): StatementMovementInput => ({
+    date: m.date,
+    kind: m.direction === 'in' ? 'payment_in' : 'payment_out',
+    description: m.title,
+    reference: m.donor,
+    amount: m.amount,
+  }));
 
-  const statement = computeAccountStatement(openingBalance, stmtInputs, from, to);
-  const balanceNow = computeAccountStatement(openingBalance, stmtInputs, new Date(0), now).closingBalance;
+  const statement = computeAccountStatement(0, stmtInputs, from, to);
+  const balanceNow = computeAccountStatement(0, stmtInputs, new Date(0), now).closingBalance;
 
   const periodIn = movements.filter((m) => m.direction === 'in' && inRange(m.date, from, to));
   const periodOut = movements.filter((m) => m.direction === 'out' && inRange(m.date, from, to));
@@ -152,7 +118,6 @@ export function buildFundReport(input: FundReportInput): FundReport {
     return { month, in: i, out: o, net: sumMoney([i, -o]) };
   });
 
-  const net = (rows: FundStrayRow[]) => sumMoney(rows.map((r) => (r.direction === 'in' ? r.amount : -r.amount)));
   return {
     statement,
     balanceNow,
@@ -161,9 +126,5 @@ export function buildFundReport(input: FundReportInput): FundReport {
     exitsByTitle,
     donors,
     monthly,
-    strays: {
-      outsideCaixa: { rows: input.outsideCaixa, net: net(input.outsideCaixa) },
-      foreignInCaixa: { rows: input.foreignInCaixa, net: net(input.foreignInCaixa) },
-    },
   };
 }

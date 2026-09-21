@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { createCustomer, createPayment } from '@/lib/asaas';
-import { findFundAccount } from '@/lib/funds';
+import { findFundChart } from '@/lib/funds';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { logAudit } from '@/lib/audit';
@@ -45,13 +45,12 @@ export async function POST(request: Request) {
   }
 
   const ctx = await withTenant(String(lodgeId), async (db) => {
-    const [lodge, member, tronco, fund] = await Promise.all([
+    const [lodge, member, tronco] = await Promise.all([
       db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { asaasApiKeyEnc: true, asaasEnv: true } }),
       db.member.findUnique({ where: { id: String(memberId) } }),
-      db.chartAccount.findFirst({ where: { lodgeId: String(lodgeId), isSolidarity: true, type: 'REVENUE' }, select: { id: true } }),
-      findFundAccount(db, String(lodgeId), 'tronco'),
+      findFundChart(db, String(lodgeId), 'tronco', 'REVENUE'),
     ]);
-    return { lodge, member, tronco, fund };
+    return { lodge, member, tronco };
   });
 
   const config = buildLodgeAsaasConfig(ctx.lodge);
@@ -91,7 +90,6 @@ export async function POST(request: Request) {
         amount,
         dueDate,
         chartAccountId: ctx.tronco!.id,
-        bankAccountId: ctx.fund?.id ?? null,
         memberId: member.id,
         sessionId: todaySession?.id ?? null,
       },

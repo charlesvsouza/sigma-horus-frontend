@@ -13,12 +13,11 @@ interface CounterpartyItem {
 }
 interface FinancialAccountItem {
   id: string; name: string; kind: string; bankName: string | null; isInvestment: boolean;
-  agency: string | null; accountNumber: string | null; active: boolean; openingBalance: number; purpose: string;
+  agency: string | null; accountNumber: string | null; active: boolean; openingBalance: number;
 }
 
 const KIND_LABEL: Record<string, string> = { client: 'Cliente', supplier: 'Fornecedor', both: 'Cliente e fornecedor' };
 const FA_KIND_LABEL: Record<string, string> = { bank: 'Banco', cash: 'Caixa' };
-const FA_PURPOSE_LABEL: Record<string, string> = { tronco: 'Fundo: Tronco', donations: 'Fundo: Doações' };
 
 export default function CadastrosFinanceirosClient({ chartAccounts, counterparties, financialAccounts }: { chartAccounts: ChartAccountItem[]; counterparties: CounterpartyItem[]; financialAccounts: FinancialAccountItem[] }) {
   const router = useRouter();
@@ -177,11 +176,11 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
   }
 
   // --- Contas bancárias e Caixa ------------------------------------------
-  const EMPTY_FA_FORM = { kind: 'bank', name: '', bankName: BRAZILIAN_BANKS[0], isInvestment: false, agency: '', accountNumber: '', openingBalance: '', purpose: 'general' };
+  const EMPTY_FA_FORM = { kind: 'bank', name: '', bankName: BRAZILIAN_BANKS[0], isInvestment: false, agency: '', accountNumber: '', openingBalance: '' };
   const [faForm, setFaForm] = useState(EMPTY_FA_FORM);
   const [showFaForm, setShowFaForm] = useState(false);
   const [editingFa, setEditingFa] = useState<string | null>(null);
-  const [faEditForm, setFaEditForm] = useState({ name: '', agency: '', accountNumber: '', openingBalance: '', purpose: 'general' });
+  const [faEditForm, setFaEditForm] = useState({ name: '', agency: '', accountNumber: '', openingBalance: '' });
   const [faFilter, setFaFilter] = useState<'all' | 'bank' | 'cash'>('all');
   const [faSaving, setFaSaving] = useState(false);
 
@@ -208,7 +207,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
 
   function startEditFa(f: FinancialAccountItem) {
     setEditingFa(f.id);
-    setFaEditForm({ name: f.name, agency: f.agency ?? '', accountNumber: f.accountNumber ?? '', openingBalance: String(f.openingBalance ?? 0), purpose: f.purpose ?? 'general' });
+    setFaEditForm({ name: f.name, agency: f.agency ?? '', accountNumber: f.accountNumber ?? '', openingBalance: String(f.openingBalance ?? 0) });
   }
 
   async function saveFa(id: string) {
@@ -404,11 +403,6 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
                 <option value="bank">Banco</option>
                 <option value="cash">Caixa</option>
               </select>
-              <select value={faForm.purpose} onChange={(e) => setFaForm({ ...faForm, purpose: e.target.value })} className={inputClass} aria-label="Finalidade da conta">
-                <option value="general">Geral (caixa/banco comum da loja)</option>
-                <option value="tronco">Caixa do Tronco de Beneficência</option>
-                <option value="donations">Caixa de Doações e Contribuições</option>
-              </select>
               {faForm.kind === 'bank' ? (
                 <>
                   <select value={faForm.bankName} onChange={(e) => setFaForm({ ...faForm, bankName: e.target.value })} className={inputClass} aria-label="Banco">
@@ -449,11 +443,6 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
                         <input value={faEditForm.name} onChange={(e) => setFaEditForm({ ...faEditForm, name: e.target.value })} aria-label="Nome" className="min-w-[10rem] flex-1 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <input value={faEditForm.agency} onChange={(e) => setFaEditForm({ ...faEditForm, agency: e.target.value })} aria-label="Agência" placeholder="Agência" className="w-24 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <input value={faEditForm.accountNumber} onChange={(e) => setFaEditForm({ ...faEditForm, accountNumber: e.target.value })} aria-label="Conta" placeholder="Conta" className="w-28 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <select value={faEditForm.purpose} onChange={(e) => setFaEditForm({ ...faEditForm, purpose: e.target.value })} aria-label="Finalidade da conta" className="rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50">
-                          <option value="general">Geral (caixa/banco comum da loja)</option>
-                <option value="tronco">Caixa do Tronco de Beneficência</option>
-                <option value="donations">Caixa de Doações e Contribuições</option>
-                        </select>
                         <input type="number" step="0.01" value={faEditForm.openingBalance} onChange={(e) => setFaEditForm({ ...faEditForm, openingBalance: e.target.value })} aria-label="Saldo inicial" placeholder="Saldo inicial" className="w-32 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <button onClick={() => saveFa(f.id)} className="text-xs text-gold">Salvar</button>
                         <button onClick={() => setEditingFa(null)} className="text-xs text-sand-dark">Cancelar</button>
@@ -468,7 +457,6 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
                         </span>
                         <span className="flex shrink-0 items-center gap-2">
                           {f.isInvestment ? <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[0.65rem] font-medium text-gold">Investimento</span> : null}
-                          {FA_PURPOSE_LABEL[f.purpose] ? <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[0.65rem] font-medium text-violet-300">{FA_PURPOSE_LABEL[f.purpose]}</span> : null}
                           <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-medium ${f.kind === 'bank' ? 'bg-sky-500/10 text-sky-300' : 'bg-emerald-500/10 text-emerald-300'}`}>
                             {FA_KIND_LABEL[f.kind] ?? f.kind}
                           </span>

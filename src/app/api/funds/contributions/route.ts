@@ -3,7 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
-import { FUND_LABELS, findFundAccount, isFundPurpose } from '@/lib/funds';
+import { FUND_LABELS, findFundChart, isFundPurpose, resolveBankAccount } from '@/lib/funds';
 import { isValidMoney, round2 } from '@/lib/money';
 import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { todayBR } from '@/lib/date-only';
@@ -13,9 +13,10 @@ const METHODS: Record<string, string> = { cash: 'Dinheiro', pix: 'Pix', transfer
 
 // Aporte ao fundo (Tronco de Beneficência ou Doações e Contribuições): entrada avulsa
 // registrada pela Tesouraria/Hospitalaria — dinheiro do tronco passado na sessão, doação
-// em espécie, Pix direto na conta etc. Cria a receita já baixada (Account + Payment) no
-// caixa do fundo, no mesmo formato das doações de campanha, para entrar no saldo, no
-// extrato do fundo, no livro-caixa e no DRE.
+// em espécie, Pix direto na conta etc. Cria a receita já baixada (Account + Payment) na
+// categoria do fundo e no banco/caixa real da loja onde o dinheiro entrou, no mesmo
+// formato das doações de campanha, para entrar no saldo do fundo, no extrato da conta,
+// no livro-caixa e no DRE.
 export async function POST(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
@@ -61,21 +62,14 @@ export async function POST(request: Request) {
     const locked = await findClosedTermForDate(db, lid, dueDate);
     if (locked) return { error: 'locked' as const, title: locked.title };
 
-    // Categoria de receita do fundo (o Tronco cai na marcada como solidariedade).
-    const chart =
-      (await db.chartAccount.findFirst({ where: { lodgeId: lid, type: 'REVENUE', fundPurpose: fund }, orderBy: { code: 'asc' }, select: { id: true } })) ??
-      (fund === 'tronco' ? await db.chartAccount.findFirst({ where: { lodgeId: lid, type: 'REVENUE', isSolidarity: true }, select: { id: true } }) : null);
+    // Categoria de receita do fundo.
+    const chart = await findFundChart(db, lid, fund, 'REVENUE');
     if (!chart) return { error: 'no_chart' as const };
 
-    // Caixa: o escolhido (precisa ser da loja e ativo) ou o caixa padrão do fundo.
-    let caixaId: string | null = null;
-    if (bankAccountId) {
-      const ba = await db.financialAccount.findFirst({ where: { id: bankAccountId, lodgeId: lid, active: true }, select: { id: true } });
-      if (!ba) return { error: 'bad_bank' as const };
-      caixaId = ba.id;
-    } else {
-      caixaId = (await findFundAccount(db, lid, fund))?.id ?? null;
-    }
+    // Conta/caixa real da loja onde o dinheiro entrou: a escolhida ou a padrão da loja.
+    const bank = await resolveBankAccount(db, lid, bankAccountId);
+    if (bank.invalid) return { error: 'bad_bank' as const };
+    const caixaId = bank.id;
     if (!caixaId) return { error: 'no_caixa' as const };
 
     let member: { id: string; name: string } | null = null;
@@ -139,7 +133,7 @@ export async function POST(request: Request) {
       case 'no_chart':
         return NextResponse.json({ error: 'Categoria do fundo não encontrada: use "Atualizar plano de contas" em Cadastros.' }, { status: 400 });
       case 'no_caixa':
-        return NextResponse.json({ error: 'Este fundo ainda não tem caixa. Crie em Cadastros financeiros ou use "Atualizar plano de contas".' }, { status: 400 });
+        return NextResponse.json({ error: 'Informe em qual conta ou caixa da loja o dinheiro entrou.' }, { status: 400 });
       case 'bad_bank':
         return NextResponse.json({ error: 'Conta bancária/caixa inválida ou inativa.' }, { status: 400 });
       case 'bad_member':

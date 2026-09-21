@@ -1,10 +1,11 @@
 import type { Prisma } from '@/generated/prisma/client';
 
-// Fundos com caixa próprio: o dinheiro do Tronco de Beneficência e o de Doações e
-// Contribuições ficam em contas financeiras (FinancialAccount) separadas, como o
-// Caixa e as contas bancárias. `FinancialAccount.purpose` marca de qual fundo é o
-// caixa; `ChartAccount.fundPurpose` marca a que fundo pertence a categoria — é ela
-// que define o caixa padrão de uma doação ou do custeio de uma campanha.
+// Fundos da loja: o Tronco de Beneficência e as Doações e Contribuições são
+// CATEGORIAS do plano de contas (centros de custo), não contas financeiras. O
+// dinheiro entra e sai pelo banco ou caixa real da loja, com a categoria do fundo;
+// o saldo e os relatórios do fundo saem da soma dos lançamentos dessas categorias.
+// `ChartAccount.fundPurpose` marca a que fundo a categoria pertence (o Tronco também
+// reconhece `isSolidarity`, marcado antes de existir `fundPurpose`).
 
 export type FundPurpose = 'tronco' | 'donations';
 export const FUND_PURPOSES: FundPurpose[] = ['tronco', 'donations'];
@@ -14,52 +15,43 @@ export const FUND_LABELS: Record<FundPurpose, string> = {
   donations: 'Doações e Contribuições',
 };
 
-export const FUND_ACCOUNT_NAMES: Record<FundPurpose, string> = {
-  tronco: 'Caixa do Tronco de Beneficência',
-  donations: 'Caixa de Doações e Contribuições',
-};
-
-export const ACCOUNT_PURPOSE_LABELS: Record<string, string> = {
-  general: 'Geral',
-  tronco: 'Tronco de Beneficência',
-  donations: 'Doações e Contribuições',
-};
-
 export function isFundPurpose(v: unknown): v is FundPurpose {
   return v === 'tronco' || v === 'donations';
 }
 
-/** Contas financeiras ativas do fundo (a marcada como padrão primeiro, depois a mais antiga). */
-export async function findFundAccounts(db: Prisma.TransactionClient, lodgeId: string, purpose: FundPurpose) {
-  return db.financialAccount.findMany({
-    where: { lodgeId, purpose, active: true },
-    orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+/** Filtro das categorias (ChartAccount) que pertencem ao fundo. */
+export function fundChartWhere(fund: FundPurpose): Prisma.ChartAccountWhereInput {
+  return fund === 'tronco' ? { OR: [{ fundPurpose: 'tronco' }, { isSolidarity: true }] } : { fundPurpose: 'donations' };
+}
+
+/** Primeira categoria do fundo do tipo pedido (receita ou despesa), pelo código; ou null. */
+export async function findFundChart(
+  db: Prisma.TransactionClient,
+  lodgeId: string,
+  fund: FundPurpose,
+  type: 'REVENUE' | 'EXPENSE',
+) {
+  return db.chartAccount.findFirst({
+    where: { lodgeId, type, ...fundChartWhere(fund) },
+    orderBy: { code: 'asc' },
+    select: { id: true },
   });
 }
 
-/** Caixa padrão do fundo (ou null se a loja ainda não tem). */
-export async function findFundAccount(db: Prisma.TransactionClient, lodgeId: string, purpose: FundPurpose) {
-  const accounts = await findFundAccounts(db, lodgeId, purpose);
-  return accounts[0] ?? null;
-}
-
-/** Caixa padrão do fundo ao qual a categoria (plano de contas) pertence — ou null. */
-export async function fundAccountForChart(db: Prisma.TransactionClient, lodgeId: string, chartAccountId: string | null | undefined) {
-  if (!chartAccountId) return null;
-  const chart = await db.chartAccount.findFirst({ where: { id: chartAccountId, lodgeId }, select: { fundPurpose: true } });
-  return isFundPurpose(chart?.fundPurpose) ? findFundAccount(db, lodgeId, chart.fundPurpose) : null;
-}
-
-/** Garante que a loja tenha um caixa para cada fundo (idempotente; não mexe nos existentes). */
-export async function ensureFundAccounts(db: Prisma.TransactionClient, lodgeId: string): Promise<number> {
-  let created = 0;
-  for (const purpose of FUND_PURPOSES) {
-    const exists = await db.financialAccount.findFirst({ where: { lodgeId, purpose }, select: { id: true } });
-    if (exists) continue;
-    await db.financialAccount.create({
-      data: { lodgeId, name: FUND_ACCOUNT_NAMES[purpose], kind: 'cash', purpose, openingBalance: 0 },
-    });
-    created++;
+/**
+ * Conta financeira (banco/caixa) onde o dinheiro entrou ou saiu: a informada
+ * (precisa ser da loja e estar ativa) ou, na falta, a marcada como padrão da loja.
+ * `invalid` = foi informada uma conta que não existe/está inativa.
+ */
+export async function resolveBankAccount(
+  db: Prisma.TransactionClient,
+  lodgeId: string,
+  requestedId?: string | null,
+): Promise<{ id: string | null; invalid?: false } | { id: null; invalid: true }> {
+  if (requestedId) {
+    const ba = await db.financialAccount.findFirst({ where: { id: requestedId, lodgeId, active: true }, select: { id: true } });
+    return ba ? { id: ba.id } : { id: null, invalid: true };
   }
-  return created;
+  const def = await db.financialAccount.findFirst({ where: { lodgeId, active: true, isDefault: true }, select: { id: true } });
+  return { id: def?.id ?? null };
 }

@@ -61,6 +61,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-extratos', label: '7.15 Extratos de contas' },
       { id: 'tes-dre', label: '7.16 DRE comparativo entre períodos' },
       { id: 'tes-tarifas', label: '7.17 Tarifas de cobrança (Asaas)' },
+      { id: 'tes-razao', label: '7.18 Razão por categoria (Tronco e qualquer outra)' },
     ],
   },
   {
@@ -103,7 +104,7 @@ const INDEX: IndexEntry[] = [
       { id: 'hosp-doacoes', label: '11.4 Doações e custeio pelo Tronco' },
       { id: 'hosp-convocar', label: '11.5 Convocar os irmãos' },
       { id: 'hosp-pedidos', label: '11.6 Pedidos dos obreiros' },
-      { id: 'hosp-fundos', label: '11.7 Fundos: caixa do Tronco e das Doações' },
+      { id: 'hosp-fundos', label: '11.7 Fundos: Tronco e Doações (categorias)' },
     ],
   },
   { id: 'assinatura', num: '12', label: 'Assinatura e cobrança' },
@@ -252,7 +253,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 21 de setembro de 2026 · versão 1.42</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 21 de setembro de 2026 · versão 1.43</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -806,7 +807,7 @@ export function ManualBook() {
                     <strong>Modo Asaas</strong> — a cobrança é emitida no Asaas em <strong>Pix ou boleto</strong> (você escolhe o
                     padrão; o <strong>cartão fica de fora</strong>, porque só cai cerca de 32 dias depois). O Asaas confirma o
                     pagamento e o sistema dá a baixa sozinho (7.4). Exige o Asaas conectado (6.2) e a <strong>conta corrente que recebe
-                    o repasse</strong> — uma conta corrente ativa da loja (não pode ser investimento nem caixa de fundo).
+                    o repasse</strong> — uma conta corrente ativa da loja (não pode ser investimento).
                   </li>
                 </Bullets>
                 <Note>
@@ -1260,9 +1261,9 @@ export function ManualBook() {
                   </li>
                   <li>Para <strong>Caixa</strong>: só o nome (ex.: &quot;Caixa da Loja&quot;) — representa o dinheiro em espécie guardado fisicamente.</li>
                   <li>
-                    Escolha a <UI>Finalidade da conta</UI>: <strong>Geral</strong> (a maioria), <strong>Caixa do Tronco de
-                    Beneficência</strong> ou <strong>Caixa de Doações e Contribuições</strong>. Esses dois últimos são os
-                    <strong> fundos</strong> da loja (capítulo 11.7) — o dinheiro de cada um fica separado, com relatórios próprios.
+                    O <strong>Tronco de Beneficência</strong> e as <strong>Doações e Contribuições</strong> <strong>não têm conta
+                    própria</strong>: são <em>categorias</em> do plano de contas (capítulo 11.7). O dinheiro deles fica nos bancos e no
+                    Caixa da loja, como qualquer outro, e o Tronco é identificado pela categoria de cada lançamento.
                   </li>
                   <li>
                     Preencha o <UI>Saldo inicial</UI> com o que já existia de verdade nessa conta/Caixa <strong>antes</strong>
@@ -1355,6 +1356,25 @@ export function ManualBook() {
                   A tarifa também aparece como despesa no <strong>DRE</strong> e no extrato da conta corrente (categoria <em>Tarifas de
                   Cobrança (Asaas)</em>), então o resultado da loja já considera o custo da cobrança.
                 </p>
+              </Sub>
+              <Sub id="tes-razao" title="7.18 Razão por categoria">
+                <p>
+                  Em <UI>Tesouraria → Relatórios → Razão por categoria</UI> você vê <strong>tudo o que foi lançado em qualquer
+                  categoria</strong> do plano de contas — o Tronco, as Doações, as Mensalidades, uma despesa específica — lançamento a
+                  lançamento, com o banco ou o Caixa por onde o dinheiro passou. É a forma de tratar o Tronco como <em>centro de
+                  custo</em>: não existe um &quot;banco Tronco&quot;, existe a categoria, e o relatório mostra o que há nela.
+                </p>
+                <Bullets>
+                  <li><strong>Categorias:</strong> marque uma, várias ou nenhuma (nenhuma = todas). Os atalhos <UI>Só o Tronco</UI> e <UI>Só Doações e Contribuições</UI> já marcam as categorias do fundo.</li>
+                  <li><strong>Período</strong> (mês, ano, desde o início ou datas livres), <strong>conta ou caixa</strong> (para ver só o que passou por um banco) e <strong>movimento</strong> (entradas e saídas, só entradas ou só saídas).</li>
+                  <li>Cada categoria mostra o <strong>saldo anterior</strong> ao período, cada lançamento (data, histórico, pessoa, conta, forma, entrada, saída) com o <strong>saldo acumulado</strong>, e o <strong>total da categoria</strong>; no fim, o total geral.</li>
+                  <li><UI>Salvar como PDF</UI> (página A4 paisagem, com o brasão) e <UI>Exportar CSV</UI> para abrir em planilha.</li>
+                </Bullets>
+                <Note>
+                  Os nomes de quem doou ao Tronco só aparecem para Administrador, Venerável e Tesoureiro, igual às demais telas.
+                  Lançamentos sem categoria aparecem num grupo à parte — vincule-os ao plano de contas (7.1) para que entrem no
+                  relatório da categoria certa.
+                </Note>
               </Sub>
             </Chapter>
 
@@ -1764,17 +1784,15 @@ export function ManualBook() {
 
               <Sub id="hosp-tronco" title="11.2 O Tronco de Solidariedade">
                 <p>
-                  O Tronco de Solidariedade é o dinheiro reservado à benemerência: <strong>faz parte do caixa total da loja,
-                  mas fica em conta separada</strong>, com finalidade específica. O Hospitaleiro acompanha o seu
-                  <strong> saldo disponível</strong> no topo da tela de Campanhas.
+                  O Tronco de Solidariedade é o dinheiro reservado à benemerência. Ele <strong>não é uma conta bancária</strong>:
+                  o dinheiro está nos bancos e no Caixa da loja, e o Tronco é <strong>identificado pela categoria</strong> de cada
+                  lançamento. O Hospitaleiro acompanha o seu <strong>saldo disponível</strong> no topo da tela de Campanhas.
                 </p>
                 <p>
-                  O Tronco tem o seu <strong>próprio caixa</strong> (&quot;Caixa do Tronco de Beneficência&quot;, ver 11.7). O saldo
-                  disponível é o do caixa: saldo inicial + <strong>entradas do Tronco</strong> (conta &quot;Tronco de
-                  Beneficência&quot;) − <strong>gastos de benemerência</strong> (conta &quot;Ação Social e Caridade&quot;) ± transferências
-                  aprovadas. Sem um caixa do Tronco cadastrado, vale só o movimento dessas duas contas.
-                  Se o saldo aparecer indisponível, peça ao Tesoureiro/Administrador para clicar em <UI>Atualizar plano de
-                  contas</UI> em Cadastros (capítulo 7.1) — isso habilita as contas do Tronco.
+                  O saldo disponível é a soma dos lançamentos já pagos nas categorias do Tronco: <strong>entradas</strong>
+                  (categoria &quot;Tronco de Beneficência&quot;) − <strong>gastos de benemerência</strong> (categoria &quot;Ação Social e
+                  Caridade&quot;). Se o saldo aparecer indisponível, peça ao Tesoureiro/Administrador para clicar em
+                  <UI> Atualizar plano de contas</UI> em Cadastros (capítulo 7.1) — isso habilita as categorias do Tronco.
                 </p>
               </Sub>
 
@@ -1836,14 +1854,13 @@ export function ManualBook() {
                 </p>
               </Sub>
 
-              <Sub id="hosp-fundos" title="11.7 Fundos: caixa do Tronco e das Doações">
+              <Sub id="hosp-fundos" title="11.7 Fundos: Tronco e Doações (categorias)">
                 <p>
-                  A loja mantém <strong>dois fundos com caixa próprio</strong>, separados do caixa geral, como o Caixa e as
-                  contas bancárias (7.14): o <strong>Caixa do Tronco de Beneficência</strong> e o <strong>Caixa de Doações e
-                  Contribuições</strong>. Cada um mostra à parte quanto tem, de onde veio e para onde foi — sem misturar com o
-                  dinheiro do dia a dia. As lojas novas já nascem com os dois caixas; nas lojas existentes eles foram criados com
-                  saldo inicial zero (ajuste em <UI>Cadastros financeiros → Contas bancárias e Caixa → Editar</UI>, campo
-                  <UI> Saldo inicial</UI>, com o que já havia guardado antes de usar o sistema).
+                  O <strong>Tronco de Beneficência</strong> e as <strong>Doações e Contribuições</strong> são <strong>fundos</strong> da
+                  loja, mas <strong>não têm conta bancária nem caixa próprios</strong>: são <em>categorias</em> do plano de contas, como
+                  Mensalidades ou Ação Social. O dinheiro entra e sai pelos bancos e pelo Caixa da loja (7.14), sempre com a categoria
+                  do fundo. Para saber quanto o fundo tem, de onde veio e para onde foi, o sistema soma tudo o que foi lançado nas
+                  categorias dele — e o mesmo vale para qualquer outra categoria (ver o <strong>Razão por categoria</strong>, 7.18).
                 </p>
                 <p>
                   <strong>Registrar um aporte:</strong> para lançar dinheiro que entrou no fundo sem passar por campanha ou
@@ -1852,16 +1869,17 @@ export function ManualBook() {
                   <UI> valor</UI>, a <UI>data do recebimento</UI> (não pode ser futura) e a <UI>forma</UI> (dinheiro, Pix,
                   transferência ou outro). No Tronco, escolha a <UI>origem</UI>: <em>tronco passado em sessão</em> (selecione a
                   sessão) ou <em>outra origem</em>. Em <UI>Quem doou</UI> marque não identificado (tronco coletivo), um irmão
-                  da loja, outra pessoa/instituição ou anônimo, e confira o <UI>caixa que recebeu</UI> (já vem o caixa do
-                  fundo). O aporte entra na hora no saldo, no extrato, nas <em>entradas por origem</em>, no livro-caixa e no
-                  DRE. Podem registrar o Administrador, o Venerável, o Secretário, o Tesoureiro e o Hospitaleiro; não é possível
-                  lançar com data dentro de um veneralato já encerrado, e cada aporte fica na auditoria.
+                  da loja, outra pessoa/instituição ou anônimo, e escolha a <UI>conta ou caixa que recebeu</UI> — o banco ou o
+                  Caixa da loja onde o dinheiro realmente entrou. O aporte entra na hora no saldo do fundo, nas <em>entradas por
+                  origem</em>, no extrato da conta escolhida, no livro-caixa e no DRE. Podem registrar o Administrador, o Venerável,
+                  o Secretário, o Tesoureiro e o Hospitaleiro; não é possível lançar com data dentro de um veneralato já
+                  encerrado, e cada aporte fica na auditoria.
                 </p>
-                <p><strong>Para onde o dinheiro vai sozinho</strong> — você não precisa escolher o caixa nestes casos:</p>
+                <p><strong>Em que conta o dinheiro entra:</strong></p>
                 <Bullets>
-                  <li>Doações a uma <strong>campanha</strong> e o <strong>custeio pelo Tronco</strong> (11.4) usam o caixa do Tronco.</li>
-                  <li>Doação do irmão ao Tronco por Pix (portal) também.</li>
-                  <li>Em <UI>Contas</UI>, ao escolher a categoria <em>Tronco de Beneficência</em> ou <em>Doações e Contribuições</em>, a conta bancária/caixa já vem preenchida com o caixa do fundo (e, se você lançar como Pago sem escolher, ele é usado automaticamente).</li>
+                  <li>Aportes, <strong>doações a uma campanha</strong> e o <strong>custeio pelo Tronco</strong> (11.4): você escolhe a conta ou o Caixa da loja; se não escolher, vale a conta marcada como padrão.</li>
+                  <li>Doação do irmão ao Tronco por Pix (portal): o valor cai na conta de repasse do Asaas escolhida em Integrações.</li>
+                  <li>Em <UI>Contas</UI>, é só escolher a categoria <em>Tronco de Beneficência</em> ou <em>Doações e Contribuições</em> e a conta bancária/caixa como em qualquer lançamento.</li>
                 </Bullets>
                 <p>
                   <strong>Gerenciar:</strong> em <UI>Hospitalaria → Fundos (Tronco e Doações)</UI> escolha o fundo e o
@@ -1877,11 +1895,10 @@ export function ManualBook() {
                   <li><strong>Salvar como PDF</strong> gera a prestação de contas do fundo, com o brasão da loja.</li>
                 </Bullets>
                 <Note>
-                  <strong>Conferência:</strong> se um pagamento de categoria do fundo passar por <em>outra</em> conta (por exemplo,
-                  o tronco recolhido na sessão lançado no Caixa geral), a tela avisa e lista o que está fora do lugar. Para o
-                  dinheiro ficar no fundo, faça uma <UI>Transferência entre contas</UI> (7.14) do caixa onde ele entrou para o
-                  caixa do fundo — a transferência precisa da aprovação do Venerável. O custeio de campanha é limitado ao saldo
-                  do <strong>caixa</strong> do Tronco.
+                  O saldo do fundo é a parte do dinheiro da loja que pertence àquela finalidade — ele <strong>não aparece como um
+                  banco</strong> e não precisa de transferência entre contas. O saldo dos bancos e do Caixa continua sendo o
+                  dinheiro real; o do Tronco é o quanto dele está reservado à benemerência. O custeio de campanha é limitado ao
+                  saldo do Tronco.
                 </Note>
               </Sub>
             </Chapter>

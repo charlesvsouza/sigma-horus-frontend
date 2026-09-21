@@ -107,6 +107,7 @@ const NAV: NavGroupDef[] = [
           { href: '/dashboard/relatorios/contas-recebidas', label: 'Contas recebidas', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/contas-pagas', label: 'Contas pagas', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/dre', label: 'DRE comparativo', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/categorias', label: 'Razão por categoria', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/balancetes', label: 'Balancetes periódicos', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
