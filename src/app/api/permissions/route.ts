@@ -4,7 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import {
   ACTIONS,
   RESOURCES,
-  ROLES,
+  MATRIX_ROLES,
   canAccess,
   getEffectiveMatrix,
   invalidateLodgePolicy,
@@ -29,7 +29,7 @@ export async function GET() {
   if (!isAdmin(role)) return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const { matrix, customized } = await getEffectiveMatrix(String(lodgeId));
-  return NextResponse.json({ matrix, customized, roles: ROLES, resources: RESOURCES, actions: ACTIONS });
+  return NextResponse.json({ matrix, customized, roles: MATRIX_ROLES, resources: RESOURCES, actions: ACTIONS });
 }
 
 export async function PUT(request: Request) {
@@ -51,7 +51,7 @@ export async function PUT(request: Request) {
   }
 
   await withTenant(String(lodgeId), async (db) => {
-    for (const r of ROLES) {
+    for (const r of MATRIX_ROLES) {
       for (const resource of RESOURCES) {
         for (const action of ACTIONS) {
           // A linha do Administrador é fixa (padrão); o que vier do navegador para ela é ignorado.

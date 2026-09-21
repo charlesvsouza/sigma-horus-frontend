@@ -2,13 +2,15 @@ import { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { canLodgeAccess, type Resource } from '@/lib/rbac';
+import { canLodgeAccessFor, type Resource } from '@/lib/rbac';
 import { Alert } from '@/components/ui';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import DashboardShell from './DashboardShell';
 
-interface NavEntry { href: string; label: string; roles: string[]; /** Se informado, o item aparece só para quem tem esta permissão (matriz de Permissões), em vez da lista fixa de papéis. */ resource?: Resource; }
+interface NavEntry { href: string; label: string; roles: string[]; /** Se informado, o item aparece só para quem tem esta permissão (matriz de Permissões), em vez da lista fixa de papéis. */ resource?: Resource;
+  /** Aparece se o usuário tem LEITURA em qualquer um destes recursos (inclui papéis por cargo, ex.: Arquiteto). */
+  resources?: Resource[]; }
 interface NavSubgroupDef { label: string; items: NavEntry[]; }
 interface NavGroupDef { category: string; items?: NavEntry[]; subgroups?: NavSubgroupDef[]; flat?: boolean; }
 
@@ -41,7 +43,7 @@ const NAV: NavGroupDef[] = [
         items: [
           { href: '/dashboard/membros', label: 'Membros', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
           { href: '/dashboard/cadastros', label: 'Cadastros mestre', roles: ['admin', 'venerable', 'secretary'] },
-          { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: ['admin', 'secretary'] },
+          { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: [], resources: ['materials', 'inventory'] },
           { href: '/dashboard/cargos', label: 'Cargos', roles: ['admin', 'venerable', 'secretary'] },
         ],
       },
@@ -59,6 +61,7 @@ const NAV: NavGroupDef[] = [
           { href: '/dashboard/membros/quadro-social', label: 'Quadro social', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/galeria-veneraveis', label: 'Galeria de Veneráveis', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/quadro-gestao', label: 'Quadro da Gestão', roles: ['admin', 'venerable', 'secretary'] },
+          { href: '/dashboard/composicao', label: 'Composição da loja', roles: ['admin', 'venerable', 'secretary'] },
         ],
       },
       {
@@ -196,10 +199,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   // Itens ligados a uma permissão da matriz (ex.: Auditoria) aparecem só para quem a tem.
   const allowedResources = new Set<string>();
-  for (const resource of ['audit'] as const) {
-    if (await canLodgeAccess(lodgeId ? String(lodgeId) : null, role, resource, 'read')) allowedResources.add(resource);
+  for (const resource of ['audit', 'materials', 'inventory'] as const) {
+    if (await canLodgeAccessFor({ lodgeId: lodgeId ? String(lodgeId) : null, role, memberId: memberId ? String(memberId) : null }, resource, 'read')) allowedResources.add(resource);
   }
-  const visible = (i: NavEntry) => (i.resource ? allowedResources.has(i.resource) : i.roles.includes(role));
+  const visible = (i: NavEntry) =>
+    i.resources ? i.resources.some((r) => allowedResources.has(r)) : i.resource ? allowedResources.has(i.resource) : i.roles.includes(role);
 
   const groups = NAV
     .map((g) => ({

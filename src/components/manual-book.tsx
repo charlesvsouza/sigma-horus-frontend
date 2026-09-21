@@ -71,7 +71,7 @@ const INDEX: IndexEntry[] = [
       { id: 'sec-membros', label: '8.1 Membros' },
       { id: 'sec-quadro-social', label: '8.2 Quadro social' },
       { id: 'sec-galeria-veneraveis', label: '8.3 Galeria de Veneráveis' },
-      { id: 'sec-quadro-gestao', label: '8.4 Quadro da Gestão' },
+      { id: 'sec-quadro-gestao', label: '8.4 Quadro da Gestão e Composição' },
       { id: 'sec-cadastros-mestre', label: '8.5 Cadastros mestre e cargos' },
       { id: 'sec-veneralato', label: '8.6 Veneralato' },
       { id: 'sec-sessoes', label: '8.7 Sessões e convocação' },
@@ -251,7 +251,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 20 de setembro de 2026 · versão 1.33</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 20 de setembro de 2026 · versão 1.35</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -456,10 +456,11 @@ export function ManualBook() {
               </Note>
               <Bullets>
                 <li><strong>Administrador:</strong> conta, usuários, assinatura, integrações e configurações. Altera todos os cadastros e configurações da loja e é o <strong>único</strong> que cria outro Administrador (no máximo <strong>2 Administradores ativos</strong> por loja).</li>
-                <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações (despesas, prestação de contas e transferências entre contas bancárias); não lança baixas financeiras.</li>
+                <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações (despesas, prestação de contas e transferências entre contas bancárias); cadastra os materiais da loja e decide baixa e reposição; não lança baixas financeiras.</li>
                 <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, fecha o caixa, solicita transferências entre contas bancárias/Caixa e vê relatórios financeiros.</li>
                 <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença, materiais e patrimônio da loja, documentos institucionais; relatórios não financeiros.</li>
                 <li><strong>Hospitaleiro:</strong> consulta os irmãos (somente leitura, para contato), gerencia campanhas de benemerência e acompanha o Tronco de Solidariedade.</li>
+                <li><strong>Arquiteto (por cargo):</strong> não é um papel que se atribui em <UI>Usuários &amp; acessos</UI> — o obreiro que ocupa o cargo de Arquiteto no veneralato ativo ganha, <strong>além do papel que já tem</strong>, o acesso ao inventário em <UI>Materiais e patrimônio</UI>: vê a lista de materiais, registra desgaste, dano ou perda e fornece/recebe materiais. Não edita o cadastro, não decide baixa nem reposição e não acessa a Tesouraria. Quando o veneralato é encerrado, o acesso acaba sozinho. O Administrador pode ajustar isso em <UI>Configurações → Permissões</UI> (coluna <UI>Arquiteto (cargo)</UI>).</li>
                 <li><strong>Membro (obreiro):</strong> o próprio portal — extrato, débitos, histórico e documentos pertinentes.</li>
               </Bullets>
               <p className="text-sm text-sand-dark">
@@ -548,7 +549,7 @@ export function ManualBook() {
                 <Office name="Tesoureiro" tradition="O coração financeiro: arrecada mensalidades, paga despesas e presta contas do caixa." system="Recebe o papel Tesoureiro: emite cobranças (boleto/PIX), dá baixas, lança contas e fecha o caixa do veneralato." />
                 <Office name="Chanceler" tradition="Cuida das relações externas, diplomas, certificados e correspondência com a Potência." system="Papel Secretário ou Membro; usa o Centro de Documentos e os cadastros de membros." />
                 <Office name="Hospitaleiro" tradition="O cuidado fraterno: assistência a obreiros e famílias, tronco de beneficência, visitas e aniversários." system="Recebe o papel Hospitaleiro: consulta os irmãos e a família para contato, gerencia campanhas de benemerência e acompanha o saldo do Tronco de Solidariedade (ver capítulo 11)." />
-                <Office name="Arquiteto" tradition="Zela pela ordem material do templo: alfaias, aventais, rituais e demais paramentos e mobiliário da loja." system="Não tem papel de acesso próprio — recebe o papel Secretário ou Administrador para usar a tela Materiais e patrimônio (ver capítulo 8)." />
+                <Office name="Arquiteto" tradition="Zela pela ordem material do templo: alfaias, aventais, rituais e demais paramentos e mobiliário da loja." system="Não tem papel próprio em Usuários &amp; acessos: o acesso vem do cargo no veneralato ativo e se soma ao papel do obreiro. Opera o inventário em Materiais e patrimônio — registra desgaste, dano e perda, com pedido de reposição — sem editar o cadastro (ver capítulo 8.9)." />
               </div>
               <p className="text-sm text-sand-dark">
                 A nomenclatura varia conforme o rito; sua loja já nasce com os cargos corretos e pode editá-los em
@@ -1422,7 +1423,7 @@ export function ManualBook() {
                   <li><UI>Salvar como PDF</UI> imprime o mural com o timbre da loja.</li>
                 </Bullets>
               </Sub>
-              <Sub id="sec-quadro-gestao" title="8.4 Quadro da Gestão">
+              <Sub id="sec-quadro-gestao" title="8.4 Quadro da Gestão e Composição da loja">
                 <p>
                   Em <UI>Social → Quadro da Gestão</UI>, veja os cargos do <strong>período em exercício</strong>,
                   com foto — pronto pra mural, apresentações ou prestação de contas.
@@ -1431,6 +1432,15 @@ export function ManualBook() {
                   <li>Só existe depois que um veneralato foi criado e teve cargos vinculados em <UI>Veneralato</UI> — antes disso, a tela orienta a ir lá primeiro.</li>
                   <li>Os cargos aparecem na ordem cerimonial do rito (Venerável Mestre primeiro), cada um com a foto do irmão cadastrada em Membros (ou um espaço reservado, se ainda não houver foto).</li>
                   <li><UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
+                </Bullets>
+                <p>
+                  Em <UI>Social → Composição da loja</UI>, veja em lista <strong>todos os obreiros que desempenham cargos</strong> no período:
+                  cada linha traz o obreiro, o(s) cargo(s) que ocupa (quem acumula cargos aparece uma só vez), o grau e o contato.
+                </p>
+                <Bullets>
+                  <li>Por padrão mostra o veneralato em exercício; o seletor <UI>Período</UI> abre a composição de gestões anteriores.</li>
+                  <li>A seção <UI>Cargos sem titular neste período</UI> lista os cargos cadastrados na loja que ainda não têm ninguém vinculado.</li>
+                  <li>Os cargos são vinculados em <UI>Veneralato</UI>; <UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
                 </Bullets>
               </Sub>
               <Sub id="sec-cadastros-mestre" title="8.5 Cadastros mestre e cargos">
@@ -1531,6 +1541,18 @@ export function ManualBook() {
                   Um material com fornecimento já registrado não pode ser excluído (preserva o histórico) — use
                   <UI> Inativar</UI> pra tirá-lo das opções de novos cadastros/fornecimentos sem perder o registro.
                 </Note>
+                <p>
+                  <strong>Ocorrências de inventário (Arquiteto):</strong> quem monta o templo confere os materiais e, ao notar
+                  problema, usa <UI>Registrar ocorrência</UI> no material (ou no bloco <UI>Ocorrências de inventário</UI>).
+                  Escolha o tipo — <UI>Desgaste</UI>, <UI>Dano irreversível</UI> ou <UI>Perda</UI> —, a quantidade afetada e, se
+                  for o caso, marque <UI>Solicitar reposição</UI>: o Administrador, o Venerável e o Secretário recebem um e-mail e a
+                  pendência aparece em <UI>Visão geral → Precisa de atenção</UI>.
+                </p>
+                <Bullets>
+                  <li><strong>Dano ou perda pendentes</strong> saem do <em>disponível</em> na hora — não dá para fornecer um avental rasgado. Desgaste apenas sinaliza, sem tirar o item de uso.</li>
+                  <li><strong>Quem cuida do cadastro decide</strong> (Administrador, Venerável ou Secretário): <UI>Dar baixa</UI> (a quantidade cadastrada diminui), <UI>Trocar (repor)</UI> (troca 1:1, o estoque não muda) ou <UI>Dispensar</UI> (falso alarme; nada muda). Depois da baixa, <UI>Marcar como reposto</UI> devolve a quantidade quando o item novo chega.</li>
+                  <li><strong>O histórico fica guardado</strong> — quem registrou, quem decidiu e quando — e o quadro <UI>O que a loja perde ao longo do tempo</UI> soma desgaste, dano e perda por material. Nada disso guarda valores em dinheiro.</li>
+                </Bullets>
                 <p>
                   O card <UI>Materiais em posse por obreiro</UI> reagrupa o fornecimento ativo por membro — mostra de
                   uma vez tudo que uma pessoa tem em mãos, pronto pra <UI>Salvar como PDF</UI> na hora de conferir ou

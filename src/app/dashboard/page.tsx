@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { canLodgeAccess } from '@/lib/rbac';
+import { canLodgeAccess, canLodgeAccessFor } from '@/lib/rbac';
 import { brl } from '@/lib/currency';
 import { computeFinancialAccountBalances } from '@/lib/financial-accounts';
 import { remainingAmount, sumMoney } from '@/lib/money';
@@ -87,13 +87,25 @@ export default async function DashboardPage() {
   const pendingInvoices = invoices.filter((i) => i.status === 'pending').length;
   const netBalance = sumMoney([receivableTotal, -payableTotal]);
 
+  // Ocorrências de inventário (Arquiteto) aguardando decisão de baixa/reposição —
+  // só aparecem para quem decide (cadastro de materiais).
+  const canDecideInventory = await canLodgeAccessFor(
+    { lodgeId: String(lodgeId), role: session?.user?.role, memberId: session?.user?.memberId },
+    'materials',
+    'write',
+  );
+  const pendingIncidents = canDecideInventory
+    ? await withTenant(String(lodgeId), (db) => db.materialIncident.count({ where: { lodgeId: String(lodgeId), status: 'open' } }))
+    : 0;
+
   const attention = [
     { href: '/dashboard/contas', label: 'Contas vencidas', value: overdueAccounts, tone: 'rose' as const },
     { href: '/dashboard/contas', label: 'Contas pendentes', value: pendingAccounts, tone: 'gold' as const },
     { href: '/dashboard/cobrancas', label: 'Cobranças pendentes', value: pendingInvoices, tone: 'muted' as const },
+    ...(canDecideInventory ? [{ href: '/dashboard/materiais', label: 'Ocorrências de inventário', value: pendingIncidents, tone: 'gold' as const }] : []),
   ];
   const toneText: Record<string, string> = { rose: 'text-rose-300', gold: 'text-gold', muted: 'text-sand' };
-  const nothingPending = overdueAccounts === 0 && pendingAccounts === 0 && pendingInvoices === 0;
+  const nothingPending = overdueAccounts === 0 && pendingAccounts === 0 && pendingInvoices === 0 && pendingIncidents === 0;
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-6 py-8 lg:px-8">

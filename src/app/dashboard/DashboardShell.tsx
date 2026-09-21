@@ -14,7 +14,7 @@ import {
   MessageSquare, Contact, HeartHandshake, PiggyBank, Settings, KeyRound, Gem, Plug, ScrollText,
   PanelLeft, PanelLeftClose, Circle, TriangleAlert, ClipboardCheck, TrendingUp, PieChart,
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
-  Scale, Users2, Images, LayoutGrid, type LucideIcon,
+  Scale, Users2, Images, LayoutGrid, UsersRound, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -38,6 +38,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/membros/quadro-social': Users2,
   '/dashboard/galeria-veneraveis': Images,
   '/dashboard/quadro-gestao': LayoutGrid,
+  '/dashboard/composicao': UsersRound,
   '/dashboard/cadastros': Database,
   '/dashboard/cargos': Briefcase,
   '/dashboard/veneralato': Crown,

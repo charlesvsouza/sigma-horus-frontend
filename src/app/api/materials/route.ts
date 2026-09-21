@@ -2,6 +2,8 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { availableUnits } from '@/lib/inventory';
+import { quarantineByMaterial } from '@/lib/inventory-server';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -11,11 +13,11 @@ export async function GET() {
 
   if (!lodgeId) return NextResponse.json({ items: [] });
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'materials', 'read');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'materials', 'read', session?.user?.memberId);
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
-  const materials = await withTenant(String(lodgeId), (db) =>
-    db.material.findMany({
+  const { materials, quarantine } = await withTenant(String(lodgeId), async (db) => ({
+    materials: await db.material.findMany({
       where: { lodgeId: String(lodgeId) },
       include: {
         rite: { select: { id: true, name: true } },
@@ -23,13 +25,14 @@ export async function GET() {
       },
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
     }),
-  );
+    quarantine: (await quarantineByMaterial(db, String(lodgeId))).byMaterial,
+  }));
 
   const items = materials.map((m) => {
     const issued = m.loans.reduce((sum, l) => sum + l.quantity, 0);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { loans, ...rest } = m;
-    return { ...rest, availableQuantity: m.quantity - issued };
+    return { ...rest, availableQuantity: availableUnits({ quantity: m.quantity, issued, quarantined: quarantine.get(m.id) ?? 0 }) };
   });
 
   return NextResponse.json({ items });

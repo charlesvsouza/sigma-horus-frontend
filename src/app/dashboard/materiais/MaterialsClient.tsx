@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { MATERIAL_CATEGORIES } from '@/lib/masonic-reference';
 import { symbolicSituation, isEligibleForDegree, type SymbolicSituation } from '@/lib/masonic-degree';
+import { INCIDENT_KINDS, KIND_LABEL, STATUS_LABEL, awaitingReplacement, type IncidentKind, type IncidentStatus, type Resolution } from '@/lib/inventory';
 
 interface RiteOption { id: string; name: string; }
 interface MemberOption {
@@ -36,6 +37,30 @@ interface LoanItem {
   member: { id: string; name: string };
 }
 
+interface IncidentItem {
+  id: string;
+  materialId: string;
+  materialName: string;
+  kind: string;
+  quantity: number;
+  requestReplacement: boolean;
+  status: string;
+  notes: string | null;
+  reportedByName: string | null;
+  reportedAt: string;
+  resolvedByName: string | null;
+  resolvedAt: string | null;
+  resolutionNotes: string | null;
+}
+
+const STATUS_BADGE: Record<string, string> = {
+  open: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+  written_off: 'border-sky-500/30 bg-sky-500/10 text-sky-300',
+  replaced: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+  dismissed: 'border-white/10 bg-white/5 text-sand-dark',
+};
+const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
 const DEGREE_OPTIONS: SymbolicSituation[] = ['Aprendiz', 'Companheiro', 'Mestre', 'Mestre Instalado'];
 const INPUT_CLASS = inputClass;
 
@@ -53,7 +78,21 @@ const POSSE_PRINT_CSS = `
 }
 `;
 
-export default function MaterialsClient({ lodgeName, crestUrl, materials, loans, members, rites }: { lodgeName: string; crestUrl: string | null; materials: MaterialItem[]; loans: LoanItem[]; members: MemberOption[]; rites: RiteOption[] }) {
+interface Props {
+  lodgeName: string;
+  crestUrl: string | null;
+  materials: MaterialItem[];
+  loans: LoanItem[];
+  incidents: IncidentItem[];
+  /** Cadastro (criar/editar/remover materiais) e decisão sobre baixa/reposição. */
+  canManageCatalog: boolean;
+  /** Operação do inventário: registrar ocorrências e fornecer/receber materiais. */
+  canOperate: boolean;
+  members: MemberOption[];
+  rites: RiteOption[];
+}
+
+export default function MaterialsClient({ lodgeName, crestUrl, materials, loans, incidents, canManageCatalog, canOperate, members, rites }: Props) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -69,6 +108,12 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
   const [loanForm, setLoanForm] = useState(emptyLoanForm);
   const [loanSubmitting, setLoanSubmitting] = useState(false);
   const [decidingId, setDecidingId] = useState<string | null>(null);
+
+  const emptyIncidentForm = { materialId: '', kind: 'damage' as IncidentKind, quantity: '1', requestReplacement: true, notes: '' };
+  const [incidentForm, setIncidentForm] = useState(emptyIncidentForm);
+  const [incidentSubmitting, setIncidentSubmitting] = useState(false);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [showAllIncidents, setShowAllIncidents] = useState(false);
 
   function startEdit(material: MaterialItem) {
     setEditingId(material.id);
@@ -204,6 +249,76 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
     }
   }
 
+  async function handleIncidentSubmit(event: FormEvent) {
+    event.preventDefault();
+    setIncidentSubmitting(true);
+    try {
+      const response = await fetch('/api/material-incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...incidentForm, quantity: Number(incidentForm.quantity) }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        setMessage({ kind: 'ok', text: incidentForm.requestReplacement ? 'Ocorrência registrada. Administrador, Venerável e Secretário foram avisados da reposição.' : 'Ocorrência registrada.' });
+        setIncidentForm(emptyIncidentForm);
+        router.refresh();
+      } else {
+        setMessage({ kind: 'error', text: data.error ?? 'Erro ao registrar ocorrência.' });
+      }
+    } finally {
+      setIncidentSubmitting(false);
+    }
+  }
+
+  async function resolveIncident(incident: IncidentItem, resolution: Resolution) {
+    const units = `${incident.quantity} ${incident.quantity === 1 ? 'unidade' : 'unidades'} de "${incident.materialName}"`;
+    const texts: Record<Resolution, { title: string; message: string; label: string; intent?: 'danger' }> = {
+      write_off: { title: 'Dar baixa', message: `Dar baixa em ${units}? A quantidade cadastrada diminui.`, label: 'Dar baixa', intent: 'danger' },
+      replace: incident.status === 'written_off'
+        ? { title: 'Reposição recebida', message: `A reposição de ${units} chegou? A quantidade cadastrada volta a aumentar.`, label: 'Marcar como reposto' }
+        : { title: 'Trocar item', message: `Registrar a troca de ${units}? A quantidade cadastrada não muda.`, label: 'Registrar troca' },
+      dismiss: { title: 'Dispensar ocorrência', message: `Dispensar a ocorrência de ${units}? Nada muda no estoque e a unidade volta a ficar disponível.`, label: 'Dispensar' },
+    };
+    const t = texts[resolution];
+    if (!(await askConfirm({ title: t.title, message: t.message, confirmLabel: t.label, intent: t.intent }))) return;
+    setResolvingId(incident.id);
+    try {
+      const response = await fetch(`/api/material-incidents/${incident.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolution }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        setMessage({ kind: 'ok', text: 'Ocorrência atualizada.' });
+        router.refresh();
+      } else {
+        setMessage({ kind: 'error', text: data.error ?? 'Erro ao atualizar a ocorrência.' });
+      }
+    } finally {
+      setResolvingId(null);
+    }
+  }
+
+  function startIncident(materialId: string) {
+    setIncidentForm({ ...emptyIncidentForm, materialId });
+    document.getElementById('ocorrencias')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const pendingIncidents = incidents.filter((i) => i.status === 'open' || awaitingReplacement(i));
+  const visibleIncidents = showAllIncidents ? incidents : pendingIncidents;
+  const lossSummary = useMemo(() => {
+    const map = new Map<string, { name: string; wear: number; damage: number; loss: number }>();
+    for (const i of incidents) {
+      if (i.status === 'dismissed') continue;
+      const row = map.get(i.materialId) ?? { name: i.materialName, wear: 0, damage: 0, loss: 0 };
+      if (i.kind === 'wear' || i.kind === 'damage' || i.kind === 'loss') row[i.kind] += i.quantity;
+      map.set(i.materialId, row);
+    }
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [incidents]);
+
   const q = search.trim().toLowerCase();
   const filtered = q ? materials.filter((m) => m.name.toLowerCase().includes(q) || m.category?.toLowerCase().includes(q)) : materials;
   const availableForLoan = materials.filter((m) => m.active && m.availableQuantity > 0);
@@ -227,23 +342,23 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
             <h1 className="font-display text-2xl font-bold text-sand-light">Materiais e patrimônio</h1>
             <p className="mt-1 text-sm text-sand-dark">
               Inventário de uso geral da loja — mobiliário, ornamentos, indumentária, alfaias e rituais — com controle de
-              fornecimento a membros por grau.
+              fornecimento a membros por grau{canManageCatalog ? '' : ' e registro de desgaste, danos e perdas'}.
             </p>
           </div>
-          <button
+          {canManageCatalog ? <button
             onClick={seedDefaults}
             disabled={seeding}
             title="Preenche o catálogo com um checklist padrão de materiais (não duplica os já cadastrados)"
             className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-50"
           >
             {seeding ? 'Carregando…' : 'Carregar lista padrão'}
-          </button>
+          </button> : null}
         </div>
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <div className="grid items-start gap-6 lg:grid-cols-2">
-          <FormCard
+        <div className={`grid items-start gap-6 ${canManageCatalog ? 'lg:grid-cols-2' : ''}`}>
+          {canManageCatalog ? <FormCard
             title={editingId ? 'Editar material' : 'Novo material'}
             headerAction={editingId ? <button type="button" onClick={cancelEdit} className="rounded text-xs text-sand-dark outline-none hover:text-sand focus-visible:ring-2 focus-visible:ring-gold/60">Cancelar edição</button> : undefined}
           >
@@ -277,7 +392,7 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
               </div>
               <Button type="submit" disabled={submitting}>{submitting ? 'Salvando…' : editingId ? 'Salvar alterações' : 'Cadastrar material'}</Button>
             </form>
-          </FormCard>
+          </FormCard> : null}
 
           <CollapsibleCard
             title="Catálogo de materiais"
@@ -304,9 +419,12 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => startEdit(material)} className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Editar</button>
-                    <button onClick={() => toggleActive(material)} className="text-xs text-sand-dark hover:text-sand-light">{material.active ? 'Inativar' : 'Ativar'}</button>
-                    <button onClick={() => void handleDelete(material.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Remover</button>
+                    {canOperate ? <button onClick={() => startIncident(material.id)} className="text-xs px-1 py-1 text-amber-300 transition hover:text-amber-200">Registrar ocorrência</button> : null}
+                    {canManageCatalog ? <>
+                      <button onClick={() => startEdit(material)} className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Editar</button>
+                      <button onClick={() => toggleActive(material)} className="text-xs text-sand-dark hover:text-sand-light">{material.active ? 'Inativar' : 'Ativar'}</button>
+                      <button onClick={() => void handleDelete(material.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Remover</button>
+                    </> : null}
                   </div>
                 </div>
               ))}
@@ -314,7 +432,106 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
           </CollapsibleCard>
         </div>
 
-        <CollapsibleCard title="Fornecimento de materiais" count={loans.length} defaultOpen={loans.length > 0}>
+        <div id="ocorrencias" className="scroll-mt-6">
+          <CollapsibleCard title="Ocorrências de inventário" count={pendingIncidents.length} defaultOpen={canOperate || pendingIncidents.length > 0}>
+            <p className="mb-4 text-xs text-sand-dark">
+              Desgaste, dano irreversível ou perda de materiais da loja. Unidades com dano ou perda pendentes saem do disponível até a decisão;
+              a baixa e a reposição são decididas por quem cuida do cadastro.
+            </p>
+
+            {canOperate ? (
+              <form onSubmit={handleIncidentSubmit} className="mb-5 grid gap-4 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4 md:grid-cols-2">
+                <Field label="Material">
+                  <select value={incidentForm.materialId} onChange={(e) => setIncidentForm({ ...incidentForm, materialId: e.target.value })} className={INPUT_CLASS} required>
+                    <option value="">Selecione…</option>
+                    {materials.filter((m) => m.active).map((m) => <option key={m.id} value={m.id}>{m.name} ({m.quantity} cadastrado{m.quantity !== 1 ? 's' : ''})</option>)}
+                  </select>
+                </Field>
+                <Field label="Ocorrência">
+                  <select value={incidentForm.kind} onChange={(e) => setIncidentForm({ ...incidentForm, kind: e.target.value as IncidentKind })} className={INPUT_CLASS}>
+                    {INCIDENT_KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
+                  </select>
+                </Field>
+                <Field label="Quantidade afetada">
+                  <input type="number" min="1" value={incidentForm.quantity} onChange={(e) => setIncidentForm({ ...incidentForm, quantity: e.target.value })} className={INPUT_CLASS} required />
+                </Field>
+                <Field label="Observação">
+                  <input value={incidentForm.notes} onChange={(e) => setIncidentForm({ ...incidentForm, notes: e.target.value })} className={INPUT_CLASS} placeholder="O que aconteceu? (opcional)" />
+                </Field>
+                <label className="flex items-center gap-2 text-sm text-sand md:col-span-2">
+                  <input type="checkbox" checked={incidentForm.requestReplacement} onChange={(e) => setIncidentForm({ ...incidentForm, requestReplacement: e.target.checked })} className="h-4 w-4 accent-gold" />
+                  Solicitar reposição (avisa por e-mail o Administrador, o Venerável e o Secretário)
+                </label>
+                <div className="md:col-span-2">
+                  <Button type="submit" disabled={incidentSubmitting || materials.length === 0}>{incidentSubmitting ? 'Registrando…' : 'Registrar ocorrência'}</Button>
+                </div>
+              </form>
+            ) : null}
+
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-sand-dark">{showAllIncidents ? 'Histórico completo' : 'Pendentes de decisão ou de reposição'}</p>
+              <button type="button" onClick={() => setShowAllIncidents(!showAllIncidents)} className="text-xs text-gold transition hover:text-gold-light">
+                {showAllIncidents ? 'Ver só pendentes' : 'Ver histórico completo'}
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {visibleIncidents.length === 0 ? (
+                <EmptyState title={showAllIncidents ? 'Nenhuma ocorrência registrada.' : 'Nada pendente no inventário.'} description="Desgaste, danos e perdas registrados aparecem aqui." />
+              ) : visibleIncidents.map((i) => (
+                <div key={i.id} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-sand-light">
+                      {i.materialName} — {KIND_LABEL[i.kind as IncidentKind] ?? i.kind} ({i.quantity})
+                      <span className={`ml-2 rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[i.status] ?? STATUS_BADGE.dismissed}`}>{STATUS_LABEL[i.status as IncidentStatus] ?? i.status}</span>
+                      {awaitingReplacement(i) ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">Aguardando reposição</span> : i.requestReplacement && i.status === 'open' ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">Reposição solicitada</span> : null}
+                    </p>
+                    <p className="mt-1 text-xs text-sand-dark">
+                      {i.reportedByName ?? 'Arquiteto'} em {fmtDate(i.reportedAt)}{i.notes ? ` • ${i.notes}` : ''}
+                    </p>
+                    {i.resolvedAt ? <p className="mt-0.5 text-xs text-sand-dark">Decidido por {i.resolvedByName ?? '—'} em {fmtDate(i.resolvedAt)}{i.resolutionNotes ? ` • ${i.resolutionNotes}` : ''}</p> : null}
+                  </div>
+                  {canManageCatalog && (i.status === 'open' || i.status === 'written_off') ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      {i.status === 'open' ? <button disabled={resolvingId === i.id} onClick={() => void resolveIncident(i, 'write_off')} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200 disabled:opacity-40">Dar baixa</button> : null}
+                      <button disabled={resolvingId === i.id} onClick={() => void resolveIncident(i, 'replace')} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200 disabled:opacity-40">{i.status === 'written_off' ? 'Marcar como reposto' : 'Trocar (repor)'}</button>
+                      {i.status === 'open' ? <button disabled={resolvingId === i.id} onClick={() => void resolveIncident(i, 'dismiss')} className="text-xs px-1 py-1 text-sand-dark transition hover:text-sand-light disabled:opacity-40">Dispensar</button> : null}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+
+            {lossSummary.length > 0 ? (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-sand-light">O que a loja perde ao longo do tempo</h3>
+                <p className="mt-1 text-xs text-sand-dark">Unidades por material, somando todas as ocorrências não dispensadas.</p>
+                <table className="mt-2 w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wide text-sand-dark/70">
+                      <th className="border-b border-white/10 px-2 py-1.5">Material</th>
+                      <th className="border-b border-white/10 px-2 py-1.5 text-right">Desgaste</th>
+                      <th className="border-b border-white/10 px-2 py-1.5 text-right">Dano</th>
+                      <th className="border-b border-white/10 px-2 py-1.5 text-right">Perda</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lossSummary.map((row) => (
+                      <tr key={row.name}>
+                        <td className="border-b border-white/5 px-2 py-1.5 text-sand">{row.name}</td>
+                        <td className="border-b border-white/5 px-2 py-1.5 text-right tabular-nums text-sand">{row.wear}</td>
+                        <td className="border-b border-white/5 px-2 py-1.5 text-right tabular-nums text-sand">{row.damage}</td>
+                        <td className="border-b border-white/5 px-2 py-1.5 text-right tabular-nums text-sand">{row.loss}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </CollapsibleCard>
+        </div>
+
+        {canOperate ? <CollapsibleCard title="Fornecimento de materiais" count={loans.length} defaultOpen={loans.length > 0}>
           <form onSubmit={handleLoanSubmit} className="mb-5 grid gap-4 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4 md:grid-cols-2">
             <Field label="Material">
               <select value={loanForm.materialId} onChange={(e) => setLoanForm({ ...loanForm, materialId: e.target.value })} className={INPUT_CLASS} required>
@@ -360,7 +577,7 @@ export default function MaterialsClient({ lodgeName, crestUrl, materials, loans,
               </div>
             ))}
           </div>
-        </CollapsibleCard>
+        </CollapsibleCard> : null}
 
         <CollapsibleCard title="Materiais em posse por obreiro" count={loansByMember.length} defaultOpen={false}>
           <div className="posse-noprint mb-4">

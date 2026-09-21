@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { ACTIONS, RESOURCES, ROLES, getEffectiveMatrix, normalizeRole } from '@/lib/rbac';
+import { ACTIONS, MATRIX_ROLES, RESOURCES, getEffectiveMatrix, normalizeRole } from '@/lib/rbac';
 import PermissoesClient from './PermissoesClient';
 
 // Server Component: matriz RBAC efetiva da loja (admin-only).
@@ -16,7 +16,7 @@ export default async function PermissoesPage() {
   return (
     <PermissoesClient
       initialMatrix={matrix as Record<string, Record<string, Record<string, boolean>>>}
-      roles={[...ROLES]}
+      roles={[...MATRIX_ROLES]}
       resources={[...RESOURCES]}
       actions={[...ACTIONS]}
       initialCustomized={customized}

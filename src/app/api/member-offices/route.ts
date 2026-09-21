@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { invalidateCargoRoles, requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -40,5 +40,6 @@ export async function POST(request: Request) {
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'memberOffice', entityId: created.id, metadata: { memberId, officeId, termId } });
     return created;
   });
+  invalidateCargoRoles(String(lodgeId));
   return NextResponse.json({ item });
 }

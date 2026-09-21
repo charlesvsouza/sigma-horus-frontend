@@ -13,6 +13,7 @@ const ROLE_LABELS: Record<string, string> = {
   secretary: 'Secretário',
   member: 'Membro',
   hospitaller: 'Hospitaleiro',
+  architect: 'Arquiteto (cargo)',
 };
 
 const RESOURCE_LABELS: Record<string, string> = {
@@ -23,7 +24,8 @@ const RESOURCE_LABELS: Record<string, string> = {
   portal: 'Portal',
   campaigns: 'Hospitalaria',
   import: 'Importação de dados',
-  materials: 'Materiais e patrimônio',
+  materials: 'Materiais — cadastro e baixa',
+  inventory: 'Inventário — ocorrências e empréstimos',
   audit: 'Auditoria',
 };
 
@@ -91,6 +93,7 @@ export default function PermissoesClient({ initialMatrix, roles, resources, acti
               Defina o que cada papel pode <strong>ver</strong> e <strong>editar</strong> em cada módulo.
               {customized ? ' Esta loja usa permissões personalizadas.' : ' Esta loja usa os padrões do sistema (ainda não personalizados).'}
             </p>
+            <p className="mt-1 text-xs text-sand-dark">A coluna <strong>Arquiteto (cargo)</strong> vale para o obreiro que ocupa o cargo de Arquiteto no veneralato ativo — soma-se ao papel dele e some quando o veneralato encerra.</p>
             <p className="mt-1 text-xs text-sand-dark">A coluna do Administrador é fixa: o papel não pode ser reduzido, para que a loja nunca fique sem gestão.</p>
           </div>
           <Link href="/dashboard/configuracoes" className="text-sm text-gold hover:text-gold-light">← Configurações</Link>

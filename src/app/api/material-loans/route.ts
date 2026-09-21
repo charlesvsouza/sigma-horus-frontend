@@ -3,6 +3,8 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { isEligibleForDegree, symbolicSituation } from '@/lib/masonic-degree';
+import { availableUnits } from '@/lib/inventory';
+import { quarantineByMaterial } from '@/lib/inventory-server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -12,7 +14,7 @@ export async function GET(request: Request) {
 
   if (!lodgeId) return NextResponse.json({ items: [] });
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'materials', 'read');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'inventory', 'read', session?.user?.memberId);
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { searchParams } = new URL(request.url);
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
 
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'materials', 'write');
+  const access = await requireLodgeAccess(String(lodgeId), role, 'inventory', 'write', session?.user?.memberId);
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const body = await request.json();
@@ -80,7 +82,8 @@ export async function POST(request: Request) {
       _sum: { quantity: true },
       where: { materialId, status: 'issued' },
     });
-    const available = material.quantity - Number(issued._sum.quantity ?? 0);
+    const { total: quarantined } = await quarantineByMaterial(db, String(lodgeId), materialId);
+    const available = availableUnits({ quantity: material.quantity, issued: Number(issued._sum.quantity ?? 0), quarantined });
     if (quantity > available) return { unavailable: true as const, available };
 
     const created = await db.materialLoan.create({

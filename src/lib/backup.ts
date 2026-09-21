@@ -31,6 +31,7 @@ export const BACKUP_MODELS = [
   'hospitalityRequest',
   'material',
   'materialLoan',
+  'materialIncident',
   'venerableGalleryEntry',
   'session',
   'chartAccount',

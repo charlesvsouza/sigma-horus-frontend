@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
-import { normalizeRole } from '@/lib/rbac';
+import { invalidateCargoRoles, normalizeRole } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
 
@@ -58,5 +58,7 @@ export async function POST(_request: Request, { params }: Ctx) {
     }
   }
 
+  // O veneralato encerrado deixa de conceder papéis por cargo (ex.: Arquiteto).
+  invalidateCargoRoles(String(lodgeId));
   return NextResponse.json({ item: result.updated, closingBalance: result.closingBalance });
 }

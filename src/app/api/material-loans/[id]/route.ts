@@ -6,9 +6,11 @@ import { NextResponse } from 'next/server';
 
 const STATUSES = ['returned', 'lost'];
 
-async function getSessionAndCheck(lodgeId: string | undefined, role: string | undefined) {
+// Devolver/marcar como perdido é operação de inventário (Arquiteto pode); apagar o
+// registro do histórico exige gestão do cadastro (materials:write).
+async function getSessionAndCheck(lodgeId: string | undefined, role: string | undefined, memberId: string | null | undefined, resource: 'inventory' | 'materials') {
   if (!lodgeId) return { error: 'Unauthorized', status: 401 } as const;
-  const access = await requireLodgeAccess(String(lodgeId), role, 'materials', 'write');
+  const access = await requireLodgeAccess(String(lodgeId), role, resource, 'write', memberId);
   if (!access.ok) return { error: access.error, status: access.status } as const;
   return { ok: true as const };
 }
@@ -17,7 +19,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
-  const check = await getSessionAndCheck(lodgeId, role);
+  const check = await getSessionAndCheck(lodgeId, role, session?.user?.memberId, 'inventory');
   if ('error' in check) return NextResponse.json({ error: check.error }, { status: check.status });
 
   const { id } = await params;
@@ -49,7 +51,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
-  const check = await getSessionAndCheck(lodgeId, role);
+  const check = await getSessionAndCheck(lodgeId, role, session?.user?.memberId, 'materials');
   if ('error' in check) return NextResponse.json({ error: check.error }, { status: check.status });
 
   const { id } = await params;

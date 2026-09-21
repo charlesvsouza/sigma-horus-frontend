@@ -114,6 +114,7 @@ model Lodge {
   accountTransfers  AccountTransfer[]
   materials     Material[]
   materialLoans MaterialLoan[]
+  materialIncidents MaterialIncident[]
   venerableGalleryEntries VenerableGalleryEntry[]
 }
 
@@ -510,6 +511,7 @@ model Material {
   lodge          Lodge          @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   rite           Rite?          @relation(fields: [riteId], references: [id], onDelete: SetNull)
   loans          MaterialLoan[]
+  incidents      MaterialIncident[]
 
   @@unique([lodgeId, name])
   @@index([lodgeId, category])
@@ -539,6 +541,41 @@ model MaterialLoan {
 
   @@index([lodgeId, materialId])
   @@index([lodgeId, memberId])
+  @@index([lodgeId, status])
+}
+
+// Ocorrência de inventário registrada pelo Arquiteto (ou por quem gere os
+// materiais): desgaste, dano irreversível ou perda de unidades de um Material.
+// Fluxo: open → (written_off | replaced | dismissed); written_off → replaced.
+//  - written_off: baixa — Material.quantity diminui pela quantidade da ocorrência
+//  - replaced:    reposição — de written_off devolve a quantidade; de open é troca 1:1
+//  - dismissed:   falso alarme/reparado — nada muda no estoque
+// Enquanto 'open', unidades de dano/perda saem do "disponível" (quarentena) —
+// ver lib/inventory.ts. Nomes de quem registrou/decidiu são snapshot (o
+// histórico sobrevive à troca de gestão). Sem valores monetários por design.
+model MaterialIncident {
+  id                 String    @id @default(cuid())
+  lodgeId            String
+  materialId         String
+  kind               String    // wear | damage | loss
+  quantity           Int       @default(1)
+  requestReplacement Boolean   @default(false)
+  status             String    @default("open") // open | written_off | replaced | dismissed
+  notes              String?
+  reportedById       String?
+  reportedByName     String?
+  reportedAt         DateTime  @default(now())
+  resolvedById       String?
+  resolvedByName     String?
+  resolvedAt         DateTime?
+  resolutionNotes    String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  lodge    Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([lodgeId, materialId])
   @@index([lodgeId, status])
 }
 

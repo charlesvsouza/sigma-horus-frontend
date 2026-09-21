@@ -63,7 +63,7 @@ export async function GET() {
     ]);
     const [
       financialAccounts, accountTransfers, counterparties, hospitalityRequests,
-      materials, materialLoans, venerableGalleryEntries,
+      materials, materialLoans, materialIncidents, venerableGalleryEntries,
     ] = await Promise.all([
       db.financialAccount.findMany({ where: { lodgeId: id } }),
       db.accountTransfer.findMany({ where: { lodgeId: id } }),
@@ -71,6 +71,7 @@ export async function GET() {
       db.hospitalityRequest.findMany({ where: { lodgeId: id } }),
       db.material.findMany({ where: { lodgeId: id } }),
       db.materialLoan.findMany({ where: { lodgeId: id } }),
+      db.materialIncident.findMany({ where: { lodgeId: id } }),
       db.venerableGalleryEntry.findMany({ where: { lodgeId: id } }),
     ]);
 
@@ -93,7 +94,7 @@ export async function GET() {
         attendances, terms, memberOffices, cashCloses, balancetes, budgets,
         campaigns, campaignDonations, rolePermissions, subscription, auditLogs,
         financialAccounts, accountTransfers, counterparties, hospitalityRequests,
-        materials, materialLoans, venerableGalleryEntries,
+        materials, materialLoans, materialIncidents, venerableGalleryEntries,
       },
     };
   }, { timeoutMs: 45_000 });
