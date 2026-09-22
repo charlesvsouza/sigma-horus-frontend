@@ -39,11 +39,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Relatório inválido.' }, { status: 400 });
   }
 
+  // Mesmo critério da tela (AccountsReportPage): contas em aberto (a receber/a pagar) não
+  // têm padrão de "mês atual" — vencidas de meses anteriores continuariam pendentes e devem
+  // sair no export também, a menos que a pessoa tenha filtrado por data na tela.
   const now = new Date();
+  const isOpenVariant = variant === 'contas-a-receber' || variant === 'contas-a-pagar';
   const fromParam = searchParams.get('from');
   const toParam = searchParams.get('to');
-  const from = fromParam ? new Date(`${fromParam}T00:00:00`) : new Date(now.getFullYear(), now.getMonth(), 1);
-  const to = toParam ? new Date(`${toParam}T23:59:59`) : now;
+  const from = fromParam ? new Date(`${fromParam}T00:00:00`) : isOpenVariant ? new Date('2000-01-01T00:00:00') : new Date(now.getFullYear(), now.getMonth(), 1);
+  const to = toParam ? new Date(`${toParam}T23:59:59`) : isOpenVariant ? new Date('2100-01-01T23:59:59') : now;
   const personId = searchParams.get('personId') || null;
   const text = searchParams.get('text') || undefined;
 

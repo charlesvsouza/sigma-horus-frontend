@@ -46,8 +46,14 @@ export default async function AccountsReportPage({
   }
 
   const now = new Date();
-  const from = sp.from ? new Date(`${sp.from}T00:00:00`) : monthStart(now);
-  const to = sp.to ? new Date(`${sp.to}T23:59:59`) : now;
+  // Contas em aberto (a receber/a pagar) não somem da tela só porque venceram antes do
+  // mês atual — status pendente/vencida não tem prazo de validade (mesmo critério do resumo
+  // do dashboard, que conta por status, sem filtro de data). O padrão aqui é "tudo que ainda
+  // está pendente"; quem quiser um recorte por período estreita o filtro manualmente. Já
+  // Contas Recebidas/Pagas são por data do pagamento — aí faz sentido partir do mês atual.
+  const isOpenVariant = variant === 'contas-a-receber' || variant === 'contas-a-pagar';
+  const from = sp.from ? new Date(`${sp.from}T00:00:00`) : isOpenVariant ? new Date('2000-01-01T00:00:00') : monthStart(now);
+  const to = sp.to ? new Date(`${sp.to}T23:59:59`) : isOpenVariant ? new Date('2100-01-01T23:59:59') : now;
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, members, counterparties, rowsInput] = await Promise.all([
@@ -78,8 +84,8 @@ export default async function AccountsReportPage({
       lodgeName={data.lodge?.name ?? 'Loja'}
       crestUrl={data.lodge?.crestUrl ?? null}
       people={people}
-      from={from.toISOString().slice(0, 10)}
-      to={sp.to ?? now.toISOString().slice(0, 10)}
+      from={sp.from ?? (isOpenVariant ? '' : from.toISOString().slice(0, 10))}
+      to={sp.to ?? (isOpenVariant ? '' : now.toISOString().slice(0, 10))}
       personId={sp.personId ?? ''}
       text={sp.text ?? ''}
       report={report}
