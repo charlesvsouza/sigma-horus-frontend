@@ -54,7 +54,7 @@ export default async function CategoriasPage(props: {
       db.lodge.findUnique({ where: { id: lid }, select: { name: true, crestUrl: true } }),
       db.chartAccount.findMany({
         where: { lodgeId: lid },
-        select: { id: true, code: true, name: true, type: true, category: true, fundPurpose: true, isSolidarity: true },
+        select: { id: true, code: true, name: true, type: true, category: true, fundPurpose: true, isSolidarity: true, isDues: true },
         orderBy: { code: 'asc' },
       }),
       db.financialAccount.findMany({ where: { lodgeId: lid }, select: { id: true, name: true, active: true }, orderBy: [{ active: 'desc' }, { name: 'asc' }] }),
@@ -179,6 +179,7 @@ export default async function CategoriasPage(props: {
         type: c.type,
         group: c.category ?? 'Sem grupo',
         fund: c.fundPurpose === 'tronco' || c.isSolidarity ? 'tronco' : c.fundPurpose === 'donations' ? 'donations' : null,
+        dues: c.isDues,
       }))}
       banks={data.banks}
       ledger={{

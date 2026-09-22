@@ -6,7 +6,7 @@ import { Button, EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { csvRow } from '@/lib/csv';
 
-interface ChartOption { id: string; code: string; name: string; type: string; group: string; fund: 'tronco' | 'donations' | null }
+interface ChartOption { id: string; code: string; name: string; type: string; group: string; fund: 'tronco' | 'donations' | null; dues: boolean }
 interface LedgerRow { id: string; date: string; description: string; person: string | null; bank: string | null; method: string | null; in: number; out: number; balance: number; status: 'paid' | 'open' }
 interface LedgerGroup { key: string; code: string; name: string; category: string; opening: number; totalIn: number; totalOut: number; closing: number; openIn: number; openOut: number; rows: LedgerRow[]; empty: boolean }
 interface Ledger { totals: { opening: number; in: number; out: number; closing: number; openIn: number; openOut: number }; groups: LedgerGroup[] }
@@ -98,6 +98,7 @@ export default function CategoriasClient({
     });
   }
   const pickFund = (fund: 'tronco' | 'donations') => setSelected(new Set(charts.filter((c) => c.fund === fund).map((c) => c.id)));
+  const pickDues = () => setSelected(new Set(charts.filter((c) => c.dues).map((c) => c.id)));
 
   function go(over: { from?: string; to?: string; cat?: string[] } = {}) {
     const params = new URLSearchParams();
@@ -209,6 +210,7 @@ export default function CategoriasClient({
               Categorias {selected.size > 0 ? `(${selected.size} marcada${selected.size > 1 ? 's' : ''})` : '(nenhuma marcada = todas)'}
             </summary>
             <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button type="button" onClick={pickDues} className="rounded-full border border-gold/40 px-3 py-1 text-xs text-gold/90 hover:border-gold/60 hover:text-gold">Só Mensalidades</button>
               <button type="button" onClick={() => pickFund('tronco')} className="rounded-full border border-gold/40 px-3 py-1 text-xs text-gold/90 hover:border-gold/60 hover:text-gold">Só o Tronco</button>
               <button type="button" onClick={() => pickFund('donations')} className="rounded-full border border-gold/40 px-3 py-1 text-xs text-gold/90 hover:border-gold/60 hover:text-gold">Só Doações e Contribuições</button>
               <button type="button" onClick={() => setSelected(new Set())} className="rounded-full border border-white/8 px-3 py-1 text-xs text-sand-dark hover:text-sand-light">Limpar (todas)</button>
