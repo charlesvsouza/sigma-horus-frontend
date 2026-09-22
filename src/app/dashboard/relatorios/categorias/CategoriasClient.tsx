@@ -192,7 +192,7 @@ export default function CategoriasClient({
               </Button>
             </div>
           </div>
-          {isDirty ? <p className="text-xs text-gold/80">Há alteração no filtro ainda não aplicada — clique em "Aplicar" pra atualizar o relatório.</p> : null}
+          {isDirty ? <p className="text-xs text-gold/80">Há alteração no filtro ainda não aplicada — clique em &quot;Aplicar&quot; pra atualizar o relatório.</p> : null}
 
           <div className="flex flex-wrap items-center gap-2">
             {([['mes', 'Mês atual'], ['ano', 'Ano atual'], ['tudo', 'Desde o início']] as const).map(([k, label]) => (
@@ -203,7 +203,7 @@ export default function CategoriasClient({
               Incluir lançamentos em aberto (pendentes)
             </label>
           </div>
-          {openVal ? <p className="text-xs text-sand-dark/80">Cobranças ainda não pagas aparecem na lista com a etiqueta "Em aberto", mas não entram no saldo — só o que já foi recebido/pago de fato conta pra ele.</p> : null}
+          {openVal ? <p className="text-xs text-sand-dark/80">Cobranças ainda não pagas aparecem na lista com a etiqueta &quot;Em aberto&quot;, mas não entram no saldo — só o que já foi recebido/pago de fato conta pra ele.</p> : null}
 
           <details className="rounded-lg border border-white/6 bg-sigma-blue-deep/40 p-4" open={selected.size > 0}>
             <summary className="cursor-pointer text-sm font-medium text-sand-light">
