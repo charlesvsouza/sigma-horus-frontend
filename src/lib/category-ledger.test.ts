@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildCategoryLedger, NO_CATEGORY_KEY, type LedgerPaymentInput } from './category-ledger.ts';
+import { buildCategoryLedger, NO_CATEGORY_KEY, type LedgerPaymentInput, type LedgerOpenItemInput } from './category-ledger.ts';
 
 const d = (s: string) => new Date(`${s}T12:00:00Z`);
 const tronco = { id: 'c-tronco', code: '1.1.05', name: 'Tronco de Beneficência', category: 'Receitas' };
@@ -73,4 +73,53 @@ test('categoria sem movimento no período e sem saldo anterior não aparece', ()
   assert.equal(l.groups[1].opening, -10);
   const semSocial = buildCategoryLedger([p({ id: 'y', paidAt: d('2026-09-02'), amount: 5 })], from, to);
   assert.deepEqual(semSocial.groups.map((g) => g.key), ['c-tronco']);
+});
+
+const o = (over: Partial<LedgerOpenItemInput> & { id: string; dueDate: Date; amount: number }): LedgerOpenItemInput => ({
+  accountType: 'RECEIVABLE', title: 'Cobrança em aberto', person: null, bank: null, chart: mens, ...over,
+});
+
+test('sem openItems, sem lançamento em aberto: comportamento igual a antes (compatibilidade)', () => {
+  const l = buildCategoryLedger(payments, from, to);
+  assert.ok(l.groups.every((g) => g.rows.every((r) => r.status === 'paid')));
+  assert.equal(l.totals.openIn, 0);
+  assert.equal(l.totals.openOut, 0);
+});
+
+test('lançamento em aberto aparece na lista mas não mexe no saldo', () => {
+  const openItems = [o({ id: 'open1', dueDate: d('2026-09-15'), amount: 220 })];
+  const l = buildCategoryLedger(payments, from, to, 'all', openItems);
+  const mensGroup = l.groups.find((g) => g.key === 'c-mens')!;
+  assert.equal(mensGroup.rows.length, 2); // o pago (f) + o em aberto
+  const openRow = mensGroup.rows.find((r) => r.id === 'open1')!;
+  assert.equal(openRow.status, 'open');
+  assert.equal(openRow.in, 220);
+  // saldo da linha em aberto é o mesmo da última linha paga antes dela (não soma o pendente)
+  const paidRow = mensGroup.rows.find((r) => r.id === 'f')!;
+  assert.equal(openRow.balance, paidRow.balance);
+  assert.equal(mensGroup.totalIn, 300); // só o pago
+  assert.equal(mensGroup.openIn, 220);
+  assert.equal(mensGroup.closing, 300);
+  assert.equal(l.totals.openIn, 220);
+});
+
+test('categoria só com lançamento em aberto (sem nenhum Payment) ainda aparece', () => {
+  const openItems = [o({ id: 'open2', dueDate: d('2026-09-08'), amount: 100, chart: social, accountType: 'PAYABLE' })];
+  const l = buildCategoryLedger([], from, to, 'all', openItems);
+  const g = l.groups.find((g) => g.key === 'c-social')!;
+  assert.equal(g.opening, 0);
+  assert.equal(g.totalOut, 0);
+  assert.equal(g.openOut, 100);
+  assert.equal(g.rows[0].status, 'open');
+});
+
+test('em aberto respeita o filtro de direção e o período (por vencimento)', () => {
+  const openItems = [
+    o({ id: 'openIn', dueDate: d('2026-09-08'), amount: 50, accountType: 'RECEIVABLE' }),
+    o({ id: 'openOut', dueDate: d('2026-09-08'), amount: 30, accountType: 'PAYABLE' }),
+    o({ id: 'openFora', dueDate: d('2026-08-01'), amount: 999, accountType: 'RECEIVABLE' }), // antes do período
+  ];
+  const soEntradas = buildCategoryLedger([], from, to, 'in', openItems);
+  const g = soEntradas.groups.find((g) => g.key === 'c-mens')!;
+  assert.deepEqual(g.rows.map((r) => r.id), ['openIn']);
 });

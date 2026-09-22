@@ -5,7 +5,7 @@ import { donorDisplayName } from '@/lib/hospitalaria';
 import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { todayBR } from '@/lib/date-only';
 import { fundChartWhere, isFundPurpose } from '@/lib/funds';
-import { buildCategoryLedger, type LedgerPaymentInput } from '@/lib/category-ledger';
+import { buildCategoryLedger, type LedgerPaymentInput, type LedgerOpenItemInput } from '@/lib/category-ledger';
 import CategoriasClient from './CategoriasClient';
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -13,8 +13,10 @@ const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 // Razão por categoria: tudo o que foi lançado nas categorias escolhidas (Tronco,
 // Doações, Mensalidades, qualquer uma), lançamento a lançamento, com saldo acumulado.
 // Sem categoria marcada = todas. `?fund=tronco|donations` pré-seleciona as categorias do fundo.
+// `?open=1` inclui também cobranças em aberto (pendentes, sem Payment ainda) na lista —
+// elas nunca entram no saldo, só dão o quadro completo da categoria.
 export default async function CategoriasPage(props: {
-  searchParams: Promise<{ cat?: string; fund?: string; from?: string; to?: string; bank?: string; dir?: string }>;
+  searchParams: Promise<{ cat?: string; fund?: string; from?: string; to?: string; bank?: string; dir?: string; open?: string }>;
 }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
@@ -44,6 +46,7 @@ export default async function CategoriasPage(props: {
   const from = parseBRDateTimeLocal(`${fromStr}T00:00:00`);
   const to = parseBRDateTimeLocal(`${toStr}T23:59:59`);
   const direction: 'all' | 'in' | 'out' = sp.dir === 'in' || sp.dir === 'out' ? sp.dir : 'all';
+  const includeOpen = sp.open === '1';
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const lid = String(lodgeId);
@@ -92,7 +95,31 @@ export default async function CategoriasPage(props: {
       },
     });
 
-    return { lodge, charts, banks, selectedIds, bankId, payments };
+    const openAccounts = includeOpen
+      ? await db.account.findMany({
+          where: {
+            lodgeId: lid,
+            status: { not: 'paid' },
+            dueDate: { lte: to },
+            ...(bankId ? { bankAccountId: bankId } : {}),
+            ...(selectedIds.length ? { chartAccountId: { in: selectedIds } } : {}),
+          },
+          select: {
+            id: true,
+            amount: true,
+            dueDate: true,
+            type: true,
+            title: true,
+            counterpartyName: true,
+            member: { select: { name: true } },
+            counterparty: { select: { name: true } },
+            bankAccount: { select: { name: true } },
+            chartAccount: { select: { id: true, code: true, name: true, category: true, isSolidarity: true } },
+          },
+        })
+      : [];
+
+    return { lodge, charts, banks, selectedIds, bankId, payments, openAccounts };
   });
 
   const inputs: LedgerPaymentInput[] = data.payments.map((p) => {
@@ -112,7 +139,22 @@ export default async function CategoriasPage(props: {
     };
   });
 
-  const ledger = buildCategoryLedger(inputs, from, to, direction);
+  const openInputs: LedgerOpenItemInput[] = data.openAccounts.map((a) => {
+    const chart = a.chartAccount ?? null;
+    const raw = a.member?.name ?? a.counterparty?.name ?? a.counterpartyName ?? null;
+    return {
+      id: a.id,
+      dueDate: a.dueDate,
+      amount: Number(a.amount),
+      accountType: a.type,
+      title: a.title,
+      person: donorDisplayName(raw, chart?.isSolidarity ?? false, role),
+      bank: a.bankAccount?.name ?? null,
+      chart: chart ? { id: chart.id, code: chart.code, name: chart.name, category: chart.category } : null,
+    };
+  });
+
+  const ledger = buildCategoryLedger(inputs, from, to, direction, openInputs);
 
   return (
     <CategoriasClient
@@ -121,6 +163,7 @@ export default async function CategoriasPage(props: {
       from={fromStr}
       to={toStr}
       direction={direction}
+      includeOpen={includeOpen}
       bankId={data.bankId}
       selectedIds={data.selectedIds}
       charts={data.charts.map((c) => ({

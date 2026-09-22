@@ -4,6 +4,9 @@ import { round2, sumMoney } from '@/lib/money';
 // contas (Tronco, Doações, Mensalidades, qualquer uma), lançamento a lançamento, com
 // subtotal e saldo acumulado por categoria. É a visão de "centro de custo": a
 // categoria é o eixo, e o banco/caixa onde o dinheiro passou é só um atributo da linha.
+// Opcionalmente entra também o que está em aberto (cobrança pendente, ainda sem
+// Payment) — aparece na lista pra dar o quadro completo da categoria, mas nunca entra
+// no saldo (entradas/saídas acumuladas), que continua sendo só o caixa realizado.
 // Funções puras — o carregamento do banco fica na página.
 
 export interface LedgerPaymentInput {
@@ -20,17 +23,36 @@ export interface LedgerPaymentInput {
   chart: { id: string; code: string; name: string; category: string | null } | null;
 }
 
+/** Cobrança/lançamento ainda pendente (Account com status != paid), sem Payment. */
+export interface LedgerOpenItemInput {
+  id: string;
+  dueDate: Date;
+  amount: number;
+  accountType: string | null;
+  title: string;
+  person: string | null;
+  /** Conta bancária/caixa PREVISTA (não é onde o dinheiro passou de fato — ainda não passou). */
+  bank: string | null;
+  chart: { id: string; code: string; name: string; category: string | null } | null;
+}
+
 export interface LedgerRow {
   id: string;
   date: Date;
   description: string;
   person: string | null;
   bank: string | null;
-  method: string;
+  method: string | null;
   in: number;
   out: number;
-  /** Saldo acumulado da categoria (saldo anterior + entradas − saídas até esta linha). */
+  /**
+   * Saldo acumulado da categoria (saldo anterior + entradas − saídas até esta linha).
+   * Em linhas `status: 'open'` é o mesmo saldo da última linha paga — a linha em
+   * aberto não altera o saldo, só aparece na lista pra dar o quadro completo.
+   */
   balance: number;
+  /** 'paid' = já efetivado (Payment real); 'open' = cobrança pendente, ainda não paga. */
+  status: 'paid' | 'open';
 }
 
 export interface LedgerGroup {
@@ -43,68 +65,103 @@ export interface LedgerGroup {
   totalIn: number;
   totalOut: number;
   closing: number;
+  /** Soma do que está em aberto no período (não entra no saldo). */
+  openIn: number;
+  openOut: number;
   rows: LedgerRow[];
 }
 
 export interface Ledger {
   groups: LedgerGroup[];
-  totals: { opening: number; in: number; out: number; closing: number };
+  totals: { opening: number; in: number; out: number; closing: number; openIn: number; openOut: number };
 }
 
 export const NO_CATEGORY_KEY = 'none';
+
+type Kind = 'paid' | 'open';
+interface Entry {
+  id: string;
+  kind: Kind;
+  date: Date;
+  amount: number;
+  accountType: string | null;
+  title: string;
+  person: string | null;
+  bank: string | null;
+  method: string | null;
+  chart: { id: string; code: string; name: string; category: string | null } | null;
+}
 
 /**
  * Monta o razão de [from, to]. `payments` deve trazer também o que veio antes de
  * `from` (vira o saldo anterior de cada categoria); o que vem depois de `to` é ignorado.
  * `direction` filtra só entradas ou só saídas (o saldo anterior segue completo).
+ * `openItems` (opcional) traz cobranças pendentes — entram na lista dentro do
+ * período, na posição cronológica certa, mas nunca no saldo/opening/closing.
  */
 export function buildCategoryLedger(
   payments: LedgerPaymentInput[],
   from: Date,
   to: Date,
   direction: 'all' | 'in' | 'out' = 'all',
+  openItems: LedgerOpenItemInput[] = [],
 ): Ledger {
-  const isIn = (p: LedgerPaymentInput) => p.accountType === 'RECEIVABLE';
-  const keyOf = (p: LedgerPaymentInput) => p.chart?.id ?? NO_CATEGORY_KEY;
+  const isIn = (e: Entry) => e.accountType === 'RECEIVABLE';
+  const keyOf = (e: Entry) => e.chart?.id ?? NO_CATEGORY_KEY;
 
-  const byKey = new Map<string, LedgerPaymentInput[]>();
-  for (const p of payments) {
-    if (p.paidAt > to) continue;
-    const list = byKey.get(keyOf(p)) ?? [];
-    list.push(p);
-    byKey.set(keyOf(p), list);
+  const entries: Entry[] = [
+    ...payments.map((p): Entry => ({
+      id: p.id, kind: 'paid', date: p.paidAt, amount: p.amount, accountType: p.accountType,
+      title: p.title, person: p.person, bank: p.bank, method: p.method, chart: p.chart,
+    })),
+    ...openItems.map((o): Entry => ({
+      id: o.id, kind: 'open', date: o.dueDate, amount: o.amount, accountType: o.accountType,
+      title: o.title, person: o.person, bank: o.bank, method: null, chart: o.chart,
+    })),
+  ];
+
+  const byKey = new Map<string, Entry[]>();
+  for (const e of entries) {
+    if (e.date > to) continue;
+    const list = byKey.get(keyOf(e)) ?? [];
+    list.push(e);
+    byKey.set(keyOf(e), list);
   }
 
   const groups: LedgerGroup[] = [];
   for (const [key, list] of byKey) {
-    const sorted = [...list].sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime() || a.id.localeCompare(b.id));
-    const before = sorted.filter((p) => p.paidAt < from);
-    const opening = sumMoney(before.map((p) => (isIn(p) ? p.amount : -p.amount)));
+    const sorted = [...list].sort((a, b) => a.date.getTime() - b.date.getTime() || a.id.localeCompare(b.id));
+    // Saldo anterior é só do que já foi pago de fato — pendência nunca entrou no caixa.
+    const before = sorted.filter((e) => e.kind === 'paid' && e.date < from);
+    const opening = sumMoney(before.map((e) => (isIn(e) ? e.amount : -e.amount)));
 
     let running = opening;
     const rows: LedgerRow[] = [];
-    for (const p of sorted) {
-      if (p.paidAt < from) continue;
-      if (direction === 'in' && !isIn(p)) continue;
-      if (direction === 'out' && isIn(p)) continue;
-      running = round2(running + (isIn(p) ? p.amount : -p.amount));
+    for (const e of sorted) {
+      if (e.date < from) continue;
+      if (direction === 'in' && !isIn(e)) continue;
+      if (direction === 'out' && isIn(e)) continue;
+      if (e.kind === 'paid') running = round2(running + (isIn(e) ? e.amount : -e.amount));
       rows.push({
-        id: p.id,
-        date: p.paidAt,
-        description: p.title,
-        person: p.person,
-        bank: p.bank,
-        method: p.method,
-        in: isIn(p) ? p.amount : 0,
-        out: isIn(p) ? 0 : p.amount,
+        id: e.id,
+        date: e.date,
+        description: e.title,
+        person: e.person,
+        bank: e.bank,
+        method: e.method,
+        in: isIn(e) ? e.amount : 0,
+        out: isIn(e) ? 0 : e.amount,
         balance: running,
+        status: e.kind,
       });
     }
     if (rows.length === 0 && opening === 0) continue;
 
     const chart = sorted[0].chart;
-    const totalIn = sumMoney(rows.map((r) => r.in));
-    const totalOut = sumMoney(rows.map((r) => r.out));
+    const paidRows = rows.filter((r) => r.status === 'paid');
+    const openRows = rows.filter((r) => r.status === 'open');
+    const totalIn = sumMoney(paidRows.map((r) => r.in));
+    const totalOut = sumMoney(paidRows.map((r) => r.out));
     groups.push({
       key,
       code: chart?.code ?? '—',
@@ -114,6 +171,8 @@ export function buildCategoryLedger(
       totalIn,
       totalOut,
       closing: running,
+      openIn: sumMoney(openRows.map((r) => r.in)),
+      openOut: sumMoney(openRows.map((r) => r.out)),
       rows,
     });
   }
@@ -127,6 +186,8 @@ export function buildCategoryLedger(
       in: sumMoney(groups.map((g) => g.totalIn)),
       out: sumMoney(groups.map((g) => g.totalOut)),
       closing: sumMoney(groups.map((g) => g.closing)),
+      openIn: sumMoney(groups.map((g) => g.openIn)),
+      openOut: sumMoney(groups.map((g) => g.openOut)),
     },
   };
 }

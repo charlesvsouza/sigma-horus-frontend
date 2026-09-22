@@ -7,9 +7,9 @@ import { brl } from '@/lib/currency';
 import { csvRow } from '@/lib/csv';
 
 interface ChartOption { id: string; code: string; name: string; type: string; group: string; fund: 'tronco' | 'donations' | null }
-interface LedgerRow { id: string; date: string; description: string; person: string | null; bank: string | null; method: string; in: number; out: number; balance: number }
-interface LedgerGroup { key: string; code: string; name: string; category: string; opening: number; totalIn: number; totalOut: number; closing: number; rows: LedgerRow[] }
-interface Ledger { totals: { opening: number; in: number; out: number; closing: number }; groups: LedgerGroup[] }
+interface LedgerRow { id: string; date: string; description: string; person: string | null; bank: string | null; method: string | null; in: number; out: number; balance: number; status: 'paid' | 'open' }
+interface LedgerGroup { key: string; code: string; name: string; category: string; opening: number; totalIn: number; totalOut: number; closing: number; openIn: number; openOut: number; rows: LedgerRow[] }
+interface Ledger { totals: { opening: number; in: number; out: number; closing: number; openIn: number; openOut: number }; groups: LedgerGroup[] }
 
 const PRINT_CSS = `
 @media print {
@@ -42,13 +42,14 @@ const fmtInput = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateStrin
 const num = (n: number) => n.toFixed(2).replace('.', ',');
 
 export default function CategoriasClient({
-  lodgeName, crestUrl, from, to, direction, bankId, selectedIds, charts, banks, ledger,
+  lodgeName, crestUrl, from, to, direction, includeOpen, bankId, selectedIds, charts, banks, ledger,
 }: {
   lodgeName: string;
   crestUrl: string | null;
   from: string;
   to: string;
   direction: 'all' | 'in' | 'out';
+  includeOpen: boolean;
   bankId: string | null;
   selectedIds: string[];
   charts: ChartOption[];
@@ -59,6 +60,7 @@ export default function CategoriasClient({
   const [fromVal, setFromVal] = useState(from);
   const [toVal, setToVal] = useState(to);
   const [dirVal, setDirVal] = useState(direction);
+  const [openVal, setOpenVal] = useState(includeOpen);
   const [bankVal, setBankVal] = useState(bankId ?? '');
   const [selected, setSelected] = useState<Set<string>>(new Set(selectedIds));
   const [search, setSearch] = useState('');
@@ -90,6 +92,7 @@ export default function CategoriasClient({
     const cats = over.cat ?? [...selected];
     if (cats.length) params.set('cat', cats.join(','));
     if (dirVal !== 'all') params.set('dir', dirVal);
+    if (openVal) params.set('open', '1');
     if (bankVal) params.set('bank', bankVal);
     router.push(`/dashboard/relatorios/categorias?${params.toString()}`);
   }
@@ -105,14 +108,17 @@ export default function CategoriasClient({
   }
 
   function exportCsv() {
-    const lines: string[] = [csvRow(['Categoria', 'Data', 'Histórico', 'Pessoa', 'Conta/Caixa', 'Forma', 'Entrada', 'Saída', ...(showBalance ? ['Saldo'] : [])])];
+    const lines: string[] = [csvRow(['Categoria', 'Data', 'Status', 'Histórico', 'Pessoa', 'Conta/Caixa', 'Forma', 'Entrada', 'Saída', ...(showBalance ? ['Saldo'] : [])])];
     for (const g of ledger.groups) {
       const label = `${g.code} ${g.name}`;
-      if (showBalance) lines.push(csvRow([label, '', 'Saldo anterior', '', '', '', '', '', num(g.opening)]));
+      if (showBalance) lines.push(csvRow([label, '', '', 'Saldo anterior', '', '', '', '', '', num(g.opening)]));
       for (const r of g.rows) {
-        lines.push(csvRow([label, fmtDay(r.date), r.description, r.person ?? '', r.bank ?? '', METHOD_LABEL[r.method] ?? r.method, r.in ? num(r.in) : '', r.out ? num(r.out) : '', ...(showBalance ? [num(r.balance)] : [])]));
+        lines.push(csvRow([label, fmtDay(r.date), r.status === 'open' ? 'Em aberto' : 'Pago', r.description, r.person ?? '', r.bank ?? '', r.method ? (METHOD_LABEL[r.method] ?? r.method) : '', r.in ? num(r.in) : '', r.out ? num(r.out) : '', ...(showBalance ? [r.status === 'open' ? '' : num(r.balance)] : [])]));
       }
-      lines.push(csvRow([label, '', 'Total da categoria', '', '', '', num(g.totalIn), num(g.totalOut), ...(showBalance ? [num(g.closing)] : [])]));
+      lines.push(csvRow([label, '', '', 'Total da categoria (pago)', '', '', '', num(g.totalIn), num(g.totalOut), ...(showBalance ? [num(g.closing)] : [])]));
+      if (g.openIn > 0 || g.openOut > 0) {
+        lines.push(csvRow([label, '', '', 'Total em aberto', '', '', '', g.openIn ? num(g.openIn) : '', g.openOut ? num(g.openOut) : '', ...(showBalance ? [''] : [])]));
+      }
     }
     const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -161,11 +167,16 @@ export default function CategoriasClient({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {([['mes', 'Mês atual'], ['ano', 'Ano atual'], ['tudo', 'Desde o início']] as const).map(([k, label]) => (
               <button key={k} type="button" onClick={() => shortcut(k)} className="rounded-full border border-white/8 px-3.5 py-1.5 text-xs text-sand-dark transition-colors hover:border-white/20 hover:text-sand-light">{label}</button>
             ))}
+            <label className="ml-2 flex items-center gap-2 text-xs text-sand-dark">
+              <input type="checkbox" checked={openVal} onChange={(e) => setOpenVal(e.target.checked)} className="accent-gold" />
+              Incluir lançamentos em aberto (pendentes)
+            </label>
           </div>
+          {openVal ? <p className="text-xs text-sand-dark/80">Cobranças ainda não pagas aparecem na lista com a etiqueta "Em aberto", mas não entram no saldo — só o que já foi recebido/pago de fato conta pra ele.</p> : null}
 
           <details className="rounded-lg border border-white/6 bg-sigma-blue-deep/40 p-4" open={selected.size > 0}>
             <summary className="cursor-pointer text-sm font-medium text-sand-light">
@@ -217,7 +228,7 @@ export default function CategoriasClient({
                 <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
                 <h2 className="mt-0.5 text-sm text-sand-dark">Razão por categoria</h2>
                 <p className="mt-0.5 text-xs text-sand-dark">
-                  Período: {fmtInput(from)} a {fmtInput(to)} · {scope}{bankName ? ` · ${bankName}` : ''}{direction === 'in' ? ' · só entradas' : direction === 'out' ? ' · só saídas' : ''}
+                  Período: {fmtInput(from)} a {fmtInput(to)} · {scope}{bankName ? ` · ${bankName}` : ''}{direction === 'in' ? ' · só entradas' : direction === 'out' ? ' · só saídas' : ''}{openVal ? ' · inclui em aberto' : ''}
                 </p>
               </header>
 
@@ -246,23 +257,34 @@ export default function CategoriasClient({
                           </tr>
                         ) : null}
                         {g.rows.map((r) => (
-                          <tr key={r.id}>
+                          <tr key={r.id} className={r.status === 'open' ? 'opacity-70' : undefined}>
                             <td className={`${TD} whitespace-nowrap text-sand`}>{fmtDay(r.date)}</td>
-                            <td className={`${TD} text-sand`}>{r.description}</td>
+                            <td className={`${TD} text-sand`}>
+                              {r.description}
+                              {r.status === 'open' ? <span className="ml-2 rounded-full bg-gold/10 px-2 py-0.5 text-[0.65rem] font-medium text-gold">Em aberto</span> : null}
+                            </td>
                             <td className={`${TD} text-sand-dark`}>{r.person ?? '—'}</td>
                             <td className={`${TD} text-sand-dark`}>{r.bank ?? '—'}</td>
-                            <td className={`${TD} text-sand-dark`}>{METHOD_LABEL[r.method] ?? r.method}</td>
+                            <td className={`${TD} text-sand-dark`}>{r.method ? (METHOD_LABEL[r.method] ?? r.method) : '—'}</td>
                             <td className={`${TD} num text-right tabular-nums text-emerald-300`}>{r.in ? brl(r.in) : ''}</td>
                             <td className={`${TD} num text-right tabular-nums text-rose-300`}>{r.out ? brl(r.out) : ''}</td>
-                            {showBalance ? <td className={`${TD} num text-right tabular-nums text-sand-light`}>{brl(r.balance)}</td> : null}
+                            {showBalance ? <td className={`${TD} num text-right tabular-nums text-sand-light`}>{r.status === 'open' ? '—' : brl(r.balance)}</td> : null}
                           </tr>
                         ))}
                         <tr className="sub">
-                          <td className="px-2 py-2 font-semibold text-sand-light" colSpan={5}>Total da categoria</td>
+                          <td className="px-2 py-2 font-semibold text-sand-light" colSpan={5}>Total da categoria (pago)</td>
                           <td className="px-2 py-2 text-right num font-semibold tabular-nums text-emerald-300">{brl(g.totalIn)}</td>
                           <td className="px-2 py-2 text-right num font-semibold tabular-nums text-rose-300">{brl(g.totalOut)}</td>
                           {showBalance ? <td className="px-2 py-2 text-right num font-semibold tabular-nums text-gold">{brl(g.closing)}</td> : null}
                         </tr>
+                        {g.openIn > 0 || g.openOut > 0 ? (
+                          <tr>
+                            <td className="px-2 py-2 text-sand-dark" colSpan={5}>Em aberto nessa categoria (não conta no saldo)</td>
+                            <td className="px-2 py-2 text-right num tabular-nums text-emerald-300/70">{g.openIn ? brl(g.openIn) : ''}</td>
+                            <td className="px-2 py-2 text-right num tabular-nums text-rose-300/70">{g.openOut ? brl(g.openOut) : ''}</td>
+                            {showBalance ? <td className="px-2 py-2" /> : null}
+                          </tr>
+                        ) : null}
                       </tbody>
                     </table>
                   </div>
@@ -277,6 +299,8 @@ export default function CategoriasClient({
                     ['Entradas', ledger.totals.in, 'text-emerald-300', true],
                     ['Saídas', ledger.totals.out, 'text-rose-300', true],
                     ['Saldo final', ledger.totals.closing, 'text-gold', showBalance],
+                    ['Em aberto a receber', ledger.totals.openIn, 'text-emerald-300/70', ledger.totals.openIn > 0],
+                    ['Em aberto a pagar', ledger.totals.openOut, 'text-rose-300/70', ledger.totals.openOut > 0],
                   ] as const).filter((x) => x[3]).map(([label, value, tone]) => (
                     <div key={label}>
                       <p className="text-xs uppercase tracking-[0.15em] text-sand-dark">{label}</p>
