@@ -66,6 +66,20 @@ export default function CategoriasClient({
   const [search, setSearch] = useState('');
 
   const showBalance = direction === 'all';
+
+  // Compara o que está nos campos agora com o que foi de fato aplicado (os valores
+  // vindos por prop, que refletem a URL atual) — usado só pra acender o "Aplicar"
+  // quando há mudança pendente, nunca pra decidir o que o relatório mostra.
+  const appliedSelected = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const sameSelection = selected.size === appliedSelected.size && [...selected].every((id) => appliedSelected.has(id));
+  const isDirty =
+    fromVal !== from ||
+    toVal !== to ||
+    dirVal !== direction ||
+    openVal !== includeOpen ||
+    bankVal !== (bankId ?? '') ||
+    !sameSelection;
+
   const visibleCharts = useMemo(() => {
     const q = search.trim().toLowerCase();
     return q ? charts.filter((c) => `${c.code} ${c.name}`.toLowerCase().includes(q)) : charts;
@@ -167,9 +181,17 @@ export default function CategoriasClient({
               </select>
             </label>
             <div className="flex items-end">
-              <Button type="button" variant="secondary" onClick={() => go()}>Aplicar</Button>
+              <Button
+                type="button"
+                variant={isDirty ? 'primary' : 'secondary'}
+                onClick={() => go()}
+                className={isDirty ? 'animate-pulse shadow-[0_0_0_3px_rgba(201,162,39,0.35)]' : ''}
+              >
+                Aplicar{isDirty ? ' •' : ''}
+              </Button>
             </div>
           </div>
+          {isDirty ? <p className="text-xs text-gold/80">Há alteração no filtro ainda não aplicada — clique em "Aplicar" pra atualizar o relatório.</p> : null}
 
           <div className="flex flex-wrap items-center gap-2">
             {([['mes', 'Mês atual'], ['ano', 'Ano atual'], ['tudo', 'Desde o início']] as const).map(([k, label]) => (
