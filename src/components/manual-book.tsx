@@ -1926,9 +1926,9 @@ export function ManualBook() {
                 ativos:
               </p>
               <Bullets>
-                <li><strong>Oficina</strong> — até 30 membros — R$ 80,00/mês.</li>
-                <li><strong>Loja</strong> — 31 a 80 membros — R$ 110,00/mês.</li>
-                <li><strong>Potência</strong> — 81+ ou multiloja — R$ 170,00/mês.</li>
+                <li><strong>Oficina</strong> — até 30 membros — R$ 110,00/mês.</li>
+                <li><strong>Loja</strong> — 31 a 80 membros — R$ 170,00/mês.</li>
+                <li><strong>Potência</strong> — 81+ ou multiloja — R$ 220,00/mês.</li>
               </Bullets>
               <p>Formas de contratação:</p>
               <Bullets>

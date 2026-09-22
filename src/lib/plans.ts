@@ -9,7 +9,7 @@ export const PLANS = {
   oficina: {
     id: 'oficina',
     name: 'Oficina',
-    price: 8000,
+    price: 11000,
     rank: 1,
     maxMembers: 30,
     description: 'Para lojas com até 30 membros ativos.',
@@ -25,7 +25,7 @@ export const PLANS = {
   loja: {
     id: 'loja',
     name: 'Loja',
-    price: 11000,
+    price: 17000,
     rank: 2,
     maxMembers: 80,
     description: 'Para lojas de 31 a 80 membros ativos.',
@@ -40,7 +40,7 @@ export const PLANS = {
   potencia: {
     id: 'potencia',
     name: 'Potência',
-    price: 17000,
+    price: 22000,
     rank: 3,
     maxMembers: Infinity,
     description: 'Para lojas com mais de 80 membros ou múltiplas lojas.',

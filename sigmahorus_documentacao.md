@@ -120,11 +120,11 @@ O sistema lida com dinheiro em **duas direções distintas**. Misturá-las é er
 
 | Plano | Membros ativos | Preço/mês |
 |-------|----------------|---------------------|
-| Oficina | até 30 | R$ 80 |
-| Loja | 31 a 80 | R$ 110 |
-| Potência | 81+ / multiloja | R$ 170 |
+| Oficina | até 30 | R$ 110 |
+| Loja | 31 a 80 | R$ 170 |
+| Potência | 81+ / multiloja | R$ 220 |
 
-Valores **calibrados (2026-06-29)**. Trial de **10 dias**; cobrança mensal/anual. **Desconto anual: 10% no cartão, 5% no boleto** (regra real de cobrança em `priceFor`/`ensurePrice`). Prices no Stripe são imutáveis, então as lookup_keys são versionadas ao mudar o valor: atual **mês `_v2`, ano `_v3`**. **6 Prices LIVE materializados** (assinaturas antigas permanecem no preço anterior — grandfathered). **Plano anual sem cartão usa boleto** (PIX indisponível p/ contas BR no Stripe). Faixa medida por membros ativos, não por usuários de login.
+Valores **recalibrados (2026-09-22)**, substituindo a tabela anterior (80/110/170, de 2026-06-29). Trial de **10 dias**; cobrança mensal/anual. **Desconto anual: 10% no cartão, 5% no boleto** (regra real de cobrança em `priceFor`/`ensurePrice`). Prices no Stripe são imutáveis, então as lookup_keys são versionadas ao mudar o valor: atual **mês `_v3`, ano `_v4`**. Prices antigos (`_v2`/`_v3`) permanecem para assinaturas grandfathered, se houver. **Plano anual sem cartão usa boleto** (PIX indisponível p/ contas BR no Stripe). Faixa medida por membros ativos, não por usuários de login.
 
 ---
 
@@ -414,6 +414,7 @@ Executada análise com skill `impeccable` atualizado (`v3.8.0`) sobre os alvos `
 - **Desconto anual:** cartão 10% / boleto 5% (boleto a 5% **mantido**).
 - **Documentos:** Cloudflare R2 via API S3 (sem binding de Workers).
 - **Valores dos planos (2026-06-29):** Oficina **R$ 80**, Loja **R$ 110**, Potência **R$ 170** (mês). 6 Prices LIVE criados (mês `_v2`/ano `_v3`).
+- **Recalibração de valores (2026-09-22):** Oficina **R$ 110**, Loja **R$ 170**, Potência **R$ 220** (mês); faixas de membros mantidas. Lookup_keys bumped p/ `_v3`/`_v4`. Ver [[pricing-recalibration-2026-09]] na memória.
 
 ### Em aberto
 1. Duração final da avaliação gratuita (hoje 10 dias).
