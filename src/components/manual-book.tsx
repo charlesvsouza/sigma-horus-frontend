@@ -253,7 +253,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 21 de setembro de 2026 · versão 1.43</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 22 de setembro de 2026 · versão 1.44</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1063,6 +1063,12 @@ export function ManualBook() {
                   <UI> Contas a receber</UI> e <UI>Contas a pagar</UI> mostram o que está <strong>em aberto</strong>, por data de vencimento;
                   <UI> Contas recebidas</UI> e <UI>Contas pagas</UI> mostram o que <strong>já foi liquidado</strong>, por data de recebimento ou de pagamento. Ficam em <UI>Tesouraria → Relatórios</UI>.
                 </p>
+                <Note>
+                  <UI>Contas a receber</UI> e <UI>Contas a pagar</UI> abrem por padrão <strong>sem limite de data</strong> — mostram tudo
+                  que ainda está em aberto, mesmo vencido há meses, porque pendência não perde validade com o tempo. Estreite o
+                  período só se quiser ver um recorte específico. Já <UI>Contas recebidas</UI> e <UI>Contas pagas</UI> continuam
+                  abrindo no mês atual, porque ali o que importa é quando o dinheiro de fato se moveu.
+                </Note>
                 <p>
                   Em <UI>Tesouraria → Relatórios → Fechamento</UI> está o <strong>relatório financeiro completo</strong> no formato livro
                   caixa, para o fechamento do veneralato: <strong>Balanço Financeiro</strong>, <strong>Balancete por plano
@@ -1364,11 +1370,20 @@ export function ManualBook() {
                   lançamento, com o banco ou o Caixa por onde o dinheiro passou. É a forma de tratar o Tronco como <em>centro de
                   custo</em>: não existe um &quot;banco Tronco&quot;, existe a categoria, e o relatório mostra o que há nela.
                 </p>
+                <Note>
+                  Por padrão o relatório mostra só <strong>dinheiro que já entrou ou saiu de fato</strong> (pagamento
+                  efetivado) — uma cobrança criada mas ainda não paga não aparece, mesmo que a categoria esteja marcada
+                  no filtro. Isso é o comportamento certo, não falta de dado: se uma categoria marcada não tem nenhum
+                  pagamento ainda, ela some da lista e o saldo dela é zero. Ligue <UI>Incluir lançamentos em aberto</UI>
+                  (abaixo) pra ver também o que está pendente.
+                </Note>
                 <Bullets>
-                  <li><strong>Categorias:</strong> marque uma, várias ou nenhuma (nenhuma = todas). Os atalhos <UI>Só o Tronco</UI> e <UI>Só Doações e Contribuições</UI> já marcam as categorias do fundo.</li>
+                  <li><strong>Categorias:</strong> marque uma, várias ou nenhuma (nenhuma = todas). Os atalhos <UI>Só o Tronco</UI> e <UI>Só Doações e Contribuições</UI> já marcam as categorias do fundo. Categoria marcada sem nenhum lançamento no período aparece mesmo assim, com <strong>&quot;Sem movimentação no período selecionado&quot;</strong> no lugar da tabela — assim dá pra confirmar que o filtro considerou a categoria, só não achou nada nela ainda.</li>
                   <li><strong>Período</strong> (mês, ano, desde o início ou datas livres), <strong>conta ou caixa</strong> (para ver só o que passou por um banco) e <strong>movimento</strong> (entradas e saídas, só entradas ou só saídas).</li>
+                  <li><strong>Incluir lançamentos em aberto (pendentes):</strong> desligado por padrão. Ligado, traz também as cobranças de cada categoria que ainda não foram pagas, marcadas com a etiqueta <strong>&quot;Em aberto&quot;</strong>, na posição certa da linha do tempo — mas elas <strong>não entram no saldo</strong> (fica um subtotal à parte, &quot;Em aberto nessa categoria&quot;, e um total geral de pendente a receber/a pagar), porque o dinheiro ainda não se moveu de verdade.</li>
                   <li>Cada categoria mostra o <strong>saldo anterior</strong> ao período, cada lançamento (data, histórico, pessoa, conta, forma, entrada, saída) com o <strong>saldo acumulado</strong>, e o <strong>total da categoria</strong>; no fim, o total geral.</li>
-                  <li><UI>Salvar como PDF</UI> (página A4 paisagem, com o brasão) e <UI>Exportar CSV</UI> para abrir em planilha.</li>
+                  <li><UI>Salvar como PDF</UI> (página A4 paisagem, com o brasão) e <UI>Exportar CSV</UI> para abrir em planilha (com uma coluna de status, Pago ou Em aberto, quando o toggle estiver ligado).</li>
+                  <li>Mudou algum filtro e ainda não clicou em <UI>Aplicar</UI>? O botão acende em dourado (com um aviso ao lado) até você clicar — o resultado na tela nunca corresponde a um filtro que ainda não foi aplicado.</li>
                 </Bullets>
                 <Note>
                   Os nomes de quem doou ao Tronco só aparecem para Administrador, Venerável e Tesoureiro, igual às demais telas.
@@ -1998,6 +2013,7 @@ export function ManualBook() {
                 <li><strong>Não consigo fornecer um ritual/material a um membro.</strong> O material tem um grau exigido e o membro ainda não chegou lá (ex.: Companheiro pedindo Ritual de Mestre) — ou não há quantidade disponível em estoque. Veja Materiais e patrimônio (capítulo 8).</li>
                 <li><strong>Onde encontro o Regimento Interno / Constituição da Potência?</strong> Em <UI>Meu portal → Documentos da Loja</UI>, se a Secretaria já tiver publicado (capítulo 10).</li>
                 <li><strong>O brasão não aparece nos documentos.</strong> Envie a imagem em <UI>Administração → Configurações da loja → Identificação → Enviar imagem</UI> (6.1). Documentos já gerados antes do envio não são retroativos.</li>
+                <li><strong>Marquei uma categoria na Razão por Categoria e ela não aparece / só aparece o Tronco.</strong> O relatório mostra por padrão só pagamento já efetivado — se a categoria marcada não tem nenhum pagamento ainda (só cobrança em aberto, nunca paga), ela aparece com &quot;Sem movimentação no período selecionado&quot;, não com dado nenhum. Ligue <UI>Incluir lançamentos em aberto</UI> pra ver também o que está pendente (7.18).</li>
               </Bullets>
             </Chapter>
           </article>
