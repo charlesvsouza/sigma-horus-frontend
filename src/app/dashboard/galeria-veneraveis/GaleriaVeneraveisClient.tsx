@@ -89,8 +89,10 @@ export default function GaleriaVeneraveisClient({
   const [saving, setSaving] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
+  // Do Venerável atual (ou mais recente) para o mais antigo — ordem decrescente por
+  // data de início do período, oposto da ordem cronológica de fundação.
   const entries = useMemo<Entry[]>(
-    () => [...automatic, ...manual].sort((a, b) => new Date(a.sortDate).getTime() - new Date(b.sortDate).getTime()),
+    () => [...automatic, ...manual].sort((a, b) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime()),
     [automatic, manual],
   );
 

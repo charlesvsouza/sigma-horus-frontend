@@ -1476,7 +1476,7 @@ export function ManualBook() {
               <Sub id="sec-galeria-veneraveis" title="8.3 Galeria de Veneráveis">
                 <p>
                   Em <UI>Social → Galeria de Veneráveis</UI> (aberta a todos os obreiros), veja o mural com todos os Veneráveis da história da
-                  loja, organizado pela <strong>linha do tempo</strong>. Só o Secretário, o Venerável e o Administrador cadastram ou editam entradas.
+                  loja, do <strong>atual (ou mais recente) para o mais antigo</strong>. Só o Secretário, o Venerável e o Administrador cadastram ou editam entradas.
                 </p>
                 <Bullets>
                   <li><strong>Entradas automáticas:</strong> qualquer irmão vinculado ao cargo de <UI>Venerável Mestre</UI> em algum período (em <UI>Veneralato</UI>) aparece aqui sozinho, com a foto cadastrada em Membros (se houver) e o período do veneralato.</li>
