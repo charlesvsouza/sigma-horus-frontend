@@ -8,7 +8,7 @@ import { csvRow } from '@/lib/csv';
 
 interface ChartOption { id: string; code: string; name: string; type: string; group: string; fund: 'tronco' | 'donations' | null }
 interface LedgerRow { id: string; date: string; description: string; person: string | null; bank: string | null; method: string | null; in: number; out: number; balance: number; status: 'paid' | 'open' }
-interface LedgerGroup { key: string; code: string; name: string; category: string; opening: number; totalIn: number; totalOut: number; closing: number; openIn: number; openOut: number; rows: LedgerRow[] }
+interface LedgerGroup { key: string; code: string; name: string; category: string; opening: number; totalIn: number; totalOut: number; closing: number; openIn: number; openOut: number; rows: LedgerRow[]; empty: boolean }
 interface Ledger { totals: { opening: number; in: number; out: number; closing: number; openIn: number; openOut: number }; groups: LedgerGroup[] }
 
 const PRINT_CSS = `
@@ -111,6 +111,10 @@ export default function CategoriasClient({
     const lines: string[] = [csvRow(['Categoria', 'Data', 'Status', 'Histórico', 'Pessoa', 'Conta/Caixa', 'Forma', 'Entrada', 'Saída', ...(showBalance ? ['Saldo'] : [])])];
     for (const g of ledger.groups) {
       const label = `${g.code} ${g.name}`;
+      if (g.empty) {
+        lines.push(csvRow([label, '', '', 'Sem movimentação no período selecionado', '', '', '', '', '', ...(showBalance ? [''] : [])]));
+        continue;
+      }
       if (showBalance) lines.push(csvRow([label, '', '', 'Saldo anterior', '', '', '', '', '', num(g.opening)]));
       for (const r of g.rows) {
         lines.push(csvRow([label, fmtDay(r.date), r.status === 'open' ? 'Em aberto' : 'Pago', r.description, r.person ?? '', r.bank ?? '', r.method ? (METHOD_LABEL[r.method] ?? r.method) : '', r.in ? num(r.in) : '', r.out ? num(r.out) : '', ...(showBalance ? [r.status === 'open' ? '' : num(r.balance)] : [])]));
@@ -235,6 +239,9 @@ export default function CategoriasClient({
               {ledger.groups.map((g) => (
                 <section key={g.key} className="group rounded-xl border border-white/6 bg-sigma-card p-5">
                   <h3 className="text-base font-semibold text-sand-light"><span className="text-sand-dark">{g.code}</span> · {g.name} <span className="ml-1 text-xs font-normal text-sand-dark">({g.category})</span></h3>
+                  {g.empty ? (
+                    <p className="mt-3 text-sm text-sand-dark">Sem movimentação no período selecionado.</p>
+                  ) : (
                   <div className="mt-3 overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
@@ -288,6 +295,7 @@ export default function CategoriasClient({
                       </tbody>
                     </table>
                   </div>
+                  )}
                 </section>
               ))}
 

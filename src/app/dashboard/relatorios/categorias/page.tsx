@@ -5,7 +5,7 @@ import { donorDisplayName } from '@/lib/hospitalaria';
 import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { todayBR } from '@/lib/date-only';
 import { fundChartWhere, isFundPurpose } from '@/lib/funds';
-import { buildCategoryLedger, type LedgerPaymentInput, type LedgerOpenItemInput } from '@/lib/category-ledger';
+import { buildCategoryLedger, type LedgerPaymentInput, type LedgerOpenItemInput, type RequestedChart } from '@/lib/category-ledger';
 import CategoriasClient from './CategoriasClient';
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -154,7 +154,13 @@ export default async function CategoriasPage(props: {
     };
   });
 
-  const ledger = buildCategoryLedger(inputs, from, to, direction, openInputs);
+  // Categorias marcadas explicitamente no filtro: aparecem no resultado mesmo sem
+  // nenhum lançamento, com "sem movimentação" em vez de sumir da lista.
+  const requestedCharts: RequestedChart[] = data.charts
+    .filter((c) => data.selectedIds.includes(c.id))
+    .map((c) => ({ id: c.id, code: c.code, name: c.name, category: c.category ?? 'Sem grupo' }));
+
+  const ledger = buildCategoryLedger(inputs, from, to, direction, openInputs, requestedCharts);
 
   return (
     <CategoriasClient

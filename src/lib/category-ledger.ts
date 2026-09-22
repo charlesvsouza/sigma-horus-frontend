@@ -69,6 +69,20 @@ export interface LedgerGroup {
   openIn: number;
   openOut: number;
   rows: LedgerRow[];
+  /**
+   * true quando a categoria foi marcada explicitamente no filtro mas não teve nenhum
+   * lançamento (pago ou em aberto) nem saldo anterior no período — a tela mostra uma
+   * mensagem de "sem movimentação" em vez de sumir a categoria da lista.
+   */
+  empty: boolean;
+}
+
+/** Categoria pedida explicitamente no filtro, pra aparecer mesmo sem nenhum lançamento. */
+export interface RequestedChart {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
 }
 
 export interface Ledger {
@@ -98,6 +112,9 @@ interface Entry {
  * `direction` filtra só entradas ou só saídas (o saldo anterior segue completo).
  * `openItems` (opcional) traz cobranças pendentes — entram na lista dentro do
  * período, na posição cronológica certa, mas nunca no saldo/opening/closing.
+ * `requestedCharts` (opcional) são as categorias marcadas explicitamente no filtro —
+ * qualquer uma delas sem nenhum lançamento no período ainda aparece no resultado,
+ * como grupo `empty: true`, em vez de sumir silenciosamente da lista.
  */
 export function buildCategoryLedger(
   payments: LedgerPaymentInput[],
@@ -105,6 +122,7 @@ export function buildCategoryLedger(
   to: Date,
   direction: 'all' | 'in' | 'out' = 'all',
   openItems: LedgerOpenItemInput[] = [],
+  requestedCharts: RequestedChart[] = [],
 ): Ledger {
   const isIn = (e: Entry) => e.accountType === 'RECEIVABLE';
   const keyOf = (e: Entry) => e.chart?.id ?? NO_CATEGORY_KEY;
@@ -174,6 +192,15 @@ export function buildCategoryLedger(
       openIn: sumMoney(openRows.map((r) => r.in)),
       openOut: sumMoney(openRows.map((r) => r.out)),
       rows,
+      empty: false,
+    });
+  }
+
+  for (const rc of requestedCharts) {
+    if (groups.some((g) => g.key === rc.id)) continue;
+    groups.push({
+      key: rc.id, code: rc.code, name: rc.name, category: rc.category,
+      opening: 0, totalIn: 0, totalOut: 0, closing: 0, openIn: 0, openOut: 0, rows: [], empty: true,
     });
   }
 

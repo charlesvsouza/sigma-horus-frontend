@@ -123,3 +123,22 @@ test('em aberto respeita o filtro de direção e o período (por vencimento)', (
   const g = soEntradas.groups.find((g) => g.key === 'c-mens')!;
   assert.deepEqual(g.rows.map((r) => r.id), ['openIn']);
 });
+
+test('categoria marcada no filtro sem nenhum lançamento aparece como "empty", em vez de sumir', () => {
+  const l = buildCategoryLedger(payments, from, to, 'all', [], [
+    { id: 'c-tronco', code: '1.1.05', name: 'Tronco de Beneficência', category: 'Receitas' }, // tem movimento
+    { id: 'c-vazia', code: '1.5.04', name: 'Saldo para Abertura de Escrituração', category: 'Abertura' }, // sem nenhum lançamento
+  ]);
+  const vazia = l.groups.find((g) => g.key === 'c-vazia')!;
+  assert.ok(vazia, 'categoria pedida deve aparecer mesmo vazia');
+  assert.equal(vazia.empty, true);
+  assert.equal(vazia.rows.length, 0);
+  assert.equal(vazia.opening, 0);
+  const tronco = l.groups.find((g) => g.key === 'c-tronco')!;
+  assert.equal(tronco.empty, false); // já tinha movimento, não é a categoria vazia
+});
+
+test('sem categoria marcada (todas), não aparece grupo "empty" nenhum', () => {
+  const l = buildCategoryLedger(payments, from, to);
+  assert.ok(l.groups.every((g) => g.empty === false));
+});
