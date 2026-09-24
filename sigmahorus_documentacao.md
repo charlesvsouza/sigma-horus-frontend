@@ -122,7 +122,7 @@ O sistema lida com dinheiro em **duas direções distintas**. Misturá-las é er
 |-------|----------------|---------------------|
 | Oficina | até 30 | R$ 110 |
 | Loja | 31 a 80 | R$ 170 |
-| Potência | 81+ / multiloja | R$ 220 |
+| Potência | 81+ | R$ 220 |
 
 Valores **recalibrados (2026-09-22)**, substituindo a tabela anterior (80/110/170, de 2026-06-29). Trial de **10 dias**; cobrança mensal/anual. **Desconto anual: 10% no cartão, 5% no boleto** (regra real de cobrança em `priceFor`/`ensurePrice`). Prices no Stripe são imutáveis, então as lookup_keys são versionadas ao mudar o valor: atual **mês `_v3`, ano `_v4`**. Prices antigos (`_v2`/`_v3`) permanecem para assinaturas grandfathered, se houver. **Plano anual sem cartão usa boleto** (PIX indisponível p/ contas BR no Stripe). Faixa medida por membros ativos, não por usuários de login.
 

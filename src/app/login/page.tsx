@@ -105,7 +105,7 @@ export default function LoginPage() {
             <div className="mt-8 flex items-center gap-6 text-sm text-sand-dark">
               <span className="flex items-center gap-2">
                 <span className="h-1 w-1 rounded-full bg-gold" />
-                Multi-loja
+                Backup automático
               </span>
               <span className="flex items-center gap-2">
                 <span className="h-1 w-1 rounded-full bg-gold" />

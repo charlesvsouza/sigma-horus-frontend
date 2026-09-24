@@ -31,7 +31,7 @@ const modules = [
 ];
 
 const pillars = [
-  { label: 'Multi-loja, isolado', detail: 'Cada loja vê só os seus dados, com Row-Level Security no banco.' },
+  { label: 'Dados isolados por loja', detail: 'Cada loja vê só os seus dados, com Row-Level Security no banco.' },
   { label: 'Auditoria de tudo', detail: 'Quem fez, o quê e quando — uma trilha imutável de cada alteração.' },
   { label: 'Conforme a LGPD', detail: 'Acesso por cargo, documentos privados e dados pessoais protegidos.' },
   { label: 'No prumo, no bolso', detail: 'Funciona de verdade no computador e no celular, sem app a instalar.' },
