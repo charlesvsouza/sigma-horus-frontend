@@ -83,6 +83,7 @@ export default async function AccountsReportPage({
       dateLabel={labels.dateLabel}
       lodgeName={data.lodge?.name ?? 'Loja'}
       crestUrl={data.lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
       people={people}
       from={sp.from ?? (isOpenVariant ? '' : from.toISOString().slice(0, 10))}
       to={sp.to ?? (isOpenVariant ? '' : now.toISOString().slice(0, 10))}

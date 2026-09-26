@@ -30,8 +30,22 @@ export default async function OrcamentoPage({ searchParams }: { searchParams: Pr
     );
   }
 
-  const items = await withTenant(String(lodgeId), (db) => getBudgetComparison(db, String(lodgeId), year));
+  const [items, lodge] = await withTenant(String(lodgeId), (db) =>
+    Promise.all([
+      getBudgetComparison(db, String(lodgeId), year),
+      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
+    ]),
+  );
   const canWrite = (await requireLodgeAccess(String(lodgeId), role, 'accounts', 'write')).ok;
 
-  return <OrcamentoClient year={year} items={items} canEdit={canWrite} />;
+  return (
+    <OrcamentoClient
+      year={year}
+      items={items}
+      canEdit={canWrite}
+      lodgeName={lodge?.name ?? 'Loja'}
+      crestUrl={lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
+    />
+  );
 }

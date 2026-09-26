@@ -85,6 +85,7 @@ export default async function DrePage(props: { searchParams: Promise<{ from?: st
     <DreClient
       lodgeName={data.lodge?.name ?? 'Loja'}
       crestUrl={data.lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
       from={from.toISOString().slice(0, 10)}
       to={searchParams.to ?? now.toISOString().slice(0, 10)}
       compareMode={compareMode}

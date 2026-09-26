@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { getReportSignatories } from '@/lib/report-signatories';
 import BalancetesClient, { type BalanceteLine } from './BalancetesClient';
 
 // Server Component: histórico de balancetes periódicos (trimestral/semestral)
@@ -27,16 +28,22 @@ export default async function BalancetesPage() {
     );
   }
 
-  const [items, currentTerm] = await withTenant(String(lodgeId), (db) =>
-    Promise.all([
+  const { items, currentTerm, lodge, signatoriesById } = await withTenant(String(lodgeId), async (db) => {
+    const [items, currentTerm, lodge] = await Promise.all([
       db.balancete.findMany({ where: { lodgeId: String(lodgeId) }, orderBy: { periodTo: 'desc' } }),
       db.term.findFirst({
         where: { lodgeId: String(lodgeId), status: { not: 'closed' } },
         orderBy: { startDate: 'desc' },
         select: { startDate: true },
       }),
-    ]),
-  );
+      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
+    ]);
+    // Quem assina cada balancete é quem estava no cargo no fim daquele período.
+    const signatories = await Promise.all(
+      items.map((b) => getReportSignatories(db, String(lodgeId), { at: b.periodTo, withFinanceCommittee: true })),
+    );
+    return { items, currentTerm, lodge, signatoriesById: Object.fromEntries(items.map((b, i) => [b.id, signatories[i]])) };
+  });
 
   const serialized = items.map((b) => ({
     id: b.id,
@@ -62,6 +69,10 @@ export default async function BalancetesPage() {
       items={serialized}
       canApprove={canApprove}
       currentTermStart={currentTerm?.startDate.toISOString() ?? null}
+      lodgeName={lodge?.name ?? 'Loja'}
+      crestUrl={lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
+      signatoriesById={signatoriesById}
     />
   );
 }

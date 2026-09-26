@@ -1,9 +1,11 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { ReportDocument, type Signatory } from '@/components/report/report-document';
 import { brl } from '@/lib/currency';
+import { csvNumber, downloadCsv } from '@/lib/csv';
 import { formatDateOnly } from '@/lib/date-only';
 
 export interface BalanceteLine {
@@ -37,6 +39,7 @@ interface BalanceteItem {
 const cleanNotes = (n: string) => n.replace(/\s*\[import:legacy:[^\]]+\]/g, '').trim();
 
 const fmt = (d: string) => formatDateOnly(d);
+const detailLines = (b: BalanceteItem) => (b.detail ?? []).filter((l) => l.entries > 0 || l.level < 2);
 
 // Datas de veneralato/balancete só carregam dia/mês/ano (sem hora) — tudo em
 // UTC-meia-noite pra bater com o que o input type="date" e o Prisma gravam.
@@ -98,10 +101,18 @@ export default function BalancetesClient({
   items,
   canApprove,
   currentTermStart,
+  lodgeName,
+  crestUrl,
+  issuedBy,
+  signatoriesById,
 }: {
   items: BalanceteItem[];
   canApprove: boolean;
   currentTermStart: string | null;
+  lodgeName: string;
+  crestUrl: string | null;
+  issuedBy?: string | null;
+  signatoriesById: Record<string, Signatory[]>;
 }) {
   const router = useRouter();
   const askConfirm = useConfirm();
@@ -109,6 +120,35 @@ export default function BalancetesClient({
   const [generating, setGenerating] = useState(false);
   const [form, setForm] = useState({ periodFrom: '', periodTo: '', notes: '' });
   const INPUT = inputClass;
+  // Balancete escolhido para imprimir: só ele vira documento, e a impressão abre depois que ele renderiza.
+  const [printingId, setPrintingId] = useState<string | null>(null);
+  const printing = items.find((b) => b.id === printingId) ?? null;
+
+  useEffect(() => {
+    if (!printingId) return;
+    const done = () => setPrintingId(null);
+    window.addEventListener('afterprint', done, { once: true });
+    window.print();
+    return () => window.removeEventListener('afterprint', done);
+  }, [printingId]);
+
+  function exportCsv(b: BalanceteItem) {
+    const rows: unknown[][] = [
+      ['Balancete', `${fmt(b.periodFrom)} a ${fmt(b.periodTo)}`],
+      ['Situação', b.approved ? `Aprovado${b.approvedAt ? ` em ${fmt(b.approvedAt)}` : ''}` : 'Aguardando aprovação'],
+      [],
+      ['Resumo', 'Valor'],
+      ['Contas a receber', csvNumber(b.totalReceivables)],
+      ['Contas a pagar', csvNumber(b.totalPayables)],
+      ['Pagamentos', csvNumber(b.totalPayments)],
+      ['Saldo líquido', csvNumber(b.netBalance)],
+    ];
+    if (b.detail && b.detail.length > 0) {
+      rows.push([], ['Conta', 'Nível', 'Saldo inicial', 'Débitos', 'Créditos', 'Saldo atual']);
+      for (const l of detailLines(b)) rows.push([l.path.join(' > '), l.level, csvNumber(l.opening), csvNumber(l.debit), csvNumber(l.credit), csvNumber(l.closing)]);
+    }
+    downloadCsv(`balancete_${b.periodFrom.slice(0, 10)}_${b.periodTo.slice(0, 10)}`, rows);
+  }
 
   async function generatePeriod(periodFrom: string, periodTo: string, notes: string) {
     setGenerating(true);
@@ -237,6 +277,8 @@ export default function BalancetesClient({
                     ) : (
                       <span className="rounded-full border border-gold/20 bg-gold/10 px-2.5 py-0.5 text-xs text-gold">Aguardando aprovação</span>
                     )}
+                    <button onClick={() => setPrintingId(b.id)} className="text-xs px-1 py-1 text-gold/90 transition hover:text-gold">Imprimir / PDF</button>
+                    <button onClick={() => exportCsv(b)} className="text-xs px-1 py-1 text-sand-dark transition hover:text-sand-light">CSV</button>
                     {!b.approved && canApprove ? (
                       <button onClick={() => void handleApprove(b.id)} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Aprovar</button>
                     ) : null}
@@ -263,7 +305,7 @@ export default function BalancetesClient({
                           </tr>
                         </thead>
                         <tbody>
-                          {b.detail.filter((l) => l.entries > 0 || l.level < 2).map((l, i) => (
+                          {detailLines(b).map((l, i) => (
                             <tr key={i} className="border-b border-white/5 last:border-0">
                               <td className={`px-3 py-1.5 ${l.level < 2 ? 'font-medium text-sand-light' : 'text-sand'}`} style={{ paddingLeft: `${12 + l.level * 16}px` }}>{l.path[l.path.length - 1]}</td>
                               <td className="px-3 py-1.5 text-right text-sand-dark">{brl(l.opening)}</td>
@@ -282,6 +324,64 @@ export default function BalancetesClient({
           </div>
         </section>
       </div>
+
+      {printing ? (
+        <ReportDocument
+          printOnly
+          lodgeName={lodgeName}
+          crestUrl={crestUrl}
+          title="Balancete periódico"
+          details={[
+            `Período: ${fmt(printing.periodFrom)} a ${fmt(printing.periodTo)}`,
+            `Apresentado em ${fmt(printing.presentedAt)}`,
+            printing.approved ? `Aprovado${printing.approvedAt ? ` em ${fmt(printing.approvedAt)}` : ''}` : 'Aguardando aprovação',
+            printing.source === 'import' ? 'importado de outro sistema' : null,
+          ]}
+          issuedBy={issuedBy}
+          signatures={signatoriesById[printing.id] ?? []}
+        >
+          <table className="rpt-section w-full text-sm">
+            <thead>
+              <tr><th className="text-left">Resumo do período</th><th className="num text-right">Valor</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Contas a receber</td><td className="num text-right">{brl(printing.totalReceivables)}</td></tr>
+              <tr><td>Contas a pagar</td><td className="num text-right">{brl(printing.totalPayables)}</td></tr>
+              <tr><td>Pagamentos registrados</td><td className="num text-right">{brl(printing.totalPayments)}</td></tr>
+              <tr className="rpt-total"><td>Saldo líquido</td><td className="num text-right">{brl(printing.netBalance)}</td></tr>
+            </tbody>
+          </table>
+
+          {printing.detail && printing.detail.length > 0 ? (
+            <table className="mt-6 w-full text-sm">
+              <thead>
+                <tr>
+                  <th className="text-left">Conta do plano</th>
+                  <th className="num text-right">Saldo inicial</th>
+                  <th className="num text-right">Débitos</th>
+                  <th className="num text-right">Créditos</th>
+                  <th className="num text-right">Saldo atual</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detailLines(printing).map((l, i) => (
+                  <tr key={i} style={{ fontWeight: l.level < 2 ? 600 : 400 }}>
+                    <td style={{ paddingLeft: `${5 + l.level * 12}px` }}>{l.path[l.path.length - 1]}</td>
+                    <td className="num text-right">{brl(l.opening)}</td>
+                    <td className="num text-right">{brl(l.debit)}</td>
+                    <td className="num text-right">{brl(l.credit)}</td>
+                    <td className="num text-right">{brl(l.closing)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : null}
+
+          {printing.notes && cleanNotes(printing.notes) ? (
+            <p className="mt-4 text-xs"><strong>Observações:</strong> {cleanNotes(printing.notes)}</p>
+          ) : null}
+        </ReportDocument>
+      ) : null}
     </main>
   );
 }

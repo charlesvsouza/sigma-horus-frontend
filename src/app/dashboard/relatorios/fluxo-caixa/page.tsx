@@ -3,6 +3,9 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { getProjectedCashFlow } from '@/lib/cashflow';
 import { brl } from '@/lib/currency';
+import { csvNumber } from '@/lib/csv';
+import { ReportActions, ReportDocument } from '@/components/report/report-document';
+
 const fmt = (d: Date) => d.toLocaleDateString('pt-BR');
 
 // Server Component: fluxo de caixa projetado, direto do que já está lançado
@@ -30,7 +33,22 @@ export default async function FluxoCaixaPage() {
     );
   }
 
-  const flow = await withTenant(String(lodgeId), (db) => getProjectedCashFlow(db, String(lodgeId)));
+  const [flow, lodge] = await withTenant(String(lodgeId), (db) =>
+    Promise.all([
+      getProjectedCashFlow(db, String(lodgeId)),
+      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
+    ]),
+  );
+  const startingNote =
+    flow.startingBalance != null
+      ? `Saldo inicial: ${brl(flow.startingBalance)} (último fechamento de caixa, em ${fmt(flow.startingBalanceDate!)})`
+      : 'Sem fechamento de caixa registrado: projeção a partir de zero (só o líquido do período)';
+  const csvRows: unknown[][] = [
+    ['Período', 'A receber', 'A pagar', 'Líquido', 'Saldo acumulado projetado'],
+    ...flow.buckets.map((b) => [b.label, csvNumber(b.receivable), csvNumber(b.payable), csvNumber(b.net), csvNumber(b.cumulative)]),
+  ];
+  const totalReceivable = flow.buckets.reduce((s, b) => s + b.receivable, 0);
+  const totalPayable = flow.buckets.reduce((s, b) => s + b.payable, 0);
   const maxAbs = Math.max(1, ...flow.buckets.map((b) => Math.max(b.receivable, b.payable)));
 
   return (
@@ -47,6 +65,8 @@ export default async function FluxoCaixaPage() {
             )}
           </p>
         </div>
+
+        <ReportActions disabled={flow.buckets.length === 0} csv={{ filename: `fluxo_caixa_projetado_${new Date().toISOString().slice(0, 10)}`, rows: csvRows }} />
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="space-y-4">
@@ -79,6 +99,45 @@ export default async function FluxoCaixaPage() {
             ))}
           </div>
         </section>
+
+        <ReportDocument
+          printOnly
+          lodgeName={lodge?.name ?? 'Loja'}
+          crestUrl={lodge?.crestUrl ?? null}
+          title="Fluxo de caixa projetado"
+          details={['Contas lançadas e ainda não pagas', startingNote]}
+          issuedBy={session?.user?.name ?? null}
+        >
+          <table>
+            <thead>
+              <tr>
+                <th className="text-left">Período</th>
+                <th className="num">A receber</th>
+                <th className="num">A pagar</th>
+                <th className="num">Líquido</th>
+                <th className="num">Saldo acumulado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {flow.buckets.map((b) => (
+                <tr key={b.label}>
+                  <td>{b.label}</td>
+                  <td className="num">{brl(b.receivable)}</td>
+                  <td className="num">{brl(b.payable)}</td>
+                  <td className="num">{brl(b.net)}</td>
+                  <td className="num">{brl(b.cumulative)}</td>
+                </tr>
+              ))}
+              <tr className="rpt-total">
+                <td>Total do período projetado</td>
+                <td className="num">{brl(totalReceivable)}</td>
+                <td className="num">{brl(totalPayable)}</td>
+                <td className="num">{brl(totalReceivable - totalPayable)}</td>
+                <td className="num">{flow.buckets.length ? brl(flow.buckets[flow.buckets.length - 1].cumulative) : ''}</td>
+              </tr>
+            </tbody>
+          </table>
+        </ReportDocument>
       </div>
     </main>
   );

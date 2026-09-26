@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { getClosingReport } from '@/lib/closing-report';
 import FechamentoClient, { type CardSummary } from './FechamentoClient';
 
@@ -11,6 +12,11 @@ export default async function FechamentoPage({ searchParams }: { searchParams: P
 
   if (!lodgeId) {
     return <main className="min-h-screen px-6 py-12"><p className="text-sand-dark">Sessão inválida.</p></main>;
+  }
+
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'accounts', 'read');
+  if (!access.ok) {
+    return <main className="min-h-screen px-6 py-12"><p className="text-sand-dark">Acesso negado.</p></main>;
   }
 
   const data = await getClosingReport(String(lodgeId), from, to);

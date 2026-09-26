@@ -69,6 +69,7 @@ export default async function TarifasPage(props: { searchParams: Promise<{ from?
     <TarifasClient
       lodgeName={data.lodge?.name ?? ''}
       crestUrl={data.lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
       asaasMode={isAsaasMode(data.lodge)}
       from={fromStr}
       to={toStr}

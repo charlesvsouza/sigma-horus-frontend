@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { getClosingReport } from '@/lib/closing-report';
 import { SECOES, type SecaoSlug } from '../types';
 import { BalancoSection, BalanceteSection, ReceitasDespesasSection, LivroCaixaSection, CobrancasSection, SaldoIrmaosSection } from '../sections';
@@ -18,6 +19,11 @@ export default async function FechamentoSecaoPage({ params, searchParams }: { pa
 
   if (!lodgeId) {
     return <main className="min-h-screen px-6 py-12"><p className="text-sand-dark">Sessão inválida.</p></main>;
+  }
+
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'accounts', 'read');
+  if (!access.ok) {
+    return <main className="min-h-screen px-6 py-12"><p className="text-sand-dark">Acesso negado.</p></main>;
   }
 
   const data = await getClosingReport(String(lodgeId), from, to);

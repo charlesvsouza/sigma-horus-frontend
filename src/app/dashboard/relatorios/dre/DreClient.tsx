@@ -3,7 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { EmptyState, inputClass } from '@/components/ui';
+import { ReportActions, ReportDocument } from '@/components/report/report-document';
 import { brl } from '@/lib/currency';
+import { csvNumber } from '@/lib/csv';
 
 interface DreComparisonRow {
   code: string;
@@ -21,22 +23,6 @@ interface Comparison {
   totals: { revenueA: number; revenueB: number; expenseA: number; expenseB: number; netA: number; netB: number };
 }
 
-const PRINT_CSS = `
-@media print {
-  @page { size: A4; margin: 16mm 14mm; }
-  body * { visibility: hidden !important; }
-  .dre-print, .dre-print * { visibility: visible !important; }
-  .dre-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9.5pt; }
-  .dre-noprint { display: none !important; }
-  .dre-print h1, .dre-print h2, .dre-print h3 { color: #111 !important; }
-  .dre-print table { width: 100%; border-collapse: collapse; }
-  .dre-print th, .dre-print td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: left; }
-  .dre-print th { text-transform: uppercase; font-size: 8pt; border-bottom: 1.5px solid #333; }
-  .dre-print .num { text-align: right; }
-  .dre-print tr { break-inside: avoid; page-break-inside: avoid; }
-}
-`;
-
 function fmtDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('pt-BR');
 }
@@ -49,6 +35,7 @@ function fmtPct(v: number | null) {
 export default function DreClient({
   lodgeName,
   crestUrl,
+  issuedBy,
   from,
   to,
   compareMode,
@@ -59,6 +46,7 @@ export default function DreClient({
 }: {
   lodgeName: string;
   crestUrl: string | null;
+  issuedBy?: string | null;
   from: string;
   to: string;
   compareMode: 'previous' | 'yoy';
@@ -101,16 +89,25 @@ export default function DreClient({
   const revenueRows = comparison.rows.filter((r) => r.type === 'REVENUE' && (r.valueA !== 0 || r.valueB !== 0));
   const expenseRows = comparison.rows.filter((r) => r.type === 'EXPENSE' && (r.valueA !== 0 || r.valueB !== 0));
 
+  function csvRows(): unknown[][] {
+    const out: unknown[][] = [['Grupo', 'Código', 'Conta', 'Período A', 'Período B', 'Variação', 'Variação %']];
+    for (const [group, rows, a, b] of [['Receitas', revenueRows, comparison.totals.revenueA, comparison.totals.revenueB], ['Despesas', expenseRows, comparison.totals.expenseA, comparison.totals.expenseB]] as const) {
+      for (const r of rows) out.push([group, r.code, r.name, csvNumber(r.valueA), csvNumber(r.valueB), csvNumber(r.variance), r.variancePct === null ? '' : r.variancePct.toFixed(1).replace('.', ',')]);
+      out.push([`Total de ${group.toLowerCase()}`, '', '', csvNumber(a), csvNumber(b), csvNumber(a - b), '']);
+    }
+    out.push(['Resultado', '', '', csvNumber(comparison.totals.netA), csvNumber(comparison.totals.netB), csvNumber(comparison.totals.netA - comparison.totals.netB), '']);
+    return out;
+  }
+
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
-        <div className="dre-noprint">
+        <div className="rpt-noprint">
           <h1 className="font-display text-2xl font-bold text-sand-light">DRE comparativo</h1>
           <p className="mt-1 text-sm text-sand-dark">Receitas e despesas por conta do plano de contas, período A contra período B.</p>
         </div>
 
-        <section className="dre-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
+        <section className="rpt-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="grid gap-4 md:grid-cols-[1fr_1fr_1.2fr_auto]">
             <label className="text-xs text-sand-dark">De (período A)
               <input type="date" value={fromVal} onChange={(e) => setFromVal(e.target.value)} className={`mt-1 ${inputClass}`} />
@@ -146,31 +143,21 @@ export default function DreClient({
           <EmptyState title="Nenhum lançamento nos dois períodos." description="Ajuste o período ou registre pagamentos para comparar." />
         ) : (
           <>
-            <div className="dre-noprint">
-              <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
-                Salvar como PDF
-              </button>
-            </div>
+            <ReportActions csv={() => ({ filename: `dre_${from}_${to}`, rows: csvRows() })} />
 
-            <section className="rounded-xl border border-white/6 bg-sigma-card p-6 dre-print">
-              <header className="mb-5 text-center">
-                {crestUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-                ) : null}
-                <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
-                <h2 className="mt-0.5 text-sm text-sand-dark">DRE comparativo</h2>
-                <p className="mt-0.5 text-xs text-sand-dark">
-                  Período A: {fmtDate(from)} a {fmtDate(to)} · Período B: {fmtDate(periodBFrom)} a {fmtDate(periodBTo)}
-                </p>
-              </header>
-
-              <div className="grid gap-4 sm:grid-cols-2 mb-6">
-                <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
+            <ReportDocument
+              lodgeName={lodgeName}
+              crestUrl={crestUrl}
+              title="Demonstração do Resultado (DRE) comparativa"
+              details={[`Período A: ${fmtDate(from)} a ${fmtDate(to)}`, `Período B: ${fmtDate(periodBFrom)} a ${fmtDate(periodBTo)}`, compareMode === 'yoy' ? 'mesmo período do ano anterior' : 'período anterior equivalente']}
+              issuedBy={issuedBy}
+            >
+              <div className="rpt-section mb-6 grid gap-4 sm:grid-cols-2">
+                <div className="rpt-card rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                   <p className="text-xs uppercase tracking-[0.15em] text-sand-dark">Saldo — Período A</p>
                   <p className={`mt-2 text-xl font-semibold ${comparison.totals.netA >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{brl(comparison.totals.netA)}</p>
                 </div>
-                <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
+                <div className="rpt-card rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                   <p className="text-xs uppercase tracking-[0.15em] text-sand-dark">Saldo — Período B</p>
                   <p className={`mt-2 text-xl font-semibold ${comparison.totals.netB >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{brl(comparison.totals.netB)}</p>
                 </div>
@@ -205,12 +192,33 @@ export default function DreClient({
                             </tr>
                           );
                         })}
+                        {rows.length > 0 ? (
+                          <tr className="rpt-total">
+                            <td className="px-2 py-2 font-semibold text-sand-light">Total de {title.toLowerCase()}</td>
+                            <td className="num px-2 py-2 text-right tabular-nums font-semibold text-sand-light">{brl(title === 'Receitas' ? comparison.totals.revenueA : comparison.totals.expenseA)}</td>
+                            <td className="num px-2 py-2 text-right tabular-nums text-sand-dark">{brl(title === 'Receitas' ? comparison.totals.revenueB : comparison.totals.expenseB)}</td>
+                            <td className="num px-2 py-2 text-right tabular-nums text-sand-dark">{brl(title === 'Receitas' ? comparison.totals.revenueA - comparison.totals.revenueB : comparison.totals.expenseA - comparison.totals.expenseB)}</td>
+                            <td className="num px-2 py-2" />
+                          </tr>
+                        ) : null}
                       </tbody>
                     </table>
                   </div>
                 </div>
               ))}
-            </section>
+
+              <table className="w-full text-sm">
+                <tbody>
+                  <tr className="rpt-total">
+                    <td className="px-2 py-2 font-semibold text-sand-light">Resultado do período (receitas − despesas)</td>
+                    <td className="num px-2 py-2 text-right tabular-nums font-semibold text-sand-light">{brl(comparison.totals.netA)}</td>
+                    <td className="num px-2 py-2 text-right tabular-nums text-sand-dark">{brl(comparison.totals.netB)}</td>
+                    <td className="num px-2 py-2 text-right tabular-nums text-sand-dark">{brl(comparison.totals.netA - comparison.totals.netB)}</td>
+                    <td className="num px-2 py-2" />
+                  </tr>
+                </tbody>
+              </table>
+            </ReportDocument>
           </>
         )}
       </div>

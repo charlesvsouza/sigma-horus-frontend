@@ -1,5 +1,8 @@
 import { auth } from '@/lib/auth';
+import { requireLodgeAccess } from '@/lib/rbac';
 import { getClosingReport } from '@/lib/closing-report';
+import { withTenant } from '@/lib/prisma';
+import { getReportSignatories } from '@/lib/report-signatories';
 import FechamentoCompletoClient from './FechamentoCompletoClient';
 
 export default async function FechamentoCompletoPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
@@ -13,6 +16,22 @@ export default async function FechamentoCompletoPage({ searchParams }: { searchP
     return <main className="min-h-screen px-6 py-12"><p className="text-sand-dark">Sessão inválida.</p></main>;
   }
 
-  const data = await getClosingReport(String(lodgeId), from, to);
-  return <FechamentoCompletoClient data={data} initialFrom={from} initialTo={to} />;
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'accounts', 'read');
+  if (!access.ok) {
+    return <main className="min-h-screen px-6 py-12"><p className="text-sand-dark">Acesso negado.</p></main>;
+  }
+
+  const [data, signatures] = await Promise.all([
+    getClosingReport(String(lodgeId), from, to),
+    withTenant(String(lodgeId), (db) => getReportSignatories(db, String(lodgeId), { at: new Date(`${to}T12:00:00Z`), withFinanceCommittee: true })),
+  ]);
+  return (
+    <FechamentoCompletoClient
+      data={data}
+      initialFrom={from}
+      initialTo={to}
+      issuedBy={session?.user?.name ?? null}
+      signatures={signatures}
+    />
+  );
 }

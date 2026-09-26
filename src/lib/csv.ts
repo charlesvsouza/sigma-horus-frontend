@@ -12,3 +12,17 @@ export function csvCell(value: unknown): string {
 export function csvRow(values: unknown[]): string {
   return values.map(csvCell).join(';');
 }
+
+/** Baixa as linhas como CSV no navegador (BOM + CRLF, para o Excel pt-BR abrir com acentos). */
+export function downloadCsv(filename: string, rows: unknown[][]): void {
+  const blob = new Blob(['﻿' + rows.map(csvRow).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.endsWith('.csv') ? filename : `${filename}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Número no formato do Excel pt-BR (vírgula decimal, sem milhar), para colunas de valor. */
+export const csvNumber = (n: number) => n.toFixed(2).replace('.', ',');

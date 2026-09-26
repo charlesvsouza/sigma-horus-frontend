@@ -3,26 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { EmptyState, inputClass } from '@/components/ui';
+import { ReportActions, ReportDocument } from '@/components/report/report-document';
 import { brl } from '@/lib/currency';
+import { csvNumber } from '@/lib/csv';
 
 interface PersonOption { id: string; name: string; }
 interface ReportRow { id: string; date: string; personId: string | null; personName: string | null; description: string; category: string | null; amount: number; }
-
-const PRINT_CSS = `
-@media print {
-  @page { size: A4 landscape; margin: 16mm 14mm; }
-  body * { visibility: hidden !important; }
-  .cr-print, .cr-print * { visibility: visible !important; }
-  .cr-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9.5pt; }
-  .cr-noprint { display: none !important; }
-  .cr-print h1, .cr-print h2 { color: #111 !important; }
-  .cr-print table { width: 100%; border-collapse: collapse; }
-  .cr-print th, .cr-print td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: left; }
-  .cr-print th { text-transform: uppercase; font-size: 8pt; border-bottom: 1.5px solid #333; }
-  .cr-print .num { text-align: right; }
-  .cr-print tr { break-inside: avoid; page-break-inside: avoid; }
-}
-`;
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR');
@@ -35,6 +21,7 @@ export default function ContasReportClient({
   dateLabel,
   lodgeName,
   crestUrl,
+  issuedBy,
   people,
   from,
   to,
@@ -48,6 +35,7 @@ export default function ContasReportClient({
   dateLabel: string;
   lodgeName: string;
   crestUrl: string | null;
+  issuedBy?: string | null;
   people: PersonOption[];
   from: string;
   to: string;
@@ -72,16 +60,27 @@ export default function ContasReportClient({
 
   const xlsHref = `/api/reports/accounts/xlsx?variant=${basePath.split('/').pop()}&from=${fromVal}&to=${toVal}${personVal ? `&personId=${personVal}` : ''}${textVal ? `&text=${encodeURIComponent(textVal)}` : ''}`;
 
+  // Contas em aberto sem datas no filtro = todas as pendências (não "Invalid Date").
+  const period = from || to
+    ? `Período: ${from ? fmtDate(`${from}T00:00:00`) : 'início'} a ${to ? fmtDate(`${to}T00:00:00`) : 'hoje'}`
+    : 'Todas as pendências, sem limite de data';
+  const personName = personId ? people.find((p) => p.id === personId)?.name : null;
+  const details = [period, personName ? `Pessoa: ${personName}` : null, text ? `Busca: "${text}"` : null];
+  const csvRows = [
+    [dateLabel, 'Nome', 'Descrição', 'Categoria', 'Valor'],
+    ...report.rows.map((r) => [fmtDate(r.date), r.personName ?? '', r.description, r.category ?? '', csvNumber(r.amount)]),
+    ['Total', '', '', '', csvNumber(report.total)],
+  ];
+
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
-        <div className="cr-noprint">
+        <div className="rpt-noprint">
           <h1 className="font-display text-2xl font-bold text-sand-light">{title}</h1>
           <p className="mt-1 text-sm text-sand-dark">{description}</p>
         </div>
 
-        <section className="cr-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
+        <section className="rpt-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="grid gap-4 md:grid-cols-[1fr_1fr_1.4fr_1.4fr_auto]">
             <label className="text-xs text-sand-dark">De
               <input type="date" value={fromVal} onChange={(e) => setFromVal(e.target.value)} className={`mt-1 ${inputClass}`} />
@@ -106,7 +105,7 @@ export default function ContasReportClient({
           </div>
         </section>
 
-        <section className="cr-noprint grid gap-4 sm:grid-cols-2">
+        <section className="rpt-noprint grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
             <p className="text-xs uppercase tracking-[0.15em] text-sand-dark">Lançamentos</p>
             <p className="mt-2 text-xl font-semibold text-sand-light">{report.rows.length}</p>
@@ -117,26 +116,13 @@ export default function ContasReportClient({
           </div>
         </section>
 
-        <div className="cr-noprint flex flex-wrap gap-3">
-          <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
-            Salvar como PDF
-          </button>
+        <ReportActions csv={() => ({ filename: `${basePath.split('/').pop()}_${from || 'inicio'}_${to || 'hoje'}`, rows: csvRows })}>
           <a href={xlsHref} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-medium text-gold/90 transition-colors hover:border-gold/60 hover:text-gold">
             Baixar XLS
           </a>
-        </div>
+        </ReportActions>
 
-        <section className="rounded-xl border border-white/6 bg-sigma-card p-6 cr-print">
-          <header className="mb-5 text-center">
-            {crestUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-            ) : null}
-            <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
-            <h2 className="mt-0.5 text-sm text-sand-dark">{title}</h2>
-            <p className="mt-0.5 text-xs text-sand-dark">Período: {fmtDate(`${fromVal}T00:00:00`)} a {fmtDate(`${toVal}T00:00:00`)}</p>
-          </header>
-
+        <ReportDocument lodgeName={lodgeName} crestUrl={crestUrl} title={title} details={details} issuedBy={issuedBy} orientation="landscape">
           {report.rows.length === 0 ? (
             <EmptyState title="Nenhum lançamento no período." description="Ajuste os filtros acima para ver outro intervalo." />
           ) : (
@@ -161,15 +147,15 @@ export default function ContasReportClient({
                       <td className="border-b border-white/5 px-2 py-2 text-right num tabular-nums text-sand-light">{brl(r.amount)}</td>
                     </tr>
                   ))}
-                  <tr>
-                    <td className="px-2 py-2 font-semibold text-sand-light" colSpan={4}>Total do período</td>
+                  <tr className="rpt-total">
+                    <td className="px-2 py-2 font-semibold text-sand-light" colSpan={4}>Total — {report.rows.length} lançamento{report.rows.length !== 1 ? 's' : ''}</td>
                     <td className="px-2 py-2 text-right num font-semibold text-gold">{brl(report.total)}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           )}
-        </section>
+        </ReportDocument>
       </div>
     </main>
   );

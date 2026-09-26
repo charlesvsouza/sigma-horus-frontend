@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, inputClass } from '@/components/ui';
+import { ReportActions, ReportDocument } from '@/components/report/report-document';
 import { brl } from '@/lib/currency';
+import { csvNumber } from '@/lib/csv';
 
 interface Row {
   chartAccountId: string;
@@ -17,6 +19,47 @@ interface Row {
 }
 
 const sum = (rows: Row[], key: 'planned' | 'realized') => rows.reduce((s, r) => s + r[key], 0);
+const pctExecuted = (planned: number, realized: number) => (planned > 0 ? `${((realized / planned) * 100).toFixed(1).replace('.', ',')}%` : '—');
+
+// Versão do documento (papel): sem a célula editável nem a barra de progresso.
+function PrintGroup({ title, rows }: { title: string; rows: Row[] }) {
+  const planned = sum(rows, 'planned');
+  const realized = sum(rows, 'realized');
+  return (
+    <div className="mt-4">
+      <h3 className="mb-1 text-sm font-semibold">{title}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th className="text-left">Categoria</th>
+            <th className="num">Orçado</th>
+            <th className="num">Realizado</th>
+            <th className="num">Diferença</th>
+            <th className="num">% executado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.chartAccountId}>
+              <td>{r.code} — {r.name}</td>
+              <td className="num">{brl(r.planned)}</td>
+              <td className="num">{brl(r.realized)}</td>
+              <td className="num">{brl(r.variance)}</td>
+              <td className="num">{pctExecuted(r.planned, r.realized)}</td>
+            </tr>
+          ))}
+          <tr className="rpt-total">
+            <td>Total de {title.toLowerCase()}</td>
+            <td className="num">{brl(planned)}</td>
+            <td className="num">{brl(realized)}</td>
+            <td className="num">{brl(realized - planned)}</td>
+            <td className="num">{pctExecuted(planned, realized)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 function EditableCell({ value, onSave, disabled }: { value: number; onSave: (v: number) => void; disabled: boolean }) {
   const [draft, setDraft] = useState(String(value || ''));
@@ -95,7 +138,21 @@ function Group({ title, rows, canEdit, onSave }: { title: string; rows: Row[]; c
   );
 }
 
-export default function OrcamentoClient({ year, items, canEdit }: { year: number; items: Row[]; canEdit: boolean }) {
+export default function OrcamentoClient({
+  year,
+  items,
+  canEdit,
+  lodgeName,
+  crestUrl,
+  issuedBy,
+}: {
+  year: number;
+  items: Row[];
+  canEdit: boolean;
+  lodgeName: string;
+  crestUrl: string | null;
+  issuedBy?: string | null;
+}) {
   const router = useRouter();
   const [yearInput, setYearInput] = useState(String(year));
   const [message, setMessage] = useState('');
@@ -112,6 +169,18 @@ export default function OrcamentoClient({ year, items, canEdit }: { year: number
 
   const revenues = items.filter((i) => i.type === 'REVENUE');
   const expenses = items.filter((i) => i.type === 'EXPENSE');
+  const netPlanned = sum(revenues, 'planned') - sum(expenses, 'planned');
+  const netRealized = sum(revenues, 'realized') - sum(expenses, 'realized');
+
+  function csvRows(): unknown[][] {
+    const out: unknown[][] = [['Grupo', 'Código', 'Categoria', 'Orçado', 'Realizado', 'Diferença']];
+    for (const [group, rows] of [['Receitas', revenues], ['Despesas', expenses]] as const) {
+      for (const r of rows) out.push([group, r.code, r.name, csvNumber(r.planned), csvNumber(r.realized), csvNumber(r.variance)]);
+      out.push([`Total de ${group.toLowerCase()}`, '', '', csvNumber(sum(rows, 'planned')), csvNumber(sum(rows, 'realized')), csvNumber(sum(rows, 'realized') - sum(rows, 'planned'))]);
+    }
+    out.push(['Resultado (receitas − despesas)', '', '', csvNumber(netPlanned), csvNumber(netRealized), csvNumber(netRealized - netPlanned)]);
+    return out;
+  }
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -134,8 +203,33 @@ export default function OrcamentoClient({ year, items, canEdit }: { year: number
 
         {message ? <Alert intent="danger">{message}</Alert> : null}
 
+        <ReportActions disabled={items.length === 0} csv={() => ({ filename: `orcamento_${year}`, rows: csvRows() })} />
+
         <Group title="Receitas" rows={revenues} canEdit={canEdit} onSave={savePlanned} />
         <Group title="Despesas" rows={expenses} canEdit={canEdit} onSave={savePlanned} />
+
+        <ReportDocument
+          printOnly
+          lodgeName={lodgeName}
+          crestUrl={crestUrl}
+          title={`Orçamento anual ${year} — orçado × realizado`}
+          details={[`Exercício de 01/01/${year} a 31/12/${year}`, 'realizado = lançamentos com vencimento no ano, pagos ou em aberto']}
+          issuedBy={issuedBy}
+        >
+          <PrintGroup title="Receitas" rows={revenues} />
+          <PrintGroup title="Despesas" rows={expenses} />
+          <table className="mt-4">
+            <tbody>
+              <tr className="rpt-total">
+                <td>Resultado (receitas − despesas)</td>
+                <td className="num">{brl(netPlanned)}</td>
+                <td className="num">{brl(netRealized)}</td>
+                <td className="num">{brl(netRealized - netPlanned)}</td>
+                <td className="num" />
+              </tr>
+            </tbody>
+          </table>
+        </ReportDocument>
       </div>
     </main>
   );
