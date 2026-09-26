@@ -9,6 +9,14 @@ import { daysOverdueBR, todayBR } from '@/lib/date-only';
 // aberto: se ele já passou de 60 dias, o membro está enquadrado, mesmo que
 // tenha quitado parcelas mais recentes fora de ordem ("bola de neve").
 export const ART_002_THRESHOLD_DAYS = 60;
+
+// É mensalidade quem tem o flag no lançamento OU está na categoria Mensalidades
+// (ChartAccount.isDues). Só o flag não basta: lançamentos feitos antes da
+// categoria carregar isDues — e as ocorrências de recorrência que herdam o flag
+// da cobrança-mãe — ficavam de fora do relatório e da régua do Art. 002.
+export const DUES_ACCOUNT_WHERE = {
+  OR: [{ isDues: true }, { chartAccount: { isDues: true } }],
+} satisfies Prisma.AccountWhereInput;
 // Vencimento é data-só-dia (00:00 UTC) e "hoje" é o calendário de Brasília:
 // vence hoje = 0 dias (em dia); só passa a atrasado no dia seguinte.
 export function daysOverdue(dueDate: Date, now: Date = new Date()): number {
@@ -34,7 +42,7 @@ async function findOpenDues(
       where: {
         lodgeId,
         type: 'RECEIVABLE',
-        isDues: true,
+        ...DUES_ACCOUNT_WHERE,
         status: { not: 'paid' },
         // Lançamento que já tem cobrança (Invoice) é contado pela Invoice — senão
         // o par Account+Invoice do mesmo débito entraria duas vezes.
@@ -51,7 +59,7 @@ async function findOpenDues(
         status: { not: 'paid' },
         memberId: memberId ?? { not: null },
         dueDate: { lt: todayBR(now) },
-        account: { isDues: true },
+        account: DUES_ACCOUNT_WHERE,
         member: memberFilter,
       },
       select: { memberId: true, amount: true, dueDate: true },

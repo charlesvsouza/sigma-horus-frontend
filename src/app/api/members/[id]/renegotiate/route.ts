@@ -3,7 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
-import { sumLateCharges, syncMemberArt002Status, type LateCharge } from '@/lib/overdue';
+import { DUES_ACCOUNT_WHERE, sumLateCharges, syncMemberArt002Status, type LateCharge } from '@/lib/overdue';
 import { cancelAsaasCharges } from '@/lib/asaas-manual';
 import { todayBR } from '@/lib/date-only';
 import { retargetInvoices } from '@/lib/renegotiation';
@@ -45,7 +45,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!member) return { error: 'notfound' as const };
 
     const openAccounts = await db.account.findMany({
-      where: { lodgeId: String(lodgeId), memberId, type: 'RECEIVABLE', isDues: true, status: { not: 'paid' }, dueDate: { lt: todayBR(now) } },
+      where: { lodgeId: String(lodgeId), memberId, type: 'RECEIVABLE', ...DUES_ACCOUNT_WHERE, status: { not: 'paid' }, dueDate: { lt: todayBR(now) } },
       orderBy: { dueDate: 'asc' },
     });
     if (openAccounts.length === 0) return { error: 'noopen' as const };

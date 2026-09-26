@@ -28,9 +28,19 @@ export default async function InadimplenciaPage() {
     );
   }
 
-  const rows = await withTenant(String(lodgeId), (db) => getLodgeOverdueDuesReport(db, String(lodgeId)));
+  const [rows, lodge] = await withTenant(String(lodgeId), (db) => Promise.all([
+    getLodgeOverdueDuesReport(db, String(lodgeId)),
+    db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
+  ]));
 
   const serialized = rows.map((r) => ({ ...r, oldestDueDate: r.oldestDueDate.toISOString() }));
   const canWrite = (await requireLodgeAccess(String(lodgeId), role, 'accounts', 'write')).ok;
-  return <InadimplenciaClient rows={serialized} canRenegotiate={canWrite} />;
+  return (
+    <InadimplenciaClient
+      rows={serialized}
+      canRenegotiate={canWrite}
+      lodgeName={lodge?.name ?? 'Loja'}
+      crestUrl={lodge?.crestUrl ?? null}
+    />
+  );
 }

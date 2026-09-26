@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
-import { memberStatusLabel } from '@/lib/member-status';
+import { csvRow } from '@/lib/csv';
+import { MEMBER_STATUSES, memberStatusLabel } from '@/lib/member-status';
 import { formatDateOnly } from '@/lib/date-only';
 
 interface LateCharge { fee: number; interest: number; total: number; }
@@ -78,21 +79,96 @@ function agingBucketOf(daysOverdue: number): AgingBucket {
   return '90+';
 }
 
-export default function InadimplenciaClient({ rows, canRenegotiate }: { rows: Row[]; canRenegotiate: boolean }) {
+type Enquadramento = 'all' | 'art002' | 'below';
+const ENQUADRAMENTO_LABEL: Record<Enquadramento, string> = { all: 'Todos em aberto', art002: 'Só enquadrados no Art. 002', below: 'Ainda não enquadrados' };
+
+const PRINT_CSS = `
+@media print {
+  @page { size: A4 portrait; margin: 14mm 12mm; }
+  body * { visibility: hidden !important; }
+  .inad-print, .inad-print * { visibility: visible !important; }
+  .inad-print { display: block !important; position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9pt; }
+  .inad-print h1, .inad-print h2 { color: #111 !important; }
+  .inad-print table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  .inad-print th, .inad-print td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: left; color: #111 !important; }
+  .inad-print th { text-transform: uppercase; font-size: 7.5pt; border-bottom: 1.5px solid #333; }
+  .inad-print .num { text-align: right; }
+  .inad-print tr { break-inside: avoid; page-break-inside: avoid; }
+  .inad-print .sub td { font-weight: bold; border-top: 1.5px solid #333; }
+}
+`;
+
+const num = (n: number) => n.toFixed(2).replace('.', ',');
+const todayLabel = () => new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+export default function InadimplenciaClient({
+  rows, canRenegotiate, lodgeName, crestUrl,
+}: {
+  rows: Row[];
+  canRenegotiate: boolean;
+  lodgeName: string;
+  crestUrl: string | null;
+}) {
   const router = useRouter();
   const art002Count = rows.filter((r) => r.art002).length;
   const [renegotiatingId, setRenegotiatingId] = useState<string | null>(null);
   const [agingFilter, setAgingFilter] = useState<AgingBucket | 'all'>('all');
+  const [search, setSearch] = useState('');
+  const [enquadramento, setEnquadramento] = useState<Enquadramento>('all');
+  const [statusFilter, setStatusFilter] = useState('');
 
   const buckets: AgingBucket[] = ['1-30', '31-60', '61-90', '90+'];
   const aging = buckets.map((bucket) => {
     const bucketRows = rows.filter((r) => agingBucketOf(r.daysOverdue) === bucket);
     return { bucket, count: bucketRows.length, total: bucketRows.reduce((s, r) => s + r.totalAmount, 0) };
   });
-  const visibleRows = agingFilter === 'all' ? rows : rows.filter((r) => agingBucketOf(r.daysOverdue) === agingFilter);
+
+  // Situações cadastrais presentes na lista (o filtro só oferece o que existe).
+  const statusesPresent = MEMBER_STATUSES.filter((s) => rows.some((r) => r.memberStatus === s.value));
+
+  const q = search.trim().toLocaleLowerCase('pt-BR');
+  const visibleRows = rows.filter((r) =>
+    (agingFilter === 'all' || agingBucketOf(r.daysOverdue) === agingFilter)
+    && (enquadramento === 'all' || (enquadramento === 'art002' ? r.art002 : !r.art002))
+    && (!statusFilter || r.memberStatus === statusFilter)
+    && (!q || r.memberName.toLocaleLowerCase('pt-BR').includes(q)),
+  );
+  const visibleTotal = visibleRows.reduce((s, r) => s + r.totalAmount, 0);
+  const visibleWithCharges = visibleRows.reduce((s, r) => s + r.lateCharge.total, 0);
+  const hasFilter = agingFilter !== 'all' || enquadramento !== 'all' || !!statusFilter || !!q;
+
+  function clearFilters() {
+    setAgingFilter('all');
+    setEnquadramento('all');
+    setStatusFilter('');
+    setSearch('');
+  }
+
+  const filterSummary = [
+    enquadramento !== 'all' ? ENQUADRAMENTO_LABEL[enquadramento] : null,
+    agingFilter !== 'all' ? AGING_LABEL[agingFilter] : null,
+    statusFilter ? `situação: ${memberStatusLabel(statusFilter)}` : null,
+    q ? `busca: "${search.trim()}"` : null,
+  ].filter(Boolean).join(' · ');
+
+  function exportCsv() {
+    const lines = [csvRow(['Membro', 'Situação cadastral', 'Mensalidades em aberto', 'Vencimento mais antigo', 'Dias em atraso', 'Art. 002', 'Valor em aberto', 'Multa', 'Juros', 'Total com encargos'])];
+    for (const r of visibleRows) {
+      lines.push(csvRow([r.memberName, memberStatusLabel(r.memberStatus), String(r.openCount), formatDateOnly(r.oldestDueDate), String(r.daysOverdue), r.art002 ? 'Sim' : 'Não', num(r.totalAmount), num(r.lateCharge.fee), num(r.lateCharge.interest), num(r.lateCharge.total)]));
+    }
+    lines.push(csvRow(['Total', '', String(visibleRows.reduce((s, r) => s + r.openCount, 0)), '', '', '', num(visibleTotal), '', '', num(visibleWithCharges)]));
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inadimplencia_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <main className="min-h-screen px-6 py-12">
+      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-sand-light">Inadimplência — Art. 002</h1>
@@ -138,17 +214,44 @@ export default function InadimplenciaClient({ rows, canRenegotiate }: { rows: Ro
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Membros em aberto</h2>
-            {agingFilter !== 'all' ? (
-              <button onClick={() => setAgingFilter('all')} className="text-xs text-gold/80 hover:text-gold">
-                Filtrando: {AGING_LABEL[agingFilter]} — limpar filtro
-              </button>
+            {rows.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" onClick={() => window.print()} disabled={visibleRows.length === 0}>Imprimir / PDF</Button>
+                <Button type="button" variant="secondary" onClick={exportCsv} disabled={visibleRows.length === 0}>Exportar CSV</Button>
+              </div>
             ) : null}
           </div>
+
+          {rows.length > 0 ? (
+            <div className="mt-4 grid gap-3 md:grid-cols-[2fr_1fr_1fr]">
+              <label className="text-xs text-sand-dark">Buscar membro
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nome do irmão…" className={`mt-1 ${inputClass}`} />
+              </label>
+              <label className="text-xs text-sand-dark">Enquadramento
+                <select value={enquadramento} onChange={(e) => setEnquadramento(e.target.value as Enquadramento)} className={`mt-1 ${inputClass}`}>
+                  {(Object.keys(ENQUADRAMENTO_LABEL) as Enquadramento[]).map((k) => <option key={k} value={k}>{ENQUADRAMENTO_LABEL[k]}</option>)}
+                </select>
+              </label>
+              <label className="text-xs text-sand-dark">Situação cadastral
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`mt-1 ${inputClass}`}>
+                  <option value="">Todas</option>
+                  {statusesPresent.map((s) => <option key={s.value} value={s.value}>{s.short}</option>)}
+                </select>
+              </label>
+            </div>
+          ) : null}
+          {hasFilter ? (
+            <p className="mt-3 text-xs text-sand-dark">
+              {visibleRows.length} de {rows.length} membro{rows.length !== 1 ? 's' : ''} · {brl(visibleTotal)} · {filterSummary}{' '}
+              <button onClick={clearFilters} className="text-gold/80 hover:text-gold">— limpar filtros</button>
+            </p>
+          ) : null}
+
           <div className="mt-5 space-y-3">
             {rows.length === 0 ? (
               <EmptyState title="Tudo em dia. Nenhum irmão em atraso." description="Todos os membros estão em dia com a mensalidade." />
             ) : visibleRows.length === 0 ? (
-              <p className="text-sm text-sand-dark">Nenhum membro nesta faixa de atraso.</p>
+              <p className="text-sm text-sand-dark">Nenhum membro com esses filtros.</p>
             ) : visibleRows.map((row) => {
               const hasCharge = row.lateCharge.fee > 0 || row.lateCharge.interest > 0;
               return (
@@ -189,6 +292,55 @@ export default function InadimplenciaClient({ rows, canRenegotiate }: { rows: Ro
             })}
           </div>
         </section>
+      </div>
+
+      {/* Versão de impressão: só aparece no PDF, com a lista já filtrada. */}
+      <div className="inad-print hidden">
+        <header className="text-center">
+          {crestUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
+          ) : null}
+          <h1 className="text-lg font-bold">{lodgeName}</h1>
+          <h2 className="mt-0.5 text-sm">Relatório de inadimplência — mensalidades (Art. 002)</h2>
+          <p className="mt-0.5 text-xs">Posição em {todayLabel()}{filterSummary ? ` · ${filterSummary}` : ''}</p>
+        </header>
+        <table>
+          <thead>
+            <tr>
+              <th>Membro</th>
+              <th>Situação</th>
+              <th className="num">Qtd.</th>
+              <th>Venc. mais antigo</th>
+              <th className="num">Dias</th>
+              <th>Art. 002</th>
+              <th className="num">Em aberto</th>
+              <th className="num">Com encargos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleRows.map((r) => (
+              <tr key={r.memberId}>
+                <td>{r.memberName}</td>
+                <td>{memberStatusLabel(r.memberStatus)}</td>
+                <td className="num">{r.openCount}</td>
+                <td>{formatDateOnly(r.oldestDueDate)}</td>
+                <td className="num">{r.daysOverdue}</td>
+                <td>{r.art002 ? 'Sim' : 'Não'}</td>
+                <td className="num">{brl(r.totalAmount)}</td>
+                <td className="num">{brl(r.lateCharge.total)}</td>
+              </tr>
+            ))}
+            <tr className="sub">
+              <td colSpan={2}>Total — {visibleRows.length} membro{visibleRows.length !== 1 ? 's' : ''}</td>
+              <td className="num">{visibleRows.reduce((s, r) => s + r.openCount, 0)}</td>
+              <td colSpan={3}>{visibleRows.filter((r) => r.art002).length} enquadrado(s) no Art. 002</td>
+              <td className="num">{brl(visibleTotal)}</td>
+              <td className="num">{brl(visibleWithCharges)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="mt-3 text-xs">Enquadramento: mensalidade em aberto mais antiga vencida há mais de 60 dias. &quot;Com encargos&quot; inclui multa e juros informativos, calculados na data do relatório.</p>
       </div>
     </main>
   );
