@@ -166,6 +166,7 @@ export default async function CategoriasPage(props: {
     <CategoriasClient
       lodgeName={data.lodge?.name ?? 'Loja'}
       crestUrl={data.lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
       from={fromStr}
       to={toStr}
       direction={direction}

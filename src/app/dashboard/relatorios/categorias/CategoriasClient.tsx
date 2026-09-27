@@ -5,29 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Button, EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { csvRow } from '@/lib/csv';
+import { ReportActions, ReportDocument } from '@/components/report/report-document';
 
 interface ChartOption { id: string; code: string; name: string; type: string; group: string; fund: 'tronco' | 'donations' | null; dues: boolean }
 interface LedgerRow { id: string; date: string; description: string; person: string | null; bank: string | null; method: string | null; in: number; out: number; balance: number; status: 'paid' | 'open' }
 interface LedgerGroup { key: string; code: string; name: string; category: string; opening: number; totalIn: number; totalOut: number; closing: number; openIn: number; openOut: number; rows: LedgerRow[]; empty: boolean }
 interface Ledger { totals: { opening: number; in: number; out: number; closing: number; openIn: number; openOut: number }; groups: LedgerGroup[] }
-
-const PRINT_CSS = `
-@media print {
-  @page { size: A4 landscape; margin: 14mm 12mm; }
-  body * { visibility: hidden !important; }
-  .razao-print, .razao-print * { visibility: visible !important; }
-  .razao-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9pt; }
-  .razao-noprint { display: none !important; }
-  .razao-print h1, .razao-print h2, .razao-print h3 { color: #111 !important; }
-  .razao-print table { width: 100%; border-collapse: collapse; }
-  .razao-print th, .razao-print td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: left; color: #111 !important; }
-  .razao-print th { text-transform: uppercase; font-size: 7.5pt; border-bottom: 1.5px solid #333; }
-  .razao-print .num { text-align: right; }
-  .razao-print tr { break-inside: avoid; page-break-inside: avoid; }
-  .razao-print .group { break-inside: auto; margin-bottom: 14px; }
-  .razao-print .sub td { font-weight: bold; border-top: 1.5px solid #333; }
-}
-`;
 
 const METHOD_LABEL: Record<string, string> = {
   manual: 'Manual', cash: 'Dinheiro', pix: 'Pix', transfer: 'Transferência', asaas: 'Asaas', donation: 'Doação', fund: 'Custeio (Tronco)', boleto: 'Boleto', card: 'Cartão',
@@ -42,10 +25,11 @@ const fmtInput = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateStrin
 const num = (n: number) => n.toFixed(2).replace('.', ',');
 
 export default function CategoriasClient({
-  lodgeName, crestUrl, from, to, direction, includeOpen, bankId, selectedIds, charts, banks, ledger,
+  lodgeName, crestUrl, issuedBy, from, to, direction, includeOpen, bankId, selectedIds, charts, banks, ledger,
 }: {
   lodgeName: string;
   crestUrl: string | null;
+  issuedBy?: string | null;
   from: string;
   to: string;
   direction: 'all' | 'in' | 'out';
@@ -153,14 +137,13 @@ export default function CategoriasClient({
 
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
-        <div className="razao-noprint">
+        <div className="rpt-noprint">
           <h1 className="font-display text-2xl font-bold text-sand-light">Razão por categoria</h1>
           <p className="mt-1 text-sm text-sand-dark">Tudo o que foi lançado em cada categoria do plano de contas, lançamento a lançamento, com o banco ou caixa por onde o dinheiro passou. O Tronco e as Doações são categorias como as outras.</p>
         </div>
 
-        <section className="razao-noprint space-y-4 rounded-xl border border-white/6 bg-sigma-card p-6">
+        <section className="rpt-noprint space-y-4 rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_1fr_auto]">
             <label className="text-xs text-sand-dark">De
               <input type="date" value={fromVal} onChange={(e) => setFromVal(e.target.value)} className={`mt-1 ${inputClass}`} />
@@ -242,26 +225,28 @@ export default function CategoriasClient({
           <EmptyState title="Nenhum lançamento nas categorias e no período escolhidos." description="Ajuste o período, a conta ou as categorias." />
         ) : (
           <>
-            <div className="razao-noprint flex flex-wrap gap-3">
-              <Button type="button" onClick={() => window.print()}>Salvar como PDF</Button>
+            <ReportActions>
               <Button type="button" variant="secondary" onClick={exportCsv}>Exportar CSV</Button>
-            </div>
+            </ReportActions>
 
-            <div className="razao-print space-y-6">
-              <header className="text-center">
-                {crestUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-                ) : null}
-                <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
-                <h2 className="mt-0.5 text-sm text-sand-dark">Razão por categoria</h2>
-                <p className="mt-0.5 text-xs text-sand-dark">
-                  Período: {fmtInput(from)} a {fmtInput(to)} · {scope}{bankName ? ` · ${bankName}` : ''}{direction === 'in' ? ' · só entradas' : direction === 'out' ? ' · só saídas' : ''}{openVal ? ' · inclui em aberto' : ''}
-                </p>
-              </header>
+            <ReportDocument
+              lodgeName={lodgeName}
+              crestUrl={crestUrl}
+              title="Razão por categoria"
+              details={[
+                `Período: ${fmtInput(from)} a ${fmtInput(to)}`,
+                scope,
+                bankName,
+                direction === 'in' ? 'só entradas' : direction === 'out' ? 'só saídas' : null,
+                includeOpen ? 'inclui lançamentos em aberto' : null,
+              ]}
+              issuedBy={issuedBy}
+              orientation="landscape"
+              className="space-y-6"
+            >
 
               {ledger.groups.map((g) => (
-                <section key={g.key} className="group rounded-xl border border-white/6 bg-sigma-card p-5">
+                <section key={g.key} className="rpt-flat rounded-xl border border-white/6 bg-sigma-card p-5">
                   <h3 className="text-base font-semibold text-sand-light"><span className="text-sand-dark">{g.code}</span> · {g.name} <span className="ml-1 text-xs font-normal text-sand-dark">({g.category})</span></h3>
                   {g.empty ? (
                     <p className="mt-3 text-sm text-sand-dark">Sem movimentação no período selecionado.</p>
@@ -302,7 +287,7 @@ export default function CategoriasClient({
                             {showBalance ? <td className={`${TD} num text-right tabular-nums text-sand-light`}>{r.status === 'open' ? '—' : brl(r.balance)}</td> : null}
                           </tr>
                         ))}
-                        <tr className="sub">
+                        <tr className="rpt-total">
                           <td className="px-2 py-2 font-semibold text-sand-light" colSpan={5}>Total da categoria (pago)</td>
                           <td className="px-2 py-2 text-right num font-semibold tabular-nums text-emerald-300">{brl(g.totalIn)}</td>
                           <td className="px-2 py-2 text-right num font-semibold tabular-nums text-rose-300">{brl(g.totalOut)}</td>
@@ -323,7 +308,7 @@ export default function CategoriasClient({
                 </section>
               ))}
 
-              <section className="rounded-xl border border-white/6 bg-sigma-card p-5">
+              <section className="rpt-section rpt-flat rounded-xl border border-white/6 bg-sigma-card p-5">
                 <h3 className="text-base font-semibold text-sand-light">Total geral</h3>
                 <div className="mt-3 grid gap-3 sm:grid-cols-4">
                   {([
@@ -341,7 +326,7 @@ export default function CategoriasClient({
                   ))}
                 </div>
               </section>
-            </div>
+            </ReportDocument>
           </>
         )}
       </div>

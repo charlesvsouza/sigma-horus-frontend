@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { csvRow } from '@/lib/csv';
+import { ReportActions, ReportDocument } from '@/components/report/report-document';
 import { MEMBER_STATUSES, memberStatusLabel } from '@/lib/member-status';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -82,32 +83,17 @@ function agingBucketOf(daysOverdue: number): AgingBucket {
 type Enquadramento = 'all' | 'art002' | 'below';
 const ENQUADRAMENTO_LABEL: Record<Enquadramento, string> = { all: 'Todos em aberto', art002: 'Só enquadrados no Art. 002', below: 'Ainda não enquadrados' };
 
-const PRINT_CSS = `
-@media print {
-  @page { size: A4 portrait; margin: 14mm 12mm; }
-  body * { visibility: hidden !important; }
-  .inad-print, .inad-print * { visibility: visible !important; }
-  .inad-print { display: block !important; position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9pt; }
-  .inad-print h1, .inad-print h2 { color: #111 !important; }
-  .inad-print table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  .inad-print th, .inad-print td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: left; color: #111 !important; }
-  .inad-print th { text-transform: uppercase; font-size: 7.5pt; border-bottom: 1.5px solid #333; }
-  .inad-print .num { text-align: right; }
-  .inad-print tr { break-inside: avoid; page-break-inside: avoid; }
-  .inad-print .sub td { font-weight: bold; border-top: 1.5px solid #333; }
-}
-`;
-
 const num = (n: number) => n.toFixed(2).replace('.', ',');
 const todayLabel = () => new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
 export default function InadimplenciaClient({
-  rows, canRenegotiate, lodgeName, crestUrl,
+  rows, canRenegotiate, lodgeName, crestUrl, issuedBy,
 }: {
   rows: Row[];
   canRenegotiate: boolean;
   lodgeName: string;
   crestUrl: string | null;
+  issuedBy?: string | null;
 }) {
   const router = useRouter();
   const art002Count = rows.filter((r) => r.art002).length;
@@ -168,7 +154,6 @@ export default function InadimplenciaClient({
 
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-sand-light">Inadimplência — Art. 002</h1>
@@ -215,10 +200,9 @@ export default function InadimplenciaClient({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Membros em aberto</h2>
             {rows.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" onClick={() => window.print()} disabled={visibleRows.length === 0}>Imprimir / PDF</Button>
+              <ReportActions disabled={visibleRows.length === 0}>
                 <Button type="button" variant="secondary" onClick={exportCsv} disabled={visibleRows.length === 0}>Exportar CSV</Button>
-              </div>
+              </ReportActions>
             ) : null}
           </div>
 
@@ -295,16 +279,14 @@ export default function InadimplenciaClient({
       </div>
 
       {/* Versão de impressão: só aparece no PDF, com a lista já filtrada. */}
-      <div className="inad-print hidden">
-        <header className="text-center">
-          {crestUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-          ) : null}
-          <h1 className="text-lg font-bold">{lodgeName}</h1>
-          <h2 className="mt-0.5 text-sm">Relatório de inadimplência — mensalidades (Art. 002)</h2>
-          <p className="mt-0.5 text-xs">Posição em {todayLabel()}{filterSummary ? ` · ${filterSummary}` : ''}</p>
-        </header>
+      <ReportDocument
+        printOnly
+        lodgeName={lodgeName}
+        crestUrl={crestUrl}
+        title="Relatório de inadimplência — mensalidades (Art. 002)"
+        details={[`Posição em ${todayLabel()}`, filterSummary]}
+        issuedBy={issuedBy}
+      >
         <table>
           <thead>
             <tr>
@@ -331,7 +313,7 @@ export default function InadimplenciaClient({
                 <td className="num">{brl(r.lateCharge.total)}</td>
               </tr>
             ))}
-            <tr className="sub">
+            <tr className="rpt-total">
               <td colSpan={2}>Total — {visibleRows.length} membro{visibleRows.length !== 1 ? 's' : ''}</td>
               <td className="num">{visibleRows.reduce((s, r) => s + r.openCount, 0)}</td>
               <td colSpan={3}>{visibleRows.filter((r) => r.art002).length} enquadrado(s) no Art. 002</td>
@@ -341,7 +323,7 @@ export default function InadimplenciaClient({
           </tbody>
         </table>
         <p className="mt-3 text-xs">Enquadramento: mensalidade em aberto mais antiga vencida há mais de 60 dias. &quot;Com encargos&quot; inclui multa e juros informativos, calculados na data do relatório.</p>
-      </div>
+      </ReportDocument>
     </main>
   );
 }

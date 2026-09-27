@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { EmptyState, inputClass } from '@/components/ui';
+import { ReportActions, ReportDocument } from '@/components/report/report-document';
 
 interface MemberAttendanceStat {
   memberId: string;
@@ -29,23 +30,6 @@ interface SessionAttendanceSummary {
 
 const TYPE_LABEL: Record<string, string> = { ordinary: 'Ordinária', magnificent: 'Magna', emergency: 'Extraordinária', other: 'Outra' };
 
-const PRINT_CSS = `
-@media print {
-  @page { size: A4; margin: 16mm 14mm; }
-  body * { visibility: hidden !important; }
-  .freq-print, .freq-print * { visibility: visible !important; }
-  .freq-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9.5pt; }
-  .freq-noprint { display: none !important; }
-  .freq-print h1, .freq-print h2 { color: #111 !important; }
-  .freq-print table { width: 100%; border-collapse: collapse; }
-  .freq-print th, .freq-print td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: left; }
-  .freq-print th { text-transform: uppercase; font-size: 8pt; border-bottom: 1.5px solid #333; }
-  .freq-print .num { text-align: right; }
-  .freq-print tr { break-inside: avoid; page-break-inside: avoid; }
-  .freq-print .pagebreak { break-before: page; page-break-before: always; }
-}
-`;
-
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR');
 }
@@ -56,12 +40,14 @@ function pct(v: number) {
 export default function FrequenciaClient({
   lodgeName,
   crestUrl,
+  issuedBy,
   from,
   to,
   report,
 }: {
   lodgeName: string;
   crestUrl: string | null;
+  issuedBy?: string | null;
   from: string;
   to: string;
   report: { members: MemberAttendanceStat[]; sessions: SessionAttendanceSummary[] };
@@ -96,17 +82,23 @@ export default function FrequenciaClient({
     applyWith(fStr, tStr);
   }
 
+  function csvRows(): unknown[][] {
+    return [
+      ['Obreiro', 'Presenças', 'Faltas', 'Não registrada', 'Frequência (%)', 'Faltas seguidas'],
+      ...report.members.map((m) => [m.memberName, m.present, m.absent, m.unmarked, m.totalSessions > 0 ? Math.round(m.attendanceRate * 100) : '', m.consecutiveAbsences]),
+    ];
+  }
+
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
-        <div className="freq-noprint">
+        <div className="rpt-noprint">
           <Link href="/dashboard/sessoes" className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">&larr; Voltar às sessões</Link>
           <h1 className="mt-2 font-display text-2xl font-bold text-sand-light">Frequência às sessões</h1>
           <p className="mt-1 text-sm text-sand-dark">Presença dos obreiros ativos no período — quem falta seguido aparece primeiro na lista.</p>
         </div>
 
-        <section className="freq-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
+        <section className="rpt-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
             <label className="text-xs text-sand-dark">De
               <input type="date" value={fromVal} onChange={(e) => setFromVal(e.target.value)} className={`mt-1 ${inputClass}`} />
@@ -132,22 +124,15 @@ export default function FrequenciaClient({
           <EmptyState title="Nenhuma sessão registrada neste período." description="Cadastre sessões e marque presença em Sessões para ver a frequência aqui." />
         ) : (
           <>
-            <div className="freq-noprint">
-              <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
-                Salvar como PDF
-              </button>
-            </div>
+            <ReportActions csv={() => ({ filename: `frequencia_${from}_${to}`, rows: csvRows() })} />
 
-            <section className="rounded-xl border border-white/6 bg-sigma-card p-6 freq-print">
-              <header className="mb-5 text-center">
-                {crestUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-                ) : null}
-                <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
-                <h2 className="mt-0.5 text-sm text-sand-dark">Frequência às sessões — obreiros ativos</h2>
-                <p className="mt-0.5 text-xs text-sand-dark">Período: {fmtDate(`${fromVal}T00:00:00`)} a {fmtDate(`${toVal}T00:00:00`)} · {report.sessions.length} sessão(ões)</p>
-              </header>
+            <ReportDocument
+              lodgeName={lodgeName}
+              crestUrl={crestUrl}
+              title="Frequência às sessões — obreiros ativos"
+              details={[`Período: ${fmtDate(`${from}T00:00:00`)} a ${fmtDate(`${to}T00:00:00`)}`, `${report.sessions.length} sessão(ões)`]}
+              issuedBy={issuedBy}
+            >
 
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -179,9 +164,8 @@ export default function FrequenciaClient({
                   </tbody>
                 </table>
               </div>
-            </section>
 
-            <section className="rounded-xl border border-white/6 bg-sigma-card p-6 freq-print pagebreak">
+              <section className="rpt-pagebreak mt-8">
               <h2 className="mb-4 text-base font-semibold text-sand-light">Sessões do período</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -209,7 +193,8 @@ export default function FrequenciaClient({
                   </tbody>
                 </table>
               </div>
-            </section>
+              </section>
+            </ReportDocument>
           </>
         )}
       </div>

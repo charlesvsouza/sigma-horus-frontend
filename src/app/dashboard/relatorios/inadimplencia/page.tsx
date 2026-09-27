@@ -41,6 +41,7 @@ export default async function InadimplenciaPage() {
       canRenegotiate={canWrite}
       lodgeName={lodge?.name ?? 'Loja'}
       crestUrl={lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
     />
   );
 }

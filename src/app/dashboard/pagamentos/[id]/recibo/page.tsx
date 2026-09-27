@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { getReportSignatories } from '@/lib/report-signatories';
 import ReciboClient from './ReciboClient';
 
 // Server Component: recibo imprimível de um pagamento (mesmo padrão de
@@ -28,6 +29,9 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
   );
   if (!payment) notFound();
 
+  // Tesoureiro em exercício na data do pagamento (o Venerável não assina recibo).
+  const [treasurer] = await withTenant(String(lodgeId), (db) => getReportSignatories(db, String(lodgeId), { at: payment.paidAt }));
+
   return (
     <ReciboClient
       payment={{
@@ -41,6 +45,8 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
         memberCpf: payment.member?.cpf ?? null,
         lodge: payment.lodge,
       }}
+      treasurerName={treasurer?.name ?? null}
+      issuedBy={session?.user?.name ?? null}
     />
   );
 }

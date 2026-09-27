@@ -93,6 +93,7 @@ export default async function ExtratosPage(props: { searchParams: Promise<{ acco
     <ExtratosClient
       lodgeName={data.lodge?.name ?? 'Loja'}
       crestUrl={data.lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
       accounts={data.financialAccounts.map((a) => ({ id: a.id, name: a.name, kind: a.kind, bankName: a.bankName, active: a.active, isInvestment: a.isInvestment }))}
       selectedAccountId={data.accountId}
       from={from.toISOString().slice(0, 10)}

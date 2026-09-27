@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { csvNumber } from '@/lib/csv';
+import { ReportActions, ReportDocument, type Signatory } from '@/components/report/report-document';
 import type { FundPurpose } from '@/lib/funds';
 import ContributionForm from './ContributionForm';
 
@@ -26,23 +28,6 @@ interface Report {
 }
 interface CampaignRow { id: string; title: string; status: string; goal: number | null; donated: number; donatedInPeriod: number; fundAllocated: number }
 
-const PRINT_CSS = `
-@media print {
-  body * { visibility: hidden !important; }
-  .fundo-print, .fundo-print * { visibility: visible !important; }
-  .fundo-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif; }
-  .fundo-noprint { display: none !important; }
-  .fundo-print h1, .fundo-print h2, .fundo-print h3 { color: #111 !important; }
-  .fundo-print table { width: 100%; border-collapse: collapse; }
-  .fundo-print th, .fundo-print td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: left; color: #111 !important; }
-  .fundo-print th { text-transform: uppercase; font-size: 8pt; border-bottom: 1.5px solid #333; }
-  .fundo-print .num { text-align: right; }
-  .fundo-print tr { break-inside: avoid; page-break-inside: avoid; }
-  .fundo-print .card { border: 1px solid #ccc !important; background: #fff !important; }
-  .fundo-print .card * { color: #111 !important; }
-}
-`;
-
 const BR = 'America/Sao_Paulo';
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { timeZone: BR });
 const fmtMonth = (ym: string) => `${ym.slice(5)}/${ym.slice(0, 4)}`;
@@ -50,14 +35,14 @@ const KIND_LABEL: Record<string, string> = { payment_in: 'Entrada', payment_out:
 const STATUS_LABEL: Record<string, string> = { active: 'Ativa', completed: 'Concluída', canceled: 'Cancelada' };
 const ORIGIN_LABEL: Record<string, string> = { campaign: 'Campanha', session: 'Sessão' };
 
-const CARD = 'card rounded-xl border border-white/6 bg-sigma-card p-5';
+const CARD = 'rounded-xl border border-white/6 bg-sigma-card p-5';
 const TH = 'border-b border-white/10 px-2 py-2 text-left text-xs uppercase tracking-wide text-sand-dark/70';
 const TD = 'border-b border-white/5 px-2 py-2';
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: 'in' | 'out' | 'gold' }) {
   const color = tone === 'in' ? 'text-emerald-300' : tone === 'out' ? 'text-rose-300' : tone === 'gold' ? 'text-gold' : 'text-sand-light';
   return (
-    <div className={CARD}>
+    <div className={`rpt-card ${CARD}`}>
       <p className="text-xs uppercase tracking-[0.15em] text-sand-dark">{label}</p>
       <p className={`mt-2 text-xl font-semibold tabular-nums ${color}`}>{value}</p>
     </div>
@@ -89,12 +74,14 @@ function BucketTable({ rows, empty, head }: { rows: Bucket[]; empty: string; hea
 }
 
 export default function FundosClient({
-  fund, fundLabels, lodgeName, crestUrl, from, to, accounts, report, campaigns, canSeeDonors, canRecord, members, sessions,
+  fund, fundLabels, lodgeName, crestUrl, issuedBy, signatures, from, to, accounts, report, campaigns, canSeeDonors, canRecord, members, sessions,
 }: {
   fund: FundPurpose;
   fundLabels: Record<FundPurpose, string>;
   lodgeName: string;
   crestUrl: string | null;
+  issuedBy?: string | null;
+  signatures: Signatory[];
   from: string;
   to: string;
   accounts: { id: string; name: string; isDefault: boolean }[];
@@ -126,16 +113,24 @@ export default function FundosClient({
   const totalEntries = report.entriesByOrigin.campaign + report.entriesByOrigin.session + report.entriesByOrigin.other;
   const isTronco = fund === 'tronco';
 
+  function csvRows(): unknown[][] {
+    return [
+      ['Data', 'Histórico', 'Doador / obs.', 'Tipo', 'Valor', 'Saldo'],
+      ['', 'Saldo inicial do período', '', '', '', csvNumber(st.openingBalance)],
+      ...st.movements.map((m) => [fmtDate(m.date), m.description, m.reference ?? '', KIND_LABEL[m.kind] ?? m.kind, csvNumber(m.signedAmount), csvNumber(m.balance)]),
+      ['', 'Saldo final do período', '', '', '', csvNumber(st.closingBalance)],
+    ];
+  }
+
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
-        <div className="fundo-noprint">
+        <div className="rpt-noprint">
           <h1 className="font-display text-2xl font-bold text-sand-light">Fundos da loja</h1>
           <p className="mt-1 text-sm text-sand-dark">Gestão do Tronco de Beneficência e das Doações e Contribuições. São categorias do plano de contas: o dinheiro entra e sai pelos bancos e caixa da loja, e aqui aparece tudo o que foi lançado nelas.</p>
         </div>
 
-        <div className="fundo-noprint flex flex-wrap gap-2">
+        <div className="rpt-noprint flex flex-wrap gap-2">
           {(['tronco', 'donations'] as FundPurpose[]).map((f) => (
             <Link
               key={f}
@@ -147,7 +142,7 @@ export default function FundosClient({
           ))}
         </div>
 
-        <section className="fundo-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
+        <section className="rpt-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
             <label className="text-xs text-sand-dark">De
               <input type="date" value={fromVal} onChange={(e) => setFromVal(e.target.value)} className={`mt-1 ${inputClass}`} />
@@ -168,13 +163,12 @@ export default function FundosClient({
 
         {(
           <>
-            <div className="fundo-noprint flex flex-wrap items-center gap-3">
+            <ReportActions csv={() => ({ filename: `extrato_${fund}_${from}_${to}`, rows: csvRows() })}>
               {canRecord ? (
-                <Button type="button" onClick={() => setShowContribution((v) => !v)}>Registrar aporte</Button>
+                <Button type="button" variant="secondary" onClick={() => setShowContribution((v) => !v)}>Registrar aporte</Button>
               ) : null}
-              <Button type="button" variant="secondary" onClick={() => window.print()}>Salvar como PDF</Button>
               <Link href={`/dashboard/relatorios/categorias?fund=${fund}&from=${fromVal}&to=${toVal}`} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-medium text-gold/90 transition-colors hover:border-gold/60 hover:text-gold">Razão por categoria</Link>
-            </div>
+            </ReportActions>
 
             {showContribution && canRecord ? (
               <ContributionForm
@@ -188,18 +182,16 @@ export default function FundosClient({
               />
             ) : null}
 
-            <div className="fundo-print space-y-8">
-              <header className="text-center">
-                {crestUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-                ) : null}
-                <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
-                <h2 className="mt-0.5 text-sm text-sand-dark">Prestação de contas — {fundLabels[fund]}</h2>
-                <p className="mt-0.5 text-xs text-sand-dark">Período: {fmtDate(`${from}T12:00:00Z`)} a {fmtDate(`${to}T12:00:00Z`)}</p>
-              </header>
-
-              <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <ReportDocument
+              lodgeName={lodgeName}
+              crestUrl={crestUrl}
+              title={`Prestação de contas — ${fundLabels[fund]}`}
+              details={[`Período: ${fmtDate(`${from}T12:00:00Z`)} a ${fmtDate(`${to}T12:00:00Z`)}`]}
+              issuedBy={issuedBy}
+              signatures={signatures}
+              className="space-y-8"
+            >
+              <section className="rpt-section grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <Stat label="Saldo hoje" value={brl(report.balanceNow)} tone="gold" />
                 <Stat label="Saldo inicial do período" value={brl(st.openingBalance)} />
                 <Stat label="Entradas" value={brl(st.totalIn)} tone="in" />
@@ -207,7 +199,7 @@ export default function FundosClient({
                 <Stat label="Saldo final do período" value={brl(st.closingBalance)} tone="gold" />
               </section>
 
-              <section className={CARD}>
+              <section className={`rpt-flat ${CARD}`}>
                 <h3 className="text-base font-semibold text-sand-light">Entradas por origem</h3>
                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
                   <Stat label="Sessões (tronco passado)" value={brl(report.entriesByOrigin.session)} />
@@ -232,14 +224,14 @@ export default function FundosClient({
                 ) : null}
               </section>
 
-              <section className={CARD}>
+              <section className={`rpt-flat ${CARD}`}>
                 <h3 className="text-base font-semibold text-sand-light">Saídas do período</h3>
                 <div className="mt-3">
                   <BucketTable rows={report.exitsByTitle} empty="Nenhuma saída neste período." head={['Destino / finalidade', 'Total']} />
                 </div>
               </section>
 
-              <section className={CARD}>
+              <section className={`rpt-flat ${CARD}`}>
                 <h3 className="text-base font-semibold text-sand-light">Doadores</h3>
                 {!canSeeDonors ? <p className="mt-1 text-xs text-sand-dark">Os nomes de quem doou ao Tronco só aparecem para Administrador, Venerável e Tesoureiro.</p> : null}
                 <div className="mt-3">
@@ -248,7 +240,7 @@ export default function FundosClient({
               </section>
 
               {isTronco ? (
-                <section className={CARD}>
+                <section className={`rpt-flat ${CARD}`}>
                   <h3 className="text-base font-semibold text-sand-light">Campanhas de benemerência</h3>
                   {campaigns.length === 0 ? (
                     <p className="mt-2 text-sm text-sand-dark">Nenhuma campanha cadastrada.</p>
@@ -285,7 +277,7 @@ export default function FundosClient({
                 </section>
               ) : null}
 
-              <section className={CARD}>
+              <section className={`rpt-flat ${CARD}`}>
                 <h3 className="text-base font-semibold text-sand-light">Evolução mensal (12 meses)</h3>
                 <div className="overflow-x-auto"><table className="mt-3 w-full text-sm">
                   <thead><tr><th className={TH}>Mês</th><th className={`${TH} num text-right`}>Entradas</th><th className={`${TH} num text-right`}>Saídas</th><th className={`${TH} num text-right`}>Resultado</th></tr></thead>
@@ -302,7 +294,7 @@ export default function FundosClient({
                 </table></div>
               </section>
 
-              <section className={CARD}>
+              <section className={`rpt-flat ${CARD}`}>
                 <h3 className="text-base font-semibold text-sand-light">Extrato do período</h3>
                 <div className="overflow-x-auto"><table className="mt-3 w-full text-sm">
                   <thead>
@@ -325,14 +317,14 @@ export default function FundosClient({
                         <td className={`${TD} num text-right tabular-nums text-sand-light`}>{brl(m.balance)}</td>
                       </tr>
                     ))}
-                    <tr>
+                    <tr className="rpt-total">
                       <td className="px-2 py-2 font-semibold text-sand-light" colSpan={5}>Saldo final do período</td>
                       <td className="px-2 py-2 text-right num font-semibold tabular-nums text-gold">{brl(st.closingBalance)}</td>
                     </tr>
                   </tbody>
                 </table></div>
               </section>
-            </div>
+            </ReportDocument>
           </>
         )}
       </div>

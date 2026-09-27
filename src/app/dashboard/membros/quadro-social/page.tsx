@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
+import { getReportSignatories } from '@/lib/report-signatories';
 import QuadroSocialClient from './QuadroSocialClient';
 
 export default async function QuadroSocialPage() {
@@ -70,5 +71,16 @@ export default async function QuadroSocialPage() {
     };
   });
 
-  return <QuadroSocialClient lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} members={members} canSeeAllStatuses={canSeeAllStatuses} />;
+  const signatures = await withTenant(String(lodgeId), (db) => getReportSignatories(db, String(lodgeId), { by: 'secretary' }));
+
+  return (
+    <QuadroSocialClient
+      lodgeName={data.lodge?.name ?? 'Loja'}
+      crestUrl={data.lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
+      signatures={signatures}
+      members={members}
+      canSeeAllStatuses={canSeeAllStatuses}
+    />
+  );
 }

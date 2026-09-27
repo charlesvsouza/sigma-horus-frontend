@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { ReportActions, ReportDocument } from '@/components/report/report-document';
 
 interface AccountOption {
   id: string;
@@ -41,22 +42,6 @@ const KIND_LABEL: Record<Movement['kind'], string> = {
 
 const FA_KIND_LABEL: Record<string, string> = { bank: 'Banco', cash: 'Caixa' };
 
-const PRINT_CSS = `
-@media print {
-  @page { size: A4 landscape; margin: 16mm 14mm; }
-  body * { visibility: hidden !important; }
-  .extrato-print, .extrato-print * { visibility: visible !important; }
-  .extrato-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9.5pt; }
-  .extrato-noprint { display: none !important; }
-  .extrato-print h1, .extrato-print h2 { color: #111 !important; }
-  .extrato-print table { width: 100%; border-collapse: collapse; }
-  .extrato-print th, .extrato-print td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: left; }
-  .extrato-print th { text-transform: uppercase; font-size: 8pt; border-bottom: 1.5px solid #333; }
-  .extrato-print .num { text-align: right; }
-  .extrato-print tr { break-inside: avoid; page-break-inside: avoid; }
-}
-`;
-
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR');
 }
@@ -64,6 +49,7 @@ function fmtDate(iso: string) {
 export default function ExtratosClient({
   lodgeName,
   crestUrl,
+  issuedBy,
   accounts,
   selectedAccountId,
   from,
@@ -72,6 +58,7 @@ export default function ExtratosClient({
 }: {
   lodgeName: string;
   crestUrl: string | null;
+  issuedBy?: string | null;
   accounts: AccountOption[];
   selectedAccountId: string | null;
   from: string;
@@ -124,9 +111,8 @@ export default function ExtratosClient({
 
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
-        <div className="extrato-noprint">
+        <div className="rpt-noprint">
           <h1 className="font-display text-2xl font-bold text-sand-light">Extratos de contas</h1>
           <p className="mt-1 text-sm text-sand-dark">Movimentação completa de uma conta bancária ou do Caixa, com saldo inicial e final do período.</p>
         </div>
@@ -135,7 +121,7 @@ export default function ExtratosClient({
           <EmptyState title="Nenhuma conta bancária ou Caixa cadastrada ainda." description="Cadastre pelo menos uma em Cadastros financeiros para ver o extrato." />
         ) : (
           <>
-            <section className="extrato-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
+            <section className="rpt-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
               <div className="grid gap-4 md:grid-cols-[1.4fr_1fr_1fr_auto]">
                 <label className="text-xs text-sand-dark">Conta
                   <select
@@ -172,7 +158,7 @@ export default function ExtratosClient({
 
             {statement && selectedAccount ? (
               <>
-                <section className="extrato-noprint grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <section className="rpt-noprint grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
                     <p className="text-xs uppercase tracking-[0.15em] text-sand-dark">Saldo inicial</p>
                     <p className="mt-2 text-xl font-semibold text-sand-light">{brl(statement.openingBalance)}</p>
@@ -191,27 +177,20 @@ export default function ExtratosClient({
                   </div>
                 </section>
 
-                <div className="extrato-noprint flex flex-wrap gap-3">
-                  <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
-                    Salvar como PDF
-                  </button>
+                <ReportActions>
                   <a href={xlsHref} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-medium text-gold/90 transition-colors hover:border-gold/60 hover:text-gold">
                     Baixar XLS
                   </a>
-                </div>
+                </ReportActions>
 
-                <section className="rounded-xl border border-white/6 bg-sigma-card p-6 extrato-print">
-                  <header className="mb-5 text-center">
-                    {crestUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-                    ) : null}
-                    <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
-                    <h2 className="mt-0.5 text-sm text-sand-dark">
-                      Extrato — {selectedAccount.name}{selectedAccount.bankName ? ` (${selectedAccount.bankName})` : ''} · {FA_KIND_LABEL[selectedAccount.kind] ?? selectedAccount.kind}
-                    </h2>
-                    <p className="mt-0.5 text-xs text-sand-dark">Período: {fmtDate(`${fromVal}T00:00:00`)} a {fmtDate(`${toVal}T00:00:00`)}</p>
-                  </header>
+                <ReportDocument
+                  lodgeName={lodgeName}
+                  crestUrl={crestUrl}
+                  title={`Extrato — ${selectedAccount.name}${selectedAccount.bankName ? ` (${selectedAccount.bankName})` : ''}`}
+                  details={[FA_KIND_LABEL[selectedAccount.kind] ?? selectedAccount.kind, `Período: ${fmtDate(`${from}T00:00:00`)} a ${fmtDate(`${to}T00:00:00`)}`]}
+                  issuedBy={issuedBy}
+                  orientation="landscape"
+                >
 
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -245,13 +224,17 @@ export default function ExtratosClient({
                           </tr>
                         ))}
                         <tr>
+                          <td className="px-2 py-2 text-sand-dark" colSpan={5}>Entradas no período: {brl(statement.totalIn)} · Saídas no período: {brl(statement.totalOut)}</td>
+                          <td className="px-2 py-2" />
+                        </tr>
+                        <tr className="rpt-total">
                           <td className="px-2 py-2 font-semibold text-sand-light" colSpan={5}>Saldo final do período</td>
                           <td className="px-2 py-2 text-right num font-semibold text-gold">{brl(statement.closingBalance)}</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
-                </section>
+                </ReportDocument>
               </>
             ) : (
               <EmptyState title="Sem dados para exibir." description="Escolha uma conta para ver o extrato." />

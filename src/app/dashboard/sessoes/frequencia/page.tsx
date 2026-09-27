@@ -47,6 +47,7 @@ export default async function FrequenciaPage(props: { searchParams: Promise<{ fr
     <FrequenciaClient
       lodgeName={data.lodge?.name ?? 'Loja'}
       crestUrl={data.lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
       from={from.toISOString().slice(0, 10)}
       to={searchParams.to ?? now.toISOString().slice(0, 10)}
       report={report}

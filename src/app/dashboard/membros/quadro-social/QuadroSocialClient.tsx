@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { UserRound } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
+import { ReportActions, ReportDocument, type Signatory } from '@/components/report/report-document';
 import { symbolicSituation, type SymbolicSituation } from '@/lib/masonic-degree';
 import { memberStatusLabel, MEMBER_STATUSES } from '@/lib/member-status';
 
@@ -28,24 +29,7 @@ const ORIGIN_LABEL: Record<MemberInput['origin'], string> = {
 const DEGREE_ORDER: (SymbolicSituation | 'sem-grau')[] = ['Mestre Instalado', 'Mestre', 'Companheiro', 'Aprendiz', 'sem-grau'];
 const DEGREE_LABEL: Record<string, string> = { 'sem-grau': 'Sem grau registrado' };
 
-const PRINT_CSS = `
-@media print {
-  @page { size: A4; margin: 16mm 14mm; }
-  body * { visibility: hidden !important; }
-  .qs-print, .qs-print * { visibility: visible !important; }
-  .qs-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9.5pt; }
-  .qs-noprint { display: none !important; }
-  .qs-print h1, .qs-print h2, .qs-print h3 { color: #111 !important; }
-  .qs-print table { width: 100%; border-collapse: collapse; }
-  .qs-print th, .qs-print td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: left; }
-  .qs-print th { text-transform: uppercase; font-size: 8pt; border-bottom: 1.5px solid #333; }
-  .qs-print .num { text-align: right; }
-  .qs-print tr { break-inside: avoid; page-break-inside: avoid; }
-  .qs-print .pagebreak { break-before: page; page-break-before: always; }
-}
-`;
-
-export default function QuadroSocialClient({ lodgeName, crestUrl, members, canSeeAllStatuses = true }: { lodgeName: string; crestUrl: string | null; members: MemberInput[]; canSeeAllStatuses?: boolean }) {
+export default function QuadroSocialClient({ lodgeName, crestUrl, issuedBy, signatures, members, canSeeAllStatuses = true }: { lodgeName: string; crestUrl: string | null; issuedBy?: string | null; signatures: Signatory[]; members: MemberInput[]; canSeeAllStatuses?: boolean }) {
   const [includeAll, setIncludeAll] = useState(false);
 
   const visible = includeAll ? members : members.filter((m) => m.status === 'active');
@@ -65,11 +49,17 @@ export default function QuadroSocialClient({ lodgeName, crestUrl, members, canSe
       .filter((s) => s.count > 0);
   }, [members]);
 
+  function csvRows(): unknown[][] {
+    return [
+      ['Grau', 'Nome', 'Situação', 'Origem'],
+      ...byDegree.flatMap((g) => g.members.map((m) => [g.label, m.name, memberStatusLabel(m.status), ORIGIN_LABEL[m.origin]])),
+    ];
+  }
+
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
-        <div className="qs-noprint">
+        <div className="rpt-noprint">
           <Link href="/dashboard/membros" className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">&larr; Voltar a Membros</Link>
           <h1 className="mt-2 font-display text-2xl font-bold text-sand-light">Quadro social</h1>
           <p className="mt-1 text-sm text-sand-dark">
@@ -82,7 +72,7 @@ export default function QuadroSocialClient({ lodgeName, crestUrl, members, canSe
         </div>
 
         {canSeeAllStatuses ? (
-          <label className="qs-noprint flex w-fit items-center gap-2 text-sm text-sand-dark">
+          <label className="rpt-noprint flex w-fit items-center gap-2 text-sm text-sand-dark">
             <input type="checkbox" checked={includeAll} onChange={(e) => setIncludeAll(e.target.checked)} />
             Incluir afastados/suspensos/inativos (não só ativos)
           </label>
@@ -92,26 +82,19 @@ export default function QuadroSocialClient({ lodgeName, crestUrl, members, canSe
           <EmptyState title="Nenhum membro cadastrado ainda." description="Cadastre membros em Membros para ver o quadro social." />
         ) : (
           <>
-            <div className="qs-noprint">
-              <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
-                Salvar como PDF
-              </button>
-            </div>
+            <ReportActions csv={() => ({ filename: `quadro_social_${new Date().toISOString().slice(0, 10)}`, rows: csvRows() })} />
 
-            <section className="rounded-xl border border-white/6 bg-sigma-card p-6 qs-print">
-              <header className="mb-5 text-center">
-                {crestUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-                ) : null}
-                <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
-                <h2 className="mt-0.5 text-sm text-sand-dark">Quadro social {includeAll ? '— todos os status' : '— membros ativos'}</h2>
-                <p className="mt-0.5 text-xs text-sand-dark">Emitido em {new Date().toLocaleDateString('pt-BR')} · {visible.length} membro(s)</p>
-              </header>
-
-              <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <ReportDocument
+              lodgeName={lodgeName}
+              crestUrl={crestUrl}
+              title={`Quadro social ${includeAll ? '— todas as situações' : '— membros ativos'}`}
+              details={[`${visible.length} membro(s)`, 'posição na data de emissão']}
+              issuedBy={issuedBy}
+              signatures={signatures}
+            >
+              <div className="rpt-section mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 {byDegree.map((g) => (
-                  <div key={g.key} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
+                  <div key={g.key} className="rpt-card rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                     <p className="text-xs text-sand-dark">{g.label}</p>
                     <p className="mt-2 text-xl font-semibold text-sand-light">{g.members.length}</p>
                   </div>
@@ -155,7 +138,7 @@ export default function QuadroSocialClient({ lodgeName, crestUrl, members, canSe
                 </div>
               ) : null)}
 
-              <div className="pagebreak" />
+              <div className="rpt-pagebreak" />
               <h3 className="mb-2 mt-2 text-sm font-semibold uppercase tracking-wide text-sand-light">Resumo por situação</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -172,14 +155,14 @@ export default function QuadroSocialClient({ lodgeName, crestUrl, members, canSe
                         <td className="border-b border-white/5 px-2 py-2 text-right num tabular-nums text-sand">{s.count}</td>
                       </tr>
                     ))}
-                    <tr>
+                    <tr className="rpt-total">
                       <td className="px-2 py-2 font-semibold text-sand-light">Total</td>
                       <td className="px-2 py-2 text-right num font-semibold text-gold">{members.length}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-            </section>
+            </ReportDocument>
           </>
         )}
       </div>

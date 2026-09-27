@@ -7,6 +7,7 @@ import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituat
 import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
 import { Button, EmptyState, Input, MaskedInput, Skeleton, inputClass, Alert, useConfirm } from '@/components/ui';
 import { formatDateOnly } from '@/lib/date-only';
+import { ReportDocument } from '@/components/report/report-document';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -132,23 +133,6 @@ function formatEvolution(m: Member): string {
 
 const KIND_LABEL: Record<RelativeKind, string> = { mother: 'Mãe', father: 'Pai', spouse: 'Esposa', son: 'Filho', daughter: 'Filha', child: 'Filho(a)', other: 'Dependente' };
 
-// Relatório de membros: visível apenas na impressão (Salvar como PDF).
-const REPORT_PRINT_CSS = `
-.members-report { display: none; }
-@media print {
-  @page { size: A4 portrait; margin: 16mm 14mm; }
-  body * { visibility: hidden !important; }
-  .members-report { display: block !important; position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; }
-  .members-report, .members-report * { visibility: visible !important; }
-  .members-report h1 { font-size: 15pt; margin: 0 0 2mm; letter-spacing: 0.02em; border-bottom: 2px solid #C9A227; padding-bottom: 2.5mm; }
-  .members-report .sub { color: #444 !important; font-size: 9pt; margin: 2mm 0 5mm; }
-  .members-report table { width: 100%; border-collapse: collapse; }
-  .members-report th { border-bottom: 1.5px solid #333; text-transform: uppercase; font-size: 8pt; text-align: left; padding: 3px 6px; }
-  .members-report td { border-bottom: 1px solid #ccc; font-size: 9pt; text-align: left; padding: 3px 6px; }
-  .members-report tr { break-inside: avoid; page-break-inside: avoid; }
-}
-`;
-
 export default function MembrosPage() {
   const askConfirm = useConfirm();
   const [members, setMembers] = useState<Member[]>([]);
@@ -161,6 +145,7 @@ export default function MembrosPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [lodgeName, setLodgeName] = useState('');
   const [lodgeCrestUrl, setLodgeCrestUrl] = useState('');
+  const [userName, setUserName] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -176,6 +161,7 @@ export default function MembrosPage() {
       .then((s) => {
         const role = String(s?.user?.role ?? '').toLowerCase();
         setIsAdmin(role === 'admin');
+        setUserName(s?.user?.name ?? null);
         // Foto do irmão (Galeria de Veneráveis/Quadro da Gestão): prerrogativa
         // do Secretário, Venerável e Administrador.
         setCanManagePhoto(['admin', 'secretary', 'venerable'].includes(role));
@@ -562,17 +548,19 @@ export default function MembrosPage() {
       </div>
 
       {/* Relatório imprimível (Salvar como PDF) — reflete o filtro atual */}
-      <style>{REPORT_PRINT_CSS}</style>
-      <div className="members-report">
-        {lodgeCrestUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={lodgeCrestUrl} alt="" style={{ display: 'block', height: 56, width: 56, objectFit: 'contain', margin: '0 auto 6px' }} />
-        ) : null}
-        <h1>{lodgeName || 'Relatório de Membros'}</h1>
-        <p className="sub">
-          Relatório de Membros — {statusFilter === 'all' ? 'Todas as situações' : memberStatusFull(statusFilter)}
-          {query.trim() ? ` · busca: “${query.trim()}”` : ''} · {filtered.length} membro(s) · Emitido em {new Date().toLocaleDateString('pt-BR')}
-        </p>
+      <ReportDocument
+        printOnly
+        lodgeName={lodgeName || 'Loja'}
+        crestUrl={lodgeCrestUrl || null}
+        title="Relatório de membros"
+        details={[
+          statusFilter === 'all' ? 'Todas as situações' : memberStatusFull(statusFilter),
+          query.trim() ? `busca: “${query.trim()}”` : null,
+          `${filtered.length} membro(s)`,
+        ]}
+        issuedBy={userName}
+        orientation="landscape"
+      >
         <table>
           <thead>
             <tr><th>Nome</th><th>Situação</th><th>Grau</th><th>CIM</th><th>Tempo de Ordem</th><th>Telefone</th><th>E-mail</th></tr>
@@ -591,7 +579,7 @@ export default function MembrosPage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </ReportDocument>
     </main>
   );
 }

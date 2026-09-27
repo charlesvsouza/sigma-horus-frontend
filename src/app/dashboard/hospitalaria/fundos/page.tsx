@@ -6,6 +6,7 @@ import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { todayBR } from '@/lib/date-only';
 import { FUND_LABELS, fundChartWhere, isFundPurpose, type FundPurpose } from '@/lib/funds';
 import { buildFundReport, type FundMovementRow } from '@/lib/funds-report';
+import { getReportSignatories } from '@/lib/report-signatories';
 import FundosClient from './FundosClient';
 
 const BR = 'America/Sao_Paulo';
@@ -133,12 +134,16 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
     };
   });
 
+  const signatures = await withTenant(String(lodgeId), (db) => getReportSignatories(db, String(lodgeId), { at: to }));
+
   return (
     <FundosClient
       fund={fund}
       fundLabels={FUND_LABELS}
       lodgeName={data.lodge?.name ?? ''}
       crestUrl={data.lodge?.crestUrl ?? null}
+      issuedBy={session?.user?.name ?? null}
+      signatures={signatures}
       from={fromStr}
       to={toStr}
       accounts={data.bankAccounts}
