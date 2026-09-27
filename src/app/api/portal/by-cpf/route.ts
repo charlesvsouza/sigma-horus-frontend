@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { isValidCPF, onlyDigits } from '@/lib/masks';
+import { canSeePaymentHistory } from '@/lib/payment-history';
 import { effectiveStatus, openBalance } from '@/lib/portal-dues';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -8,13 +9,16 @@ import { NextResponse } from 'next/server';
 // "Lançamentos no meu CPF": o Administrador não tem cadastro de membro ligado ao login
 // (papéis não se confundem — decisão de 2026-09-20), mas quer ver o que está lançado no
 // CPF dele sem trocar de login. Só leitura, sem Pagar (quem paga é o login de obreiro).
-// Exige `accounts:read`: quem chega aqui já enxerga essas contas em Financeiro → Contas,
-// então a busca por CPF não amplia acesso nenhum.
+// Mesmos papéis do Histórico de pagamentos (Tesoureiro, Administrador, Venerável) — mostra
+// pagamentos e recibos, então o Secretário (fora do histórico por decisão do dono) não entra.
 
 export async function GET(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!canSeePaymentHistory(session?.user?.role)) {
+    return NextResponse.json({ error: 'Consulta restrita ao Tesoureiro, ao Administrador e ao Venerável Mestre.' }, { status: 403 });
+  }
 
   const access = await requireLodgeAccess(lodgeId, session?.user?.role, 'accounts', 'read');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });

@@ -107,7 +107,15 @@ export async function settleAsaasInvoicePayment(
   if (account?.memberId) {
     const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId } });
     const totalPaid = Number(aggregate._sum.amount ?? 0);
-    await db.account.update({ where: { id: account.id }, data: { status: coversAmount(totalPaid, Number(account.amount)) ? 'paid' : 'pending' } });
+    const accountPaid = coversAmount(totalPaid, Number(account.amount));
+    await db.account.update({ where: { id: account.id }, data: { status: accountPaid ? 'paid' : 'pending' } });
+    // Conta de um membro quitada = as cobranças dela também (mesma regra da baixa manual em
+    // api/payments). Sem isso, uma parcial lançada à mão SEM "vincular a um membro" ficava fora
+    // da soma por membro acima: a conta virava paga e a Invoice seguia "billed" — e o Art. 002
+    // e a recorrência continuavam contando o irmão como inadimplente.
+    if (accountPaid) {
+      await db.invoice.updateMany({ where: { accountId: account.id, status: { not: 'paid' } }, data: { status: 'paid' } });
+    }
   }
   if (memberId) {
     await syncMemberArt002Status(db, lodgeId, memberId);

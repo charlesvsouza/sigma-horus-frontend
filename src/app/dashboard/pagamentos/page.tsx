@@ -19,6 +19,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
             id: true, title: true, type: true, amount: true, status: true, dueDate: true, bankAccountId: true, memberId: true, counterpartyName: true,
             member: { select: { name: true } },
             payments: { select: { amount: true } },
+            _count: { select: { invoices: true } },
           },
           orderBy: { dueDate: 'asc' },
         }),
@@ -51,17 +52,23 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
     : { accounts: [], members: [], payments: [], financialAccounts: [], notices: [] };
 
   const accounts = data.accounts
-    .map((a) => ({
+    .map((a) => {
+      // Conta COMPARTILHADA (cobrança em massa antiga: sem membro, uma Invoice por irmão): os
+      // pagamentos de todos os irmãos caem nela, então "valor − pagos" não é saldo de ninguém —
+      // filtrar por ele esconderia a conta dos irmãos que ainda devem. Mostra o valor cheio.
+      const shared = !a.memberId && a._count.invoices > 0;
+      return {
       id: a.id,
       title: a.title,
       type: a.type,
       amount: Number(a.amount),
-      balance: openBalance({ amount: Number(a.amount), status: a.status }, a.payments),
+      balance: shared ? Number(a.amount) : openBalance({ amount: Number(a.amount), status: a.status }, a.payments),
       dueDate: a.dueDate.toISOString(),
       bankAccountId: a.bankAccountId ?? null,
       memberId: a.memberId ?? null,
-      who: a.member?.name ?? a.counterpartyName ?? null,
-    }))
+      who: a.member?.name ?? a.counterpartyName ?? (shared ? 'vários irmãos' : null),
+      };
+    })
     .filter((a) => a.balance > 0);
 
   // "Já paguei" do portal (Modo Loja) ainda sem baixa: o último aviso de cada conta em aberto.

@@ -4,6 +4,7 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import { NOT_INTERNAL_DOCUMENT } from '@/lib/documents';
 import { normalizeCollectionMode } from '@/lib/collection';
 import { canPay, effectiveStatus, openBalance, PAYMENT_NOTICE_ENTITY, portalSummary } from '@/lib/portal-dues';
+import { canSeePaymentHistory } from '@/lib/payment-history';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -24,7 +25,8 @@ export async function GET() {
   // Sem vínculo User→Member (ex.: admin criado sem cadastro de membro), não há
   // "meu portal" a mostrar — evita expor o primeiro membro da loja por engano.
   if (!memberId) {
-    return NextResponse.json({ member: null, lodge: null, accounts: [], documents: [], institutionalDocuments: [], summary: { totalReceivables: 0, totalPayables: 0, overdue: 0 } });
+    // canLookupCpf: o Administrador (sem cadastro ligado) consulta os lançamentos no próprio CPF.
+    return NextResponse.json({ member: null, lodge: null, accounts: [], documents: [], institutionalDocuments: [], summary: { totalReceivables: 0, totalPayables: 0, overdue: 0 }, canLookupCpf: canSeePaymentHistory(role) });
   }
 
   const [member, lodge, accounts, documents, institutionalDocuments] = await Promise.all([

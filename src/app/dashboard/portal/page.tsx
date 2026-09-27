@@ -249,6 +249,7 @@ export default function PortalPage() {
   const [institutionalDocuments, setInstitutionalDocuments] = useState<DocumentItem[]>([]);
   const [lodge, setLodge] = useState<{ name: string; crestUrl: string | null } | null>(null);
   const [collection, setCollection] = useState<CollectionInfo | null>(null);
+  const [canLookupCpf, setCanLookupCpf] = useState(false);
   const [summary, setSummary] = useState({ totalReceivables: 0, totalPayables: 0, overdue: 0 });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -277,6 +278,7 @@ export default function PortalPage() {
       setInstitutionalDocuments(data.institutionalDocuments ?? []);
       setLodge(data.lodge ?? null);
       setCollection(data.collection ?? null);
+      setCanLookupCpf(Boolean(data.canLookupCpf));
       setSummary(data.summary ?? { totalReceivables: 0, totalPayables: 0, overdue: 0 });
     } catch {
       setLoadError('Não foi possível carregar seus dados. Verifique sua conexão e tente novamente.');
@@ -339,7 +341,7 @@ export default function PortalPage() {
         {!loading && member ? (
           <PendenciasCard accounts={payableAccounts} collection={collection} onChanged={() => void load()} />
         ) : null}
-        {!loading && !member && !loadError ? <CpfLookupCard /> : null}
+        {!loading && !member && !loadError && canLookupCpf ? <CpfLookupCard /> : null}
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-xl border border-white/6 bg-sigma-card p-6">

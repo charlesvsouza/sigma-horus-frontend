@@ -33,7 +33,8 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
         ...(ownOnly ? { OR: [{ memberId }, { account: { memberId } }] } : {}),
       },
       include: {
-        account: { select: { title: true, type: true } },
+        // Baixa sem "vincular a um membro": o pagador do recibo é o dono da conta.
+        account: { select: { title: true, type: true, member: { select: { name: true, cpf: true } } } },
         member: { select: { name: true, cpf: true } },
         lodge: { select: { name: true, cnpj: true, addressLine: true, addressNumber: true, city: true, state: true, crestUrl: true } },
       },
@@ -53,8 +54,8 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
         method: payment.method,
         note: payment.note,
         accountTitle: payment.account?.title ?? '—',
-        memberName: payment.member?.name ?? null,
-        memberCpf: payment.member?.cpf ?? null,
+        memberName: (payment.member ?? payment.account?.member)?.name ?? null,
+        memberCpf: (payment.member ?? payment.account?.member)?.cpf ?? null,
         lodge: payment.lodge,
       }}
       treasurerName={treasurer?.name ?? null}
