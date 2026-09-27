@@ -41,7 +41,7 @@ export default async function ConfiguracoesPage() {
     ? await withTenant(String(lodgeId), async (db) => ({
         lodge: await db.lodge.findUnique({
           where: { id: String(lodgeId) },
-          select: { collectionMode: true, asaasSettlementAccountId: true, asaasBillingType: true, asaasApiKeyEnc: true, pixKey: true, bankName: true, bankAccount: true },
+          select: { collectionMode: true, asaasSettlementAccountId: true, asaasBillingType: true, asaasAutoEmit: true, asaasApiKeyEnc: true, pixKey: true, bankName: true, bankAccount: true },
         }),
         accounts: await db.financialAccount.findMany({
           where: { lodgeId: String(lodgeId), active: true, kind: 'bank', isInvestment: false, purpose: 'general' },
@@ -54,6 +54,7 @@ export default async function ConfiguracoesPage() {
     mode: normalizeCollectionMode(collectionData?.lodge?.collectionMode),
     settlementAccountId: collectionData?.lodge?.asaasSettlementAccountId ?? '',
     billingType: normalizeBillingChoice(collectionData?.lodge?.asaasBillingType),
+    autoEmit: Boolean(collectionData?.lodge?.asaasAutoEmit),
     asaasConnected: Boolean(collectionData?.lodge?.asaasApiKeyEnc),
     hasPaymentData: Boolean(collectionData?.lodge?.pixKey || collectionData?.lodge?.bankAccount),
     accounts: collectionData?.accounts ?? [],

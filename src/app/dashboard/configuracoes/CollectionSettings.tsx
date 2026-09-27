@@ -9,6 +9,8 @@ export interface CollectionProps {
   mode: 'lodge' | 'asaas';
   settlementAccountId: string;
   billingType: 'PIX' | 'BOLETO';
+  /** Emissão automática no Asaas das cobranças que vencem nos próximos dias. */
+  autoEmit: boolean;
   asaasConnected: boolean;
   hasPaymentData: boolean; // chave Pix / dados bancários da loja cadastrados
   accounts: { id: string; name: string }[]; // contas correntes elegíveis ao repasse
@@ -28,15 +30,16 @@ function Option({ value, current, onSelect, title, children }: { value: 'lodge' 
 
 // "Recebimento das cobranças": a loja escolhe como recebe — direto na sua conta (Modo Loja)
 // ou pelo Asaas (Modo Asaas). O dinheiro sempre é lançado na conta corrente da loja.
-export default function CollectionSettings({ mode: initialMode, settlementAccountId, billingType, asaasConnected, hasPaymentData, accounts }: CollectionProps) {
+export default function CollectionSettings({ mode: initialMode, settlementAccountId, billingType, autoEmit: initialAutoEmit, asaasConnected, hasPaymentData, accounts }: CollectionProps) {
   const router = useRouter();
   const [mode, setMode] = useState(initialMode);
   const [settlement, setSettlement] = useState(settlementAccountId);
   const [billing, setBilling] = useState(billingType);
+  const [autoEmit, setAutoEmit] = useState(initialAutoEmit);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
-  const dirty = mode !== initialMode || settlement !== settlementAccountId || billing !== billingType;
+  const dirty = mode !== initialMode || settlement !== settlementAccountId || billing !== billingType || (mode === 'asaas' && autoEmit !== initialAutoEmit);
 
   async function save() {
     setSaving(true);
@@ -44,7 +47,7 @@ export default function CollectionSettings({ mode: initialMode, settlementAccoun
     const res = await fetch('/api/lodge/collection', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ collectionMode: mode, asaasSettlementAccountId: settlement || null, asaasBillingType: billing }),
+      body: JSON.stringify({ collectionMode: mode, asaasSettlementAccountId: settlement || null, asaasBillingType: billing, asaasAutoEmit: mode === 'asaas' && autoEmit }),
     });
     const data = await res.json().catch(() => ({}));
     setSaving(false);
@@ -102,6 +105,18 @@ export default function CollectionSettings({ mode: initialMode, settlementAccoun
               <option value="PIX">Pix (cai na hora)</option>
               <option value="BOLETO">Boleto (cai no mesmo dia ou no dia seguinte)</option>
             </select>
+          </label>
+          <label className="flex items-start gap-3 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-3 sm:col-span-2">
+            <input type="checkbox" checked={autoEmit} onChange={(e) => setAutoEmit(e.target.checked)} className="mt-0.5 h-4 w-4 accent-gold" />
+            <span className="text-sm text-sand">
+              <strong className="text-sand-light">Emitir automaticamente no Asaas</strong>
+              <span className="mt-1 block text-xs leading-relaxed text-sand-dark">
+                Toda manhã, o sistema emite no Asaas as cobranças ainda não emitidas que vencem de hoje até 3 dias
+                (as mensalidades da recorrência e as avulsas), no método acima. Assim o lembrete já chega ao irmão com o
+                Pix. Cobranças vencidas não entram — essas continuam com a Tesouraria (ou com o irmão, pelo Pagar do
+                portal). Irmão sem CPF no cadastro fica de fora, porque o Asaas exige CPF.
+              </span>
+            </span>
           </label>
         </div>
       ) : null}

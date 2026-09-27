@@ -143,7 +143,15 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
       if (data.held > 0) partes.push(`${data.held} retida(s) por Art. 002 (aguardando liberação abaixo)`);
       if (data.locked > 0) partes.push(`${data.locked} em período já encerrado`);
       if (data.errors > 0) partes.push(`${data.errors} com erro`);
-      setMessage({ kind: data.errors > 0 ? 'error' : 'ok', text: partes.join(' · ') + '.' });
+      // Emissão automática no Asaas (só quando a loja ligou a opção).
+      const ae = data.autoEmit as { emitted: number; skippedNoCpf: number; errors: number } | null;
+      if (ae) {
+        partes.push(`${ae.emitted} emitida(s) automaticamente no Asaas`);
+        if (ae.skippedNoCpf > 0) partes.push(`${ae.skippedNoCpf} sem emitir por falta de CPF do irmão`);
+        if (ae.errors > 0) partes.push(`${ae.errors} falha(s) na emissão`);
+      }
+      const failed = data.errors > 0 || (ae?.errors ?? 0) > 0;
+      setMessage({ kind: failed ? 'error' : 'ok', text: partes.join(' · ') + '.' });
     }
     setProcessing(false);
     router.refresh();

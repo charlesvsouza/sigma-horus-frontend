@@ -24,6 +24,8 @@ export async function PUT(request: Request) {
   }
   const billing = normalizeBillingChoice(body?.asaasBillingType);
   const settlementId = body?.asaasSettlementAccountId ? String(body.asaasSettlementAccountId) : null;
+  // Emissão automática: só faz sentido (e só é gravada ligada) no Modo Asaas.
+  const autoEmit = mode === 'asaas' && body?.asaasAutoEmit === true;
 
   const result = await withTenant(String(lodgeId), async (db) => {
     const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { asaasApiKeyEnc: true, collectionMode: true } });
@@ -47,7 +49,7 @@ export async function PUT(request: Request) {
 
     await db.lodge.update({
       where: { id: String(lodgeId) },
-      data: { collectionMode: mode, asaasBillingType: billing, ...(settlementId !== null || mode === 'lodge' ? { asaasSettlementAccountId: settlement } : {}) },
+      data: { collectionMode: mode, asaasBillingType: billing, asaasAutoEmit: autoEmit, ...(settlementId !== null || mode === 'lodge' ? { asaasSettlementAccountId: settlement } : {}) },
     });
 
     // Trocar para o Modo Loja não cancela cobranças já emitidas no Asaas: elas seguem valendo até serem pagas.
@@ -61,7 +63,7 @@ export async function PUT(request: Request) {
       action: 'UPDATE',
       entity: 'lodge-collection',
       entityId: String(lodgeId),
-      metadata: { collectionMode: mode, asaasBillingType: billing, asaasSettlementAccountId: settlement },
+      metadata: { collectionMode: mode, asaasBillingType: billing, asaasSettlementAccountId: settlement, asaasAutoEmit: autoEmit },
     });
     return { ok: true, openAsaasCharges } as const;
   });

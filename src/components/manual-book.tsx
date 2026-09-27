@@ -260,7 +260,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.46</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.47</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -322,7 +322,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.46 — 27 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.47 — 27 de setembro de 2026</p>
               </div>
             </div>
 
@@ -823,6 +823,15 @@ export function ManualBook() {
                     padrão; o <strong>cartão fica de fora</strong>, porque só cai cerca de 32 dias depois). O Asaas confirma o
                     pagamento e o sistema dá a baixa sozinho (7.4). Exige o Asaas conectado (6.2) e a <strong>conta corrente que recebe
                     o repasse</strong> — uma conta corrente ativa da loja (não pode ser investimento).
+                  </li>
+                  <li>
+                    <strong>Emitir automaticamente no Asaas</strong> (opção do Modo Asaas, desligada por padrão) — toda manhã o
+                    sistema emite no Asaas as cobranças <strong>ainda não emitidas</strong> que vencem de hoje até 3 dias: as
+                    mensalidades geradas pela recorrência e as cobranças avulsas. O lembrete ao irmão já sai com o Pix, e o
+                    Tesoureiro não precisa clicar em <UI>Emitir no Asaas</UI> todo mês. Cobranças já vencidas não são emitidas
+                    sozinhas (ficam com a Tesouraria, ou com o irmão pelo <UI>Pagar</UI> do portal), e irmão sem CPF fica de fora. O
+                    botão <UI>Processar recorrentes</UI>, em Cobranças, também roda a emissão e informa quantas foram emitidas e
+                    quantas ficaram sem CPF.
                   </li>
                 </Bullets>
                 <Note>

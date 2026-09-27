@@ -1,5 +1,7 @@
 import { auth } from '@/lib/auth';
+import { autoEmitAllLodges, autoEmitForLodge } from '@/lib/asaas-auto-emit';
 import { cronAuthorized } from '@/lib/platform-auth';
+import { prismaAdmin } from '@/lib/prisma';
 import { processRecurringAllLodges, processRecurringForLodge } from '@/lib/recurring';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -10,10 +12,14 @@ import { NextResponse } from 'next/server';
 // Regras (lib/recurring.ts): no máximo UMA ocorrência por cobrança-mãe por rodada; a recorrência
 // independe de a cobrança anterior estar paga; membro no Art. 002 fica retido até o Tesoureiro ou
 // o Venerável liberar (POST /api/members/[id]/release-recurring).
+// Depois da geração, a emissão automática no Asaas (lib/asaas-auto-emit.ts) — só nas lojas que
+// ligaram a opção — para os lembretes das 11:00 UTC já saírem com o Pix.
 
 export async function GET(request: Request) {
   if (!cronAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  return NextResponse.json(await processRecurringAllLodges());
+  const recurring = await processRecurringAllLodges();
+  const autoEmit = await autoEmitAllLodges();
+  return NextResponse.json({ ...recurring, autoEmit });
 }
 
 export async function POST() {
@@ -26,5 +32,13 @@ export async function POST() {
   const access = await requireLodgeAccess(lodgeId, session.user.role, 'accounts', 'write');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
-  return NextResponse.json(await processRecurringForLodge(lodgeId, String(session.user.id)));
+  const recurring = await processRecurringForLodge(lodgeId, String(session.user.id));
+  const lodge = await prismaAdmin.lodge.findUnique({
+    where: { id: lodgeId },
+    select: { collectionMode: true, asaasAutoEmit: true, asaasApiKeyEnc: true, asaasSettlementAccountId: true },
+  });
+  const autoEmit = lodge?.collectionMode === 'asaas' && lodge.asaasAutoEmit && lodge.asaasApiKeyEnc && lodge.asaasSettlementAccountId
+    ? await autoEmitForLodge(lodgeId)
+    : null;
+  return NextResponse.json({ ...recurring, autoEmit });
 }
