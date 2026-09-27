@@ -1054,7 +1054,7 @@ export function ManualBook() {
                   <UI>Tesouraria → Entradas e Saídas → Pagamentos</UI>, bloco <UI>Novo pagamento</UI>:
                 </p>
                 <Steps>
-                  <li>Selecione a <UI>conta</UI> correspondente e, se quiser, <UI>vincule a um membro</UI>.</li>
+                  <li>Selecione a <UI>conta</UI> correspondente. A lista mostra só as contas em aberto, cada uma com o irmão (ou fornecedor), o vencimento e o saldo — e já preenche o membro e o valor em aberto.</li>
                   <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> do pagamento.</li>
                   <li>Escolha o <UI>método</UI>: Manual, PIX, Dinheiro ou Cartão.</li>
                   <li>Escolha a <UI>Conta bancária/caixa que recebeu ou pagou</UI> — obrigatório em todo pagamento novo,
@@ -1065,6 +1065,16 @@ export function ManualBook() {
                   <li>Marque a <strong>declaração de ciência</strong> (confirma a veracidade e o aceite dos Termos) — obrigatória.</li>
                   <li>Clique em <UI>Registrar pagamento</UI>. Ele aparece em <UI>Pagamentos recentes</UI>.</li>
                 </Steps>
+                <p>
+                  <strong>Avisos &quot;Já paguei&quot; (Modo Loja).</strong> Quando o irmão paga pelo portal no Pix da chave da
+                  loja e clica em <UI>Já paguei</UI> (capítulo 10), o Tesoureiro e o Administrador recebem um e-mail com um
+                  link direto para a baixa, e o aviso aparece no topo de Pagamentos, em <UI>Avisos de pagamento dos
+                  irmãos</UI>, com o irmão, a conta, o vencimento, o saldo e a observação dele. Confira o crédito no extrato
+                  do banco e clique em <UI>Dar baixa</UI>: o formulário vem preenchido (conta, irmão, valor, PIX, data do aviso
+                  e uma observação pronta). Escolha a conta bancária, se ainda não veio, marque a ciência e registre. O aviso
+                  some do painel, e a conta sai das pendências do irmão, com o recibo no portal dele. O aviso não dá baixa
+                  sozinho: se o crédito não estiver no extrato, não registre e fale com o irmão.
+                </p>
                 <Bullets>
                   <li><strong>Recibo:</strong> cada pagamento tem um link <UI>Recibo</UI> — abre o comprovante com o cabeçalho da loja (CNPJ, endereço, número do documento) e as linhas de assinatura do <strong>Tesoureiro em exercício na data do pagamento</strong> (o nome já vem impresso) e do contribuinte. Use <UI>Imprimir / PDF</UI>.</li>
                   <li><strong>Estornar:</strong> lançou errado? Clique em <UI>Estornar</UI> na linha do pagamento — ele é removido e o status da conta/cobrança volta ao que era antes. Não funciona dentro de um período já encerrado.</li>
