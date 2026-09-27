@@ -248,7 +248,7 @@ export default function PortalPage() {
   const [institutionalDocuments, setInstitutionalDocuments] = useState<DocumentItem[]>([]);
   const [lodge, setLodge] = useState<{ name: string; crestUrl: string | null } | null>(null);
   const [collection, setCollection] = useState<CollectionInfo | null>(null);
-  const [summary, setSummary] = useState({ totalReceivables: 0, totalPayables: 0, pending: 0 });
+  const [summary, setSummary] = useState({ totalReceivables: 0, totalPayables: 0, overdue: 0 });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
@@ -276,7 +276,7 @@ export default function PortalPage() {
       setInstitutionalDocuments(data.institutionalDocuments ?? []);
       setLodge(data.lodge ?? null);
       setCollection(data.collection ?? null);
-      setSummary(data.summary ?? { totalReceivables: 0, totalPayables: 0, pending: 0 });
+      setSummary(data.summary ?? { totalReceivables: 0, totalPayables: 0, overdue: 0 });
     } catch {
       setLoadError('Não foi possível carregar seus dados. Verifique sua conexão e tente novamente.');
     } finally {
@@ -427,8 +427,8 @@ export default function PortalPage() {
                   <p className="mt-2 text-xl font-semibold text-sand-light">{brl(summary.totalPayables)}</p>
                 </div>
                 <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-gold">Pendências</p>
-                  <p className="mt-2 text-xl font-semibold text-sand-light">{brl(summary.pending)}</p>
+                  <p className="text-xs uppercase tracking-[0.25em] text-gold">Vencido</p>
+                  <p className={`mt-2 text-xl font-semibold ${summary.overdue > 0 ? 'text-rose-300' : 'text-sand-light'}`}>{brl(summary.overdue)}</p>
                 </div>
               </div>
             )}

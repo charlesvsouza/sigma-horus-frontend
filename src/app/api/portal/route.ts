@@ -3,7 +3,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NOT_INTERNAL_DOCUMENT } from '@/lib/documents';
 import { normalizeCollectionMode } from '@/lib/collection';
-import { canPay, effectiveStatus, openBalance, PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
+import { canPay, effectiveStatus, openBalance, PAYMENT_NOTICE_ENTITY, portalSummary } from '@/lib/portal-dues';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -24,7 +24,7 @@ export async function GET() {
   // Sem vínculo User→Member (ex.: admin criado sem cadastro de membro), não há
   // "meu portal" a mostrar — evita expor o primeiro membro da loja por engano.
   if (!memberId) {
-    return NextResponse.json({ member: null, lodge: null, accounts: [], documents: [], institutionalDocuments: [], summary: { totalReceivables: 0, totalPayables: 0, pending: 0 } });
+    return NextResponse.json({ member: null, lodge: null, accounts: [], documents: [], institutionalDocuments: [], summary: { totalReceivables: 0, totalPayables: 0, overdue: 0 } });
   }
 
   const [member, lodge, accounts, documents, institutionalDocuments] = await Promise.all([
@@ -114,9 +114,7 @@ export async function GET() {
     };
   });
 
-  const totalReceivables = items.filter((item) => item.type === 'RECEIVABLE').reduce((sum, item) => sum + Number(item.amount), 0);
-  const totalPayables = items.filter((item) => item.type === 'PAYABLE').reduce((sum, item) => sum + Number(item.amount), 0);
-  const pending = items.filter((item) => item.status === 'pending').reduce((sum, item) => sum + Number(item.amount), 0);
+  const summary = portalSummary(items);
 
   const collection = lodge
     ? { mode: normalizeCollectionMode(lodge.collectionMode), hasPixKey: Boolean(lodge.pixKey?.trim()) }
@@ -129,6 +127,6 @@ export async function GET() {
     accounts: items,
     documents,
     institutionalDocuments,
-    summary: { totalReceivables, totalPayables, pending },
+    summary,
   });
 }

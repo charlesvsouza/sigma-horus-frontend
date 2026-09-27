@@ -40,6 +40,29 @@ export function canPay(account: PortalAccountLike, memberId: string, balance: nu
   );
 }
 
+export interface PortalSummary {
+  /** Saldo em aberto do que o irmão deve à loja. */
+  totalReceivables: number;
+  /** Saldo em aberto do que a loja deve ao irmão. */
+  totalPayables: number;
+  /** Parte do "o que devo" já vencida. */
+  overdue: number;
+}
+
+/**
+ * Resumo financeiro do portal: só o que está EM ABERTO (saldo, descontados parciais).
+ * Conta paga não entra — senão "O que devo" continuava mostrando a mensalidade já baixada.
+ */
+export function portalSummary(items: { type: string; balance: number; effectiveStatus: EffectiveStatus }[]): PortalSummary {
+  const sum = (list: { balance: number }[]) => sumMoney(list.map((i) => i.balance));
+  const receivable = items.filter((i) => i.type === 'RECEIVABLE');
+  return {
+    totalReceivables: sum(receivable),
+    totalPayables: sum(items.filter((i) => i.type === 'PAYABLE')),
+    overdue: sum(receivable.filter((i) => i.effectiveStatus === 'overdue')),
+  };
+}
+
 /** Entidade do AuditLog que guarda o "Já paguei" do irmão (Modo Loja). */
 export const PAYMENT_NOTICE_ENTITY = 'member-payment-notice';
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canPay, effectiveStatus, openBalance } from './portal-dues.ts';
+import { canPay, effectiveStatus, openBalance, portalSummary } from './portal-dues.ts';
 
 // 27/09/2026 10:00 em Brasília.
 const NOW = new Date('2026-09-27T13:00:00Z');
@@ -27,4 +27,16 @@ test('só paga pelo portal a conta a receber, do próprio irmão, aprovada e em 
   assert.equal(canPay({ ...base, status: 'paid' }, 'm1', 110), false);
   assert.equal(canPay({ ...base, approvalStatus: 'pending' }, 'm1', 110), false);
   assert.equal(canPay(base, 'm1', 0), false);
+});
+
+test('resumo do portal: só o que está em aberto — conta paga não entra em "O que devo"', () => {
+  const s = portalSummary([
+    { type: 'RECEIVABLE', balance: 0, effectiveStatus: 'paid' },     // mensalidade já baixada
+    { type: 'RECEIVABLE', balance: 110, effectiveStatus: 'overdue' },
+    { type: 'RECEIVABLE', balance: 10.1, effectiveStatus: 'pending' },
+    { type: 'PAYABLE', balance: 20.2, effectiveStatus: 'pending' },
+    { type: 'PAYABLE', balance: 0, effectiveStatus: 'paid' },
+  ]);
+  assert.deepEqual(s, { totalReceivables: 120.1, totalPayables: 20.2, overdue: 110 });
+  assert.deepEqual(portalSummary([{ type: 'RECEIVABLE', balance: 0, effectiveStatus: 'paid' }]), { totalReceivables: 0, totalPayables: 0, overdue: 0 });
 });
