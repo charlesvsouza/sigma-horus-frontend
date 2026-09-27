@@ -40,7 +40,7 @@ export default async function MateriaisPage() {
           orderBy: [{ category: 'asc' }, { name: 'asc' }],
         }),
         loans: await db.materialLoan.findMany({
-          where: { lodgeId: String(lodgeId), status: 'issued' },
+          where: { lodgeId: String(lodgeId), status: { in: ['issued', 'delivered'] } },
           include: {
             material: { select: { id: true, name: true } },
             member: { select: { id: true, name: true } },
@@ -81,6 +81,8 @@ export default async function MateriaisPage() {
   const loans = data.loans.map((l) => ({
     id: l.id,
     quantity: l.quantity,
+    kind: l.kind,
+    unitPrice: l.unitPrice ?? null,
     status: l.status,
     issuedAt: l.issuedAt.toISOString(),
     notes: l.notes ?? null,

@@ -309,6 +309,7 @@ model Account {
   session      Session?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   payments     Payment[]
   invoices     Invoice[]
+  materialLoans MaterialLoan[]
 
   @@index([chartAccountId])
   @@index([counterpartyId])
@@ -528,7 +529,13 @@ model MaterialLoan {
   materialId   String
   memberId     String
   quantity     Int       @default(1)
-  status       String    @default("issued") // issued | returned | lost
+  // Modalidade (lib/material-supply): loan = empréstimo (material da loja, volta) |
+  // potencia = cedido pela Potência (nunca foi da loja) | sale = venda | donation =
+  // doação da loja. Só o empréstimo volta; nos demais o material passa a ser do obreiro.
+  kind         String    @default("loan")
+  status       String    @default("issued") // loan: issued | returned | lost; demais modalidades: delivered
+  unitPrice    Float?    // venda: valor unitário cobrado do obreiro
+  accountId    String?   // venda: conta a receber gerada na Tesouraria
   issuedAt     DateTime  @default(now())
   returnedAt   DateTime?
   notes        String?
@@ -539,7 +546,9 @@ model MaterialLoan {
   lodge    Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
   member   Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  account  Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
+  @@index([accountId])
   @@index([lodgeId, materialId])
   @@index([lodgeId, memberId])
   @@index([lodgeId, status])

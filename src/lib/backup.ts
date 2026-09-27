@@ -30,12 +30,12 @@ export const BACKUP_MODELS = [
   'counterparty',
   'hospitalityRequest',
   'material',
-  'materialLoan',
   'materialIncident',
   'venerableGalleryEntry',
   'session',
   'chartAccount',
   'account',
+  'materialLoan', // depois de account: a venda aponta para a conta a receber
   'invoice',
   'payment',
   'asset',

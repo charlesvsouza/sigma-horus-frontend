@@ -321,7 +321,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.33 — 20 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.34 — 27 de setembro de 2026</p>
               </div>
             </div>
 
@@ -583,7 +583,7 @@ export function ManualBook() {
                 <Bullets>
                   <li><strong>Identificação:</strong> nome, razão social, nome fantasia, CNPJ, contato, endereço (o CEP preenche o endereço) e o <UI>Brasão da loja</UI> (imagem — envie em <UI>Enviar imagem</UI>).</li>
                   <li><strong>Dados bancários</strong> e <strong>chave PIX</strong> (úteis para conferência e conciliação).</li>
-                  <li><strong>Loja maçônica:</strong> o <UI>Rito</UI> praticado, a <UI>Potência</UI> (obediência) e a <UI>Data de fundação</UI>. O rito define os cargos da loja; a data de fundação, se preenchida, dispara uma mensagem comemorativa automática a todos os obreiros ativos no aniversário (ver 6.6).</li>
+                  <li><strong>Loja maçônica:</strong> o <UI>Rito</UI> praticado, a <UI>Potência</UI> (obediência), a <UI>Data de fundação</UI> e a <UI>Fórmula de abertura dos documentos</UI>. O rito define os cargos da loja; a data de fundação, se preenchida, dispara uma mensagem comemorativa automática a todos os obreiros ativos no aniversário (ver 6.6).</li>
                   <li><strong>Sessões:</strong> marque os <UI>dias da semana</UI> e a <UI>periodicidade</UI> (semanal, quinzenal ou mensal) das sessões.</li>
                 </Bullets>
                 <p>
@@ -592,8 +592,16 @@ export function ManualBook() {
                 </p>
                 <Note>Mantenha o CNPJ e os dados bancários corretos: eles aparecem em relatórios e ajudam na conciliação financeira.</Note>
                 <p>
+                  <strong>Fórmula de abertura:</strong> é a linha que abre os <strong>documentos oficiais</strong> da loja
+                  (Composição da loja, Termo de responsabilidade de materiais — ver 7.6), acima do brasão. Cada rito e cada
+                  Potência têm a sua forma, por isso ela é configurável: digite a da sua loja ou escolha uma sugestão da lista
+                  (ex.: <strong>A∴G∴D∴G∴A∴D∴U∴</strong>). Deixe em branco para os documentos saírem sem fórmula. A cidade e o
+                  estado do endereço formam o <strong>Oriente</strong> (ex.: &quot;Oriente de Rio de Janeiro/RJ&quot;), usado no
+                  cabeçalho e no fecho desses documentos e dos quadros de honra.
+                </p>
+                <p>
                   <strong>Brasão da loja:</strong> depois de enviado, aparece automaticamente em todo documento gerado
-                  pela loja — relatório de Fechamento, recibo de pagamento, relatório de membros, extrato do obreiro —
+                  pela loja — todos os relatórios, os documentos oficiais, os quadros de honra, o recibo e o extrato do obreiro —
                   e no cabeçalho dos e-mails automáticos (aniversários, jubileus, cobranças, convocações). Use
                   <UI> Trocar imagem</UI> para substituir ou <UI>Remover</UI> para tirar o brasão de tudo isso.
                 </p>
@@ -1050,7 +1058,7 @@ export function ManualBook() {
                   <li>Clique em <UI>Registrar pagamento</UI>. Ele aparece em <UI>Pagamentos recentes</UI>.</li>
                 </Steps>
                 <Bullets>
-                  <li><strong>Recibo:</strong> cada pagamento tem um link <UI>Recibo</UI> — abre um comprovante pronto pra <UI>Salvar como PDF</UI> pelo diálogo de impressão do navegador.</li>
+                  <li><strong>Recibo:</strong> cada pagamento tem um link <UI>Recibo</UI> — abre o comprovante com o cabeçalho da loja (CNPJ, endereço, número do documento) e as linhas de assinatura do <strong>Tesoureiro em exercício na data do pagamento</strong> (o nome já vem impresso) e do contribuinte. Use <UI>Imprimir / PDF</UI>.</li>
                   <li><strong>Estornar:</strong> lançou errado? Clique em <UI>Estornar</UI> na linha do pagamento — ele é removido e o status da conta/cobrança volta ao que era antes. Não funciona dentro de um período já encerrado.</li>
                   <li>Quando a conta é a receber (não a pagar), o membro recebe automaticamente um <strong>e-mail de confirmação</strong> do pagamento.</li>
                   <li><strong>Contas sem membro</strong> (fornecedor, energia, aluguel etc.): a conta passa a <strong>Paga</strong> assim que a soma dos pagamentos cobre o valor — e volta a <strong>Em aberto</strong> se um estorno deixar de cobri-lo.</li>
@@ -1065,7 +1073,7 @@ export function ManualBook() {
                   <UI> Próximos vencimentos</UI> e <UI>Últimos registros</UI>, com <strong>filtro por período</strong> e <UI>Exportar</UI> (CSV — disponível a quem tem acesso de leitura a Tesouraria; campos que começam com = + - ou @ saem protegidos para não virarem fórmula na planilha).
                 </p>
                 <p>
-                  Quatro relatórios listam as contas em uma só tela, cada um com filtros de <UI>De</UI>/<UI>Até</UI>, <UI>Pessoa</UI> (membro ou cliente/fornecedor) e busca por descrição ou categoria, e o botão <UI>Salvar como PDF</UI>:
+                  Quatro relatórios listam as contas em uma só tela, cada um com filtros de <UI>De</UI>/<UI>Até</UI>, <UI>Pessoa</UI> (membro ou cliente/fornecedor) e busca por descrição ou categoria, e os botões <UI>Imprimir / PDF</UI> e <UI>Exportar CSV</UI>:
                   <UI> Contas a receber</UI> e <UI>Contas a pagar</UI> mostram o que está <strong>em aberto</strong>, por data de vencimento;
                   <UI> Contas recebidas</UI> e <UI>Contas pagas</UI> mostram o que <strong>já foi liquidado</strong>, por data de recebimento ou de pagamento. Ficam em <UI>Tesouraria → Relatórios</UI>.
                 </p>
@@ -1080,9 +1088,47 @@ export function ManualBook() {
                   caixa, para o fechamento do veneralato: <strong>Balanço Financeiro</strong>, <strong>Balancete por plano
                   de contas</strong>, <strong>Receitas × Despesas</strong> mensal, <strong>Livro Caixa</strong>,
                   <strong> Cobranças</strong> e <strong>Saldo dos Irmãos</strong>. Escolha o período e use
-                  <UI>Salvar como PDF</UI> para gerar o documento. As contas são agrupadas pelo plano de contas (código),
+                  <UI>Imprimir / PDF</UI> para gerar o documento. As contas são agrupadas pelo plano de contas (código),
                   então vincule cada lançamento a uma <strong>categoria do plano de contas</strong> para o relatório sair correto.
+                  No fim do documento saem as linhas de assinatura do <strong>Tesoureiro</strong> e do <strong>Venerável
+                  Mestre</strong> do veneralato daquele período (os nomes já vêm impressos; cargo vago sai em branco) e a da
+                  <strong> Comissão de Finanças</strong>, para o parecer.
                 </p>
+
+                <p><strong>Como os documentos saem no papel.</strong> O sistema tem três formatos, cada um para um uso:</p>
+                <Bullets>
+                  <li>
+                    <strong>Relatório</strong> (todos os relatórios financeiros e de controle — Contas, DRE, Fechamento,
+                    Balancetes, Orçamento, Fluxo de caixa, Tarifas, Razão, Inadimplência, Extratos, Fundos, Frequência,
+                    Quadro social, Membros, Materiais, extrato do obreiro, recibo): cabeçalho com brasão, nome da loja,
+                    título, período e filtros aplicados, e <strong>&quot;Emitido em &lt;data e hora&gt; por &lt;quem
+                    imprimiu&gt;&quot;</strong>; papel A4 (os relatórios largos saem deitados); tabelas com linha de
+                    total; e no rodapé de cada folha o nome da loja e <strong>&quot;Página X de Y&quot;</strong>. Os
+                    documentos de prestação de contas trazem as linhas de assinatura.
+                  </li>
+                  <li>
+                    <strong>Documento oficial</strong> (Composição da loja, Termo de responsabilidade): o formato de uma
+                    prancha — fórmula de abertura (6.1), brasão, nome da loja, Oriente, rito, Potência e data de fundação,
+                    o texto, o fecho com local e data por extenso (&quot;Oriente de …, 27 de setembro de 2026.&quot;) e as
+                    assinaturas.
+                  </li>
+                  <li>
+                    <strong>Quadro de honra</strong> (Galeria de Veneráveis, Quadro da Gestão): peça para expor ou
+                    emoldurar — moldura dourada, brasão grande, retratos em grade, papel A4 ou A3 em retrato ou paisagem,
+                    e no rodapé só o local e a data, sem numeração nem &quot;emitido por&quot;.
+                  </li>
+                </Bullets>
+                <p>
+                  Em todos, o botão <UI>Imprimir / PDF</UI> abre o diálogo de impressão do navegador: escolha a impressora
+                  ou <strong>Salvar como PDF</strong> — o nome do arquivo já vem sugerido com o título e a loja. A data e a
+                  hora de emissão são as do momento da impressão. Onde houver <UI>Exportar CSV</UI>, a planilha segue os
+                  mesmos filtros da tela e abre direto no Excel com acentos e vírgula decimal.
+                </p>
+                <Note>
+                  Se aparecerem no papel o endereço da página e a data no canto, desmarque <strong>Cabeçalhos e
+                  rodapés</strong> em <em>Mais configurações</em> do diálogo de impressão — o documento já tem o próprio
+                  cabeçalho e rodapé.
+                </Note>
               </Sub>
 
               <Sub id="tes-fechamento" title="7.7 Encerramento do veneralato (3 passos)">
@@ -1113,8 +1159,9 @@ export function ManualBook() {
                     Cobranças criadas pela categoria <strong>Mensalidades</strong> (7.3) já entram na regra
                     automaticamente. Ao lançar à mão uma conta a receber vinculada a um membro em <UI>Tesouraria → Entradas e Saídas → Contas</UI>,
                     escolha a categoria <strong>Mensalidades</strong> ou marque a caixa <strong>&quot;É mensalidade do membro&quot;</strong>.
-                    Só contas marcadas assim entram na regra dos 60 dias — cobranças pontuais (evento, campanha, taxas de
-                    Iniciação/Elevação/Exaltação) não contam.
+                    Contam como mensalidade as contas marcadas assim <strong>ou</strong> lançadas numa categoria de
+                    Mensalidades — mesmo que a caixa tenha ficado desmarcada, a categoria basta. Só elas entram na regra
+                    dos 60 dias — cobranças pontuais (evento, campanha, taxas de Iniciação/Elevação/Exaltação) não contam.
                   </li>
                   <li>
                     Em <UI>Tesouraria → Relatórios → Inadimplência (Art. 002)</UI>, veja todos os membros com
@@ -1132,6 +1179,16 @@ export function ManualBook() {
                     Acima da lista, os cartões de <UI>Faixas de atraso</UI> agrupam os membros por tempo de atraso
                     (1-30, 31-60, 61-90 e mais de 90 dias) — clique numa faixa pra filtrar a lista só com aquele grupo,
                     útil pra priorizar quem cobrar primeiro.
+                  </li>
+                  <li>
+                    No quadro <UI>Membros em aberto</UI>, combine a <UI>Buscar membro</UI> (pelo nome), o
+                    <UI> Enquadramento</UI> (todos, só os do Art. 002 ou os que ainda não chegaram lá) e a
+                    <UI> Situação cadastral</UI> com as faixas de atraso. Uma linha resume quantos membros e quanto
+                    valor o filtro mostra, com <UI>limpar filtros</UI>.
+                  </li>
+                  <li>
+                    <UI>Imprimir / PDF</UI> gera o relatório de inadimplência (uma linha por membro, com totais e a
+                    posição do dia) e <UI>Exportar CSV</UI> a planilha — ambos respeitam os filtros aplicados.
                   </li>
                 </Steps>
                 <Note>
@@ -1192,6 +1249,11 @@ export function ManualBook() {
                   <UI> Aprovar</UI> para registrar.
                 </p>
                 <p>
+                  Cada balancete do histórico tem o seu <UI>Imprimir / PDF</UI>: sai no padrão de relatório (7.6), com as
+                  linhas de assinatura do Tesoureiro e do Venerável que estavam no cargo naquele período e a da Comissão de
+                  Finanças — pronto para ser lido e assinado em sessão.
+                </p>
+                <p>
                   <strong>Acesso rápido:</strong> no topo da página, três botões — <UI>Bimestral</UI>,
                   <UI> Trimestral</UI> e <UI>Semestral</UI> — geram de um clique o balancete do último período já
                   fechado do <strong>veneralato em exercício</strong>, contando em blocos de 2/3/6 meses a partir da
@@ -1219,8 +1281,9 @@ export function ManualBook() {
                   Três telas de visão gerencial, em <UI>Tesouraria</UI>:
                 </p>
                 <Bullets>
-                  <li><strong>Fluxo de caixa projetado:</strong> mostra o que já está lançado e ainda não foi pago, separado em faixas (vencido, próximos 30/60/90 dias) — ajuda a antecipar se o caixa vai apertar antes de acontecer.</li>
-                  <li><strong>Orçamento anual:</strong> defina a meta de receita/despesa por categoria do plano de contas no início do ano (clique no valor <UI>Orçado</UI> pra editar) e acompanhe o <UI>Realizado</UI> junto, com barra de progresso.</li>
+                  <li><strong>Fluxo de caixa projetado:</strong> mostra o que já está lançado e ainda não foi pago, separado em faixas (vencido, próximos 30/60/90 dias) — ajuda a antecipar se o caixa vai apertar antes de acontecer. <UI>Imprimir / PDF</UI> gera a tabela por período (a receber, a pagar, líquido e saldo acumulado, com o saldo inicial no cabeçalho) e <UI>Exportar CSV</UI> a planilha.</li>
+                  <li><strong>Orçamento anual:</strong> defina a meta de receita/despesa por categoria do plano de contas no início do ano (clique no valor <UI>Orçado</UI> pra editar) e acompanhe o <UI>Realizado</UI> junto, com barra de progresso. <UI>Imprimir / PDF</UI> gera o &quot;orçado × realizado&quot; do ano, com diferença e % executado por categoria e o resultado; <UI>Exportar CSV</UI> leva os mesmos números para a planilha.</li>
+                  <li><strong>O que é o &quot;Realizado&quot; do orçamento:</strong> a soma dos lançamentos da categoria com <strong>vencimento no ano</strong>, pagos ou ainda em aberto — não só o que já foi pago. O documento impresso traz essa observação no cabeçalho.</li>
                   <li><strong>Patrimônio:</strong> inventário simples dos bens da loja (móveis, insígnias, equipamentos) — nome, categoria, data e valor de aquisição, valor atual estimado e vínculo opcional ao plano de contas. Não calcula depreciação sozinho.</li>
                 </Bullets>
               </Sub>
@@ -1325,7 +1388,7 @@ export function ManualBook() {
                 <Steps>
                   <li>Escolha a <UI>Conta</UI> (banco, investimento ou Caixa) e o período (<UI>De</UI>/<UI>Até</UI>), ou use um atalho: <UI>Mês atual</UI>, <UI>Mês anterior</UI>, <UI>Ano atual</UI> ou <UI>Desde a abertura</UI>.</li>
                   <li>Clique em <UI>Aplicar</UI>. A tela mostra o <UI>Saldo inicial</UI>, as <UI>Entradas</UI> e <UI>Saídas</UI> do período e o <UI>Saldo final</UI>, seguidos da tabela linha a linha.</li>
-                  <li><UI>Salvar como PDF</UI> imprime o extrato com o timbre da loja (mesmo padrão do fechamento, 7.11). <UI>Baixar XLS</UI> gera uma planilha Excel de verdade com as mesmas linhas, pronta pra conferência ou arquivo.</li>
+                  <li><UI>Imprimir / PDF</UI> imprime o extrato no padrão de relatório (7.6), em folha deitada, com os totais de entradas e saídas e o saldo final. <UI>Baixar XLS</UI> gera uma planilha Excel de verdade com as mesmas linhas, pronta pra conferência ou arquivo.</li>
                 </Steps>
                 <Note>
                   O extrato só mostra o que está lançado no Sigma Horus (pagamentos e transferências aprovadas) — é o
@@ -1347,7 +1410,7 @@ export function ManualBook() {
                     do período A) ou <UI>Mesmo período do ano anterior</UI> — o sistema calcula o Período B sozinho,
                     sem digitar uma segunda data.
                   </li>
-                  <li>A tabela mostra, por conta do plano de contas, o valor em cada período e a <UI>Variação</UI> em R$ e %. Verde é sempre &quot;foi bom&quot; (receita subiu ou despesa caiu); vermelho é o oposto. <UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
+                  <li>A tabela mostra, por conta do plano de contas, o valor em cada período e a <UI>Variação</UI> em R$ e %. Verde é sempre &quot;foi bom&quot; (receita subiu ou despesa caiu); vermelho é o oposto. Cada grupo fecha com o total de receitas ou de despesas, e a última linha é o <strong>resultado do período</strong>. <UI>Imprimir / PDF</UI> imprime no padrão de relatório (7.6) e <UI>Exportar CSV</UI> leva a comparação para a planilha.</li>
                 </Steps>
               </Sub>
 
@@ -1362,7 +1425,7 @@ export function ManualBook() {
                   <li><strong>Absorvida pela loja</strong> e <strong>repassada aos irmãos</strong> — hoje a política é a loja <strong>absorver</strong> toda a tarifa.</li>
                   <li>Quebra <strong>por método</strong> (Pix, boleto…) e <strong>por mês</strong>, e a lista de cada recebimento (cobrança, irmão, valor, tarifa, líquido).</li>
                   <li>Aviso de recebimentos <strong>sem tarifa informada</strong> (baixas antigas) e de recebimentos por <strong>cartão</strong>, que estão fora da política da loja.</li>
-                  <li><UI>Salvar como PDF</UI> para a prestação de contas.</li>
+                  <li>Linha de <strong>total</strong> em cada tabela; <UI>Imprimir / PDF</UI> para a prestação de contas e <UI>Exportar CSV</UI> com cada recebimento.</li>
                 </Bullets>
                 <p>
                   A tarifa também aparece como despesa no <strong>DRE</strong> e no extrato da conta corrente (categoria <em>Tarifas de
@@ -1388,7 +1451,7 @@ export function ManualBook() {
                   <li><strong>Período</strong> (mês, ano, desde o início ou datas livres), <strong>conta ou caixa</strong> (para ver só o que passou por um banco) e <strong>movimento</strong> (entradas e saídas, só entradas ou só saídas).</li>
                   <li><strong>Incluir lançamentos em aberto (pendentes):</strong> desligado por padrão. Ligado, traz também as cobranças de cada categoria que ainda não foram pagas, marcadas com a etiqueta <strong>&quot;Em aberto&quot;</strong>, na posição certa da linha do tempo — mas elas <strong>não entram no saldo</strong> (fica um subtotal à parte, &quot;Em aberto nessa categoria&quot;, e um total geral de pendente a receber/a pagar), porque o dinheiro ainda não se moveu de verdade.</li>
                   <li>Cada categoria mostra o <strong>saldo anterior</strong> ao período, cada lançamento (data, histórico, pessoa, conta, forma, entrada, saída) com o <strong>saldo acumulado</strong>, e o <strong>total da categoria</strong>; no fim, o total geral.</li>
-                  <li><UI>Salvar como PDF</UI> (página A4 paisagem, com o brasão) e <UI>Exportar CSV</UI> para abrir em planilha (com uma coluna de status, Pago ou Em aberto, quando o toggle estiver ligado).</li>
+                  <li><UI>Imprimir / PDF</UI> (A4 deitado, no padrão de relatório — o cabeçalho lista os filtros aplicados) e <UI>Exportar CSV</UI> para abrir em planilha (com uma coluna de status, Pago ou Em aberto, quando o toggle estiver ligado).</li>
                   <li>Mudou algum filtro e ainda não clicou em <UI>Aplicar</UI>? O botão acende em dourado (com um aviso ao lado) até você clicar — o resultado na tela nunca corresponde a um filtro que ainda não foi aplicado.</li>
                 </Bullets>
                 <Note>
@@ -1440,7 +1503,9 @@ export function ManualBook() {
                 </p>
                 <p>
                   <strong>Relatório em PDF:</strong> use o filtro de situação (ex.: Ativos) e clique em <UI>Relatório PDF</UI>
-                  para gerar a lista dos membros conforme o filtro, com cabeçalho da loja.
+                  para gerar a lista dos membros conforme o filtro, no padrão de relatório (7.6), em folha deitada. Esta
+                  lista não tem exportação em planilha, de propósito: ela traz telefone e e-mail dos irmãos, e dado pessoal
+                  não deve circular solto em arquivo (capítulo 14).
                 </p>
                 <Note>
                   Preencha o <strong>CPF</strong> de quem terá cobrança via Asaas — é obrigatório para emitir boleto/PIX (ver 7.4).
@@ -1461,7 +1526,7 @@ export function ManualBook() {
                 <Steps>
                   <li>Por padrão, mostra só membros <UI>Ativos</UI>; marque <UI>Incluir afastados/suspensos/inativos</UI> pra ver todo mundo.</li>
                   <li>A tela lista cada grupo com foto, nome e um resumo por situação (ativo, afastado, suspenso, inativo) ao final. A foto é a mesma cadastrada em Membros — não precisa (nem deve) enviar de novo aqui.</li>
-                  <li><UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
+                  <li><UI>Imprimir / PDF</UI> gera o quadro para a Potência, com as linhas de assinatura do <strong>Secretário</strong> e do <strong>Venerável Mestre</strong> em exercício; <UI>Exportar CSV</UI> leva a lista (grau, nome, situação, origem) para a planilha.</li>
                 </Steps>
                 <Note>
                   O Quadro social é aberto a <strong>todo obreiro</strong>. Quem não tem acesso ao cadastro de Membros (o obreiro comum,
@@ -1495,7 +1560,13 @@ export function ManualBook() {
                     enviada manualmente (<UI>Enviar foto</UI>/<UI>Trocar foto</UI>).
                   </li>
                   <li>Entradas automáticas não são editáveis aqui — pra corrigir, ajuste o cargo em <UI>Veneralato</UI>. Entradas manuais têm <UI>Editar</UI> (nome, período, vínculo com membro) e <UI>Remover</UI>.</li>
-                  <li><UI>Salvar como PDF</UI> imprime o mural com o timbre da loja.</li>
+                  <li>
+                    <strong>Imprimir o quadro:</strong> a Galeria sai no formato <strong>quadro de honra</strong> (7.6) — moldura
+                    dourada, brasão grande, e os retratos em grade, com o Venerável mais recente em destaque. Antes de
+                    clicar em <UI>Imprimir / PDF</UI>, escolha o papel (<UI>A4</UI> ou <UI>A3</UI>) e a posição
+                    (<UI>Retrato</UI> ou <UI>Paisagem</UI>); no A3 e na paisagem cabem mais retratos por linha. Para
+                    mandar a uma gráfica, salve em PDF.
+                  </li>
                 </Bullets>
               </Sub>
               <Sub id="sec-quadro-gestao" title="8.4 Quadro da Gestão e Composição da loja">
@@ -1505,8 +1576,8 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li>Só existe depois que um veneralato foi criado e teve cargos vinculados em <UI>Veneralato</UI> — antes disso, a tela orienta a ir lá primeiro.</li>
-                  <li>Os cargos aparecem na ordem cerimonial do rito (Venerável Mestre primeiro), cada um com a foto do irmão cadastrada em Membros (ou um espaço reservado, se ainda não houver foto).</li>
-                  <li><UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
+                  <li>Os cargos aparecem na ordem cerimonial do rito, cada um com a foto do irmão cadastrada em Membros (ou um espaço reservado, se ainda não houver foto). O <strong>Venerável Mestre</strong> abre o quadro, sozinho e em destaque.</li>
+                  <li><UI>Imprimir / PDF</UI> gera o <strong>quadro de honra</strong> (7.6), no papel e na posição que você escolher (<UI>A4</UI>/<UI>A3</UI>, <UI>Retrato</UI>/<UI>Paisagem</UI>) — bom para o mural da loja.</li>
                 </Bullets>
                 <p>
                   Em <UI>Social → Composição da loja</UI>, veja em lista <strong>todos os obreiros que desempenham cargos</strong> no período:
@@ -1515,7 +1586,14 @@ export function ManualBook() {
                 <Bullets>
                   <li>Por padrão mostra o veneralato em exercício; o seletor <UI>Período</UI> abre a composição de gestões anteriores.</li>
                   <li>A seção <UI>Cargos sem titular neste período</UI> lista os cargos cadastrados na loja que ainda não têm ninguém vinculado.</li>
-                  <li>Os cargos são vinculados em <UI>Veneralato</UI>; <UI>Salvar como PDF</UI> imprime com o timbre da loja.</li>
+                  <li>Os cargos são vinculados em <UI>Veneralato</UI>.</li>
+                  <li>
+                    <UI>Imprimir / PDF</UI> gera a Composição como <strong>documento oficial</strong> (7.6), pronto para a
+                    Potência: fórmula de abertura e dados da loja no topo, a relação de obreiros e cargos, o fecho
+                    &quot;Oriente de …, &lt;data por extenso&gt;&quot; e as assinaturas do <strong>Secretário</strong> e do
+                    <strong> Venerável Mestre daquele período</strong> (nomes já impressos). Configure a fórmula em
+                    <UI> Configurações da loja</UI> (6.1).
+                  </li>
                 </Bullets>
               </Sub>
               <Sub id="sec-cadastros-mestre" title="8.5 Cadastros mestre e cargos">
@@ -1596,7 +1674,7 @@ export function ManualBook() {
                   <li>Escolha o período (<UI>De</UI>/<UI>Até</UI>) ou um atalho: <UI>Ano atual</UI>, <UI>Últimos 6 meses</UI>, <UI>Últimos 12 meses</UI> ou <UI>Todas as sessões</UI>.</li>
                   <li>A tabela mostra, por obreiro: presenças, faltas, sessões <UI>não registradas</UI> (quando ninguém marcou presença/ausência) e a frequência em %.</li>
                   <li>Abaixo, a lista das sessões do período com o total de presentes/ausentes em cada uma — útil pra conferir se alguma sessão ficou sem registro de presença.</li>
-                  <li><UI>Salvar como PDF</UI> imprime o relatório com o timbre da loja.</li>
+                  <li><UI>Imprimir / PDF</UI> imprime o relatório no padrão (7.6) — a lista de sessões começa numa folha nova — e <UI>Exportar CSV</UI> leva a frequência por obreiro para a planilha.</li>
                 </Steps>
                 <Note>
                   &quot;Não registrada&quot; é diferente de falta: significa que ninguém marcou presença daquele
@@ -1616,8 +1694,26 @@ export function ManualBook() {
                   <li>Ou clique em <UI>Carregar lista padrão</UI> pra já preencher o catálogo com um checklist de ~30 itens comuns — não duplica o que você já cadastrou.</li>
                 </Steps>
                 <p>
-                  <strong>Fornecimento de materiais:</strong> no bloco de mesmo nome, escolha o material, o membro e a
-                  quantidade, e clique em <UI>Registrar fornecimento</UI>. Se o material exigir um grau (ex.: Ritual de
+                  <strong>Fornecimento de materiais:</strong> no bloco de mesmo nome, escolha a <UI>Modalidade</UI>, o
+                  material, o membro e a quantidade, e clique em <UI>Registrar fornecimento</UI>. São quatro modalidades:
+                </p>
+                <Bullets>
+                  <li><strong>Empréstimo:</strong> o material é da loja, fica com o obreiro sob <strong>Termo de responsabilidade</strong> e volta quando solicitado. Enquanto estiver com ele, sai do disponível.</li>
+                  <li><strong>Cedido pela Potência:</strong> material enviado pela Potência (ex.: os rituais distribuídos por determinação da Grande Loja). Não tem custo para a loja nem para o obreiro, é <strong>propriedade do obreiro</strong> e não volta. Não usa o estoque da loja — qualquer material do catálogo pode ser escolhido, mesmo com estoque zero.</li>
+                  <li><strong>Venda:</strong> o obreiro compra da loja (ex.: o iniciado que adquire o próprio ritual). Informe o <UI>Valor unitário</UI> e o <UI>Vencimento da cobrança</UI>: a unidade sai do estoque em definitivo e o sistema lança na Tesouraria uma <strong>conta a receber</strong> do obreiro, pendente, na categoria <strong>1.2.04 Venda de Materiais e Paramentos</strong>. O Tesoureiro cobra e dá baixa como qualquer conta.</li>
+                  <li><strong>Doação da loja:</strong> a loja presenteia o obreiro (ex.: o avental do iniciado). Sai do estoque em definitivo, sem custo para ele.</li>
+                </Bullets>
+                <p>
+                  <strong>O iniciado e o ritual:</strong> ele compra o próprio (<strong>Venda</strong>) ou usa o da loja
+                  (<strong>Empréstimo</strong>, com Termo de responsabilidade). Quando a Potência envia os rituais, use
+                  <strong> Cedido pela Potência</strong>.
+                </p>
+                <p>
+                  <strong>Alterar modalidade:</strong> um empréstimo ainda com o obreiro pode ser corrigido pelo botão
+                  <UI> Alterar modalidade</UI> (ex.: foi lançado como empréstimo, mas o ritual veio da Potência). Ao virar
+                  venda, pede o valor e lança a conta a receber.
+                </p>
+                <p> Se o material exigir um grau (ex.: Ritual de
                   Companheiro) e o membro ainda não o tiver alcançado, o sistema recusa — um Mestre continua elegível a
                   material de um grau que já passou, só não dá pra pular pra frente. Quando o item voltar, use
                   <UI> Marcar como devolvido</UI> (ou <UI>extraviado</UI>, se for o caso). O Arquiteto também registra fornecimento e
@@ -1641,9 +1737,30 @@ export function ManualBook() {
                 </Bullets>
                 <p>
                   O card <UI>Materiais em posse por obreiro</UI> reagrupa o fornecimento ativo por membro — mostra de
-                  uma vez tudo que uma pessoa tem em mãos, pronto pra <UI>Salvar como PDF</UI> na hora de conferir ou
-                  dar baixa em tudo de uma vez (ex.: desligamento).
+                  uma vez tudo que uma pessoa tem em mãos — o que está <strong>emprestado</strong> e o que foi
+                  <strong> entregue em definitivo</strong> —, útil na hora de conferir ou dar baixa em tudo de uma vez
+                  (ex.: desligamento). No topo, o <strong>Resumo por material</strong> mostra quantas unidades de cada
+                  item estão emprestadas e quantas foram cedidas pela Potência, vendidas ou doadas. Abra o card e use:
                 </p>
+                <Bullets>
+                  <li><UI>Imprimir / PDF</UI>: a lista de todos os materiais em posse, por obreiro, com o total (padrão de relatório, 7.6).</li>
+                  <li>
+                    <UI>Termos de responsabilidade</UI>: um <strong>Termo de responsabilidade</strong> para cada obreiro,
+                    cada um na sua folha, no formato de documento oficial. O obreiro declara ter recebido os materiais
+                    listados (quantidade e data), comprometendo-se a zelar por eles, devolvê-los quando solicitado ou ao
+                    deixar o cargo e comunicar dano ou extravio. Assinam o <strong>obreiro</strong>, o
+                    <strong> Secretário</strong> e o <strong>Arquiteto</strong> em exercício (nomes já impressos; cargo vago
+                    sai em branco para assinar à mão).
+                  </li>
+                  <li>
+                    <UI>Termos de entrega</UI>: para o que passou a ser do obreiro (cedido pela Potência, comprado ou doado).
+                    O obreiro declara ter recebido os materiais, que passam a ser <strong>de sua propriedade</strong>, sem
+                    obrigação de devolução; cada item traz a origem (&quot;fornecido pela GLMERJ, sem custo para a loja e
+                    para o obreiro&quot;, &quot;adquirido pelo obreiro junto à loja&quot; ou &quot;doado pela loja&quot;) e o
+                    valor, quando foi venda. Assinam os mesmos três.
+                  </li>
+                  <li>Ao lado do nome de cada obreiro, <UI>Termo de responsabilidade</UI> e <UI>Termo de entrega</UI> imprimem só os daquele irmão — o caso mais comum, na hora de entregar o material.</li>
+                </Bullets>
               </Sub>
               <Sub id="sec-documentos" title="8.10 Documentos e comunicação">
                 <p>
@@ -1713,7 +1830,7 @@ export function ManualBook() {
               <Bullets>
                 <li><strong>Resumo do obreiro:</strong> seus dados — nome, e-mail, telefone, <strong>grau atual</strong> e loja de origem.</li>
                 <li><strong>Resumo financeiro:</strong> três indicadores — <UI>A receber</UI>, <UI>A pagar</UI> e <UI>Pendentes</UI> (valores em aberto).</li>
-                <li><strong>Meu extrato:</strong> cada conta vinculada a você — tipo (a receber/a pagar), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado.</li>
+                <li><strong>Meu extrato:</strong> cada conta vinculada a você — tipo (a receber/a pagar), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado — sai com o cabeçalho da loja, o saldo do filtro e o aviso de que é um documento informativo (o comprovante oficial de um pagamento é o recibo da Tesouraria).</li>
                 <li><strong>Documentos recentes:</strong> os arquivos disponibilizados a você pela loja.</li>
                 <li><strong>Documentos da Loja:</strong> regimento interno, regulamento geral, constituição da Potência e outros documentos institucionais, publicados pela Secretaria pra todos os obreiros — abra ou baixe direto por aqui.</li>
               </Bullets>
@@ -1913,7 +2030,7 @@ export function ManualBook() {
                   <li><strong>Doadores</strong> — os nomes de quem doou ao Tronco só aparecem para Administrador, Venerável e Tesoureiro; os demais veem &quot;Doação (irmão)&quot;.</li>
                   <li><strong>Campanhas</strong> (Tronco): meta, doações recebidas, valor custeado pelo Tronco e % da meta.</li>
                   <li><strong>Evolução mensal</strong> dos últimos 12 meses e o <strong>extrato</strong> do período, com saldo corrente.</li>
-                  <li><strong>Salvar como PDF</strong> gera a prestação de contas do fundo, com o brasão da loja.</li>
+                  <li><UI>Imprimir / PDF</UI> gera a <strong>prestação de contas</strong> do fundo no padrão de relatório (7.6), com as assinaturas do Tesoureiro e do Venerável do período; <UI>Exportar CSV</UI> leva o extrato do fundo para a planilha.</li>
                 </Bullets>
                 <Note>
                   O saldo do fundo é a parte do dinheiro da loja que pertence àquela finalidade — ele <strong>não aparece como um
@@ -2013,7 +2130,10 @@ export function ManualBook() {
                 <li><strong>O obreiro não vê telefone nem e-mail na Composição da loja.</strong> É de propósito: os quadros do <UI>Social</UI> não expõem dados de contato a quem não tem acesso ao cadastro de Membros (10.4).</li>
                 <li><strong>O saldo do Tronco aparece indisponível.</strong> Em Cadastros, clique em <UI>Atualizar plano de contas</UI> (7.1) para habilitar as contas do Tronco de Solidariedade.</li>
                 <li><strong>A convocação não chegou aos irmãos.</strong> O e-mail sai pela plataforma; WhatsApp/SMS exigem a loja conectar a própria conta em <UI>Integrações</UI> (6.6). Até lá, ficam registrados e enfileirados.</li>
-                <li><strong>Quero o manual em PDF.</strong> Use o botão <strong>Salvar como PDF</strong> no topo desta página.</li>
+                <li><strong>Quero o manual em PDF.</strong> Use o botão <strong>Salvar como PDF</strong> no topo desta página — sai em formato de livro, com capa, sumário e as páginas numeradas.</li>
+                <li><strong>O PDF saiu com o endereço da página e a data no canto.</strong> No diálogo de impressão, em <em>Mais configurações</em>, desmarque <strong>Cabeçalhos e rodapés</strong>. O documento já tem cabeçalho e rodapé próprios (7.6).</li>
+                <li><strong>O nome do Tesoureiro/Secretário/Venerável não saiu na assinatura.</strong> O sistema busca quem ocupava o cargo no veneralato daquele período (<UI>Veneralato</UI>). Se o cargo não estava vinculado, a linha sai em branco para assinar à mão — vincule o cargo e imprima de novo.</li>
+                <li><strong>A fórmula de abertura não aparece na Composição.</strong> Ela só sai depois de preenchida em <UI>Configurações da loja → Loja maçônica</UI> (6.1).</li>
                 <li><strong>Não consigo registrar um pagamento.</strong> Desde a versão 1.3, todo pagamento exige escolher a <UI>Conta bancária/caixa</UI> que recebeu ou pagou o valor — cadastre pelo menos uma em <UI>Cadastros financeiros → Contas bancárias e Caixa</UI> (7.14) antes de registrar.</li>
                 <li><strong>A transferência entre contas não mudou o saldo.</strong> Toda transferência nasce pendente e só afeta o saldo depois que o Venerável Mestre (ou o Administrador) aprovar, no <UI>Histórico</UI> da tela de Transferências (7.14).</li>
                 <li><strong>Não consigo fornecer um ritual/material a um membro.</strong> O material tem um grau exigido e o membro ainda não chegou lá (ex.: Companheiro pedindo Ritual de Mestre) — ou não há quantidade disponível em estoque. Veja Materiais e patrimônio (capítulo 8).</li>

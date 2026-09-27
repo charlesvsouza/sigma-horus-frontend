@@ -57,18 +57,24 @@ export function printCss({ orientation = 'portrait', paper = 'A4', footer, foote
     ${footerCenter ? `@bottom-center { ${box(cssString(footerCenter))} }` : ''}
     ${paginate ? `@bottom-right { ${box('"Página " counter(page) " de " counter(pages)')} }` : ''}
   }
-  html, body { background: #fff !important; }
-  body * { visibility: hidden !important; }
-  .rpt-doc, .rpt-doc * { visibility: visible !important; }
+  html, body { background: #fff !important; height: auto !important; min-height: 0 !important; }
+  /* Só o documento vai para o papel. O resto da tela sai do layout (display: none), e
+     não só fica invisível: com visibility: hidden a tela inteira continuava ocupando
+     espaço e o PDF saía com folhas em branco (ex.: 3 linhas em 7 páginas). Os
+     ancestrais do documento ficam, mas sem altura, margem nem moldura próprias. */
+  body *:not(:has(.rpt-doc)):not(.rpt-doc):not(.rpt-doc *) { display: none !important; }
+  body *:has(.rpt-doc):not(.rpt-doc):not(.rpt-doc *) {
+    display: block !important; position: static !important; margin: 0 !important; padding: 0 !important;
+    width: auto !important; height: auto !important; min-height: 0 !important; max-height: none !important;
+    overflow: visible !important; border: 0 !important; background: none !important; box-shadow: none !important; transform: none !important;
+  }
   .rpt-doc {
-    display: block !important; position: absolute; left: 0; top: 0; width: 100%;
+    display: block !important; position: static; width: 100%;
     margin: 0 !important; padding: 0 !important; border: none !important; border-radius: 0 !important; box-shadow: none !important;
     background: #fff !important; color: #111 !important;
     font-family: Georgia, "Times New Roman", serif !important; font-size: ${fontSize}; line-height: 1.35;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  /* Vários documentos numa impressão: o de fora posiciona, os de dentro seguem o fluxo. */
-  .rpt-doc .rpt-doc { position: static !important; }
   .rpt-doc * { color: #111 !important; box-shadow: none !important; text-decoration: none !important; }
   .rpt-doc [class*="bg-sigma"], .rpt-doc [class*="bg-white/"] { background: #fff !important; }
   .rpt-doc [class*="border-white"] { border-color: #ccc !important; }

@@ -10,6 +10,8 @@ import { flushSync } from 'react-dom';
 import { ReportActions, ReportDocument, type Signatory } from '@/components/report/report-document';
 import { OfficialDocument } from '@/components/report/official-document';
 import type { Letterhead } from '@/lib/letterhead';
+import { brl } from '@/lib/currency';
+import { deliveryStatement, isSupplyKind, SUPPLY_KIND_LABEL, SUPPLY_KINDS, type SupplyKind } from '@/lib/material-supply';
 
 interface RiteOption { id: string; name: string; }
 interface MemberOption {
@@ -34,6 +36,8 @@ interface MaterialItem {
 interface LoanItem {
   id: string;
   quantity: number;
+  kind: string;
+  unitPrice: number | null;
   status: string;
   issuedAt: string;
   notes: string | null;
@@ -68,6 +72,16 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { tim
 const DEGREE_OPTIONS: SymbolicSituation[] = ['Aprendiz', 'Companheiro', 'Mestre', 'Mestre Instalado'];
 const INPUT_CLASS = inputClass;
 
+const todayISO = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+const asKind = (k: string): SupplyKind => (isSupplyKind(k) ? k : 'loan');
+const kindLabel = (l: { kind: string }) => SUPPLY_KIND_LABEL[asKind(l.kind)];
+const SUPPLY_HINT: Record<SupplyKind, string> = {
+  loan: 'Material da loja, fica com o obreiro sob Termo de responsabilidade e volta quando solicitado.',
+  potencia: 'Material enviado pela Potência (ex.: rituais): sem custo para a loja e para o obreiro, é dele e não volta. Não usa o estoque da loja.',
+  sale: 'O obreiro compra da loja: a unidade sai do estoque e a Tesouraria recebe uma conta a receber (1.2.04 Venda de Materiais e Paramentos).',
+  donation: 'A loja presenteia o obreiro: a unidade sai do estoque, sem custo para ele.',
+};
+
 interface Props {
   letterhead: Letterhead;
   /** Quem assina o termo pela loja (Secretário e Arquiteto em exercício). */
@@ -96,8 +110,9 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
   const emptyForm = { name: '', category: '', requiredDegree: '', quantity: '1', riteId: '', notes: '' };
   const [form, setForm] = useState(emptyForm);
 
-  const emptyLoanForm = { materialId: '', memberId: '', quantity: '1', notes: '' };
+  const emptyLoanForm = { kind: 'loan' as SupplyKind, materialId: '', memberId: '', quantity: '1', notes: '', unitPrice: '', dueDate: todayISO() };
   const [loanForm, setLoanForm] = useState(emptyLoanForm);
+  const [converting, setConverting] = useState<{ id: string; kind: SupplyKind; unitPrice: string; dueDate: string } | null>(null);
   const [loanSubmitting, setLoanSubmitting] = useState(false);
   const [decidingId, setDecidingId] = useState<string | null>(null);
 
@@ -196,12 +211,17 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
       const response = await fetch('/api/material-loans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...loanForm, quantity: Number(loanForm.quantity) }),
+        body: JSON.stringify({
+          ...loanForm,
+          quantity: Number(loanForm.quantity),
+          unitPrice: loanForm.kind === 'sale' ? Number(loanForm.unitPrice) : undefined,
+          dueDate: loanForm.kind === 'sale' ? loanForm.dueDate : undefined,
+        }),
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage({ kind: 'ok', text: 'Fornecimento registrado.' });
-        setLoanForm(emptyLoanForm);
+        setMessage({ kind: 'ok', text: loanForm.kind === 'sale' ? 'Venda registrada. A conta a receber foi lançada na Tesouraria.' : 'Fornecimento registrado.' });
+        setLoanForm({ ...emptyLoanForm, kind: loanForm.kind });
         router.refresh();
       } else {
         setMessage({ kind: 'error', text: data.error ?? 'Erro ao registrar fornecimento.' });
@@ -235,6 +255,32 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
         router.refresh();
       } else {
         setMessage({ kind: 'error', text: data.error ?? 'Erro ao atualizar.' });
+      }
+    } finally {
+      setDecidingId(null);
+    }
+  }
+
+  async function convertLoan() {
+    if (!converting) return;
+    setDecidingId(converting.id);
+    try {
+      const response = await fetch(`/api/material-loans/${converting.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: converting.kind,
+          unitPrice: converting.kind === 'sale' ? Number(converting.unitPrice) : undefined,
+          dueDate: converting.kind === 'sale' ? converting.dueDate : undefined,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage({ kind: 'ok', text: `Modalidade alterada para "${SUPPLY_KIND_LABEL[converting.kind]}".` });
+        setConverting(null);
+        router.refresh();
+      } else {
+        setMessage({ kind: 'error', text: data.error ?? 'Erro ao alterar a modalidade.' });
       }
     } finally {
       setDecidingId(null);
@@ -315,25 +361,44 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
   const filtered = q ? materials.filter((m) => m.name.toLowerCase().includes(q) || m.category?.toLowerCase().includes(q)) : materials;
   const availableForLoan = materials.filter((m) => m.active && m.availableQuantity > 0);
 
+  // Empréstimos em aberto (voltam à loja) × entregas em definitivo (o material é do obreiro).
+  const activeLoans = loans.filter((l) => l.kind === 'loan');
+  const deliveries = loans.filter((l) => l.kind !== 'loan');
+  // Potência não depende do estoque da loja: qualquer material ativo do catálogo serve.
+  const supplyOptions = loanForm.kind === 'potencia' ? materials.filter((m) => m.active) : availableForLoan;
+
   const loansByMember = useMemo(() => {
-    const groups = new Map<string, { memberId: string; memberName: string; items: LoanItem[] }>();
+    const groups = new Map<string, { memberId: string; memberName: string; loans: LoanItem[]; deliveries: LoanItem[] }>();
     for (const loan of loans) {
-      const g = groups.get(loan.member.id) ?? { memberId: loan.member.id, memberName: loan.member.name, items: [] };
-      g.items.push(loan);
+      const g = groups.get(loan.member.id) ?? { memberId: loan.member.id, memberName: loan.member.name, loans: [], deliveries: [] };
+      (loan.kind === 'loan' ? g.loans : g.deliveries).push(loan);
       groups.set(loan.member.id, g);
     }
     return [...groups.values()].sort((a, b) => a.memberName.localeCompare(b.memberName));
   }, [loans]);
 
+  // Controle por material: quantos emprestados, cedidos pela Potência, vendidos e doados.
+  const supplySummary = useMemo(() => {
+    const rows = new Map<string, Record<SupplyKind, number> & { name: string }>();
+    for (const l of loans) {
+      const row = rows.get(l.material.id) ?? { name: l.material.name, loan: 0, potencia: 0, sale: 0, donation: 0 };
+      row[asKind(l.kind)] += l.quantity;
+      rows.set(l.material.id, row);
+    }
+    return [...rows.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [loans]);
+
   // O que vai para o papel: a lista (padrão) ou os termos de responsabilidade
   // (de todos os obreiros ou de um só). Troca, imprime e volta para a lista.
-  const [printMode, setPrintMode] = useState<{ kind: 'list' } | { kind: 'terms'; memberId: string | null }>({ kind: 'list' });
-  function printTerms(memberId: string | null) {
-    flushSync(() => setPrintMode({ kind: 'terms', memberId }));
+  const [printMode, setPrintMode] = useState<{ kind: 'list' } | { kind: 'docs'; doc: 'responsibility' | 'delivery'; memberId: string | null }>({ kind: 'list' });
+  function printDocs(doc: 'responsibility' | 'delivery', memberId: string | null) {
+    flushSync(() => setPrintMode({ kind: 'docs', doc, memberId }));
     window.print();
     setPrintMode({ kind: 'list' });
   }
-  const termGroups = printMode.kind === 'terms' ? loansByMember.filter((g) => !printMode.memberId || g.memberId === printMode.memberId) : [];
+  const printGroups = printMode.kind === 'docs'
+    ? loansByMember.filter((g) => (!printMode.memberId || g.memberId === printMode.memberId) && (printMode.doc === 'responsibility' ? g.loans : g.deliveries).length > 0)
+    : [];
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -532,12 +597,19 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
           </CollapsibleCard>
         </div>
 
-        {canOperate ? <CollapsibleCard title="Fornecimento de materiais" count={loans.length} defaultOpen={loans.length > 0}>
+        {canOperate ? <CollapsibleCard title="Fornecimento de materiais" count={activeLoans.length} defaultOpen={activeLoans.length > 0}>
           <form onSubmit={handleLoanSubmit} className="mb-5 grid gap-4 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4 md:grid-cols-2">
+            <Field label="Modalidade">
+              <select value={loanForm.kind} onChange={(e) => setLoanForm({ ...loanForm, kind: e.target.value as SupplyKind, materialId: '' })} className={INPUT_CLASS}>
+                {SUPPLY_KINDS.map((k) => <option key={k} value={k}>{k === 'potencia' && letterhead.powerName ? `Cedido pela Potência (${letterhead.powerName})` : SUPPLY_KIND_LABEL[k]}</option>)}
+              </select>
+            </Field>
             <Field label="Material">
               <select value={loanForm.materialId} onChange={(e) => setLoanForm({ ...loanForm, materialId: e.target.value })} className={INPUT_CLASS} required>
                 <option value="">Selecione…</option>
-                {availableForLoan.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.availableQuantity} disponível)</option>)}
+                {supplyOptions.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}{loanForm.kind === 'potencia' ? '' : ` (${m.availableQuantity} disponível)`}</option>
+                ))}
               </select>
             </Field>
             <Field label="Membro">
@@ -549,32 +621,67 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
             <Field label="Quantidade">
               <input type="number" min="1" value={loanForm.quantity} onChange={(e) => setLoanForm({ ...loanForm, quantity: e.target.value })} className={INPUT_CLASS} required />
             </Field>
+            {loanForm.kind === 'sale' ? (
+              <>
+                <Field label="Valor unitário (R$)">
+                  <input type="number" min="0.01" step="0.01" value={loanForm.unitPrice} onChange={(e) => setLoanForm({ ...loanForm, unitPrice: e.target.value })} className={INPUT_CLASS} required />
+                </Field>
+                <Field label="Vencimento da cobrança">
+                  <input type="date" value={loanForm.dueDate} onChange={(e) => setLoanForm({ ...loanForm, dueDate: e.target.value })} className={INPUT_CLASS} required />
+                </Field>
+              </>
+            ) : null}
             <Field label="Observação">
               <input value={loanForm.notes} onChange={(e) => setLoanForm({ ...loanForm, notes: e.target.value })} className={INPUT_CLASS} placeholder="Observação (opcional)" />
             </Field>
+            <p className="text-xs text-sand-dark md:col-span-2">{SUPPLY_HINT[loanForm.kind]}</p>
             {!loanEligibility ? (
               <p className="text-xs text-rose-300 md:col-span-2">
                 Este membro ainda não atingiu o grau exigido ({selectedLoanMaterial?.requiredDegree}) para este material.
               </p>
             ) : null}
             <div className="md:col-span-2">
-              <Button type="submit" disabled={loanSubmitting || availableForLoan.length === 0}>{loanSubmitting ? 'Registrando…' : 'Registrar fornecimento'}</Button>
+              <Button type="submit" disabled={loanSubmitting || supplyOptions.length === 0}>{loanSubmitting ? 'Registrando…' : 'Registrar fornecimento'}</Button>
             </div>
           </form>
 
           <div className="space-y-3">
-            {loans.length === 0 ? (
-              <EmptyState title="Nada saiu do inventário ainda." description="Materiais emitidos a membros (ex.: rituais) aparecem aqui até serem devolvidos." />
-            ) : loans.map((loan) => (
-              <div key={loan.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4">
-                <div>
-                  <p className="text-sm font-medium text-sand-light">{loan.member.name} — {loan.material.name} ({loan.quantity})</p>
-                  <p className="mt-1 text-xs text-sand-dark">desde {new Date(loan.issuedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}{loan.notes ? ` • ${loan.notes}` : ''}</p>
+            {activeLoans.length === 0 ? (
+              <EmptyState title="Nenhum empréstimo em aberto." description="Materiais da loja emprestados a obreiros aparecem aqui até serem devolvidos. Entregas em definitivo (Potência, venda, doação) ficam em Materiais em posse por obreiro." />
+            ) : activeLoans.map((loan) => (
+              <div key={loan.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-sand-light">{loan.member.name} — {loan.material.name} ({loan.quantity})</p>
+                    <p className="mt-1 text-xs text-sand-dark">emprestado desde {fmtDate(loan.issuedAt)}{loan.notes ? ` • ${loan.notes}` : ''}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'returned')} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200 disabled:opacity-40">Marcar como devolvido</button>
+                    <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'lost')} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200 disabled:opacity-40">Marcar como extraviado</button>
+                    <button disabled={decidingId === loan.id} onClick={() => setConverting(converting?.id === loan.id ? null : { id: loan.id, kind: 'potencia', unitPrice: '', dueDate: todayISO() })} className="text-xs px-1 py-1 text-gold/80 transition hover:text-gold disabled:opacity-40">Alterar modalidade</button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'returned')} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200 disabled:opacity-40">Marcar como devolvido</button>
-                  <button disabled={decidingId === loan.id} onClick={() => void decideLoan(loan.id, 'lost')} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200 disabled:opacity-40">Marcar como extraviado</button>
-                </div>
+                {converting?.id === loan.id ? (
+                  <div className="mt-3 flex flex-wrap items-end gap-3 rounded-lg border border-gold/20 bg-gold/5 p-3">
+                    <label className="text-xs text-sand-dark">Passa a ser
+                      <select value={converting.kind} onChange={(e) => setConverting({ ...converting, kind: e.target.value as SupplyKind })} className={`mt-1 block ${INPUT_CLASS}`}>
+                        {SUPPLY_KINDS.filter((k) => k !== 'loan').map((k) => <option key={k} value={k}>{SUPPLY_KIND_LABEL[k]}</option>)}
+                      </select>
+                    </label>
+                    {converting.kind === 'sale' ? (
+                      <>
+                        <label className="text-xs text-sand-dark">Valor unitário (R$)
+                          <input type="number" min="0.01" step="0.01" value={converting.unitPrice} onChange={(e) => setConverting({ ...converting, unitPrice: e.target.value })} className={`mt-1 block w-32 ${INPUT_CLASS}`} />
+                        </label>
+                        <label className="text-xs text-sand-dark">Vencimento
+                          <input type="date" value={converting.dueDate} onChange={(e) => setConverting({ ...converting, dueDate: e.target.value })} className={`mt-1 block ${INPUT_CLASS}`} />
+                        </label>
+                      </>
+                    ) : null}
+                    <Button type="button" disabled={decidingId === loan.id} onClick={() => void convertLoan()}>Confirmar</Button>
+                    <p className="w-full text-xs text-sand-dark">{SUPPLY_HINT[converting.kind]} O material deixa de ser empréstimo e passa a ser do obreiro.</p>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
@@ -583,9 +690,36 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
         <CollapsibleCard title="Materiais em posse por obreiro" count={loansByMember.length} defaultOpen={false}>
           <div className="mb-4">
             <ReportActions disabled={loansByMember.length === 0}>
-              <Button type="button" variant="secondary" disabled={loansByMember.length === 0} onClick={() => printTerms(null)}>Termos de responsabilidade</Button>
+              <Button type="button" variant="secondary" disabled={!loansByMember.some((g) => g.loans.length > 0)} onClick={() => printDocs('responsibility', null)}>Termos de responsabilidade</Button>
+              <Button type="button" variant="secondary" disabled={!loansByMember.some((g) => g.deliveries.length > 0)} onClick={() => printDocs('delivery', null)}>Termos de entrega</Button>
             </ReportActions>
+            <p className="mt-2 text-xs text-sand-dark">
+              <strong>Termo de responsabilidade</strong>: material emprestado pela loja, que volta. <strong>Termo de entrega</strong>:
+              material que passou a ser do obreiro (cedido pela Potência, comprado ou doado pela loja).
+            </p>
           </div>
+
+          {supplySummary.length > 0 ? (
+            <div className="mb-6 overflow-x-auto">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-sand-dark">Resumo por material</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wide text-sand-dark/70">
+                    <th className="border-b border-white/10 px-2 py-1.5">Material</th>
+                    {SUPPLY_KINDS.map((k) => <th key={k} className="border-b border-white/10 px-2 py-1.5 text-right">{k === 'loan' ? 'Emprestados' : SUPPLY_KIND_LABEL[k]}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {supplySummary.map((row) => (
+                    <tr key={row.name}>
+                      <td className="border-b border-white/5 px-2 py-1.5 text-sand">{row.name}</td>
+                      {SUPPLY_KINDS.map((k) => <td key={k} className="border-b border-white/5 px-2 py-1.5 text-right tabular-nums text-sand">{row[k] || '—'}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
 
           <div className="space-y-6">
             {loansByMember.length === 0 ? (
@@ -594,20 +728,25 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
               <div key={group.memberId}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold text-sand-light">{group.memberName}</h3>
-                  <button type="button" onClick={() => printTerms(group.memberId)} className="text-xs text-gold/80 transition hover:text-gold">Imprimir termo</button>
+                  <div className="flex gap-3">
+                    {group.loans.length > 0 ? <button type="button" onClick={() => printDocs('responsibility', group.memberId)} className="text-xs text-gold/80 transition hover:text-gold">Termo de responsabilidade</button> : null}
+                    {group.deliveries.length > 0 ? <button type="button" onClick={() => printDocs('delivery', group.memberId)} className="text-xs text-gold/80 transition hover:text-gold">Termo de entrega</button> : null}
+                  </div>
                 </div>
                 <table className="mt-2 w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wide text-sand-dark/70">
                       <th className="border-b border-white/10 px-2 py-1.5">Material</th>
+                      <th className="border-b border-white/10 px-2 py-1.5">Modalidade</th>
                       <th className="border-b border-white/10 px-2 py-1.5 text-right">Qtd.</th>
                       <th className="border-b border-white/10 px-2 py-1.5">Desde</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {group.items.map((loan) => (
+                    {[...group.loans, ...group.deliveries].map((loan) => (
                       <tr key={loan.id}>
                         <td className="border-b border-white/5 px-2 py-1.5 text-sand">{loan.material.name}</td>
+                        <td className="border-b border-white/5 px-2 py-1.5 text-sand-dark">{kindLabel(loan)}</td>
                         <td className="border-b border-white/5 px-2 py-1.5 text-right tabular-nums text-sand">{loan.quantity}</td>
                         <td className="border-b border-white/5 px-2 py-1.5 text-sand-dark">{fmtDate(loan.issuedAt)}</td>
                       </tr>
@@ -624,24 +763,25 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
               lodgeName={letterhead.name}
               crestUrl={letterhead.crestUrl}
               title="Materiais em posse por obreiro"
-              details={[`${loansByMember.length} obreiro(s)`, `${loans.length} empréstimo(s) em aberto`]}
+              details={[`${loansByMember.length} obreiro(s)`, `${activeLoans.length} empréstimo(s) em aberto`, `${deliveries.length} entrega(s) em definitivo`]}
               issuedBy={issuedBy}
             >
               <table>
                 <thead>
-                  <tr><th>Obreiro</th><th>Material</th><th className="num">Qtd.</th><th>Desde</th></tr>
+                  <tr><th>Obreiro</th><th>Material</th><th>Modalidade</th><th className="num">Qtd.</th><th>Desde</th></tr>
                 </thead>
                 <tbody>
-                  {loansByMember.flatMap((group) => group.items.map((loan, i) => (
+                  {loansByMember.flatMap((group) => [...group.loans, ...group.deliveries].map((loan, i) => (
                     <tr key={loan.id}>
                       <td>{i === 0 ? group.memberName : ''}</td>
                       <td>{loan.material.name}</td>
+                      <td>{kindLabel(loan)}</td>
                       <td className="num">{loan.quantity}</td>
                       <td>{fmtDate(loan.issuedAt)}</td>
                     </tr>
                   )))}
                   <tr className="rpt-total">
-                    <td colSpan={2}>Total</td>
+                    <td colSpan={3}>Total</td>
                     <td className="num">{loans.reduce((sum, l) => sum + l.quantity, 0)}</td>
                     <td />
                   </tr>
@@ -651,40 +791,65 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
           ) : (
             // Um termo por obreiro, cada um na sua página.
             <div className="rpt-doc hidden">
-              {termGroups.map((group, i) => (
-                <OfficialDocument
-                  key={group.memberId}
-                  printOnly
-                  withPrintCss={i === 0}
-                  pageBreakBefore={i > 0}
-                  letterhead={letterhead}
-                  title="Termo de responsabilidade"
-                  subtitle="Guarda de materiais da loja"
-                  issuedBy={issuedBy}
-                  signatures={[{ role: 'Obreiro responsável', name: group.memberName }, ...signatures]}
-                >
-                  <p className="text-justify leading-relaxed">
-                    Eu, <strong>{group.memberName}</strong>, declaro ter recebido de <strong>{letterhead.name}</strong>, em
-                    caráter de empréstimo, os materiais relacionados abaixo, comprometendo-me a zelar por sua guarda e
-                    conservação, a devolvê-los quando solicitado ou ao deixar o cargo, e a comunicar à loja qualquer dano
-                    ou extravio.
-                  </p>
-                  <table className="mt-5">
-                    <thead>
-                      <tr><th>Material</th><th className="num">Qtd.</th><th>Recebido em</th></tr>
-                    </thead>
-                    <tbody>
-                      {group.items.map((loan) => (
-                        <tr key={loan.id}>
-                          <td>{loan.material.name}</td>
-                          <td className="num">{loan.quantity}</td>
-                          <td>{fmtDate(loan.issuedAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </OfficialDocument>
-              ))}
+              {printGroups.map((group, i) => {
+                const items = printMode.doc === 'responsibility' ? group.loans : group.deliveries;
+                return (
+                  <OfficialDocument
+                    key={group.memberId}
+                    printOnly
+                    withPrintCss={i === 0}
+                    pageBreakBefore={i > 0}
+                    letterhead={letterhead}
+                    title={printMode.doc === 'responsibility' ? 'Termo de responsabilidade' : 'Termo de entrega'}
+                    subtitle={printMode.doc === 'responsibility' ? 'Guarda de materiais da loja' : 'Materiais de propriedade do obreiro'}
+                    issuedBy={issuedBy}
+                    signatures={[{ role: printMode.doc === 'responsibility' ? 'Obreiro responsável' : 'Obreiro', name: group.memberName }, ...signatures]}
+                  >
+                    {printMode.doc === 'responsibility' ? (
+                      <p className="text-justify leading-relaxed">
+                        Eu, <strong>{group.memberName}</strong>, declaro ter recebido de <strong>{letterhead.name}</strong>, em
+                        caráter de empréstimo, os materiais relacionados abaixo, comprometendo-me a zelar por sua guarda e
+                        conservação, a devolvê-los quando solicitado ou ao deixar o cargo, e a comunicar à loja qualquer dano
+                        ou extravio.
+                      </p>
+                    ) : (
+                      <p className="text-justify leading-relaxed">
+                        Eu, <strong>{group.memberName}</strong>, declaro ter recebido, por intermédio de <strong>{letterhead.name}</strong>,
+                        os materiais relacionados abaixo, que passam a ser de <strong>minha propriedade</strong>, conforme a
+                        origem indicada em cada item. Por não serem empréstimo, não há obrigação de devolução à loja.
+                      </p>
+                    )}
+                    <table className="mt-5">
+                      <thead>
+                        {printMode.doc === 'responsibility' ? (
+                          <tr><th>Material</th><th className="num">Qtd.</th><th>Recebido em</th></tr>
+                        ) : (
+                          <tr><th>Material</th><th className="num">Qtd.</th><th>Origem</th><th className="num">Valor</th><th>Entregue em</th></tr>
+                        )}
+                      </thead>
+                      <tbody>
+                        {items.map((loan) => (
+                          printMode.doc === 'responsibility' ? (
+                            <tr key={loan.id}>
+                              <td>{loan.material.name}</td>
+                              <td className="num">{loan.quantity}</td>
+                              <td>{fmtDate(loan.issuedAt)}</td>
+                            </tr>
+                          ) : (
+                            <tr key={loan.id}>
+                              <td>{loan.material.name}</td>
+                              <td className="num">{loan.quantity}</td>
+                              <td>{deliveryStatement(asKind(loan.kind), letterhead.powerName)}</td>
+                              <td className="num">{loan.kind === 'sale' && loan.unitPrice != null ? brl(loan.unitPrice * loan.quantity) : 'Sem custo'}</td>
+                              <td>{fmtDate(loan.issuedAt)}</td>
+                            </tr>
+                          )
+                        ))}
+                      </tbody>
+                    </table>
+                  </OfficialDocument>
+                );
+              })}
             </div>
           )}
         </CollapsibleCard>
