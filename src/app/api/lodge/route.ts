@@ -9,7 +9,7 @@ const FIELDS = [
   'name', 'legalName', 'tradeName', 'cnpj', 'email', 'phone',
   'addressLine', 'addressNumber', 'neighborhood', 'city', 'state', 'zipCode',
   'bankName', 'bankAgency', 'bankAccount', 'pixKey',
-  'riteName', 'powerName', 'sessionWeekdays', 'sessionFrequency',
+  'riteName', 'powerName', 'openingFormula', 'sessionWeekdays', 'sessionFrequency',
 ] as const;
 
 export async function GET() {
@@ -24,7 +24,7 @@ export async function GET() {
         name: true, legalName: true, tradeName: true, cnpj: true, email: true, phone: true, crestUrl: true,
         addressLine: true, addressNumber: true, neighborhood: true, city: true, state: true, zipCode: true,
         bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
-        riteName: true, powerName: true, foundationDate: true, sessionWeekdays: true, sessionFrequency: true,
+        riteName: true, powerName: true, openingFormula: true, foundationDate: true, sessionWeekdays: true, sessionFrequency: true,
         expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
         autoBalanceteEnabled: true, art002Enabled: true,
         notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,

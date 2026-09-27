@@ -189,7 +189,13 @@ function Office({ name, light, tradition, system }: { name: string; light?: bool
 
 const PRINT_CSS = `
 @media print {
-  @page { size: A4; margin: 24mm 22mm 22mm 22mm; }
+  @page {
+    size: A4; margin: 24mm 22mm 22mm 22mm;
+    @bottom-center { content: counter(page); font: 9pt Georgia, "Times New Roman", serif; color: #555; }
+    @bottom-right { content: "Sigma Horus · Manual do Usuário"; font: 7.5pt Georgia, "Times New Roman", serif; color: #888; }
+  }
+  /* Capa sem número nem rodapé. */
+  @page :first { @bottom-center { content: none; } @bottom-right { content: none; } }
   html, body { background: #ffffff !important; }
   body * { visibility: hidden !important; }
   .manual-print, .manual-print * { visibility: visible !important; }

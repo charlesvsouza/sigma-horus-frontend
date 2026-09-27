@@ -6,6 +6,9 @@ import { UserRound } from 'lucide-react';
 import { CollapsibleCard, EmptyState, inputClass } from '@/components/ui';
 import { formatDateOnly } from '@/lib/date-only';
 import { memberStatusLabel } from '@/lib/member-status';
+import type { Letterhead } from '@/lib/letterhead';
+import { ReportActions, type Signatory } from '@/components/report/report-document';
+import { OfficialDocument } from '@/components/report/official-document';
 
 interface TermOption { id: string; title: string; status: string; startDate: string; endDate: string | null }
 interface OfficeRef { id: string; name: string; order: number }
@@ -21,24 +24,10 @@ interface Holder {
 }
 interface VacantOffice { id: string; name: string; riteName: string | null }
 
-const PRINT_CSS = `
-@media print {
-  @page { size: A4; margin: 16mm 14mm; }
-  body * { visibility: hidden !important; }
-  .comp-print, .comp-print * { visibility: visible !important; }
-  .comp-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9.5pt; }
-  .comp-noprint { display: none !important; }
-  .comp-print h1, .comp-print h2, .comp-print h3 { color: #111 !important; }
-  .comp-print table { width: 100%; border-collapse: collapse; }
-  .comp-print th, .comp-print td { border-bottom: 1px solid #ddd !important; padding: 4px 6px; text-align: left; color: #111 !important; }
-  .comp-print th { text-transform: uppercase; font-size: 8pt; border-bottom: 1.5px solid #333 !important; }
-  .comp-print tr { break-inside: avoid; page-break-inside: avoid; }
-}
-`;
-
 export default function ComposicaoClient({
-  lodgeName,
-  crestUrl,
+  letterhead,
+  signatures,
+  issuedBy,
   terms,
   selectedTermId,
   members,
@@ -46,8 +35,9 @@ export default function ComposicaoClient({
   showContacts,
   canManage,
 }: {
-  lodgeName: string;
-  crestUrl: string | null;
+  letterhead: Letterhead;
+  signatures: Signatory[];
+  issuedBy?: string | null;
   terms: TermOption[];
   selectedTermId: string | null;
   members: Holder[];
@@ -62,9 +52,8 @@ export default function ComposicaoClient({
 
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-5xl space-y-8">
-        <div className="comp-noprint flex flex-wrap items-start justify-between gap-4">
+        <div className="rpt-noprint flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-bold text-sand-light">Composição da loja</h1>
             <p className="mt-1 text-sm text-sand-dark">
@@ -102,25 +91,15 @@ export default function ComposicaoClient({
           />
         ) : (
           <>
-            <div className="comp-noprint">
-              <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
-                Salvar como PDF
-              </button>
-            </div>
+            <ReportActions />
 
-            <section className="comp-print rounded-xl border border-white/6 bg-sigma-card p-6">
-              <header className="mb-6 text-center">
-                {crestUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-                ) : null}
-                <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
-                <h2 className="mt-0.5 text-sm text-sand-dark">Composição da loja — {term.title}</h2>
-                <p className="mt-0.5 text-xs text-sand-dark">
-                  {formatDateOnly(term.startDate)} a {term.endDate ? formatDateOnly(term.endDate) : 'em exercício'}
-                  {' · '}{members.length} {members.length === 1 ? 'obreiro' : 'obreiros'} em {officeCount} {officeCount === 1 ? 'cargo' : 'cargos'}
-                </p>
-              </header>
+            <OfficialDocument
+              letterhead={letterhead}
+              title="Composição da loja"
+              subtitle={`${term.title} · ${formatDateOnly(term.startDate)} a ${term.endDate ? formatDateOnly(term.endDate) : 'em exercício'} · ${members.length} ${members.length === 1 ? 'obreiro' : 'obreiros'} em ${officeCount} ${officeCount === 1 ? 'cargo' : 'cargos'}`}
+              issuedBy={issuedBy}
+              signatures={signatures}
+            >
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
@@ -139,9 +118,9 @@ export default function ComposicaoClient({
                           <div className="flex items-center gap-3">
                             {m.photoUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={m.photoUrl} alt="" className="comp-noprint h-9 w-9 rounded-full border border-white/8 object-cover" />
+                              <img src={m.photoUrl} alt="" className="rpt-noprint h-9 w-9 rounded-full border border-white/8 object-cover" />
                             ) : (
-                              <span className="comp-noprint flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-white/15 text-sand-dark/50">
+                              <span className="rpt-noprint flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-white/15 text-sand-dark/50">
                                 <UserRound className="h-4 w-4" />
                               </span>
                             )}
@@ -167,12 +146,12 @@ export default function ComposicaoClient({
                   </tbody>
                 </table>
               </div>
-            </section>
+            </OfficialDocument>
           </>
         )}
 
         {term && vacant.length > 0 ? (
-          <div className="comp-noprint">
+          <div className="rpt-noprint">
             <CollapsibleCard title="Cargos sem titular neste período" count={vacant.length} defaultOpen={false}>
               <p className="mb-3 text-xs text-sand-dark">Cargos cadastrados na loja que ainda não têm obreiro vinculado no período selecionado.</p>
               <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

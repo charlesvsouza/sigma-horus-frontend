@@ -8,6 +8,7 @@ import { ACCOUNT_STATUS_LABEL, DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 import { Alert, Button, MaskedInput, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
+import { ReportDocument } from '@/components/report/report-document';
 
 interface MemberSummary {
   id: string;
@@ -226,26 +227,6 @@ function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; on
     </form>
   );
 }
-
-// Relatório do extrato: visível apenas na impressão (Salvar como PDF),
-// reflete o filtro de tipo/status selecionado no card — mesmo padrão do
-// relatório de membros (dashboard/membros) e do recibo de pagamento.
-const EXTRATO_PRINT_CSS = `
-.extrato-report { display: none; }
-@media print {
-  @page { size: A4 portrait; margin: 16mm 14mm; }
-  body * { visibility: hidden !important; }
-  .extrato-report { display: block !important; position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; }
-  .extrato-report, .extrato-report * { visibility: visible !important; }
-  .extrato-report h1 { font-size: 15pt; margin: 0 0 2mm; letter-spacing: 0.02em; border-bottom: 2px solid #C9A227; padding-bottom: 2.5mm; }
-  .extrato-report .sub { color: #444 !important; font-size: 9pt; margin: 2mm 0 5mm; }
-  .extrato-report table { width: 100%; border-collapse: collapse; }
-  .extrato-report th { border-bottom: 1.5px solid #333; text-transform: uppercase; font-size: 8pt; text-align: left; padding: 3px 6px; }
-  .extrato-report td { border-bottom: 1px solid #ccc; font-size: 9pt; text-align: left; padding: 3px 6px; }
-  .extrato-report tr { break-inside: avoid; page-break-inside: avoid; }
-  .extrato-report .total { text-align: right; font-weight: bold; margin-top: 3mm; font-size: 10pt; }
-}
-`;
 
 const TYPE_FILTER_LABEL: Record<string, string> = { all: 'Tudo', RECEIVABLE: 'Devo', PAYABLE: 'A Loja me deve' };
 const STATUS_FILTER_LABEL: Record<string, string> = { all: 'Qualquer status', pending: 'Pendente', paid: 'Pago', overdue: 'Vencido' };
@@ -536,20 +517,17 @@ export default function PortalPage() {
       </div>
 
       {/* Relatório imprimível (Salvar como PDF) — reflete o filtro atual */}
-      <style>{EXTRATO_PRINT_CSS}</style>
-      <div className="extrato-report">
-        {lodge?.crestUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={lodge.crestUrl} alt="" style={{ display: 'block', height: 56, width: 56, objectFit: 'contain', margin: '0 auto 6px' }} />
-        ) : null}
-        <h1>{lodge?.name ? `${lodge.name} — ` : ''}Meu extrato — {member?.name ?? ''}</h1>
-        <p className="sub">
-          {TYPE_FILTER_LABEL[typeFilter]} · {STATUS_FILTER_LABEL[statusFilter]}
-          {' · '}{filteredAccounts.length} lançamento(s) · Emitido em {new Date().toLocaleDateString('pt-BR')}
-        </p>
+      <ReportDocument
+        printOnly
+        lodgeName={lodge?.name ?? 'Loja'}
+        crestUrl={lodge?.crestUrl ?? null}
+        title={`Extrato do irmão — ${member?.name ?? ''}`}
+        details={[TYPE_FILTER_LABEL[typeFilter], STATUS_FILTER_LABEL[statusFilter], `${filteredAccounts.length} lançamento(s)`]}
+        issuedBy={member?.name ?? null}
+      >
         <table>
           <thead>
-            <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Status</th><th>Valor</th></tr>
+            <tr><th>Vencimento</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Status</th><th className="num">Valor</th></tr>
           </thead>
           <tbody>
             {filteredAccounts.map((account) => (
@@ -559,13 +537,17 @@ export default function PortalPage() {
                 <td>{account.chartAccount ? `${account.chartAccount.category ? account.chartAccount.category + ' — ' : ''}${account.chartAccount.name}` : '—'}</td>
                 <td>{account.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'}</td>
                 <td>{ACCOUNT_STATUS_LABEL[account.status] ?? account.status}</td>
-                <td>{brl(account.amount)}</td>
+                <td className="num">{brl(account.amount)}</td>
               </tr>
             ))}
+            <tr className="rpt-total">
+              <td colSpan={5}>Saldo do filtro (o que devo − o que a Loja me deve)</td>
+              <td className="num">{brl(filteredTotal)}</td>
+            </tr>
           </tbody>
         </table>
-        <p className="total">Saldo do filtro (o que devo − o que a Loja me deve): {brl(filteredTotal)}</p>
-      </div>
+        <p className="mt-4 text-xs text-sand-dark">Documento informativo, gerado pelo próprio irmão no portal. Não substitui o recibo de pagamento emitido pela Tesouraria.</p>
+      </ReportDocument>
     </main>
   );
 }

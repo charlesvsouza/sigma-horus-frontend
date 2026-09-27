@@ -2,7 +2,8 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
 import { degreeShort } from '@/lib/masonic-degree';
-import { compareOffices } from '@/lib/office-order';
+import { compareOffices, officeRank } from '@/lib/office-order';
+import { getLetterhead } from '@/lib/letterhead';
 import ComposicaoClient from './ComposicaoClient';
 
 // Composição da loja: todos os obreiros que desempenham cargos no período
@@ -38,7 +39,7 @@ export default async function ComposicaoPage({ searchParams }: { searchParams: P
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, terms] = await Promise.all([
-      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
+      getLetterhead(db, String(lodgeId)),
       db.term.findMany({
         where: { lodgeId: String(lodgeId) },
         select: { id: true, title: true, startDate: true, endDate: true, status: true },
@@ -93,10 +94,18 @@ export default async function ComposicaoPage({ searchParams }: { searchParams: P
     .map((m) => ({ ...m, offices: [...m.offices].sort(compareOffices) }))
     .sort((a, b) => compareOffices(a.offices[0], b.offices[0]) || a.name.localeCompare(b.name, 'pt-BR'));
 
+  // Assinam a Composição o Secretário e o Venerável daquele próprio período.
+  const holderOf = (rank: number) => data.holders.find((h) => officeRank(h.office.name) === rank)?.member.name ?? null;
+  const signatures = [
+    { role: 'Secretário', name: holderOf(5) },
+    { role: 'Venerável Mestre', name: holderOf(1) },
+  ];
+
   return (
     <ComposicaoClient
-      lodgeName={data.lodge?.name ?? 'Loja'}
-      crestUrl={data.lodge?.crestUrl ?? null}
+      letterhead={data.lodge}
+      signatures={signatures}
+      issuedBy={session?.user?.name ?? null}
       terms={data.terms.map((t) => ({
         id: t.id,
         title: t.title,

@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserRound } from 'lucide-react';
 import { Alert, Button, EmptyState, inputClass, useConfirm } from '@/components/ui';
+import { ReportActions } from '@/components/report/report-document';
+import { BoardPaperPicker, HonorBoard, Portrait, PortraitGrid, type BoardOrientation, type BoardPaper } from '@/components/report/honor-board';
+import type { Letterhead } from '@/lib/letterhead';
 
 interface AutoEntry { id: string; kind: 'auto'; name: string; photoUrl: string | null; periodLabel: string; sortDate: string; termTitle: string; }
 interface ManualEntry { id: string; kind: 'manual'; name: string; photoUrl: string | null; periodLabel: string; sortDate: string; notes: string | null; memberId: string | null; rawName: string; }
@@ -12,18 +14,6 @@ interface MemberOption { id: string; name: string; }
 
 const dateInput = (iso: string) => iso.slice(0, 10);
 const emptyForm = { name: '', periodLabel: '', sortDate: '', notes: '', memberId: '' };
-
-const PRINT_CSS = `
-@media print {
-  @page { size: A4; margin: 16mm 14mm; }
-  body * { visibility: hidden !important; }
-  .gv-print, .gv-print * { visibility: visible !important; }
-  .gv-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9.5pt; }
-  .gv-noprint { display: none !important; }
-  .gv-print h1, .gv-print h2 { color: #111 !important; }
-  .gv-print .card { border: 1px solid #ccc !important; break-inside: avoid; page-break-inside: avoid; }
-}
-`;
 
 function EntryForm({ value, onChange, onSubmit, onCancel, members, saving }: {
   value: typeof emptyForm;
@@ -35,7 +25,7 @@ function EntryForm({ value, onChange, onSubmit, onCancel, members, saving }: {
 }) {
   const INPUT = inputClass;
   return (
-    <form onSubmit={onSubmit} className="gv-noprint space-y-4 rounded-xl border border-white/6 bg-sigma-card p-6">
+    <form onSubmit={onSubmit} className="rpt-noprint space-y-4 rounded-xl border border-white/6 bg-sigma-card p-6">
       <p className="text-xs text-sand-dark">
         Para Veneráveis antigos que a loja não tem um período/cargo registrado em Veneralato. Se a pessoa já é
         membro cadastrado, vincule abaixo — a foto e o nome passam a vir sempre do cadastro dela.
@@ -70,10 +60,9 @@ function EntryForm({ value, onChange, onSubmit, onCancel, members, saving }: {
 }
 
 export default function GaleriaVeneraveisClient({
-  lodgeName, crestUrl, automatic, manual, members, canManage,
+  letterhead, automatic, manual, members, canManage,
 }: {
-  lodgeName: string;
-  crestUrl: string | null;
+  letterhead: Letterhead;
   automatic: AutoEntry[];
   manual: ManualEntry[];
   members: MemberOption[];
@@ -83,6 +72,8 @@ export default function GaleriaVeneraveisClient({
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [paper, setPaper] = useState<BoardPaper>('A4');
+  const [orientation, setOrientation] = useState<BoardOrientation>('portrait');
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
@@ -180,28 +171,19 @@ export default function GaleriaVeneraveisClient({
 
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-6xl space-y-8">
-        <div className="gv-noprint">
+        <div className="rpt-noprint">
           <h1 className="font-display text-2xl font-bold text-sand-light">Galeria de Veneráveis</h1>
           <p className="mt-1 text-sm text-sand-dark">Mural com todos os Veneráveis da história da loja, na linha do tempo.</p>
         </div>
 
-        {message ? <div className="gv-noprint"><Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert></div> : null}
+        {message ? <div className="rpt-noprint"><Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert></div> : null}
 
-        {canManage ? (
-          <div className="gv-noprint flex flex-wrap items-center gap-3">
-            <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
-              Salvar como PDF
-            </button>
-            <Button variant="secondary" onClick={() => { setEditingId(null); setShowForm((v) => !v); }}>{showForm ? 'Cancelar' : '+ Adicionar Venerável antigo'}</Button>
-          </div>
-        ) : entries.length > 0 ? (
-          <div className="gv-noprint">
-            <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
-              Salvar como PDF
-            </button>
-          </div>
+        {canManage || entries.length > 0 ? (
+          <ReportActions disabled={entries.length === 0}>
+            {entries.length > 0 ? <BoardPaperPicker paper={paper} orientation={orientation} onChange={(p, o) => { setPaper(p); setOrientation(o); }} /> : null}
+            {canManage ? <Button variant="secondary" onClick={() => { setEditingId(null); setShowForm((v) => !v); }}>{showForm ? 'Cancelar' : '+ Adicionar Venerável antigo'}</Button> : null}
+          </ReportActions>
         ) : null}
 
         {showForm ? <EntryForm value={form} onChange={setForm} onSubmit={createEntry} onCancel={() => setShowForm(false)} members={members} saving={saving} /> : null}
@@ -210,31 +192,12 @@ export default function GaleriaVeneraveisClient({
         {entries.length === 0 ? (
           <EmptyState title="Nenhum Venerável na galeria ainda." description="Assim que houver cargos de Venerável Mestre vinculados em Veneralato, eles aparecem aqui automaticamente." />
         ) : (
-          <section className="rounded-xl border border-white/6 bg-sigma-card p-6 gv-print">
-            <header className="mb-6 text-center">
-              {crestUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-              ) : null}
-              <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
-              <h2 className="mt-0.5 text-sm text-sand-dark">Galeria de Veneráveis</h2>
-            </header>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {entries.map((entry) => (
-                <div key={entry.id} className="card flex flex-col items-center gap-2 rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4 text-center">
-                  {entry.photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={entry.photoUrl} alt={entry.name} className="h-20 w-20 rounded-full border border-white/8 object-cover" />
-                  ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-white/15 text-sand-dark/50">
-                      <UserRound className="h-9 w-9" />
-                    </div>
-                  )}
-                  <p className="text-sm font-semibold text-sand-light">{entry.name}</p>
-                  <p className="text-xs text-sand-dark">{entry.periodLabel}</p>
+          <HonorBoard letterhead={letterhead} title="Galeria de Veneráveis" subtitle="Veneráveis Mestres que dirigiram a loja" paper={paper} orientation={orientation}>
+            <PortraitGrid>
+              {entries.map((entry, i) => (
+                <Portrait key={entry.id} name={entry.name} photoUrl={entry.photoUrl} periodLabel={entry.periodLabel} highlight={i === 0}>
                   {entry.kind === 'manual' && canManage ? (
-                    <div className="gv-noprint flex flex-wrap items-center justify-center gap-2">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
                       {entry.memberId ? (
                         <span className="text-xs text-sand-dark/70">Foto do cadastro do membro</span>
                       ) : (
@@ -253,10 +216,10 @@ export default function GaleriaVeneraveisClient({
                       <button onClick={() => void removeEntry(entry.id, entry.name)} className="text-xs text-rose-300/70 transition hover:text-rose-300">Remover</button>
                     </div>
                   ) : null}
-                </div>
+                </Portrait>
               ))}
-            </div>
-          </section>
+            </PortraitGrid>
+          </HonorBoard>
         )}
       </div>
     </main>

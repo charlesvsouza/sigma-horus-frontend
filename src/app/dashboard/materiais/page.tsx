@@ -4,6 +4,8 @@ import { withTenant } from '@/lib/prisma';
 import { canLodgeAccessFor } from '@/lib/rbac';
 import { availableUnits } from '@/lib/inventory';
 import { quarantineByMaterial } from '@/lib/inventory-server';
+import { getLetterhead } from '@/lib/letterhead';
+import { getMaterialsSignatories } from '@/lib/report-signatories';
 import MaterialsClient from './MaterialsClient';
 
 // Server Component: carrega materiais (com disponível calculado), empréstimos
@@ -27,7 +29,8 @@ export default async function MateriaisPage() {
 
   const data = lodgeId
     ? await withTenant(String(lodgeId), async (db) => ({
-        lodge: await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
+        letterhead: await getLetterhead(db, String(lodgeId)),
+        signatures: await getMaterialsSignatories(db, String(lodgeId)),
         materials: await db.material.findMany({
           where: { lodgeId: String(lodgeId) },
           include: {
@@ -58,7 +61,7 @@ export default async function MateriaisPage() {
         }) : [],
         rites: await db.rite.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, name: true }, orderBy: { order: 'asc' } }),
       }))
-    : { lodge: null, materials: [], loans: [], incidents: [], quarantine: new Map<string, number>(), members: [], rites: [] };
+    : { letterhead: null, signatures: [], materials: [], loans: [], incidents: [], quarantine: new Map<string, number>(), members: [], rites: [] };
 
   const materials = data.materials.map((m) => {
     const issued = m.loans.reduce((sum, l) => sum + l.quantity, 0);
@@ -112,8 +115,9 @@ export default async function MateriaisPage() {
 
   return (
     <MaterialsClient
-      lodgeName={data.lodge?.name ?? 'Loja'}
-      crestUrl={data.lodge?.crestUrl ?? null}
+      letterhead={data.letterhead ?? { name: 'Loja', crestUrl: null, city: null, state: null, riteName: null, powerName: null, foundationDate: null, openingFormula: null }}
+      signatures={data.signatures}
+      issuedBy={session?.user?.name ?? null}
       materials={materials}
       loans={loans}
       incidents={incidents}

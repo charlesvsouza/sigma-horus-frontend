@@ -24,20 +24,38 @@ export interface Signatory {
   name?: string | null;
 }
 
-const fmtIssued = (d: Date) =>
+export const fmtIssued = (d: Date) =>
   d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 // Texto do rodapé vai dentro de `content: "..."` do CSS.
-const cssString = (s: string) => `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\r\n]+/g, ' ')}"`;
+export const cssString = (s: string) => `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\r\n]+/g, ' ')}"`;
 
-function printCss(orientation: 'portrait' | 'landscape', footer: string) {
+export interface PrintOptions {
+  orientation?: 'portrait' | 'landscape';
+  paper?: 'A4' | 'A3';
+  /** Texto do canto inferior esquerdo (vazio = nada). */
+  footer?: string;
+  /** Texto centralizado no rodapé (quadros de honra: local e data). */
+  footerCenter?: string;
+  /** "Página X de Y" no canto inferior direito. */
+  paginate?: boolean;
+  margin?: string;
+  fontSize?: string;
+  /** CSS de impressão específico do formato (vai dentro do @media print). */
+  extra?: string;
+}
+
+/** CSS de impressão comum aos formatos (relatório, documento oficial, quadro de honra). */
+export function printCss({ orientation = 'portrait', paper = 'A4', footer, footerCenter, paginate = true, margin = '14mm 12mm 16mm', fontSize = '9pt', extra = '' }: PrintOptions) {
+  const box = (content: string) => `content: ${content}; font: 7pt Georgia, "Times New Roman", serif; color: #555;`;
   return `
 @media print {
   @page {
-    size: A4 ${orientation};
-    margin: 14mm 12mm 16mm;
-    @bottom-left { content: ${cssString(footer)}; font: 7pt Georgia, "Times New Roman", serif; color: #555; }
-    @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 7pt Georgia, "Times New Roman", serif; color: #555; }
+    size: ${paper} ${orientation};
+    margin: ${margin};
+    ${footer ? `@bottom-left { ${box(cssString(footer))} }` : ''}
+    ${footerCenter ? `@bottom-center { ${box(cssString(footerCenter))} }` : ''}
+    ${paginate ? `@bottom-right { ${box('"Página " counter(page) " de " counter(pages)')} }` : ''}
   }
   html, body { background: #fff !important; }
   body * { visibility: hidden !important; }
@@ -46,9 +64,11 @@ function printCss(orientation: 'portrait' | 'landscape', footer: string) {
     display: block !important; position: absolute; left: 0; top: 0; width: 100%;
     margin: 0 !important; padding: 0 !important; border: none !important; border-radius: 0 !important; box-shadow: none !important;
     background: #fff !important; color: #111 !important;
-    font-family: Georgia, "Times New Roman", serif !important; font-size: 9pt; line-height: 1.35;
+    font-family: Georgia, "Times New Roman", serif !important; font-size: ${fontSize}; line-height: 1.35;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
+  /* Vários documentos numa impressão: o de fora posiciona, os de dentro seguem o fluxo. */
+  .rpt-doc .rpt-doc { position: static !important; }
   .rpt-doc * { color: #111 !important; box-shadow: none !important; text-decoration: none !important; }
   .rpt-doc [class*="bg-sigma"], .rpt-doc [class*="bg-white/"] { background: #fff !important; }
   .rpt-doc [class*="border-white"] { border-color: #ccc !important; }
@@ -67,7 +87,49 @@ function printCss(orientation: 'portrait' | 'landscape', footer: string) {
   .rpt-doc .rpt-card { border: 1px solid #ccc !important; border-radius: 3px; padding: 6px 8px !important; }
   .rpt-doc .rpt-head { border-bottom: 1.5px solid #333 !important; }
   .rpt-doc .rpt-signatures { break-inside: avoid; page-break-inside: avoid; margin-top: 24mm !important; grid-template-columns: repeat(auto-fit, minmax(48mm, 1fr)) !important; }
+  ${extra}
 }`;
+}
+
+/**
+ * Hora de emissão = hora da impressão; enquanto imprime, o título da aba vira o nome
+ * sugerido do PDF.
+ */
+export function useIssuedAt(pdfName: string) {
+  const [issuedAt, setIssuedAt] = useState(() => new Date());
+  useEffect(() => {
+    let previous = document.title;
+    const before = () => {
+      // flushSync: o navegador tira o "retrato" da página logo depois deste evento.
+      flushSync(() => setIssuedAt(new Date()));
+      previous = document.title;
+      document.title = pdfName;
+    };
+    const after = () => { document.title = previous; };
+    window.addEventListener('beforeprint', before);
+    window.addEventListener('afterprint', after);
+    return () => {
+      window.removeEventListener('beforeprint', before);
+      window.removeEventListener('afterprint', after);
+    };
+  }, [pdfName]);
+  return issuedAt;
+}
+
+/** Linhas de assinatura (cargo vago = linha em branco, para assinar à mão). */
+export function Signatures({ signatures, className = '' }: { signatures?: Signatory[]; className?: string }) {
+  if (!signatures || signatures.length === 0) return null;
+  return (
+    <div className={`rpt-signatures mt-16 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 ${className}`}>
+      {signatures.map((s) => (
+        <div key={s.role} className="text-center text-xs">
+          <div className="border-t border-sand-dark/60 pt-1.5" />
+          {s.name ? <p className="font-semibold text-sand-light">{s.name}</p> : <p className="text-sand-dark">&nbsp;</p>}
+          <p className="text-sand-dark">{s.role}</p>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -98,30 +160,12 @@ export function ReportDocument({
   className?: string;
   children: ReactNode;
 }) {
-  const [issuedAt, setIssuedAt] = useState(() => new Date());
+  const issuedAt = useIssuedAt(`${title} — ${lodgeName}`);
   const detailLine = (details ?? []).filter(Boolean).join(' · ');
-
-  // Hora de emissão = hora da impressão; título da aba vira o nome sugerido do PDF.
-  useEffect(() => {
-    let previous = document.title;
-    const before = () => {
-      // flushSync: o navegador tira o "retrato" da página logo depois deste evento.
-      flushSync(() => setIssuedAt(new Date()));
-      previous = document.title;
-      document.title = `${title} — ${lodgeName}`;
-    };
-    const after = () => { document.title = previous; };
-    window.addEventListener('beforeprint', before);
-    window.addEventListener('afterprint', after);
-    return () => {
-      window.removeEventListener('beforeprint', before);
-      window.removeEventListener('afterprint', after);
-    };
-  }, [title, lodgeName]);
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: printCss(orientation, `${lodgeName} · ${title} · Sigma Horus`) }} />
+      <style dangerouslySetInnerHTML={{ __html: printCss({ orientation, footer: `${lodgeName} · ${title} · Sigma Horus` }) }} />
       <div className={`rpt-doc rounded-xl border border-white/6 bg-sigma-card p-6 ${printOnly ? 'hidden' : ''} ${className}`}>
         <header className="rpt-head mb-5 flex items-center gap-4 border-b border-white/10 pb-4">
           {crestUrl ? (
@@ -142,17 +186,7 @@ export function ReportDocument({
 
         {children}
 
-        {signatures && signatures.length > 0 ? (
-          <div className="rpt-signatures mt-16 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-            {signatures.map((s) => (
-              <div key={s.role} className="text-center text-xs">
-                <div className="border-t border-sand-dark/60 pt-1.5" />
-                {s.name ? <p className="font-semibold text-sand-light">{s.name}</p> : <p className="text-sand-dark">&nbsp;</p>}
-                <p className="text-sand-dark">{s.role}</p>
-              </div>
-            ))}
-          </div>
-        ) : null}
+        <Signatures signatures={signatures} />
       </div>
     </>
   );

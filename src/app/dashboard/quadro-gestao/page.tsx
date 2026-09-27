@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
 import { compareOffices } from '@/lib/office-order';
+import { getLetterhead } from '@/lib/letterhead';
 import QuadroGestaoClient from './QuadroGestaoClient';
 
 // Quadro da Gestão: cargos do período em exercício, com foto — só existe
@@ -32,7 +33,7 @@ export default async function QuadroGestaoPage() {
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, term] = await Promise.all([
-      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
+      getLetterhead(db, String(lodgeId)),
       db.term.findFirst({
         where: { lodgeId: String(lodgeId), status: 'active' },
         include: {
@@ -47,7 +48,7 @@ export default async function QuadroGestaoPage() {
         orderBy: { startDate: 'desc' },
       }),
     ]);
-    return { lodge, term };
+    return { letterhead: lodge, term };
   });
 
   const term = data.term
@@ -67,5 +68,5 @@ export default async function QuadroGestaoPage() {
       }
     : null;
 
-  return <QuadroGestaoClient lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} term={term} canManage={canManage} />;
+  return <QuadroGestaoClient letterhead={data.letterhead} term={term} canManage={canManage} />;
 }

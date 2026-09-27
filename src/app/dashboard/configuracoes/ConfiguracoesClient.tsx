@@ -284,6 +284,21 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
                 <span className="text-xs uppercase tracking-wide text-sand-dark/70">Data de fundação</span>
                 <input type="date" value={form.foundationDate} onChange={(e) => set('foundationDate', e.target.value)} className={INPUT_CLASS} />
               </label>
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Fórmula de abertura dos documentos</span>
+                <input
+                  value={form.openingFormula}
+                  onChange={(e) => set('openingFormula', e.target.value)}
+                  list="opening-formulas"
+                  placeholder="Ex.: A∴G∴D∴G∴A∴D∴U∴"
+                  className={INPUT_CLASS}
+                />
+                <datalist id="opening-formulas">
+                  <option value="A∴G∴D∴G∴A∴D∴U∴" />
+                  <option value="À G∴ D∴ G∴ A∴ D∴ U∴" />
+                </datalist>
+                <span className="mt-1 block text-xs text-sand-dark">Aparece no topo dos documentos oficiais (Composição, Termo de responsabilidade). Em branco, não é impressa.</span>
+              </label>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button type="button" onClick={seedOffices} disabled={seeding || !form.riteName} className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40">

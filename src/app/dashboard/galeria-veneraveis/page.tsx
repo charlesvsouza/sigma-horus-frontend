@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole, requireLodgeAccess } from '@/lib/rbac';
+import { getLetterhead } from '@/lib/letterhead';
 import GaleriaVeneraveisClient from './GaleriaVeneraveisClient';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -34,7 +35,7 @@ export default async function GaleriaVeneraveisPage() {
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, memberOffices, manualEntries, members] = await Promise.all([
-      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
+      getLetterhead(db, String(lodgeId)),
       db.memberOffice.findMany({
         where: { lodgeId: String(lodgeId), office: { name: { contains: 'venerável', mode: 'insensitive' } } },
         include: {
@@ -81,8 +82,7 @@ export default async function GaleriaVeneraveisPage() {
 
   return (
     <GaleriaVeneraveisClient
-      lodgeName={data.lodge?.name ?? 'Loja'}
-      crestUrl={data.lodge?.crestUrl ?? null}
+      letterhead={data.lodge}
       automatic={automatic}
       manual={manual}
       members={data.members}

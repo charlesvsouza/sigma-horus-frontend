@@ -1,9 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { UserRound } from 'lucide-react';
+import { useState } from 'react';
 import { EmptyState } from '@/components/ui';
+import { ReportActions } from '@/components/report/report-document';
+import { BoardPaperPicker, HonorBoard, Portrait, PortraitGrid, type BoardOrientation, type BoardPaper } from '@/components/report/honor-board';
 import { formatDateOnly } from '@/lib/date-only';
+import type { Letterhead } from '@/lib/letterhead';
+import { officeRank } from '@/lib/office-order';
 
 interface MemberOfficeItem {
   id: string;
@@ -18,24 +22,17 @@ interface TermData {
   memberOffices: MemberOfficeItem[];
 }
 
-const PRINT_CSS = `
-@media print {
-  @page { size: A4; margin: 16mm 14mm; }
-  body * { visibility: hidden !important; }
-  .qg-print, .qg-print * { visibility: visible !important; }
-  .qg-print { position: absolute; left: 0; top: 0; width: 100%; color: #111 !important; background: #fff !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 9.5pt; }
-  .qg-noprint { display: none !important; }
-  .qg-print h1, .qg-print h2, .qg-print h3 { color: #111 !important; }
-  .qg-print .card { border: 1px solid #ccc !important; break-inside: avoid; page-break-inside: avoid; }
-}
-`;
+export default function QuadroGestaoClient({ letterhead, term, canManage = true }: { letterhead: Letterhead; term: TermData | null; canManage?: boolean }) {
+  const [paper, setPaper] = useState<BoardPaper>('A4');
+  const [orientation, setOrientation] = useState<BoardOrientation>('portrait');
+  // O Venerável Mestre abre o quadro, em destaque; os demais cargos vêm na grade.
+  const venerable = term?.memberOffices.find((mo) => officeRank(mo.office.name) === 1) ?? null;
+  const others = term?.memberOffices.filter((mo) => mo !== venerable) ?? [];
 
-export default function QuadroGestaoClient({ lodgeName, crestUrl, term, canManage = true }: { lodgeName: string; crestUrl: string | null; term: TermData | null; canManage?: boolean }) {
   return (
     <main className="min-h-screen px-6 py-12">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <div className="mx-auto max-w-5xl space-y-8">
-        <div className="qg-noprint">
+        <div className="rpt-noprint print:hidden">
           <h1 className="font-display text-2xl font-bold text-sand-light">Quadro da Gestão</h1>
           <p className="mt-1 text-sm text-sand-dark">Cargos do período em exercício, com foto — bom para mural, apresentações e prestação de contas.</p>
         </div>
@@ -54,42 +51,28 @@ export default function QuadroGestaoClient({ lodgeName, crestUrl, term, canManag
           />
         ) : (
           <>
-            <div className="qg-noprint">
-              <button onClick={() => window.print()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">
-                Salvar como PDF
-              </button>
-            </div>
+            <ReportActions>
+              <BoardPaperPicker paper={paper} orientation={orientation} onChange={(p, o) => { setPaper(p); setOrientation(o); }} />
+            </ReportActions>
 
-            <section className="rounded-xl border border-white/6 bg-sigma-card p-6 qg-print">
-              <header className="mb-6 text-center">
-                {crestUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={crestUrl} alt="" className="mx-auto mb-2 h-14 w-14 object-contain" />
-                ) : null}
-                <h1 className="text-lg font-bold text-sand-light">{lodgeName}</h1>
-                <h2 className="mt-0.5 text-sm text-sand-dark">Quadro da Gestão — {term.title}</h2>
-                <p className="mt-0.5 text-xs text-sand-dark">
-                  {formatDateOnly(term.startDate)} a {term.endDate ? formatDateOnly(term.endDate) : 'em exercício'}
-                </p>
-              </header>
-
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {term.memberOffices.map((mo) => (
-                  <div key={mo.id} className="card flex flex-col items-center gap-2 rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4 text-center">
-                    {mo.member.photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={mo.member.photoUrl} alt={mo.member.name} className="h-24 w-24 rounded-full border border-white/8 object-cover" />
-                    ) : (
-                      <div className="flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-white/15 text-sand-dark/50">
-                        <UserRound className="h-10 w-10" />
-                      </div>
-                    )}
-                    <p className="text-sm font-semibold text-gold">{mo.office.name}</p>
-                    <p className="text-sm text-sand-light">{mo.member.name}</p>
-                  </div>
+            <HonorBoard
+              letterhead={letterhead}
+              title="Quadro da Gestão"
+              subtitle={`${term.title} · ${formatDateOnly(term.startDate)} a ${term.endDate ? formatDateOnly(term.endDate) : 'em exercício'}`}
+              paper={paper}
+              orientation={orientation}
+            >
+              {venerable ? (
+                <div className="mb-8 flex justify-center">
+                  <Portrait name={venerable.member.name} photoUrl={venerable.member.photoUrl} office={venerable.office.name} highlight />
+                </div>
+              ) : null}
+              <PortraitGrid>
+                {others.map((mo) => (
+                  <Portrait key={mo.id} name={mo.member.name} photoUrl={mo.member.photoUrl} office={mo.office.name} />
                 ))}
-              </div>
-            </section>
+              </PortraitGrid>
+            </HonorBoard>
           </>
         )}
       </div>
