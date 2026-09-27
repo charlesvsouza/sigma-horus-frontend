@@ -9,6 +9,7 @@ import { Alert, Button, MaskedInput, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 import { ReportDocument } from '@/components/report/report-document';
+import { PendenciasCard, type CollectionInfo } from './PendenciasCard';
 
 interface MemberSummary {
   id: string;
@@ -42,6 +43,14 @@ interface AccountItem {
   amount: number;
   dueDate: string;
   status: string;
+  /** pending | paid | overdue — o vencido é calculado pelo vencimento (a conta só guarda pending/paid). */
+  effectiveStatus: 'paid' | 'overdue' | 'pending';
+  /** Saldo em aberto (desconta pagamentos parciais). */
+  balance: number;
+  /** Pode ser paga pelo portal (conta "Devo", do próprio irmão, aprovada, em aberto). */
+  payable: boolean;
+  paidNoticeAt?: string | null;
+  payments: { id: string; amount: number; paidAt: string; method: string }[];
   chartAccount?: { name: string; category: string | null } | null;
 }
 
@@ -237,6 +246,7 @@ export default function PortalPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [institutionalDocuments, setInstitutionalDocuments] = useState<DocumentItem[]>([]);
   const [lodge, setLodge] = useState<{ name: string; crestUrl: string | null } | null>(null);
+  const [collection, setCollection] = useState<CollectionInfo | null>(null);
   const [summary, setSummary] = useState({ totalReceivables: 0, totalPayables: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -249,7 +259,8 @@ export default function PortalPage() {
 
   const filteredAccounts = accounts
     .filter((a) => typeFilter === 'all' || a.type === typeFilter)
-    .filter((a) => statusFilter === 'all' || a.status === statusFilter);
+    .filter((a) => statusFilter === 'all' || a.effectiveStatus === statusFilter);
+  const payableAccounts = accounts.filter((a) => a.payable);
   const filteredTotal = filteredAccounts.reduce((sum, a) => sum + (a.type === 'RECEIVABLE' ? Number(a.amount) : -Number(a.amount)), 0);
 
   async function load() {
@@ -263,6 +274,7 @@ export default function PortalPage() {
       setDocuments(data.documents ?? []);
       setInstitutionalDocuments(data.institutionalDocuments ?? []);
       setLodge(data.lodge ?? null);
+      setCollection(data.collection ?? null);
       setSummary(data.summary ?? { totalReceivables: 0, totalPayables: 0, pending: 0 });
     } catch {
       setLoadError('Não foi possível carregar seus dados. Verifique sua conexão e tente novamente.');
@@ -320,6 +332,10 @@ export default function PortalPage() {
             {loadError}{' '}
             <button onClick={() => void load()} className="underline hover:no-underline">Tentar de novo</button>
           </Alert>
+        ) : null}
+
+        {!loading && member ? (
+          <PendenciasCard accounts={payableAccounts} collection={collection} onChanged={() => void load()} />
         ) : null}
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -478,7 +494,18 @@ export default function PortalPage() {
                           </div>
                           <p className="font-semibold text-sand-light">{brl(account.amount)}</p>
                         </div>
-                        <p className="mt-2 text-xs uppercase tracking-[0.25em] text-sand-dark">{ACCOUNT_STATUS_LABEL[account.status] ?? account.status}</p>
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                          <p className={`text-xs uppercase tracking-[0.25em] ${account.effectiveStatus === 'overdue' ? 'text-rose-300' : 'text-sand-dark'}`}>{ACCOUNT_STATUS_LABEL[account.effectiveStatus] ?? account.status}</p>
+                          {account.payments.length > 0 ? (
+                            <div className="flex flex-wrap gap-3">
+                              {account.payments.map((p, i) => (
+                                <a key={p.id} href={`/dashboard/pagamentos/${p.id}/recibo`} target="_blank" rel="noreferrer" className="text-xs text-gold hover:text-gold-light">
+                                  Recibo{account.payments.length > 1 ? ` ${i + 1}` : ''} · {brl(p.amount)}
+                                </a>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                     ));
                   })()}
@@ -536,7 +563,7 @@ export default function PortalPage() {
                 <td>{account.title}</td>
                 <td>{account.chartAccount ? `${account.chartAccount.category ? account.chartAccount.category + ' — ' : ''}${account.chartAccount.name}` : '—'}</td>
                 <td>{account.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'}</td>
-                <td>{ACCOUNT_STATUS_LABEL[account.status] ?? account.status}</td>
+                <td>{ACCOUNT_STATUS_LABEL[account.effectiveStatus] ?? account.status}</td>
                 <td className="num">{brl(account.amount)}</td>
               </tr>
             ))}

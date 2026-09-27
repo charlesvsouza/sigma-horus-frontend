@@ -7,19 +7,31 @@ import ReciboClient from './ReciboClient';
 
 // Server Component: recibo imprimível de um pagamento (mesmo padrão de
 // "Salvar como PDF" do relatório de Fechamento — print CSS, sem lib de PDF).
+// Quem lê o Financeiro vê qualquer recibo; o irmão (pelo portal) vê só os dele.
 export default async function ReciboPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
+  const memberId = session?.user?.memberId ? String(session.user.memberId) : null;
   if (!lodgeId) notFound();
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'accounts', 'read');
-  if (!access.ok) notFound();
+  const finance = await requireLodgeAccess(String(lodgeId), role, 'accounts', 'read');
+  let ownOnly = false;
+  if (!finance.ok) {
+    const portal = await requireLodgeAccess(String(lodgeId), role, 'portal', 'read');
+    if (!portal.ok || !memberId) notFound();
+    ownOnly = true;
+  }
 
   const payment = await withTenant(String(lodgeId), (db) =>
     db.payment.findFirst({
-      where: { id, lodgeId: String(lodgeId) },
+      where: {
+        id,
+        lodgeId: String(lodgeId),
+        // Pagamento lançado à mão pode não ter memberId: vale o dono da conta.
+        ...(ownOnly ? { OR: [{ memberId }, { account: { memberId } }] } : {}),
+      },
       include: {
         account: { select: { title: true, type: true } },
         member: { select: { name: true, cpf: true } },

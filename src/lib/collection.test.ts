@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  feeFromNet, isAsaasMode, isOutOfPolicyMethod, normalizeBillingChoice, normalizeCollectionMode, paymentInstructions,
+  feeFromNet, isAsaasMode, isOutOfPolicyMethod, normalizeBillingChoice, normalizeCollectionMode, paymentInstructions, payHint, portalPayUrl,
 } from './collection.ts';
 
 test('modo de recebimento: padrão é Modo Loja; só "asaas" liga o Asaas', () => {
@@ -45,4 +45,28 @@ test('instruções de pagamento do Modo Loja', () => {
     paymentInstructions({ pixKey: 'a@b.com', bankName: 'Santander', bankAgency: '1234', bankAccount: '5678-9' }),
     'Pix (chave): a@b.com\nDepósito/TED: Santander · Ag. 1234 · Conta 5678-9',
   );
+});
+
+test('lembrete aponta para o portal, onde o irmão paga', () => {
+  const app = 'https://app.exemplo.org/';
+  assert.equal(portalPayUrl(app), 'https://app.exemplo.org/dashboard/portal');
+  assert.equal(portalPayUrl(''), 'https://sigmahorus.com.br/dashboard/portal');
+  // Modo Asaas com cobrança emitida: link dela + portal.
+  assert.equal(
+    payHint({ collectionMode: 'asaas' }, { asaasInvoiceUrl: 'https://asaas/i/1' }, app),
+    ' Pague pelo link: https://asaas/i/1 ou pelo seu portal: https://app.exemplo.org/dashboard/portal.',
+  );
+  // Modo Asaas ainda não emitida: o portal emite na hora.
+  assert.equal(payHint({ collectionMode: 'asaas' }, {}, app), ' Pague pelo seu portal: https://app.exemplo.org/dashboard/portal.');
+  // Modo Loja com chave Pix: instruções + portal (QR com o valor).
+  assert.equal(
+    payHint({ collectionMode: 'lodge', pixKey: 'tes@loja.org' }, {}, app),
+    ' Como pagar — Pix (chave): tes@loja.org. Ou pague pelo seu portal: https://app.exemplo.org/dashboard/portal.',
+  );
+  // Modo Loja só com banco: o portal não tem como gerar Pix — não é oferecido.
+  assert.equal(
+    payHint({ collectionMode: 'lodge', bankName: 'Banco X', bankAgency: '1', bankAccount: '2' }, {}, app),
+    ' Como pagar — Depósito/TED: Banco X · Ag. 1 · Conta 2.',
+  );
+  assert.equal(payHint({ collectionMode: 'lodge' }, {}, app), '');
 });

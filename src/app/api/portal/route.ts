@@ -2,6 +2,8 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NOT_INTERNAL_DOCUMENT } from '@/lib/documents';
+import { normalizeCollectionMode } from '@/lib/collection';
+import { canPay, effectiveStatus, openBalance, PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -56,14 +58,15 @@ export async function GET() {
       }),
     ),
     withTenant(String(lodgeId), (db) =>
-      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
+      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true, collectionMode: true, pixKey: true } }),
     ),
     withTenant(String(lodgeId), (db) =>
       db.account.findMany({
         where: { lodgeId: String(lodgeId), memberId: String(memberId) },
         select: {
-          id: true, title: true, type: true, amount: true, dueDate: true, status: true,
+          id: true, title: true, type: true, amount: true, dueDate: true, status: true, memberId: true, approvalStatus: true,
           chartAccount: { select: { name: true, category: true } },
+          payments: { select: { id: true, amount: true, paidAt: true, method: true }, orderBy: { paidAt: 'asc' } },
         },
         orderBy: { dueDate: 'asc' },
       }),
@@ -85,9 +88,47 @@ export async function GET() {
     ),
   ]);
 
-  const totalReceivables = accounts.filter((item) => item.type === 'RECEIVABLE').reduce((sum, item) => sum + Number(item.amount), 0);
-  const totalPayables = accounts.filter((item) => item.type === 'PAYABLE').reduce((sum, item) => sum + Number(item.amount), 0);
-  const pending = accounts.filter((item) => item.status === 'pending').reduce((sum, item) => sum + Number(item.amount), 0);
+  // Último "Já paguei" de cada conta em aberto (Modo Loja) — a tela mostra "Aviso enviado em …".
+  const openIds = accounts.filter((a) => a.status !== 'paid').map((a) => a.id);
+  const notices = openIds.length
+    ? await withTenant(String(lodgeId), (db) =>
+        db.auditLog.findMany({
+          where: { lodgeId: String(lodgeId), entity: PAYMENT_NOTICE_ENTITY, entityId: { in: openIds } },
+          select: { entityId: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        }),
+      )
+    : [];
+  const lastNotice = new Map<string, Date>();
+  for (const n of notices) if (!lastNotice.has(n.entityId)) lastNotice.set(n.entityId, n.createdAt);
 
-  return NextResponse.json({ member, lodge, accounts, documents, institutionalDocuments, summary: { totalReceivables, totalPayables, pending } });
+  const now = new Date();
+  const items = accounts.map(({ memberId: owner, approvalStatus, ...a }) => {
+    const balance = openBalance(a, a.payments);
+    return {
+      ...a,
+      effectiveStatus: effectiveStatus(a, now),
+      balance,
+      payable: canPay({ ...a, memberId: owner, approvalStatus }, String(memberId), balance),
+      paidNoticeAt: lastNotice.get(a.id) ?? null,
+    };
+  });
+
+  const totalReceivables = items.filter((item) => item.type === 'RECEIVABLE').reduce((sum, item) => sum + Number(item.amount), 0);
+  const totalPayables = items.filter((item) => item.type === 'PAYABLE').reduce((sum, item) => sum + Number(item.amount), 0);
+  const pending = items.filter((item) => item.status === 'pending').reduce((sum, item) => sum + Number(item.amount), 0);
+
+  const collection = lodge
+    ? { mode: normalizeCollectionMode(lodge.collectionMode), hasPixKey: Boolean(lodge.pixKey?.trim()) }
+    : null;
+
+  return NextResponse.json({
+    member,
+    lodge: lodge ? { name: lodge.name, crestUrl: lodge.crestUrl } : null,
+    collection,
+    accounts: items,
+    documents,
+    institutionalDocuments,
+    summary: { totalReceivables, totalPayables, pending },
+  });
 }

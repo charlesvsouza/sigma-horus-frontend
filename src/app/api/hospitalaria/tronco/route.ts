@@ -2,6 +2,8 @@ import { auth } from '@/lib/auth';
 import { createCustomer, createPayment } from '@/lib/asaas';
 import { findFundChart } from '@/lib/funds';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
+import { fetchPixQr } from '@/lib/asaas-charge';
+import { isAsaasMode } from '@/lib/collection';
 import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
@@ -46,13 +48,17 @@ export async function POST(request: Request) {
 
   const ctx = await withTenant(String(lodgeId), async (db) => {
     const [lodge, member, tronco] = await Promise.all([
-      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { asaasApiKeyEnc: true, asaasEnv: true } }),
+      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { asaasApiKeyEnc: true, asaasEnv: true, collectionMode: true } }),
       db.member.findUnique({ where: { id: String(memberId) } }),
       findFundChart(db, String(lodgeId), 'tronco', 'REVENUE'),
     ]);
     return { lodge, member, tronco };
   });
 
+  // Modo Loja: o dinheiro entra direto na conta da loja — não se emite no Asaas, mesmo com chave conectada.
+  if (!isAsaasMode(ctx.lodge)) {
+    return NextResponse.json({ error: 'Esta loja recebe no Modo Loja: a doação por Pix pelo portal exige o Modo Asaas. Doe direto na chave Pix da loja ou com a Hospitalaria.' }, { status: 409 });
+  }
   const config = buildLodgeAsaasConfig(ctx.lodge);
   if (!config) {
     return NextResponse.json({ error: 'Asaas não conectado para esta loja. Configure em Integrações.' }, { status: 409 });
@@ -65,7 +71,7 @@ export async function POST(request: Request) {
   }
   const member = ctx.member;
   if (!member.cpf) {
-    return NextResponse.json({ error: 'Para doar via Pix, complete seu CPF em "Meus dados" antes.' }, { status: 400 });
+    return NextResponse.json({ error: 'Seu CPF não está no cadastro, e o Asaas exige CPF para gerar o Pix. Peça à Secretaria para completar seu cadastro.' }, { status: 400 });
   }
   const cpf = member.cpf;
 
@@ -162,9 +168,12 @@ export async function POST(request: Request) {
       });
     });
 
+    // O Pix (copia e cola + QR) não vem no POST /payments — só em /pixQrCode.
+    const pix = paymentResponse?.id ? await fetchPixQr(config, paymentResponse.id) : null;
     return NextResponse.json({
       invoiceId: created.invoice.id,
-      pixCopyPaste: paymentResponse?.pixCopiaECola ?? null,
+      pixCopyPaste: pix?.payload ?? null,
+      pixQrImage: pix?.encodedImage ? `data:image/png;base64,${pix.encodedImage}` : null,
       invoiceUrl: paymentResponse?.invoiceUrl ?? null,
     });
   } catch (err) {

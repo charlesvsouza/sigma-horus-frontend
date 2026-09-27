@@ -50,18 +50,27 @@ export const ASAAS_FEE_CHART = {
   category: 'Despesas Administrativas',
 };
 
+/** Portal do irmão, onde ele vê as pendências e paga (Pix do Asaas ou Pix na chave da loja). */
+export function portalPayUrl(appUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL): string {
+  return `${(appUrl || 'https://sigmahorus.com.br').replace(/\/+$/, '')}/dashboard/portal`;
+}
+
 /**
  * Frase "como pagar" para lembretes de cobrança: no Modo Asaas, o link da cobrança emitida; no Modo Loja,
- * a chave Pix/dados bancários da loja. Vazia quando não há nada a informar.
+ * a chave Pix/dados bancários da loja. Em ambos, o portal — onde o irmão paga qualquer pendência (no Modo
+ * Loja, só se houver chave Pix para gerar o QR). Vazia quando não há nada a informar.
  */
 export function payHint(
   lodge: { collectionMode?: string | null; pixKey?: string | null; bankName?: string | null; bankAgency?: string | null; bankAccount?: string | null } | null | undefined,
   invoice: { asaasInvoiceUrl?: string | null },
+  appUrl?: string,
 ): string {
-  if (invoice.asaasInvoiceUrl) return ` Pague pelo link: ${invoice.asaasInvoiceUrl}.`;
-  if (isAsaasMode(lodge)) return '';
+  const portal = portalPayUrl(appUrl);
+  if (invoice.asaasInvoiceUrl) return ` Pague pelo link: ${invoice.asaasInvoiceUrl} ou pelo seu portal: ${portal}.`;
+  if (isAsaasMode(lodge)) return ` Pague pelo seu portal: ${portal}.`;
   const ins = paymentInstructions(lodge);
-  return ins ? ` Como pagar — ${ins.replace(/\n/g, ' | ')}.` : '';
+  const viaPortal = lodge?.pixKey?.trim() ? ` Ou pague pelo seu portal: ${portal}.` : '';
+  return ins ? ` Como pagar — ${ins.replace(/\n/g, ' | ')}.${viaPortal}` : '';
 }
 
 /** Texto de "como pagar" para o Modo Loja (chave Pix e/ou dados bancários da loja). Null se nada cadastrado. */

@@ -30,7 +30,7 @@ export default function HospitalariaPortalPage() {
   const [donationAmount, setDonationAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [generatingDonation, setGeneratingDonation] = useState(false);
-  const [donationResult, setDonationResult] = useState<{ pixCopyPaste: string | null; invoiceUrl: string | null } | null>(null);
+  const [donationResult, setDonationResult] = useState<{ pixCopyPaste: string | null; pixQrImage: string | null; invoiceUrl: string | null } | null>(null);
   const [donationError, setDonationError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function HospitalariaPortalPage() {
     const data = await res.json().catch(() => ({}));
     setGeneratingDonation(false);
     if (res.ok) {
-      setDonationResult({ pixCopyPaste: data.pixCopyPaste ?? null, invoiceUrl: data.invoiceUrl ?? null });
+      setDonationResult({ pixCopyPaste: data.pixCopyPaste ?? null, pixQrImage: data.pixQrImage ?? null, invoiceUrl: data.invoiceUrl ?? null });
     } else {
       setDonationError(data.error ?? 'Erro ao gerar a doação.');
     }
@@ -153,6 +153,10 @@ export default function HospitalariaPortalPage() {
                 <a href={donationResult.invoiceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-medium text-emerald-100 underline">
                   Abrir cobrança Pix
                 </a>
+              ) : null}
+              {donationResult.pixQrImage ? (
+                // eslint-disable-next-line @next/next/no-img-element -- QR em data URL, gerado pelo Asaas
+                <img src={donationResult.pixQrImage} alt="QR Code Pix da doação" width={176} height={176} className="mt-3 rounded-lg bg-white p-2" />
               ) : null}
               {donationResult.pixCopyPaste ? (
                 <textarea readOnly value={donationResult.pixCopyPaste} onClick={(e) => e.currentTarget.select()} className={`${inputClass} mt-2 text-xs`} rows={3} />

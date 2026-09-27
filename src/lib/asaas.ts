@@ -40,6 +40,16 @@ export async function getPayment(config: AsaasConfig, id: string) {
   return res.json();
 }
 
+/**
+ * QR Code e "copia e cola" do Pix de uma cobrança. O `POST /payments` NÃO devolve isso —
+ * o Pix vem só por esta rota (payload = copia e cola; encodedImage = PNG em base64).
+ */
+export async function getPixQrCode(config: AsaasConfig, id: string): Promise<{ payload: string; encodedImage: string; expirationDate?: string | null }> {
+  const res = await fetch(`${config.baseUrl}/payments/${id}/pixQrCode`, { headers: headers(config) });
+  if (!res.ok) throw new Error(`Asaas pix qr error: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
 export async function listPayments(config: AsaasConfig, customerId?: string) {
   const params = customerId ? `?customer=${customerId}` : '';
   const res = await fetch(`${config.baseUrl}/payments${params}`, { headers: headers(config) });
