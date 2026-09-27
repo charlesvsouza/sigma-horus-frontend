@@ -26,6 +26,15 @@ test('cada cargo fica na sua área: escrita em Contas só Administrador e Tesour
   }
 });
 
+test('Financeiro (Contas e relatórios): Administrador, Venerável, Tesoureiro e Hospitaleiro (Tronco) leem; Secretário não', () => {
+  for (const role of ['admin', 'venerable', 'treasurer', 'hospitaller']) {
+    assert.equal(canAccess(role, 'accounts', 'read'), true, role);
+  }
+  for (const role of ['secretary', 'member']) {
+    assert.equal(canAccess(role, 'accounts', 'read'), false, role);
+  }
+});
+
 test('Arquiteto (papel por cargo): opera o inventário, lê o cadastro, não edita nem vê dinheiro', () => {
   assert.equal(canAccess('architect', 'inventory', 'write'), true);
   assert.equal(canAccess('architect', 'inventory', 'read'), true);

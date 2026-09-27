@@ -261,7 +261,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.52</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.53</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -323,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.52 — 27 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.53 — 27 de setembro de 2026</p>
               </div>
             </div>
 
@@ -468,7 +468,7 @@ export function ManualBook() {
                 <li><strong>Administrador:</strong> conta, usuários, assinatura, integrações e configurações. Altera todos os cadastros e configurações da loja e é o <strong>único</strong> que cria outro Administrador (no máximo <strong>2 Administradores ativos</strong> por loja).</li>
                 <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações (despesas, prestação de contas e transferências entre contas bancárias); consulta o <UI>Histórico de pagamentos</UI> dos irmãos e emite a <UI>Declaração de regularidade</UI> (7.19 e 7.20); cadastra os materiais da loja e decide baixa e reposição; não lança baixas financeiras.</li>
                 <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, dá baixa nos avisos &quot;Já paguei&quot; dos irmãos, fecha o caixa, solicita transferências entre contas bancárias/Caixa e vê relatórios financeiros — inclusive o <UI>Histórico de pagamentos</UI> e a <UI>Declaração de regularidade</UI>.</li>
-                <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença, materiais e patrimônio da loja, documentos institucionais; consulta os relatórios da Tesouraria (sem lançar nem baixar nada), exceto o <UI>Histórico de pagamentos</UI>, a <UI>Declaração de regularidade</UI> e as <UI>Tarifas de cobrança (Asaas)</UI>, que ficam com Tesoureiro, Administrador e Venerável.</li>
+                <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença, materiais e patrimônio da loja, documentos institucionais. <strong>Não acessa a Tesouraria</strong> — nem lançamentos nem relatórios financeiros; se a loja quiser, o Administrador libera em <UI>Configurações → Permissões</UI> (módulo Contas).</li>
                 <li><strong>Hospitaleiro:</strong> consulta os irmãos (somente leitura, para contato), gerencia campanhas de benemerência e acompanha o Tronco de Solidariedade.</li>
                 <li><strong>Arquiteto (por cargo):</strong> não é um papel que se atribui em <UI>Usuários &amp; acessos</UI> — o obreiro que ocupa o cargo de Arquiteto no veneralato ativo ganha, <strong>além do papel que já tem</strong>, o acesso ao inventário em <UI>Materiais e patrimônio</UI>: vê a lista de materiais, registra desgaste, dano ou perda e fornece/recebe materiais. Não edita o cadastro, não decide baixa nem reposição e não acessa a Tesouraria. Quando o veneralato é encerrado, o acesso acaba sozinho. O Administrador pode ajustar isso em <UI>Configurações → Permissões</UI> (coluna <UI>Arquiteto (cargo)</UI>).</li>
                 <li><strong>Membro (obreiro):</strong> o próprio portal — pendências (e o botão <UI>Pagar</UI>), extrato, histórico de pagamentos com os recibos, declaração de regularidade e documentos pertinentes — e os quadros do menu <UI>Social</UI>. Vê só o que é dele.</li>

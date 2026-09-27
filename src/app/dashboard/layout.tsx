@@ -23,7 +23,8 @@ const NAV: NavGroupDef[] = [
     category: 'Visão geral',
     flat: true,
     items: [
-      { href: '/dashboard', label: 'Visão geral', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
+      // Visão geral = posição financeira (exige ler Contas): sem o Secretário, que não acessa a Tesouraria.
+      { href: '/dashboard', label: 'Visão geral', roles: ['admin', 'venerable', 'treasurer', 'member', 'hospitaller'] },
       { href: '/dashboard/portal', label: 'Meu portal', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
       // Todo oficial também é obreiro — o calendário de sessões vale pra
       // todos, não só pra quem tem papel "member".
@@ -101,21 +102,21 @@ const NAV: NavGroupDef[] = [
       {
         label: 'Relatórios',
         items: [
-          { href: '/dashboard/relatorios', label: 'Resumo financeiro', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-          { href: '/dashboard/relatorios/contas-a-receber', label: 'Contas a receber', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-          { href: '/dashboard/relatorios/contas-a-pagar', label: 'Contas a pagar', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-          { href: '/dashboard/relatorios/contas-recebidas', label: 'Contas recebidas', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-          { href: '/dashboard/relatorios/contas-pagas', label: 'Contas pagas', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios', label: 'Resumo financeiro', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/contas-a-receber', label: 'Contas a receber', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/contas-a-pagar', label: 'Contas a pagar', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/contas-recebidas', label: 'Contas recebidas', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/contas-pagas', label: 'Contas pagas', roles: ['admin', 'venerable', 'treasurer'] },
           // Histórico dos irmãos: sem o Secretário (decisão do dono, 2026-09-27).
           { href: '/dashboard/relatorios/historico-pagamentos', label: 'Histórico de pagamentos', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/relatorios/declaracao-regularidade', label: 'Declaração de regularidade', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/dre', label: 'DRE comparativo', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-          { href: '/dashboard/relatorios/categorias', label: 'Razão por categoria', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-          { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-          { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-          { href: '/dashboard/relatorios/balancetes', label: 'Balancetes periódicos', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-          { href: '/dashboard/relatorios/fluxo-caixa', label: 'Fluxo de caixa projetado', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
-          { href: '/dashboard/relatorios/orcamento', label: 'Orçamento anual', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          { href: '/dashboard/relatorios/dre', label: 'DRE comparativo', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/categorias', label: 'Razão por categoria', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/balancetes', label: 'Balancetes periódicos', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/fluxo-caixa', label: 'Fluxo de caixa projetado', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/orcamento', label: 'Orçamento anual', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/relatorios/tarifas', label: 'Tarifas de cobrança (Asaas)', roles: ['admin', 'venerable', 'treasurer'] },
         ],
       },

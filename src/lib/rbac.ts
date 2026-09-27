@@ -55,8 +55,10 @@ const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = 
     read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'social'],
     write: ['messages', 'accounts', 'portal'],
   },
+  // Sem "accounts": a Tesouraria (lançamentos e relatórios financeiros) não é da Secretaria —
+  // decisão do dono, 2026-09-27. O Administrador ainda pode liberar em Configurações → Permissões.
   secretary: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social'],
+    read: ['members', 'documents', 'messages', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social'],
     write: ['members', 'documents', 'messages', 'portal', 'import', 'materials', 'inventory'],
   },
   member: {
