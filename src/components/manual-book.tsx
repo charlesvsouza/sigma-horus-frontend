@@ -63,6 +63,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-tarifas', label: '7.17 Tarifas de cobrança (Asaas)' },
       { id: 'tes-razao', label: '7.18 Razão por categoria (Tronco e qualquer outra)' },
       { id: 'tes-historico', label: '7.19 Histórico de pagamentos dos irmãos' },
+      { id: 'tes-declaracao', label: '7.20 Declaração de regularidade financeira' },
     ],
   },
   {
@@ -260,7 +261,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.47</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.48</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -322,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.47 — 27 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.48 — 27 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1503,6 +1504,22 @@ export function ManualBook() {
                   <li><UI>Imprimir / PDF</UI> e <UI>Exportar CSV</UI>, com o período e o irmão no cabeçalho.</li>
                 </Bullets>
               </Sub>
+
+              <Sub id="tes-declaracao" title="7.20 Declaração de regularidade financeira">
+                <p>
+                  Em <UI>Relatórios → Declaração de regularidade</UI> (Tesoureiro, Administrador e Venerável), escolha o irmão:
+                  se ele não tem <strong>nenhum débito vencido</strong> com a loja, o sistema mostra a declaração de que está em
+                  situação financeira regular — na prancha oficial da loja (fórmula de abertura, brasão, Oriente, rito e
+                  Potência), com número, local e data por extenso e as assinaturas do <strong>Tesoureiro</strong> e do{' '}
+                  <strong>Venerável Mestre</strong> em exercício. Use <UI>Imprimir / PDF</UI>.
+                </p>
+                <Bullets>
+                  <li><strong>O que conta:</strong> só o que já venceu. Contas a vencer (ou que vencem hoje) não impedem a declaração; a tela avisa quanto há a vencer.</li>
+                  <li><strong>Com débito vencido:</strong> a declaração não sai; a tela lista cada débito, com vencimento, dias de atraso e total.</li>
+                  <li><strong>Validade:</strong> o texto declara validade de 30 dias a partir da emissão e se refere só às obrigações financeiras com a loja.</li>
+                  <li><strong>O próprio irmão</strong> emite a dele em <UI>Meu portal → Declaração de regularidade</UI> (capítulo 10), nas mesmas regras.</li>
+                </Bullets>
+              </Sub>
             </Chapter>
 
             {/* ============== 8. SECRETÁRIO ============== */}
@@ -1881,6 +1898,7 @@ export function ManualBook() {
                 <li><strong>Minhas pendências:</strong> as contas que você deve à loja e ainda estão em aberto (mensalidade, material, evento — qualquer origem), com o selo <UI>Vencida há N dias</UI> e o total em aberto. Clique em <UI>Pagar</UI> para gerar o Pix com o valor exato (QR Code e <UI>Copiar código</UI>). Se a loja recebe pelo <strong>Asaas</strong>, a confirmação é automática: depois do Pix, a conta sai das pendências e o recibo aparece no extrato. Se a loja recebe <strong>direto na conta dela</strong>, o Pix cai na chave da loja; depois de pagar, clique em <UI>Já paguei</UI> para avisar a Tesouraria, que confere o extrato e dá a baixa. O Asaas exige CPF: se o seu não estiver no cadastro, peça à Secretaria.</li>
                 <li><strong>Meu extrato:</strong> cada conta vinculada a você — tipo (a receber/a pagar), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado — sai com o cabeçalho da loja, o saldo do filtro e o aviso de que é um documento informativo (o comprovante oficial de um pagamento é o recibo da Tesouraria, que você abre pelo link <UI>Recibo</UI> de cada conta paga).</li>
                 <li><strong>Meu histórico de pagamentos:</strong> no Resumo financeiro, abra <UI>Meu histórico de pagamentos</UI> para ver tudo o que você já pagou à loja, por período (padrão: o ano corrente): data, a que se refere, vencimento, forma de pagamento e valor, com o <UI>Recibo</UI> de cada pagamento e o total. Use <UI>Imprimir / PDF</UI> ou <UI>Exportar CSV</UI> para guardar. Assim você confere, por conta própria, o que já quitou.</li>
+                <li><strong>Declaração de regularidade:</strong> em dia com a Tesouraria (nada vencido)? Abra <UI>Declaração de regularidade</UI> no Resumo financeiro e imprima a declaração oficial da loja, com as assinaturas do Tesoureiro e do Venerável — para transferência, elevação, filiação ou candidatura. Com algum débito vencido, a tela mostra o que falta e o caminho para pagar.</li>
                 <li><strong>Documentos recentes:</strong> os arquivos disponibilizados a você pela loja.</li>
                 <li><strong>Documentos da Loja:</strong> regimento interno, regulamento geral, constituição da Potência e outros documentos institucionais, publicados pela Secretaria pra todos os obreiros — abra ou baixe direto por aqui.</li>
               </Bullets>

@@ -439,6 +439,12 @@ export default function PortalPage() {
                     <span aria-hidden="true">→</span>
                   </Link>
                 ) : null}
+                {member ? (
+                  <Link href="/dashboard/portal/declaracao" className="flex items-center justify-between rounded-lg border border-gold/25 px-4 py-3 text-sm font-medium text-gold transition-colors hover:border-gold/50 hover:text-gold-light">
+                    Declaração de regularidade
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                ) : null}
               </div>
             )}
           </div>
