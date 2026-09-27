@@ -10,6 +10,7 @@ import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 import { ReportDocument } from '@/components/report/report-document';
 import { PendenciasCard, type CollectionInfo } from './PendenciasCard';
+import { CpfLookupCard } from './CpfLookupCard';
 
 interface MemberSummary {
   id: string;
@@ -337,6 +338,7 @@ export default function PortalPage() {
         {!loading && member ? (
           <PendenciasCard accounts={payableAccounts} collection={collection} onChanged={() => void load()} />
         ) : null}
+        {!loading && !member && !loadError ? <CpfLookupCard /> : null}
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
