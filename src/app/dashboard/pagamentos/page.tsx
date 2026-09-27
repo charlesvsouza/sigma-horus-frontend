@@ -86,18 +86,27 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
     seen.add(n.entityId);
     let note: string | null = null;
     let hasReceipt = false;
+    let group: { accountIds: string[]; total: number } | null = null;
     try {
-      const meta = JSON.parse(n.after ?? '{}') as { note?: string | null; receiptKey?: string };
+      const meta = JSON.parse(n.after ?? '{}') as { note?: string | null; receiptKey?: string; groupAccountIds?: string[]; groupTotal?: number };
       note = meta.note ?? null;
       hasReceipt = Boolean(meta.receiptKey);
+      if (Array.isArray(meta.groupAccountIds) && meta.groupAccountIds.length > 1 && typeof meta.groupTotal === 'number') {
+        group = { accountIds: meta.groupAccountIds, total: meta.groupTotal };
+      }
     } catch { note = null; }
-    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt, balance: account.balance }];
+    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt, balance: account.balance, group }];
   });
+  // Pix agrupado (Modo Loja): o crédito no banco é o TOTAL do grupo e o txid é o da 1ª conta dele —
+  // casa o grupo inteiro pela 1ª conta e repete o resultado nas demais.
+  const leader = (n: (typeof rawNotices)[number]) => n.group?.accountIds[0] ?? n.accountId;
   const bankMatches = matchNoticesToBank(
-    rawNotices.map((n) => ({ accountId: n.accountId, balance: n.balance, noticeAt: new Date(n.noticeAt) })),
+    rawNotices
+      .filter((n) => leader(n) === n.accountId)
+      .map((n) => ({ accountId: n.accountId, balance: n.group?.total ?? n.balance, noticeAt: new Date(n.noticeAt) })),
     data.bankLines.map((l) => ({ id: l.id, date: l.date, amount: Number(l.amount), description: l.description })),
   );
-  const notices = rawNotices.map((n) => ({ ...n, bankMatch: bankMatches.get(n.accountId) ?? null }));
+  const notices = rawNotices.map((n) => ({ ...n, bankMatch: bankMatches.get(leader(n)) ?? null }));
 
   const payments = data.payments.map((p) => ({
     id: p.id,

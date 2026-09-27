@@ -261,7 +261,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.50</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.51</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -323,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.50 — 27 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.51 — 27 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1041,6 +1041,16 @@ export function ManualBook() {
                   emite no Asaas na hora, sempre em Pix, com vencimento de hoje quando a conta já está vencida. Ela aparece
                   em <UI>Cobranças</UI> como qualquer outra, e a baixa segue automática. Os lembretes passam a levar também o
                   link do portal.
+                </p>
+                <p>
+                  <strong>Pix agrupado.</strong> Quando o irmão paga várias pendências com um Pix só (<UI>Pagar
+                  selecionadas</UI>), o Asaas recebe <strong>uma</strong> cobrança com a soma, e todas as cobranças do grupo
+                  ficam ligadas a ela. Ao confirmar, o sistema divide o valor entre elas, da mais antiga para a mais nova (se
+                  ele pagou a mais, a sobra fica registrada na última), e rateia a tarifa do Asaas na mesma proporção.
+                  <UI>Verificar no Asaas</UI> faz a mesma divisão. Enquanto o Pix agrupado está aberto, a baixa manual
+                  (&quot;recebido fora do Asaas&quot;) de uma dessas contas é recusada, porque encerraria no Asaas o Pix de
+                  todas; se ele pagou por fora, <UI>Reemita</UI> a cobrança em Cobranças — isso desfaz o agrupado (as outras
+                  contas voltam a pendente, prontas para um novo Pix) — e depois dê a baixa. Renegociar também desfaz o agrupado.
                 </p>
                 <Note>Quando o membro pagar, o webhook do Asaas (6.2-C) <strong>baixa a cobrança automaticamente</strong> e registra o pagamento na <strong>conta corrente de repasse</strong>, junto com a <strong>tarifa real</strong> cobrada pelo Asaas (despesa) — você não precisa lançar nada à mão. Depois é só fazer o <strong>repasse manual</strong> no painel do Asaas (6.9).</Note>
                 <p>
@@ -1901,7 +1911,7 @@ export function ManualBook() {
               <Bullets>
                 <li><strong>Resumo do obreiro:</strong> seus dados — nome, e-mail, telefone, <strong>grau atual</strong> e loja de origem.</li>
                 <li><strong>Resumo financeiro:</strong> três indicadores, sempre do que está <strong>em aberto</strong> (conta paga sai na hora da baixa) — <UI>O que devo</UI>, <UI>A Loja me deve</UI> e <UI>Vencido</UI> (a parte do que você deve que já passou do vencimento).</li>
-                <li><strong>Minhas pendências:</strong> as contas que você deve à loja e ainda estão em aberto (mensalidade, material, evento — qualquer origem), com o selo <UI>Vencida há N dias</UI> e o total em aberto. Clique em <UI>Pagar</UI> para gerar o Pix com o valor exato (QR Code e <UI>Copiar código</UI>). Se a loja recebe pelo <strong>Asaas</strong>, a confirmação é automática: depois do Pix, a conta sai das pendências e o recibo aparece no extrato. Se a loja recebe <strong>direto na conta dela</strong>, o Pix cai na chave da loja; depois de pagar, clique em <UI>Já paguei</UI> para avisar a Tesouraria, que confere o extrato e dá a baixa — se quiser, anexe antes a foto ou o PDF do comprovante (<UI>Anexar comprovante</UI>, até 4 MB). O Asaas exige CPF: se o seu não estiver no cadastro, peça à Secretaria.</li>
+                <li><strong>Minhas pendências:</strong> as contas que você deve à loja e ainda estão em aberto (mensalidade, material, evento — qualquer origem), com o selo <UI>Vencida há N dias</UI> e o total em aberto. Clique em <UI>Pagar</UI> para gerar o Pix com o valor exato (QR Code e <UI>Copiar código</UI>). Se a loja recebe pelo <strong>Asaas</strong>, a confirmação é automática: depois do Pix, a conta sai das pendências e o recibo aparece no extrato. Se a loja recebe <strong>direto na conta dela</strong>, o Pix cai na chave da loja; depois de pagar, clique em <UI>Já paguei</UI> para avisar a Tesouraria, que confere o extrato e dá a baixa — se quiser, anexe antes a foto ou o PDF do comprovante (<UI>Anexar comprovante</UI>, até 4 MB). O Asaas exige CPF: se o seu não estiver no cadastro, peça à Secretaria. <strong>Várias de uma vez:</strong> com duas ou mais pendências, marque as que quiser (ou <UI>Marcar todas</UI>) e clique em <UI>Pagar selecionadas</UI> — sai um Pix só com a soma; no Asaas, a confirmação quita todas; na conta da loja, o <UI>Já paguei</UI> avisa a Tesouraria de todas juntas.</li>
                 <li><strong>Meu extrato:</strong> cada conta vinculada a você — tipo (a receber/a pagar), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado — sai com o cabeçalho da loja, o saldo do filtro e o aviso de que é um documento informativo (o comprovante oficial de um pagamento é o recibo da Tesouraria, que você abre pelo link <UI>Recibo</UI> de cada conta paga).</li>
                 <li><strong>Meu histórico de pagamentos:</strong> no Resumo financeiro, abra <UI>Meu histórico de pagamentos</UI> para ver tudo o que você já pagou à loja, por período (padrão: o ano corrente): data, a que se refere, vencimento, forma de pagamento e valor, com o <UI>Recibo</UI> de cada pagamento e o total. Use <UI>Imprimir / PDF</UI> ou <UI>Exportar CSV</UI> para guardar. Assim você confere, por conta própria, o que já quitou.</li>
                 <li><strong>Declaração de regularidade:</strong> em dia com a Tesouraria (nada vencido)? Abra <UI>Declaração de regularidade</UI> no Resumo financeiro e imprima a declaração oficial da loja, com as assinaturas do Tesoureiro e do Venerável — para transferência, elevação, filiação ou candidatura. Com algum débito vencido, a tela mostra o que falta e o caminho para pagar.</li>

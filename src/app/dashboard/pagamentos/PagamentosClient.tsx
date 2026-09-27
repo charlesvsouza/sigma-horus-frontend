@@ -23,7 +23,7 @@ interface AccountOption {
 }
 /** "Já paguei" do portal (Modo Loja) ainda sem baixa. */
 interface BankMatch { lineId: string; date: string; amount: number; description: string; by: 'txid' | 'amount'; }
-interface PaymentNotice { accountId: string; noticeAt: string; noticeDay: string; note: string | null; hasReceipt?: boolean; bankMatch?: BankMatch | null; }
+interface PaymentNotice { accountId: string; noticeAt: string; noticeDay: string; note: string | null; hasReceipt?: boolean; bankMatch?: BankMatch | null; group?: { accountIds: string[]; total: number } | null; }
 
 function accountLabel(a: AccountOption): string {
   return [a.title, a.who, `venc. ${formatDateOnly(a.dueDate)}`, `saldo ${brl(a.balance)}`].filter(Boolean).join(' · ');
@@ -182,6 +182,11 @@ export default function PagamentosClient({ accounts, members, payments, financia
                         Venc. {formatDateOnly(a.dueDate)} · saldo {brl(a.balance)} · avisou em {new Date(n.noticeAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}
                         {n.note ? ` · "${n.note}"` : ''}
                       </p>
+                      {n.group ? (
+                        <p className="mt-1 text-xs text-sky-200">
+                          Pix agrupado: {n.group.accountIds.length} contas num só Pix de {brl(n.group.total)} — dê a baixa em cada uma.
+                        </p>
+                      ) : null}
                       {n.bankMatch ? (
                         <p className="mt-1 text-xs text-emerald-300">
                           {n.bankMatch.by === 'txid' ? 'Crédito identificado no extrato' : 'Crédito compatível no extrato'}: {formatDateOnly(n.bankMatch.date)} · {brl(n.bankMatch.amount)} · {n.bankMatch.description}

@@ -18,5 +18,13 @@ export async function retargetInvoices(
     where: open,
     data: { amount: next.amount, dueDate: next.dueDate, status: 'pending', asaasPaymentId: null, asaasInvoiceUrl: null },
   });
-  return linked.map((i) => i.asaasPaymentId).filter((id): id is string => Boolean(id));
+  const ids = linked.map((i) => i.asaasPaymentId).filter((id): id is string => Boolean(id));
+  // Pix agrupado: as outras contas do grupo também perdem o Pix (ele vai ser cancelado no Asaas).
+  if (ids.length > 0) {
+    await db.invoice.updateMany({
+      where: { asaasPaymentId: { in: ids }, status: { not: 'paid' } },
+      data: { status: 'pending', asaasPaymentId: null, asaasInvoiceUrl: null },
+    });
+  }
+  return ids;
 }

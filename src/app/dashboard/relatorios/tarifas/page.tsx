@@ -34,7 +34,7 @@ export default async function TarifasPage(props: { searchParams: Promise<{ from?
       db.lodge.findUnique({ where: { id: lid }, select: { name: true, crestUrl: true, collectionMode: true } }),
       db.payment.findMany({
         where: { lodgeId: lid, method: 'asaas', paidAt: { gte: from, lte: to } },
-        select: { id: true, amount: true, paidAt: true, note: true, member: { select: { name: true } } },
+        select: { id: true, amount: true, paidAt: true, note: true, accountId: true, member: { select: { name: true } } },
         orderBy: { paidAt: 'desc' },
       }),
     ]);
@@ -42,15 +42,19 @@ export default async function TarifasPage(props: { searchParams: Promise<{ from?
     const invoices = asaasIds.length
       ? await db.invoice.findMany({
           where: { lodgeId: lid, asaasPaymentId: { in: asaasIds } },
-          select: { asaasPaymentId: true, number: true, asaasBillingType: true, asaasFee: true },
+          select: { asaasPaymentId: true, accountId: true, number: true, asaasBillingType: true, asaasFee: true },
         })
       : [];
     return { lodge, payments, invoices };
   });
 
+  // Pix agrupado: várias cobranças com o MESMO id do Asaas, cada uma com a sua parte da tarifa —
+  // o par (id do Asaas, conta) acha a cobrança certa de cada pagamento.
+  const byAsaasAndAccount = new Map(data.invoices.map((i) => [`${i.asaasPaymentId}|${i.accountId}`, i]));
   const byAsaasId = new Map(data.invoices.map((i) => [i.asaasPaymentId, i]));
   const rows: FeeRow[] = data.payments.map((p) => {
-    const inv = byAsaasId.get(asaasIdFromNote(p.note) ?? '');
+    const asaasId = asaasIdFromNote(p.note) ?? '';
+    const inv = byAsaasAndAccount.get(`${asaasId}|${p.accountId}`) ?? byAsaasId.get(asaasId);
     return {
       id: p.id,
       date: p.paidAt,

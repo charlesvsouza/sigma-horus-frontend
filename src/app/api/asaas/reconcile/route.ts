@@ -2,6 +2,8 @@ import { auth } from '@/lib/auth';
 import { getPayment } from '@/lib/asaas';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { settleAsaasInvoicePayment } from '@/lib/asaas-settlement';
+import { isGroupRef } from '@/lib/asaas-group';
+import { settleAsaasGroupPayment } from '@/lib/asaas-group-server';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
@@ -40,12 +42,34 @@ export async function POST() {
   let reconciled = 0;
   let stillPending = 0;
   let errors = 0;
+  // Pix agrupado: várias cobranças com o mesmo asaasPaymentId — uma consulta e uma baixa
+  // dividida por grupo (senão cada cobrança receberia o valor inteiro do Pix).
+  const doneGroups = new Set<string>();
 
   for (const invoice of pendingInvoices) {
+    if (doneGroups.has(invoice.asaasPaymentId!)) continue;
     try {
       const remote = await getPayment(config, invoice.asaasPaymentId!);
       if (!PAID_STATUSES.has(remote?.status)) {
         stillPending++;
+        continue;
+      }
+
+      if (isGroupRef(remote?.externalReference)) {
+        doneGroups.add(invoice.asaasPaymentId!);
+        const r = await withTenant(String(lodgeId), (db) =>
+          settleAsaasGroupPayment(db, {
+            lodgeId: String(lodgeId),
+            asaasPaymentId: invoice.asaasPaymentId!,
+            total: Number(remote.value),
+            netValue: remote.netValue != null ? Number(remote.netValue) : null,
+            billingType: remote.billingType ?? null,
+            userId: session.user.id,
+            source: 'manual-reconcile',
+          }),
+          { timeoutMs: 30_000 },
+        );
+        reconciled += r.settled;
         continue;
       }
 

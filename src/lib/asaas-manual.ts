@@ -6,7 +6,7 @@ import { withTenant } from '@/lib/prisma';
 // Cobrança com boleto/Pix/cartão ativo no Asaas: emitida e ainda não paga.
 const OPEN_ASAAS_STATUSES = ['billed', 'overdue'];
 
-export interface OpenAsaasCharge { id: string; number: string; amount: number }
+export interface OpenAsaasCharge { id: string; number: string; amount: number; asaasPaymentId: string }
 
 /**
  * Cobranças deste lançamento que estão abertas no Asaas. Se `memberId` vier
@@ -23,9 +23,22 @@ export async function findOpenAsaasCharges(
       status: { in: OPEN_ASAAS_STATUSES },
       ...(params.memberId ? { memberId: params.memberId } : {}),
     },
-    select: { id: true, number: true, amount: true },
+    select: { id: true, number: true, amount: true, asaasPaymentId: true },
   });
-  return rows.map((r) => ({ id: r.id, number: r.number, amount: Number(r.amount) }));
+  return rows.map((r) => ({ id: r.id, number: r.number, amount: Number(r.amount), asaasPaymentId: r.asaasPaymentId! }));
+}
+
+/**
+ * Das cobranças abertas no Asaas, as que fazem parte de um Pix AGRUPADO (o mesmo
+ * asaasPaymentId em mais de uma cobrança). Baixa manual nelas é recusada: encerrar o Pix no
+ * Asaas quitaria lá as outras contas do grupo, que seguem em aberto aqui.
+ */
+export async function groupedChargeNumbers(db: Prisma.TransactionClient, charges: OpenAsaasCharge[]): Promise<string[]> {
+  if (charges.length === 0) return [];
+  const ids = [...new Set(charges.map((c) => c.asaasPaymentId))];
+  const shared = await db.invoice.groupBy({ by: ['asaasPaymentId'], where: { asaasPaymentId: { in: ids } }, _count: { _all: true } });
+  const grouped = new Set(shared.filter((g) => g._count._all > 1).map((g) => g.asaasPaymentId));
+  return charges.filter((c) => grouped.has(c.asaasPaymentId)).map((c) => c.number);
 }
 
 /** Corpo do 409 que o front usa para perguntar "recebido fora do Asaas?". */

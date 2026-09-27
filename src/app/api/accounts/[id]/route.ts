@@ -6,7 +6,7 @@ import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
 import { isPlainAccount, settleAccountAsPaid } from '@/lib/account-status';
 import { coversAmount, isValidMoney, round2 } from '@/lib/money';
-import { asaasConflictBody, findOpenAsaasCharges, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
+import { asaasConflictBody, findOpenAsaasCharges, groupedChargeNumbers, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
 import { NextResponse } from 'next/server';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -96,6 +96,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (paying) {
       // Cobrança aberta no Asaas: baixa manual só com confirmação de que foi recebido fora dele.
       const openCharges = await findOpenAsaasCharges(db, { accountId: id, memberId: nextMemberId });
+      // Pix agrupado: encerrar no Asaas quitaria lá as outras contas do grupo — recusa.
+      const grouped = await groupedChargeNumbers(db, openCharges);
+      if (grouped.length > 0) return { error: 'asaas-group' as const, numbers: grouped };
       if (openCharges.length > 0 && body?.confirmOutsideAsaas !== true) return { error: 'asaas' as const, charges: openCharges };
       chargeIds = openCharges.map((c) => c.id);
 
@@ -154,6 +157,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   if ('error' in result) {
     if (result.error === 'notfound') return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });
+    if (result.error === 'asaas-group') {
+      return NextResponse.json({
+        code: 'ASAAS_GROUP_OPEN',
+        error: `A cobrança ${result.numbers.join(', ')} faz parte de um Pix agrupado aberto no Asaas. Aguarde a confirmação do Asaas ou, se o irmão pagou por fora, reemita esta cobrança em Cobranças (desfaz o agrupado) e depois dê a baixa.`,
+      }, { status: 409 });
+    }
     if (result.error === 'asaas') return NextResponse.json(asaasConflictBody(result.charges), { status: 409 });
     if (result.error === 'settle') return NextResponse.json({ error: result.settled.error }, { status: result.settled.status });
     if (result.error === 'locked') {

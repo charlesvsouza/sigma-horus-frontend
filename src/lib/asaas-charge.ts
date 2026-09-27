@@ -4,6 +4,7 @@ import { logAudit } from '@/lib/audit';
 import { isAsaasMode, normalizeBillingChoice, type AsaasBillingChoice } from '@/lib/collection';
 import { todayBR } from '@/lib/date-only';
 import { withTenant } from '@/lib/prisma';
+import { detachGroupSiblings } from '@/lib/asaas-group-db';
 
 // Emissão de uma cobrança (Invoice) no Asaas da loja — compartilhada pela Tesouraria
 // (Cobranças → Emitir) e pelo próprio irmão (Portal → Pagar). Rede SEMPRE fora da
@@ -126,6 +127,11 @@ export async function emitInvoiceCharge(params: {
     await withTenant(lodgeId, async (db) => {
       if (createdCustomer && customerId) {
         await db.member.update({ where: { id: member.id }, data: { asaasCustomerId: customerId } });
+      }
+      // A cobrança anterior (apagada acima) pode ter sido um Pix agrupado: as outras contas dele
+      // perdem o Pix e voltam a pendente, para gerar um novo.
+      if (invoice.asaasPaymentId && invoice.status !== 'paid') {
+        await detachGroupSiblings(db, lodgeId, [invoice.asaasPaymentId], [invoice.id]);
       }
       await db.invoice.update({
         where: { id: invoice.id },

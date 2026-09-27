@@ -1,4 +1,6 @@
-import { isWebhookAuthorized, processWebhook } from '@/lib/asaas';
+import { isWebhookAuthorized, processWebhook, type AsaasWebhookEvent } from '@/lib/asaas';
+import { isGroupRef } from '@/lib/asaas-group';
+import { settleAsaasGroupPayment } from '@/lib/asaas-group-server';
 import { prismaAdmin } from '@/lib/prisma';
 import { syncMemberArt002Status } from '@/lib/overdue';
 import { settleAsaasInvoicePayment } from '@/lib/asaas-settlement';
@@ -53,6 +55,91 @@ O valor entrou na conta do Asaas e NÃO foi lançado no sistema. Verifique e, se
   }
 }
 
+/**
+ * Pix agrupado (externalReference "grp:…"): várias cobranças do mesmo irmão numa cobrança do
+ * Asaas. As cobranças são achadas pelo asaasPaymentId em comum; o valor e a tarifa são
+ * divididos entre as abertas (lib/asaas-group). Mesmas regras do caminho individual:
+ * idempotência, recebimento em duplicidade, vencido e estorno.
+ */
+async function handleGroupWebhook(request: Request, event: string, payment: NonNullable<AsaasWebhookEvent['payment']>) {
+  const invoices = await prismaAdmin.invoice.findMany({
+    where: { asaasPaymentId: payment.id },
+    include: {
+      lodge: { select: { asaasWebhookToken: true, name: true } },
+      member: { select: { name: true, email: true } },
+    },
+    orderBy: { dueDate: 'asc' },
+  });
+  // Grupo desfeito (reemissão/renegociação soltou as cobranças): nada a fazer.
+  if (invoices.length === 0) return NextResponse.json({ received: true, ignored: 'group not found' });
+  const first = invoices[0];
+  if (invoices.some((i) => i.lodgeId !== first.lodgeId)) return NextResponse.json({ error: 'Invalid group' }, { status: 400 });
+  if (!isWebhookAuthorized(request.headers.get('asaas-access-token'), first.lodge.asaasWebhookToken)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (PAID_EVENTS.has(event)) {
+    const open = invoices.filter((i) => i.status !== 'paid');
+    if (open.length === 0) {
+      if (payment.status === 'RECEIVED_IN_CASH') return NextResponse.json({ received: true, alreadyPaid: true });
+      const settled = await Promise.all(invoices.map((i) => settledByAsaasPayment(i.accountId, payment.id)));
+      if (!settled.some(Boolean)) {
+        await flagDuplicateReceipt(first, payment);
+        return NextResponse.json({ received: true, alreadyPaid: true, duplicate: true });
+      }
+      return NextResponse.json({ received: true, alreadyPaid: true });
+    }
+
+    const result = await prismaAdmin.$transaction(
+      (tx) => settleAsaasGroupPayment(tx, {
+        lodgeId: first.lodgeId,
+        asaasPaymentId: payment.id,
+        total: payment.value,
+        netValue: payment.netValue ?? null,
+        billingType: payment.billingType ?? null,
+        userId: 'system:asaas-webhook',
+        source: event,
+      }),
+      { timeout: 30_000 },
+    );
+
+    const member = open.find((i) => i.member?.email)?.member;
+    if (member?.email) {
+      dispatch(
+        'email',
+        member.email,
+        `Pagamento confirmado — ${first.lodge.name}`,
+        `Olá, ${member.name}.\n\nConfirmamos o recebimento do seu pagamento de ${brl(payment.value)}, que quitou ${result.settled} pendência(s): ${open.map((i) => i.number).join(', ')}.\n\nAtenciosamente,\n${first.lodge.name}`,
+        EMPTY_CHANNELS,
+      ).catch(() => {});
+    }
+    return NextResponse.json({ received: true, settled: true, group: result.settled });
+  }
+
+  if (OVERDUE_EVENTS.has(event)) {
+    await prismaAdmin.invoice.updateMany({ where: { asaasPaymentId: payment.id, status: { not: 'paid' } }, data: { status: 'overdue' } });
+    return NextResponse.json({ received: true, status: 'overdue', group: invoices.length });
+  }
+
+  if (REVERSED_EVENTS.has(event)) {
+    const clear = event === 'PAYMENT_DELETED' ? { asaasPaymentId: null, asaasInvoiceUrl: null } : {};
+    for (const inv of invoices) {
+      // Baixada por FORA do Asaas: o cancelamento lá não desfaz o recebimento real.
+      if (inv.status === 'paid' && !(await settledByAsaasPayment(inv.accountId, payment.id))) {
+        if (event === 'PAYMENT_DELETED') await prismaAdmin.invoice.update({ where: { id: inv.id }, data: clear });
+        continue;
+      }
+      await prismaAdmin.invoice.update({ where: { id: inv.id }, data: { status: 'pending', ...clear } });
+    }
+    for (const memberId of new Set(invoices.map((i) => i.memberId).filter((m): m is string => Boolean(m)))) {
+      await syncMemberArt002Status(prismaAdmin, first.lodgeId, memberId);
+    }
+    return NextResponse.json({ received: true, status: 'reversed', group: invoices.length });
+  }
+
+  return NextResponse.json({ received: true, ignored: event });
+}
+
 export async function POST(request: Request) {
   let payload;
   try {
@@ -71,6 +158,7 @@ export async function POST(request: Request) {
   if (!invoiceId) {
     return NextResponse.json({ received: true, ignored: 'no externalReference' });
   }
+  if (isGroupRef(invoiceId)) return handleGroupWebhook(request, event, payment);
 
   // Webhook não tem sessão de tenant → prismaAdmin (bypassa RLS), escopado pelo lodgeId da própria invoice.
   const invoice = await prismaAdmin.invoice.findUnique({

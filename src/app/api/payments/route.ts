@@ -6,7 +6,7 @@ import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
 import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
 import { coversAmount, isValidMoney, remainingAmount, round2 } from '@/lib/money';
-import { asaasConflictBody, findOpenAsaasCharges, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
+import { asaasConflictBody, findOpenAsaasCharges, groupedChargeNumbers, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
 import { dispatch } from '@/lib/messaging';
 import { buildLodgeChannels } from '@/lib/lodge-channels';
 import { brl } from '@/lib/currency';
@@ -104,6 +104,8 @@ export async function POST(request: Request) {
     // Cobrança aberta no Asaas: a baixa é do Asaas. Baixa manual só com a
     // confirmação explícita de que foi recebido fora dele (depois avisamos o Asaas).
     const openCharges = await findOpenAsaasCharges(db, { accountId, memberId: memberId ?? account.memberId });
+    const grouped = await groupedChargeNumbers(db, openCharges);
+    if (grouped.length > 0) return { asaasGroup: grouped } as const;
     if (openCharges.length > 0 && body?.confirmOutsideAsaas !== true) {
       return { asaasConflict: openCharges } as const;
     }
@@ -215,6 +217,13 @@ export async function POST(request: Request) {
       { error: result.overpay > 0 ? `Valor maior que o saldo em aberto desta conta (${brl(result.overpay)}).` : 'Esta conta já está quitada — não há saldo em aberto para receber ou pagar.' },
       { status: 400 },
     );
+  }
+
+  if ('asaasGroup' in result && result.asaasGroup) {
+    return NextResponse.json({
+      code: 'ASAAS_GROUP_OPEN',
+      error: `A cobrança ${result.asaasGroup.join(', ')} faz parte de um Pix agrupado aberto no Asaas (o irmão pagará várias contas de uma vez). Aguarde a confirmação do Asaas ou, se ele pagou por fora, reemita esta cobrança em Cobranças — isso desfaz o agrupado — e depois registre a baixa.`,
+    }, { status: 409 });
   }
 
   if ('asaasConflict' in result && result.asaasConflict) {

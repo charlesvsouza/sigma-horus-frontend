@@ -3,12 +3,11 @@ import { auth } from '@/lib/auth';
 import { getPayment } from '@/lib/asaas';
 import { emitInvoiceCharge, fetchPixQr, type PixQr } from '@/lib/asaas-charge';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
-import { nextInvoiceNumbers } from '@/lib/charges';
 import { isAsaasMode, paymentInstructions } from '@/lib/collection';
-import { lockKey } from '@/lib/locks';
 import { round2 } from '@/lib/money';
 import { buildPixPayload } from '@/lib/pix';
 import { canPay, openBalance } from '@/lib/portal-dues';
+import { CLOSED_INVOICE_STATUSES, ensureOpenInvoice } from '@/lib/portal-invoice';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -19,8 +18,6 @@ import { NextResponse } from 'next/server';
 //  - Modo Loja: Pix estático na chave da loja, com o valor exato; nada é gravado — a baixa
 //    é da Tesouraria (extrato ou "Já paguei").
 // A responsabilidade de cobrar continua sendo da Tesouraria; isto é só o autoatendimento.
-
-const CLOSED_INVOICE = ['paid', 'cancelled', 'canceled'];
 
 function qrDataUrl(pix: PixQr | null): string | null {
   return pix?.encodedImage ? `data:image/png;base64,${pix.encodedImage}` : null;
@@ -45,7 +42,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
         id: true, title: true, type: true, amount: true, dueDate: true, status: true, memberId: true, approvalStatus: true,
         payments: { select: { amount: true } },
         invoices: {
-          where: { status: { notIn: CLOSED_INVOICE } },
+          where: { status: { notIn: CLOSED_INVOICE_STATUSES } },
           select: { id: true, asaasPaymentId: true },
           orderBy: { createdAt: 'desc' },
           take: 1,
@@ -116,21 +113,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
   // Conta sem cobrança (lançamento avulso, venda de material…): cria a Invoice agora.
   // Trava por conta: dois cliques seguidos não criam duas cobranças.
-  const invoiceId = open?.id ?? (await withTenant(lodgeId, async (db) => {
-    await lockKey(db, `portal-pay:${account.id}`);
-    const again = await db.invoice.findFirst({
-      where: { accountId: account.id, status: { notIn: CLOSED_INVOICE } },
-      select: { id: true },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (again) return again.id;
-    const [number] = await nextInvoiceNumbers(db, lodgeId, 1);
-    const created = await db.invoice.create({
-      data: { lodgeId, accountId: account.id, memberId, number, amount: balance, dueDate: account.dueDate, description: account.title },
-      select: { id: true },
-    });
-    return created.id;
-  }));
+  const invoiceId = open?.id ?? (await ensureOpenInvoice(lodgeId, account, memberId, balance));
 
   const result = await emitInvoiceCharge({
     lodgeId,
