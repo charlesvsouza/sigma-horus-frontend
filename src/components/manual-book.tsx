@@ -261,7 +261,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.51</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.52</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -323,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.51 — 27 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.52 — 27 de setembro de 2026</p>
               </div>
             </div>
 
@@ -466,12 +466,12 @@ export function ManualBook() {
               </Note>
               <Bullets>
                 <li><strong>Administrador:</strong> conta, usuários, assinatura, integrações e configurações. Altera todos os cadastros e configurações da loja e é o <strong>único</strong> que cria outro Administrador (no máximo <strong>2 Administradores ativos</strong> por loja).</li>
-                <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações (despesas, prestação de contas e transferências entre contas bancárias); cadastra os materiais da loja e decide baixa e reposição; não lança baixas financeiras.</li>
-                <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, fecha o caixa, solicita transferências entre contas bancárias/Caixa e vê relatórios financeiros.</li>
-                <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença, materiais e patrimônio da loja, documentos institucionais; relatórios não financeiros.</li>
+                <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações (despesas, prestação de contas e transferências entre contas bancárias); consulta o <UI>Histórico de pagamentos</UI> dos irmãos e emite a <UI>Declaração de regularidade</UI> (7.19 e 7.20); cadastra os materiais da loja e decide baixa e reposição; não lança baixas financeiras.</li>
+                <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, dá baixa nos avisos &quot;Já paguei&quot; dos irmãos, fecha o caixa, solicita transferências entre contas bancárias/Caixa e vê relatórios financeiros — inclusive o <UI>Histórico de pagamentos</UI> e a <UI>Declaração de regularidade</UI>.</li>
+                <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença, materiais e patrimônio da loja, documentos institucionais; consulta os relatórios da Tesouraria (sem lançar nem baixar nada), exceto o <UI>Histórico de pagamentos</UI>, a <UI>Declaração de regularidade</UI> e as <UI>Tarifas de cobrança (Asaas)</UI>, que ficam com Tesoureiro, Administrador e Venerável.</li>
                 <li><strong>Hospitaleiro:</strong> consulta os irmãos (somente leitura, para contato), gerencia campanhas de benemerência e acompanha o Tronco de Solidariedade.</li>
                 <li><strong>Arquiteto (por cargo):</strong> não é um papel que se atribui em <UI>Usuários &amp; acessos</UI> — o obreiro que ocupa o cargo de Arquiteto no veneralato ativo ganha, <strong>além do papel que já tem</strong>, o acesso ao inventário em <UI>Materiais e patrimônio</UI>: vê a lista de materiais, registra desgaste, dano ou perda e fornece/recebe materiais. Não edita o cadastro, não decide baixa nem reposição e não acessa a Tesouraria. Quando o veneralato é encerrado, o acesso acaba sozinho. O Administrador pode ajustar isso em <UI>Configurações → Permissões</UI> (coluna <UI>Arquiteto (cargo)</UI>).</li>
-                <li><strong>Membro (obreiro):</strong> o próprio portal — extrato, débitos, histórico e documentos pertinentes — e os quadros do menu <UI>Social</UI>.</li>
+                <li><strong>Membro (obreiro):</strong> o próprio portal — pendências (e o botão <UI>Pagar</UI>), extrato, histórico de pagamentos com os recibos, declaração de regularidade e documentos pertinentes — e os quadros do menu <UI>Social</UI>. Vê só o que é dele.</li>
                 <li><strong>Menu Social (todos os papéis):</strong> <UI>Quadro social</UI>, <UI>Galeria de Veneráveis</UI>, <UI>Quadro da Gestão</UI> e <UI>Composição da loja</UI> ficam abertos a todo obreiro, para que a loja se enxergue. Quem não tem acesso ao cadastro de Membros vê apenas os ativos e não vê telefone nem e-mail; o cadastro em si segue restrito. O Administrador ajusta em <UI>Configurações → Permissões</UI> (módulo <UI>Social</UI>).</li>
               </Bullets>
               <p className="text-sm text-sand-dark">
@@ -513,8 +513,8 @@ export function ManualBook() {
                   contas</UI>; o sub-item <UI>Lançamento</UI> aparece recuado logo abaixo de <UI>Contas</UI>),
                   <UI> Cadastros e Conferência</UI> (<UI>Cadastros financeiros</UI>, <UI>Conciliação
                   bancária</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (<UI>Resumo financeiro</UI>, <UI>Contas a
-                  receber</UI>, <UI>Contas a pagar</UI>, <UI>Contas recebidas</UI>, <UI>Contas pagas</UI>, <UI>DRE
-                  comparativo</UI>, <UI>Fechamento</UI>, <UI>Inadimplência (Art. 002)</UI>, <UI>Balancetes
+                  receber</UI>, <UI>Contas a pagar</UI>, <UI>Contas recebidas</UI>, <UI>Contas pagas</UI>, <UI>Histórico de pagamentos</UI>,
+                  <UI> Declaração de regularidade</UI>, <UI>DRE comparativo</UI>, <UI>Razão por categoria</UI>, <UI>Fechamento</UI>, <UI>Inadimplência (Art. 002)</UI>, <UI>Balancetes
                   periódicos</UI>, <UI>Fluxo de caixa projetado</UI>, <UI>Orçamento anual</UI>, <UI>Tarifas de
                   cobrança (Asaas)</UI>).
                 </li>
@@ -816,8 +816,9 @@ export function ManualBook() {
                   <li>
                     <strong>Modo Loja</strong> — os irmãos pagam direto na conta da loja, por <strong>Pix (chave)</strong> ou
                     depósito/TED, sem intermediário. A chave Pix e os dados bancários (cadastrados em <UI>Dados bancários</UI>, no topo
-                    das Configurações) aparecem na tela de Cobranças e nos lembretes enviados aos irmãos. O Tesoureiro confirma o
-                    recebimento e dá a baixa em <UI>Pagamentos</UI> (7.5). Não há tarifas.
+                    das Configurações) aparecem na tela de Cobranças e nos lembretes enviados aos irmãos. Com a <strong>chave Pix</strong>
+                    cadastrada, o irmão também paga pelo portal: o sistema gera o QR Code com o valor exato e ele avisa com
+                    <UI> Já paguei</UI>. O Tesoureiro confirma o recebimento e dá a baixa em <UI>Pagamentos</UI> (7.5). Não há tarifas.
                   </li>
                   <li>
                     <strong>Modo Asaas</strong> — a cobrança é emitida no Asaas em <strong>Pix ou boleto</strong> (você escolhe o
@@ -1000,7 +1001,9 @@ export function ManualBook() {
                   que venceu — não é preciso clicar em nada. Cada ocorrência tem o seu próprio lançamento (pagar uma parcela não quita as seguintes)
                   e a recorrência <strong>continua mesmo que a cobrança anterior já esteja paga ou em atraso</strong>. O botão <UI>Processar
                   recorrentes</UI>, no alto da tela (só Tesoureiro e Administrador), roda a mesma rotina na hora. Uma rodada gera, no máximo,
-                  <strong> uma</strong> cobrança por recorrência: parcelas acumuladas nunca são despejadas de uma vez.
+                  <strong> uma</strong> cobrança por recorrência: parcelas acumuladas nunca são despejadas de uma vez. No Modo Asaas, com
+                  a opção <UI>Emitir automaticamente no Asaas</UI> ligada (6.9), a mesma rotina emite no Asaas as cobranças que vencem
+                  nos próximos 3 dias, e o botão informa quantas foram emitidas e quantas ficaram sem CPF.
                 </p>
                 <p>
                   <strong>Irmão no Art. 002.</strong> Enquanto o irmão estiver enquadrado no Art. 002 (mensalidade vencida há mais de 60 dias), a recorrência
@@ -1021,7 +1024,7 @@ export function ManualBook() {
                   filtrar por número, membro ou status.
                 </p>
                 <Bullets>
-                  <li><strong>Lembrar:</strong> envia por e-mail um lembrete avulso da cobrança ao membro — útil pra cobrar na hora, além do lembrete automático que o sistema já envia 3 dias antes do vencimento.</li>
+                  <li><strong>Lembrar:</strong> envia por e-mail um lembrete avulso da cobrança ao membro — útil pra cobrar na hora, além do lembrete automático que o sistema já envia 3 dias antes do vencimento. Os lembretes levam o link do Pix (quando emitido no Asaas) ou os dados de pagamento da loja, e o <strong>link do portal</strong>, onde o irmão paga sozinho (<UI>Minhas pendências</UI>).</li>
                   <li><strong>Cancelar:</strong> remove a cobrança e o lançamento a receber gerado por ela (nunca mexe em pagamentos já registrados). Só funciona em cobranças ainda não pagas.</li>
                 </Bullets>
               </Sub>
@@ -1121,6 +1124,8 @@ export function ManualBook() {
                   Quatro relatórios listam as contas em uma só tela, cada um com filtros de <UI>De</UI>/<UI>Até</UI>, <UI>Pessoa</UI> (membro ou cliente/fornecedor) e busca por descrição ou categoria, e os botões <UI>Imprimir / PDF</UI> e <UI>Exportar CSV</UI>:
                   <UI> Contas a receber</UI> e <UI>Contas a pagar</UI> mostram o que está <strong>em aberto</strong>, por data de vencimento;
                   <UI> Contas recebidas</UI> e <UI>Contas pagas</UI> mostram o que <strong>já foi liquidado</strong>, por data de recebimento ou de pagamento. Ficam em <UI>Tesouraria → Relatórios</UI>.
+                  Para olhar <strong>um irmão</strong>: o <UI>Histórico de pagamentos</UI> (7.19) mostra tudo o que ele pagou, com a forma
+                  e o recibo de cada pagamento, e a <UI>Declaração de regularidade</UI> (7.20) atesta que ele não tem débito vencido.
                 </p>
                 <Note>
                   <UI>Contas a receber</UI> e <UI>Contas a pagar</UI> abrem por padrão <strong>sem limite de data</strong> — mostram tudo
@@ -1145,14 +1150,14 @@ export function ManualBook() {
                   <li>
                     <strong>Relatório</strong> (todos os relatórios financeiros e de controle — Contas, DRE, Fechamento,
                     Balancetes, Orçamento, Fluxo de caixa, Tarifas, Razão, Inadimplência, Extratos, Fundos, Frequência,
-                    Quadro social, Membros, Materiais, extrato do obreiro, recibo): cabeçalho com brasão, nome da loja,
+                    Quadro social, Membros, Materiais, extrato do obreiro, histórico de pagamentos, recibo): cabeçalho com brasão, nome da loja,
                     título, período e filtros aplicados, e <strong>&quot;Emitido em &lt;data e hora&gt; por &lt;quem
                     imprimiu&gt;&quot;</strong>; papel A4 (os relatórios largos saem deitados); tabelas com linha de
                     total; e no rodapé de cada folha o nome da loja e <strong>&quot;Página X de Y&quot;</strong>. Os
                     documentos de prestação de contas trazem as linhas de assinatura.
                   </li>
                   <li>
-                    <strong>Documento oficial</strong> (Composição da loja, Termo de responsabilidade): o formato de uma
+                    <strong>Documento oficial</strong> (Composição da loja, Termo de responsabilidade, Declaração de regularidade financeira): o formato de uma
                     prancha — fórmula de abertura (6.1), brasão, nome da loja, Oriente, rito, Potência e data de fundação,
                     o texto, o fecho com local e data por extenso (&quot;Oriente de …, 27 de setembro de 2026.&quot;) e as
                     assinaturas.
@@ -1340,6 +1345,11 @@ export function ManualBook() {
                 <Bullets>
                   <li><strong>Verificar pagamentos no Asaas</strong> (em <UI>Integrações</UI>, se o Asaas estiver conectado): confere no Asaas cobranças emitidas que ainda não baixaram no sistema — cobre o caso raro de o aviso automático (webhook) falhar ou atrasar.</li>
                   <li><strong>Conciliação bancária</strong> (<UI>Tesouraria → Cadastros e Conferência → Conciliação bancária</UI>): importe o extrato do seu banco (arquivo <strong>OFX</strong>, exportado pelo internet banking, ou <strong>CSV</strong> com colunas Data/Descrição/Valor). O sistema tenta casar cada linha com um pagamento já registrado (mesmo valor, data próxima, mesma direção — receber ou pagar); o que não casar sozinho fica disponível para <UI>Vincular manualmente</UI> ou <UI>Ignorar</UI>.</li>
+                  <li><strong>Avisos &quot;Já paguei&quot; × extrato</strong> (Modo Loja): com o extrato importado, cada aviso em
+                  <UI> Pagamentos</UI> mostra se há um crédito correspondente, e <UI>Dar baixa</UI> já concilia a linha (7.5). Pix
+                  agrupado aparece como um crédito só, do total do grupo.</li>
+                  <li><strong>Pix agrupado no Asaas:</strong> <UI>Verificar pagamentos no Asaas</UI> reconhece o Pix que quitou várias
+                  contas e divide o valor e a tarifa entre elas, como o aviso automático (7.4).</li>
                 </Bullets>
               </Sub>
 
@@ -1898,6 +1908,8 @@ export function ManualBook() {
               <Bullets>
                 <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> e <strong>Ações rápidas</strong>: o pulso da loja.</li>
                 <li><UI>Relatórios</UI>: arrecadação, inadimplência, fluxo de caixa e frequência por período.</li>
+                <li><UI>Histórico de pagamentos</UI> (7.19): o que cada irmão pagou, com recibos — para conferir uma reclamação sem depender de terceiros.</li>
+                <li><UI>Declaração de regularidade</UI> (7.20): a declaração de &quot;nada consta&quot; financeiro, que você assina com o Tesoureiro — para transferência, elevação, filiação ou candidatura.</li>
                 <li><UI>Auditoria</UI> (se o Administrador liberar em 6.4): a trilha imutável de quem fez o quê e quando — base para pareceres e aprovações.</li>
               </Bullets>
             </Chapter>
@@ -1921,6 +1933,11 @@ export function ManualBook() {
               <p>
                 Assim você confere, a qualquer momento, <strong>o que pagou, o que está em aberto, do que se trata e o que
                 vence</strong> — sem precisar pedir à tesouraria.
+              </p>
+              <p className="text-sm text-sand-dark">
+                <strong>Administrador que também é irmão:</strong> o login de Administrador não é ligado a um cadastro de membro
+                (os papéis não se confundem, capítulo 3). Nele, <UI>Meu portal</UI> mostra <UI>Lançamentos no meu CPF</UI>: informe o
+                seu CPF para consultar o que está lançado para você (só consulta). Para pagar, entre com o seu login de obreiro.
               </p>
               <Note>
                 Se a sua mensalidade ficar em aberto por mais de <strong>60 dias</strong>, um aviso vermelho aparece por
@@ -1967,6 +1984,12 @@ export function ManualBook() {
                   preencha o <UI>Título</UI> e descreva a situação, e clique em <UI>Enviar pedido</UI>. O pedido
                   <strong> não vira uma campanha automaticamente</strong> — ele é uma mensagem direta para o Hospitaleiro
                   e a Administração da loja (chega por e-mail), que decidem se formalizam uma campanha a partir dele.
+                </p>
+                <p>
+                  <strong>Doar ao Tronco:</strong> se a loja recebe pelo Asaas (Modo Asaas), escolha um valor sugerido ou digite outro e
+                  clique para gerar o Pix — aparecem o QR Code e o <em>copia e cola</em>, e a doação entra sozinha no Tronco quando o Pix
+                  é confirmado. O Asaas exige CPF no cadastro (peça à Secretaria, se faltar). No Modo Loja, doe direto na chave Pix da
+                  loja ou com a Hospitalaria.
                 </p>
               </Sub>
               <Sub id="membro-social" title="10.4 Social: os quadros da loja">
@@ -2203,8 +2226,14 @@ export function ManualBook() {
                 <li><strong>O sistema recusou o valor de uma conta ou pagamento.</strong> O valor precisa ser maior que zero, com até 2 casas decimais. Um pagamento também não pode ultrapassar o <strong>saldo em aberto</strong> da conta (ele mostra o quanto falta) — isso evita baixar a mesma conta duas vezes por clique duplicado.</li>
                 <li><strong>Não consigo emitir boleto.</strong> Verifique se o Asaas está conectado (6.2) e se o membro tem CPF (7.4).</li>
                 <li><strong>O pagamento não baixou sozinho.</strong> Confirme o webhook e o token no painel do Asaas (6.2-C).</li>
+                <li><strong>O irmão avisou que pagou (&quot;Já paguei&quot;). Onde dou a baixa?</strong> No topo de <UI>Pagamentos</UI>, em <UI>Avisos de pagamento dos irmãos</UI> — ou pelo link do e-mail do aviso. Confira o crédito no extrato e clique em <UI>Dar baixa</UI>: o formulário vem preenchido (7.5).</li>
+                <li><strong>A baixa foi recusada: &quot;faz parte de um Pix agrupado&quot;.</strong> O irmão gerou um Pix para várias contas e ele está aberto no Asaas. Aguarde a confirmação; se ele pagou por fora, <UI>Reemita</UI> a cobrança em Cobranças (desfaz o agrupado) e depois dê a baixa (7.4).</li>
+                <li><strong>O irmão não consegue pagar pelo portal.</strong> No Modo Asaas, o cadastro dele precisa de CPF (a Secretaria completa em <UI>Membros</UI>). No Modo Loja, a loja precisa ter a chave Pix em <UI>Configurações da loja → Dados bancários</UI>.</li>
+                <li><strong>A emissão automática não emitiu uma cobrança.</strong> Ela só emite cobranças que vencem de hoje até 3 dias e ainda não foram emitidas; vencidas ficam com a Tesouraria (ou com o <UI>Pagar</UI> do portal), e irmão sem CPF fica de fora (6.9).</li>
+                <li><strong>Preciso de uma declaração de &quot;nada consta&quot; para um irmão.</strong> <UI>Relatórios → Declaração de regularidade</UI> (7.20). O irmão em dia também emite a dele em <UI>Meu portal</UI>.</li>
+                <li><strong>O irmão diz que já pagou uma mensalidade antiga.</strong> Abra <UI>Relatórios → Histórico de pagamentos</UI> (7.19), filtre pelo irmão e pelo período: cada pagamento tem o recibo. Ele mesmo vê o dele em <UI>Meu portal → Meu histórico de pagamentos</UI>.</li>
                 <li><strong>Meu acesso foi pausado.</strong> O teste de 10 dias terminou — contrate um plano em <UI>Assinatura</UI>; seus dados continuam guardados.</li>
-                <li><strong>Sou Administrador e também membro. Como faço?</strong> Use <strong>dois logins com dois e-mails</strong>: um de Administrador (o da contratação ou o criado em <UI>Novo administrador</UI>) e outro de obreiro (o e-mail do seu cadastro de membro, liberado com <UI>Conceder acesso</UI>). Entre com o login da função que vai exercer. O sistema não aceita o mesmo e-mail nos dois (6.3).</li>
+                <li><strong>Sou Administrador e também membro. Como faço?</strong> Use <strong>dois logins com dois e-mails</strong>: um de Administrador (o da contratação ou o criado em <UI>Novo administrador</UI>) e outro de obreiro (o e-mail do seu cadastro de membro, liberado com <UI>Conceder acesso</UI>). Entre com o login da função que vai exercer. O sistema não aceita o mesmo e-mail nos dois (6.3). No login de Administrador, <UI>Meu portal → Lançamentos no meu CPF</UI> mostra o que está lançado para você (só consulta).</li>
                 <li><strong>Por que não consigo promover alguém a Administrador (nem rebaixar um)?</strong> O papel de Administrador é fixo, de propósito, para que as prerrogativas não se misturem. Para ter outro Administrador, crie-o em <UI>Usuários &amp; acessos → Novo administrador</UI> (limite de 2 ativos).</li>
                 <li><strong>Preciso trocar o e-mail do Administrador.</strong> Em <UI>Minha conta</UI> (6.11): informe o novo e-mail e a senha atual, e confirme pelo link enviado ao novo endereço.</li>
                 <li><strong>Não vejo um item do menu.</strong> Ele não está liberado para o seu papel; fale com o Administrador (6.3 / 6.4).</li>
