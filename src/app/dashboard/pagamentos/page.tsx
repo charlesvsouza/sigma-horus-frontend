@@ -79,8 +79,13 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
     if (!account || seen.has(n.entityId)) return [];
     seen.add(n.entityId);
     let note: string | null = null;
-    try { note = (JSON.parse(n.after ?? '{}') as { note?: string | null }).note ?? null; } catch { note = null; }
-    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note }];
+    let hasReceipt = false;
+    try {
+      const meta = JSON.parse(n.after ?? '{}') as { note?: string | null; receiptKey?: string };
+      note = meta.note ?? null;
+      hasReceipt = Boolean(meta.receiptKey);
+    } catch { note = null; }
+    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt }];
   });
 
   const payments = data.payments.map((p) => ({

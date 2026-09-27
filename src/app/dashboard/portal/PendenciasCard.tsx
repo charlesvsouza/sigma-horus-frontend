@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Alert, Badge, Button, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { daysOverdueBR, formatDateOnly } from '@/lib/date-only';
+import { receiptUploadError } from '@/lib/upload-guards';
 
 // "Minhas pendências": o irmão vê o que deve à loja e paga ali mesmo — no Modo Asaas
 // com o Pix da cobrança (emitida na hora, se a Tesouraria ainda não emitiu; baixa
@@ -48,6 +49,7 @@ export function PendenciasCard({
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [note, setNote] = useState('');
+  const [receipt, setReceipt] = useState<File | null>(null);
   const [noticeMsg, setNoticeMsg] = useState('');
   const [sendingNotice, setSendingNotice] = useState(false);
 
@@ -60,6 +62,7 @@ export function PendenciasCard({
     setError('');
     setCopied(false);
     setNote('');
+    setReceipt(null);
     setNoticeMsg('');
   }
 
@@ -89,11 +92,11 @@ export function PendenciasCard({
   async function sendNotice(id: string) {
     setSendingNotice(true);
     setNoticeMsg('');
-    const res = await fetch(`/api/portal/accounts/${id}/paid-notice`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note }),
-    });
+    // Com comprovante vai como formulário (multipart); o navegador põe o Content-Type.
+    const form = new FormData();
+    form.append('note', note);
+    if (receipt) form.append('file', receipt);
+    const res = await fetch(`/api/portal/accounts/${id}/paid-notice`, { method: 'POST', body: form });
     const data = await res.json().catch(() => ({}));
     setSendingNotice(false);
     if (!res.ok) { setError(data.error ?? 'Não foi possível avisar a Tesouraria.'); return; }
@@ -187,11 +190,32 @@ export function PendenciasCard({
                         {noticeMsg ? (
                           <Alert intent="ok">{noticeMsg}</Alert>
                         ) : (
-                          <div className="flex flex-col gap-2 sm:flex-row">
-                            <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} placeholder="Observação (opcional)" aria-label="Observação para a Tesouraria" className={`${inputClass} min-w-0 flex-1 text-xs`} />
-                            <Button size="sm" variant="secondary" onClick={() => void sendNotice(a.id)} disabled={sendingNotice}>
-                              {sendingNotice ? 'Enviando…' : 'Já paguei'}
-                            </Button>
+                          <div className="space-y-2">
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                              <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} placeholder="Observação (opcional)" aria-label="Observação para a Tesouraria" className={`${inputClass} min-w-0 flex-1 text-xs`} />
+                              <Button size="sm" variant="secondary" onClick={() => void sendNotice(a.id)} disabled={sendingNotice}>
+                                {sendingNotice ? 'Enviando…' : 'Já paguei'}
+                              </Button>
+                            </div>
+                            <label className="flex cursor-pointer flex-wrap items-center gap-2 text-xs text-sand-dark">
+                              <span className="rounded-full border border-gold/40 px-3 py-1 font-medium text-gold/80 hover:border-gold/60 hover:text-gold">
+                                {receipt ? 'Trocar comprovante' : 'Anexar comprovante (opcional)'}
+                              </span>
+                              <span className="min-w-0 truncate">{receipt ? receipt.name : 'foto ou PDF, até 4 MB'}</span>
+                              <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp,application/pdf"
+                                className="sr-only"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0] ?? null;
+                                  e.target.value = '';
+                                  const invalid = f ? receiptUploadError(f) : null;
+                                  if (invalid) { setError(invalid); setReceipt(null); return; }
+                                  setError('');
+                                  setReceipt(f);
+                                }}
+                              />
+                            </label>
                           </div>
                         )}
                       </>

@@ -12,3 +12,14 @@ export function imageUploadError(file: { type: string; size: number }, opts: { a
   if (file.size > MAX_IMAGE_BYTES) return `${label} passa de 5 MB. Reduza o arquivo e tente de novo.`;
   return null;
 }
+
+const RECEIPT_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'application/pdf']);
+// 4 MB: o Vercel recusa corpo de requisição acima de 4,5 MB antes de chegar à rota.
+export const MAX_RECEIPT_BYTES = 4 * 1024 * 1024;
+
+/** Comprovante de pagamento anexado pelo irmão ("Já paguei"): foto ou PDF, até 4 MB. */
+export function receiptUploadError(file: { type: string; size: number }): string | null {
+  if (!RECEIPT_TYPES.has(file.type)) return 'O comprovante precisa ser uma foto (PNG, JPG ou WebP) ou um PDF.';
+  if (file.size > MAX_RECEIPT_BYTES) return 'O comprovante passa de 4 MB. Reduza o arquivo (ou tire a foto em resolução menor) e tente de novo.';
+  return null;
+}

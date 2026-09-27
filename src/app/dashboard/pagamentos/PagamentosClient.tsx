@@ -22,7 +22,7 @@ interface AccountOption {
   who: string | null;
 }
 /** "Já paguei" do portal (Modo Loja) ainda sem baixa. */
-interface PaymentNotice { accountId: string; noticeAt: string; noticeDay: string; note: string | null; }
+interface PaymentNotice { accountId: string; noticeAt: string; noticeDay: string; note: string | null; hasReceipt?: boolean; }
 
 function accountLabel(a: AccountOption): string {
   return [a.title, a.who, `venc. ${formatDateOnly(a.dueDate)}`, `saldo ${brl(a.balance)}`].filter(Boolean).join(' · ');
@@ -179,7 +179,14 @@ export default function PagamentosClient({ accounts, members, payments, financia
                         {n.note ? ` · "${n.note}"` : ''}
                       </p>
                     </div>
-                    <Button size="sm" onClick={() => settleNotice(n)}>Dar baixa</Button>
+                    <div className="flex items-center gap-3">
+                      {n.hasReceipt ? (
+                        <a href={`/api/portal/accounts/${n.accountId}/paid-notice/receipt`} target="_blank" rel="noreferrer" className="text-xs font-medium text-gold hover:text-gold-light">
+                          Ver comprovante
+                        </a>
+                      ) : null}
+                      <Button size="sm" onClick={() => settleNotice(n)}>Dar baixa</Button>
+                    </div>
                   </li>
                 );
               })}

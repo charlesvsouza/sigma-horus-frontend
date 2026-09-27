@@ -261,7 +261,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.48</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.49</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -323,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.48 — 27 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.49 — 27 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1080,7 +1080,7 @@ export function ManualBook() {
                   <strong>Avisos &quot;Já paguei&quot; (Modo Loja).</strong> Quando o irmão paga pelo portal no Pix da chave da
                   loja e clica em <UI>Já paguei</UI> (capítulo 10), o Tesoureiro e o Administrador recebem um e-mail com um
                   link direto para a baixa, e o aviso aparece no topo de Pagamentos, em <UI>Avisos de pagamento dos
-                  irmãos</UI>, com o irmão, a conta, o vencimento, o saldo e a observação dele. Confira o crédito no extrato
+                  irmãos</UI>, com o irmão, a conta, o vencimento, o saldo e a observação dele — e <UI>Ver comprovante</UI>, quando ele anexou um (o arquivo fica guardado de forma privada; o link vale por poucos minutos). Confira o crédito no extrato
                   do banco e clique em <UI>Dar baixa</UI>: o formulário vem preenchido (conta, irmão, valor, PIX, data do aviso
                   e uma observação pronta). Escolha a conta bancária, se ainda não veio, marque a ciência e registre. O aviso
                   some do painel, e a conta sai das pendências do irmão, com o recibo no portal dele. O aviso não dá baixa
@@ -1895,7 +1895,7 @@ export function ManualBook() {
               <Bullets>
                 <li><strong>Resumo do obreiro:</strong> seus dados — nome, e-mail, telefone, <strong>grau atual</strong> e loja de origem.</li>
                 <li><strong>Resumo financeiro:</strong> três indicadores, sempre do que está <strong>em aberto</strong> (conta paga sai na hora da baixa) — <UI>O que devo</UI>, <UI>A Loja me deve</UI> e <UI>Vencido</UI> (a parte do que você deve que já passou do vencimento).</li>
-                <li><strong>Minhas pendências:</strong> as contas que você deve à loja e ainda estão em aberto (mensalidade, material, evento — qualquer origem), com o selo <UI>Vencida há N dias</UI> e o total em aberto. Clique em <UI>Pagar</UI> para gerar o Pix com o valor exato (QR Code e <UI>Copiar código</UI>). Se a loja recebe pelo <strong>Asaas</strong>, a confirmação é automática: depois do Pix, a conta sai das pendências e o recibo aparece no extrato. Se a loja recebe <strong>direto na conta dela</strong>, o Pix cai na chave da loja; depois de pagar, clique em <UI>Já paguei</UI> para avisar a Tesouraria, que confere o extrato e dá a baixa. O Asaas exige CPF: se o seu não estiver no cadastro, peça à Secretaria.</li>
+                <li><strong>Minhas pendências:</strong> as contas que você deve à loja e ainda estão em aberto (mensalidade, material, evento — qualquer origem), com o selo <UI>Vencida há N dias</UI> e o total em aberto. Clique em <UI>Pagar</UI> para gerar o Pix com o valor exato (QR Code e <UI>Copiar código</UI>). Se a loja recebe pelo <strong>Asaas</strong>, a confirmação é automática: depois do Pix, a conta sai das pendências e o recibo aparece no extrato. Se a loja recebe <strong>direto na conta dela</strong>, o Pix cai na chave da loja; depois de pagar, clique em <UI>Já paguei</UI> para avisar a Tesouraria, que confere o extrato e dá a baixa — se quiser, anexe antes a foto ou o PDF do comprovante (<UI>Anexar comprovante</UI>, até 4 MB). O Asaas exige CPF: se o seu não estiver no cadastro, peça à Secretaria.</li>
                 <li><strong>Meu extrato:</strong> cada conta vinculada a você — tipo (a receber/a pagar), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado — sai com o cabeçalho da loja, o saldo do filtro e o aviso de que é um documento informativo (o comprovante oficial de um pagamento é o recibo da Tesouraria, que você abre pelo link <UI>Recibo</UI> de cada conta paga).</li>
                 <li><strong>Meu histórico de pagamentos:</strong> no Resumo financeiro, abra <UI>Meu histórico de pagamentos</UI> para ver tudo o que você já pagou à loja, por período (padrão: o ano corrente): data, a que se refere, vencimento, forma de pagamento e valor, com o <UI>Recibo</UI> de cada pagamento e o total. Use <UI>Imprimir / PDF</UI> ou <UI>Exportar CSV</UI> para guardar. Assim você confere, por conta própria, o que já quitou.</li>
                 <li><strong>Declaração de regularidade:</strong> em dia com a Tesouraria (nada vencido)? Abra <UI>Declaração de regularidade</UI> no Resumo financeiro e imprima a declaração oficial da loja, com as assinaturas do Tesoureiro e do Venerável — para transferência, elevação, filiação ou candidatura. Com algum débito vencido, a tela mostra o que falta e o caminho para pagar.</li>
