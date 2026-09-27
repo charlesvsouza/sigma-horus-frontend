@@ -43,6 +43,15 @@ export function removesFromCatalog(kind: SupplyKind): boolean {
   return kind === 'sale' || kind === 'donation';
 }
 
+/**
+ * Venda (tem valor) e doação (baixa definitiva do estoque) são de quem cuida do cadastro
+ * de materiais (materials:write — Secretário, Venerável, Administrador). O Arquiteto opera
+ * o inventário (empréstimo, entrega da Potência), mas não lida com valores nem decide baixa.
+ */
+export function needsCatalogManager(kind: SupplyKind): boolean {
+  return kind === 'sale' || kind === 'donation';
+}
+
 export function initialStatus(kind: SupplyKind): 'issued' | 'delivered' {
   return kind === 'loan' ? 'issued' : 'delivered';
 }

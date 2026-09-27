@@ -11,7 +11,7 @@ import { ReportActions, ReportDocument, type Signatory } from '@/components/repo
 import { OfficialDocument } from '@/components/report/official-document';
 import type { Letterhead } from '@/lib/letterhead';
 import { brl } from '@/lib/currency';
-import { deliveryStatement, isSupplyKind, SUPPLY_KIND_LABEL, SUPPLY_KINDS, type SupplyKind } from '@/lib/material-supply';
+import { deliveryStatement, isSupplyKind, needsCatalogManager, SUPPLY_KIND_LABEL, SUPPLY_KINDS, type SupplyKind } from '@/lib/material-supply';
 
 interface RiteOption { id: string; name: string; }
 interface MemberOption {
@@ -363,6 +363,8 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
 
   // Empréstimos em aberto (voltam à loja) × entregas em definitivo (o material é do obreiro).
   const activeLoans = loans.filter((l) => l.kind === 'loan');
+  // O Arquiteto não vê venda/doação: são de quem cuida do cadastro (valores e baixa).
+  const allowedKinds = SUPPLY_KINDS.filter((k) => canManageCatalog || !needsCatalogManager(k));
   const deliveries = loans.filter((l) => l.kind !== 'loan');
   // Potência não depende do estoque da loja: qualquer material ativo do catálogo serve.
   const supplyOptions = loanForm.kind === 'potencia' ? materials.filter((m) => m.active) : availableForLoan;
@@ -601,7 +603,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
           <form onSubmit={handleLoanSubmit} className="mb-5 grid gap-4 rounded-lg border border-white/6 bg-sigma-blue-deep/50 p-4 md:grid-cols-2">
             <Field label="Modalidade">
               <select value={loanForm.kind} onChange={(e) => setLoanForm({ ...loanForm, kind: e.target.value as SupplyKind, materialId: '' })} className={INPUT_CLASS}>
-                {SUPPLY_KINDS.map((k) => <option key={k} value={k}>{k === 'potencia' && letterhead.powerName ? `Cedido pela Potência (${letterhead.powerName})` : SUPPLY_KIND_LABEL[k]}</option>)}
+                {allowedKinds.map((k) => <option key={k} value={k}>{k === 'potencia' && letterhead.powerName ? `Cedido pela Potência (${letterhead.powerName})` : SUPPLY_KIND_LABEL[k]}</option>)}
               </select>
             </Field>
             <Field label="Material">
@@ -665,7 +667,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
                   <div className="mt-3 flex flex-wrap items-end gap-3 rounded-lg border border-gold/20 bg-gold/5 p-3">
                     <label className="text-xs text-sand-dark">Passa a ser
                       <select value={converting.kind} onChange={(e) => setConverting({ ...converting, kind: e.target.value as SupplyKind })} className={`mt-1 block ${INPUT_CLASS}`}>
-                        {SUPPLY_KINDS.filter((k) => k !== 'loan').map((k) => <option key={k} value={k}>{SUPPLY_KIND_LABEL[k]}</option>)}
+                        {allowedKinds.filter((k) => k !== 'loan').map((k) => <option key={k} value={k}>{SUPPLY_KIND_LABEL[k]}</option>)}
                       </select>
                     </label>
                     {converting.kind === 'sale' ? (

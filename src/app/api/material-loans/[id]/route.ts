@@ -3,7 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { isValidMoney, round2 } from '@/lib/money';
-import { canConvert, isSupplyKind, removesFromCatalog, SUPPLY_KIND_LABEL, type SupplyKind } from '@/lib/material-supply';
+import { canConvert, isSupplyKind, needsCatalogManager, removesFromCatalog, SUPPLY_KIND_LABEL, type SupplyKind } from '@/lib/material-supply';
 import { createSaleReceivable, removeSaleReceivable } from '@/lib/material-supply-server';
 import { NextResponse } from 'next/server';
 
@@ -32,6 +32,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body?.kind !== undefined) {
     const kind = body.kind as SupplyKind;
     if (!isSupplyKind(kind)) return NextResponse.json({ error: 'Modalidade inválida.' }, { status: 400 });
+    if (needsCatalogManager(kind)) {
+      const manager = await getSessionAndCheck(lodgeId, role, session?.user?.memberId, 'materials');
+      if ('error' in manager) {
+        return NextResponse.json({ error: `${SUPPLY_KIND_LABEL[kind]} é registrada por quem cuida do cadastro de materiais (Secretário, Venerável ou Administrador).` }, { status: 403 });
+      }
+    }
     const unitPrice = round2(Number(body?.unitPrice ?? 0));
     if (kind === 'sale' && !isValidMoney(unitPrice)) {
       return NextResponse.json({ error: 'Informe o valor unitário da venda (maior que zero, até 2 casas decimais).' }, { status: 400 });

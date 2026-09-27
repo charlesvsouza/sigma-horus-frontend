@@ -6,7 +6,7 @@ import { isEligibleForDegree, symbolicSituation } from '@/lib/masonic-degree';
 import { availableUnits } from '@/lib/inventory';
 import { quarantineByMaterial } from '@/lib/inventory-server';
 import { isValidMoney, round2 } from '@/lib/money';
-import { initialStatus, isSupplyKind, needsLodgeStock, removesFromCatalog, type SupplyKind } from '@/lib/material-supply';
+import { initialStatus, isSupplyKind, needsCatalogManager, needsLodgeStock, removesFromCatalog, SUPPLY_KIND_LABEL, type SupplyKind } from '@/lib/material-supply';
 import { createSaleReceivable } from '@/lib/material-supply-server';
 import { NextResponse } from 'next/server';
 
@@ -65,6 +65,12 @@ export async function POST(request: Request) {
 
   if (!materialId || !memberId || !Number.isInteger(quantity) || quantity <= 0 || !isSupplyKind(kind)) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
+  }
+  if (needsCatalogManager(kind)) {
+    const manager = await requireLodgeAccess(String(lodgeId), role, 'materials', 'write', session?.user?.memberId);
+    if (!manager.ok) {
+      return NextResponse.json({ error: `${SUPPLY_KIND_LABEL[kind]} é registrada por quem cuida do cadastro de materiais (Secretário, Venerável ou Administrador).` }, { status: 403 });
+    }
   }
   if (kind === 'sale' && !isValidMoney(unitPrice)) {
     return NextResponse.json({ error: 'Informe o valor unitário da venda (maior que zero, até 2 casas decimais).' }, { status: 400 });

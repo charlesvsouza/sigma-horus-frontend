@@ -1704,6 +1704,11 @@ export function ManualBook() {
                   <li><strong>Doação da loja:</strong> a loja presenteia o obreiro (ex.: o avental do iniciado). Sai do estoque em definitivo, sem custo para ele.</li>
                 </Bullets>
                 <p>
+                  <strong>Quem registra:</strong> <strong>Venda</strong> e <strong>Doação da loja</strong> são do
+                  Secretário, do Venerável e do Administrador — envolvem valor ou baixa definitiva do estoque. O
+                  Arquiteto registra empréstimos e entregas da Potência, e não vê as outras duas opções.
+                </p>
+                <p>
                   <strong>O iniciado e o ritual:</strong> ele compra o próprio (<strong>Venda</strong>) ou usa o da loja
                   (<strong>Empréstimo</strong>, com Termo de responsabilidade). Quando a Potência envia os rituais, use
                   <strong> Cedido pela Potência</strong>.

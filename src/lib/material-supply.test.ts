@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canConvert, deliveryStatement, initialStatus, isPermanent, isSupplyKind, needsLodgeStock, removesFromCatalog } from './material-supply.ts';
+import { canConvert, deliveryStatement, initialStatus, isPermanent, isSupplyKind, needsCatalogManager, needsLodgeStock, removesFromCatalog } from './material-supply.ts';
+
+test('venda e doação exigem quem cuida do cadastro; empréstimo e Potência, só o inventário', () => {
+  assert.equal(needsCatalogManager('sale'), true);
+  assert.equal(needsCatalogManager('donation'), true);
+  assert.equal(needsCatalogManager('loan'), false);
+  assert.equal(needsCatalogManager('potencia'), false);
+});
 
 test('só o empréstimo volta; as demais modalidades nascem entregues', () => {
   assert.equal(isPermanent('loan'), false);
