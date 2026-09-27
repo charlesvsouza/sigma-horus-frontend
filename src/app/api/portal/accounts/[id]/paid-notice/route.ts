@@ -73,9 +73,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   );
 
   const subject = `Aviso de pagamento — ${member.name}`;
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://sigmahorus.com.br').replace(/\/+$/, '');
+  const settleUrl = `${appUrl}/dashboard/pagamentos?conta=${account.id}`;
   const text = `O irmão ${member.name} informou pelo portal que pagou via Pix a conta "${account.title}" (vencimento ${formatDateOnly(account.dueDate)}), no valor de ${brl(balance)}.${note ? `\n\nObservação do irmão: ${note}` : ''}
 
-Confira o crédito no extrato da conta da loja e registre o recebimento em Financeiro → Contas. Este aviso não dá baixa automática.
+Confira o crédito no extrato da conta da loja e dê a baixa (o formulário já abre preenchido):
+${settleUrl}
+
+Este aviso não dá baixa automática. Os avisos pendentes também ficam no topo de Financeiro → Pagamentos.
 
 ${lodge.name}`;
   const recipients = [...new Set(staff.map((u) => u.email).filter(Boolean))];

@@ -5,9 +5,44 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { formatDateOnly, todayBR } from '@/lib/date-only';
 
 interface MemberOption { id: string; name: string; }
-interface AccountOption { id: string; title: string; type: string; amount: number; bankAccountId: string | null; }
+interface AccountOption {
+  id: string;
+  title: string;
+  type: string;
+  amount: number;
+  /** Saldo em aberto (desconta parciais). */
+  balance: number;
+  dueDate: string;
+  bankAccountId: string | null;
+  memberId: string | null;
+  /** Irmão ou contraparte da conta — sem isso, "Mensalidades" repetido não diz de quem é. */
+  who: string | null;
+}
+/** "Já paguei" do portal (Modo Loja) ainda sem baixa. */
+interface PaymentNotice { accountId: string; noticeAt: string; noticeDay: string; note: string | null; }
+
+function accountLabel(a: AccountOption): string {
+  return [a.title, a.who, `venc. ${formatDateOnly(a.dueDate)}`, `saldo ${brl(a.balance)}`].filter(Boolean).join(' · ');
+}
+
+const EMPTY_FORM = { accountId: '', memberId: '', bankAccountId: '', amount: '', paidAt: '', method: 'manual', note: '' };
+
+/** Formulário pronto para a baixa de uma conta (saldo, irmão, conta prevista); com aviso do portal, Pix na data do aviso. */
+function formFor(account: AccountOption, notice?: PaymentNotice | null) {
+  return {
+    ...EMPTY_FORM,
+    accountId: account.id,
+    memberId: account.memberId ?? '',
+    bankAccountId: account.bankAccountId ?? '',
+    amount: String(account.balance),
+    paidAt: notice?.noticeDay ?? todayBR().toISOString().slice(0, 10),
+    method: notice ? 'pix' : 'manual',
+    note: notice ? `Pix informado pelo irmão no portal em ${new Date(notice.noticeAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}${notice.note ? ` — "${notice.note}"` : ''}. Conferido no extrato.` : '',
+  };
+}
 interface FinancialAccountOption { id: string; name: string; kind: string; }
 interface PaymentItem {
   id: string;
@@ -20,15 +55,29 @@ interface PaymentItem {
   bankAccount?: { id: string; name: string; kind: string } | null;
 }
 
-export default function PagamentosClient({ accounts, members, payments, financialAccounts }: { accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[] }) {
+export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null }: { accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[]; notices?: PaymentNotice[]; initialAccountId?: string | null }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
-  const [form, setForm] = useState({ accountId: '', memberId: '', bankAccountId: '', amount: '', paidAt: '', method: 'manual', note: '' });
+  const [form, setForm] = useState(() => {
+    const account = initialAccountId ? accounts.find((a) => a.id === initialAccountId) : null;
+    return account ? formFor(account, notices.find((n) => n.accountId === account.id)) : EMPTY_FORM;
+  });
+  const byId = new Map(accounts.map((a) => [a.id, a]));
 
   function selectAccount(id: string) {
-    const account = accounts.find((a) => a.id === id);
-    setForm((prev) => ({ ...prev, accountId: id, bankAccountId: account?.bankAccountId ?? prev.bankAccountId }));
+    const account = byId.get(id);
+    if (!account) { setForm((prev) => ({ ...prev, accountId: id })); return; }
+    // Troca de conta: irmão, saldo e conta prevista vêm dela (mantém data, método e observação digitados).
+    setForm((prev) => ({ ...prev, accountId: id, memberId: account.memberId ?? '', amount: String(account.balance), bankAccountId: account.bankAccountId ?? prev.bankAccountId }));
+  }
+
+  function settleNotice(notice: PaymentNotice) {
+    const account = byId.get(notice.accountId);
+    if (!account) return;
+    setForm(formFor(account, notice));
+    setMessage(null);
+    document.getElementById('novo-pagamento')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   const [consent, setConsent] = useState(false);
   const [search, setSearch] = useState('');
@@ -82,7 +131,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
       }
       if (response.ok) {
         setMessage(data.asaasWarning ? { kind: 'error', text: data.asaasWarning } : { kind: 'ok', text: 'Pagamento registrado com sucesso.' });
-        setForm({ accountId: '', memberId: '', bankAccountId: '', amount: '', paidAt: '', method: 'manual', note: '' });
+        setForm(EMPTY_FORM);
         setConsent(false);
         router.refresh();
       } else {
@@ -110,14 +159,43 @@ export default function PagamentosClient({ accounts, members, payments, financia
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
+        {notices.length > 0 ? (
+          <section className="rounded-xl border border-sky-500/25 bg-sky-500/5 p-6" aria-labelledby="avisos-title">
+            <h2 id="avisos-title" className="text-base font-semibold text-sand-light">Avisos de pagamento dos irmãos</h2>
+            <p className="mt-1 text-sm text-sand-dark">
+              O irmão informou pelo portal que pagou via Pix na chave da loja. Confira o crédito no extrato do banco e clique em
+              <strong> Dar baixa</strong>: o formulário abaixo vem preenchido.
+            </p>
+            <ul className="mt-4 space-y-3">
+              {notices.map((n) => {
+                const a = byId.get(n.accountId);
+                if (!a) return null;
+                return (
+                  <li key={n.accountId} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sand-light">{a.who ?? 'Sem vínculo'} — {a.title}</p>
+                      <p className="mt-0.5 text-xs text-sand-dark">
+                        Venc. {formatDateOnly(a.dueDate)} · saldo {brl(a.balance)} · avisou em {new Date(n.noticeAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}
+                        {n.note ? ` · "${n.note}"` : ''}
+                      </p>
+                    </div>
+                    <Button size="sm" onClick={() => settleNotice(n)}>Dar baixa</Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
+
         <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div id="novo-pagamento" className="scroll-mt-6">
         <FormCard title="Novo pagamento">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Selecione uma conta">
                 <select value={form.accountId} onChange={(event) => selectAccount(event.target.value)} className={INPUT} required>
                   <option value="">Selecione…</option>
-                  {accounts.map((account) => <option key={account.id} value={account.id}>{account.title}</option>)}
+                  {accounts.map((account) => <option key={account.id} value={account.id}>{accountLabel(account)}</option>)}
                 </select>
               </Field>
               <Field label="Vincular a um membro">
@@ -161,6 +239,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
             <Button type="submit" disabled={!consent || submitting}>{submitting ? 'Registrando…' : 'Registrar pagamento'}</Button>
           </form>
         </FormCard>
+        </div>
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
