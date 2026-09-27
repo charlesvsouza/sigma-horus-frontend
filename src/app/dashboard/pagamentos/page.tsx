@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { todayBR } from '@/lib/date-only';
+import { matchNoticesToBank } from '@/lib/notice-bank-match';
 import { openBalance, PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
 import { withTenant } from '@/lib/prisma';
 import PagamentosClient from './PagamentosClient';
@@ -48,8 +49,13 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           orderBy: { createdAt: 'desc' },
           take: 200,
         }),
+        // Créditos do extrato importado ainda não conciliados (últimos 45 dias): casam com os avisos.
+        bankLines: await db.bankTransaction.findMany({
+          where: { lodgeId: String(lodgeId), status: 'unmatched', amount: { gt: 0 }, date: { gte: new Date(todayBR().getTime() - 45 * 86_400_000) } },
+          select: { id: true, date: true, amount: true, description: true },
+        }),
       }))
-    : { accounts: [], members: [], payments: [], financialAccounts: [], notices: [] };
+    : { accounts: [], members: [], payments: [], financialAccounts: [], notices: [], bankLines: [] };
 
   const accounts = data.accounts
     .map((a) => {
@@ -74,7 +80,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
   // "Já paguei" do portal (Modo Loja) ainda sem baixa: o último aviso de cada conta em aberto.
   const openById = new Map(accounts.map((a) => [a.id, a]));
   const seen = new Set<string>();
-  const notices = data.notices.flatMap((n) => {
+  const rawNotices = data.notices.flatMap((n) => {
     const account = openById.get(n.entityId);
     if (!account || seen.has(n.entityId)) return [];
     seen.add(n.entityId);
@@ -85,8 +91,13 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
       note = meta.note ?? null;
       hasReceipt = Boolean(meta.receiptKey);
     } catch { note = null; }
-    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt }];
+    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt, balance: account.balance }];
   });
+  const bankMatches = matchNoticesToBank(
+    rawNotices.map((n) => ({ accountId: n.accountId, balance: n.balance, noticeAt: new Date(n.noticeAt) })),
+    data.bankLines.map((l) => ({ id: l.id, date: l.date, amount: Number(l.amount), description: l.description })),
+  );
+  const notices = rawNotices.map((n) => ({ ...n, bankMatch: bankMatches.get(n.accountId) ?? null }));
 
   const payments = data.payments.map((p) => ({
     id: p.id,

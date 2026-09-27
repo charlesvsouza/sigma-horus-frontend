@@ -261,7 +261,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.49</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.50</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -323,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.49 — 27 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.50 — 27 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1085,6 +1085,12 @@ export function ManualBook() {
                   e uma observação pronta). Escolha a conta bancária, se ainda não veio, marque a ciência e registre. O aviso
                   some do painel, e a conta sai das pendências do irmão, com o recibo no portal dele. O aviso não dá baixa
                   sozinho: se o crédito não estiver no extrato, não registre e fale com o irmão.
+                  <strong> Com o extrato importado</strong> (Conciliação bancária, 7.12), cada aviso mostra se há um
+                  <strong> crédito correspondente</strong>: <em>identificado</em>, quando o banco traz na descrição o
+                  identificador do Pix gerado pelo portal (casamento certo), ou <em>compatível</em>, quando há um único crédito
+                  do mesmo valor em até 3 dias do aviso. Nesse caso, <UI>Dar baixa</UI> já usa a data do crédito e, ao
+                  registrar, <strong>concilia a linha do extrato</strong> junto — sem precisar vinculá-la depois. Crédito
+                  ambíguo (dois iguais) não é sugerido: confira à mão.
                 </p>
                 <Bullets>
                   <li><strong>Recibo:</strong> cada pagamento tem um link <UI>Recibo</UI> — abre o comprovante com o cabeçalho da loja (CNPJ, endereço, número do documento) e as linhas de assinatura do <strong>Tesoureiro em exercício na data do pagamento</strong> (o nome já vem impresso) e do contribuinte. Use <UI>Imprimir / PDF</UI>.</li>

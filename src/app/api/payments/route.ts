@@ -64,6 +64,8 @@ export async function POST(request: Request) {
   const method = String(body?.method ?? 'manual').trim();
   const note = String(body?.note ?? '').trim();
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
+  // Baixa a partir de um aviso "Já paguei" com crédito achado no extrato: concilia a linha junto.
+  const bankTransactionId = body?.bankTransactionId ? String(body.bankTransactionId) : null;
 
   if (!accountId) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
@@ -132,6 +134,14 @@ export async function POST(request: Request) {
         bankAccount: { select: { id: true, name: true, kind: true } },
       },
     });
+
+    // Linha do extrato: só concilia crédito ainda livre e do mesmo valor (senão a baixa segue sem vínculo).
+    if (bankTransactionId && account.type === 'RECEIVABLE') {
+      await db.bankTransaction.updateMany({
+        where: { id: bankTransactionId, lodgeId: String(lodgeId), status: 'unmatched', amount: { gte: amount - 0.005, lte: amount + 0.005 } },
+        data: { status: 'matched', matchedPaymentId: created.id },
+      });
+    }
 
     // Uma Account pode ser "de um só membro" (memberId setado — fluxo normal
     // de Contas) ou uma categoria COMPARTILHADA entre vários membros, cada um

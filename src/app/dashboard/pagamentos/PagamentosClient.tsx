@@ -22,13 +22,14 @@ interface AccountOption {
   who: string | null;
 }
 /** "Já paguei" do portal (Modo Loja) ainda sem baixa. */
-interface PaymentNotice { accountId: string; noticeAt: string; noticeDay: string; note: string | null; hasReceipt?: boolean; }
+interface BankMatch { lineId: string; date: string; amount: number; description: string; by: 'txid' | 'amount'; }
+interface PaymentNotice { accountId: string; noticeAt: string; noticeDay: string; note: string | null; hasReceipt?: boolean; bankMatch?: BankMatch | null; }
 
 function accountLabel(a: AccountOption): string {
   return [a.title, a.who, `venc. ${formatDateOnly(a.dueDate)}`, `saldo ${brl(a.balance)}`].filter(Boolean).join(' · ');
 }
 
-const EMPTY_FORM = { accountId: '', memberId: '', bankAccountId: '', amount: '', paidAt: '', method: 'manual', note: '' };
+const EMPTY_FORM = { accountId: '', memberId: '', bankAccountId: '', amount: '', paidAt: '', method: 'manual', note: '', bankTransactionId: '' };
 
 /** Formulário pronto para a baixa de uma conta (saldo, irmão, conta prevista); com aviso do portal, Pix na data do aviso. */
 function formFor(account: AccountOption, notice?: PaymentNotice | null) {
@@ -38,9 +39,11 @@ function formFor(account: AccountOption, notice?: PaymentNotice | null) {
     memberId: account.memberId ?? '',
     bankAccountId: account.bankAccountId ?? '',
     amount: String(account.balance),
-    paidAt: notice?.noticeDay ?? todayBR().toISOString().slice(0, 10),
+    // Crédito achado no extrato: a data do pagamento é a do crédito e a linha é conciliada junto.
+    paidAt: notice?.bankMatch ? notice.bankMatch.date.slice(0, 10) : notice?.noticeDay ?? todayBR().toISOString().slice(0, 10),
     method: notice ? 'pix' : 'manual',
-    note: notice ? `Pix informado pelo irmão no portal em ${new Date(notice.noticeAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}${notice.note ? ` — "${notice.note}"` : ''}. Conferido no extrato.` : '',
+    note: notice ? `Pix informado pelo irmão no portal em ${new Date(notice.noticeAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}${notice.note ? ` — "${notice.note}"` : ''}. ${notice.bankMatch ? `Crédito no extrato em ${formatDateOnly(notice.bankMatch.date)}.` : 'Conferido no extrato.'}` : '',
+    bankTransactionId: notice?.bankMatch && Math.round(notice.bankMatch.amount * 100) === Math.round(account.balance * 100) ? notice.bankMatch.lineId : '',
   };
 }
 interface FinancialAccountOption { id: string; name: string; kind: string; }
@@ -67,9 +70,10 @@ export default function PagamentosClient({ accounts, members, payments, financia
 
   function selectAccount(id: string) {
     const account = byId.get(id);
-    if (!account) { setForm((prev) => ({ ...prev, accountId: id })); return; }
+    if (!account) { setForm((prev) => ({ ...prev, accountId: id, bankTransactionId: '' })); return; }
     // Troca de conta: irmão, saldo e conta prevista vêm dela (mantém data, método e observação digitados).
-    setForm((prev) => ({ ...prev, accountId: id, memberId: account.memberId ?? '', amount: String(account.balance), bankAccountId: account.bankAccountId ?? prev.bankAccountId }));
+    // A linha do extrato achada para um aviso é da conta DELE: trocar de conta desfaz o vínculo.
+    setForm((prev) => ({ ...prev, accountId: id, memberId: account.memberId ?? '', amount: String(account.balance), bankAccountId: account.bankAccountId ?? prev.bankAccountId, bankTransactionId: '' }));
   }
 
   function settleNotice(notice: PaymentNotice) {
@@ -178,6 +182,13 @@ export default function PagamentosClient({ accounts, members, payments, financia
                         Venc. {formatDateOnly(a.dueDate)} · saldo {brl(a.balance)} · avisou em {new Date(n.noticeAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}
                         {n.note ? ` · "${n.note}"` : ''}
                       </p>
+                      {n.bankMatch ? (
+                        <p className="mt-1 text-xs text-emerald-300">
+                          {n.bankMatch.by === 'txid' ? 'Crédito identificado no extrato' : 'Crédito compatível no extrato'}: {formatDateOnly(n.bankMatch.date)} · {brl(n.bankMatch.amount)} · {n.bankMatch.description}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-sand-dark">Nenhum crédito correspondente no extrato importado — confira no banco.</p>
+                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       {n.hasReceipt ? (
