@@ -61,6 +61,8 @@ export async function loadAccountsReportRows(
       account: {
         select: {
           title: true,
+          // Baixa manual sem "vincular a um membro": o irmão é o dono da conta (senão some do filtro por pessoa).
+          member: { select: { id: true, name: true } },
           counterparty: { select: { id: true, name: true } },
           counterpartyName: true,
           chartAccount: { select: { name: true, isSolidarity: true } },
@@ -70,8 +72,8 @@ export async function loadAccountsReportRows(
   });
   return payments.map((p) => {
     const isSolidarity = p.account?.chartAccount?.isSolidarity ?? false;
-    const personId = p.member?.id ?? p.account?.counterparty?.id ?? null;
-    const rawName = p.member?.name ?? p.account?.counterparty?.name ?? p.account?.counterpartyName ?? null;
+    const personId = p.member?.id ?? p.account?.member?.id ?? p.account?.counterparty?.id ?? null;
+    const rawName = p.member?.name ?? p.account?.member?.name ?? p.account?.counterparty?.name ?? p.account?.counterpartyName ?? null;
     return {
       id: p.id,
       date: p.paidAt,

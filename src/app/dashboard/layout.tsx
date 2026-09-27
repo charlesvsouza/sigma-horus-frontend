@@ -106,6 +106,8 @@ const NAV: NavGroupDef[] = [
           { href: '/dashboard/relatorios/contas-a-pagar', label: 'Contas a pagar', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/contas-recebidas', label: 'Contas recebidas', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/contas-pagas', label: 'Contas pagas', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
+          // Histórico dos irmãos: sem o Secretário (decisão do dono, 2026-09-27).
+          { href: '/dashboard/relatorios/historico-pagamentos', label: 'Histórico de pagamentos', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/relatorios/dre', label: 'DRE comparativo', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/categorias', label: 'Razão por categoria', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },
           { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer', 'secretary'] },

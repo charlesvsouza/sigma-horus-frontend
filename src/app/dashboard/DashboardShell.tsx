@@ -16,6 +16,7 @@ import {
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
   Scale, ListTree, Users2, Images, LayoutGrid, UsersRound, PencilLine,
   ArrowDownToLine, ArrowUpFromLine, HandCoins, Banknote, Percent, type LucideIcon,
+  History,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -58,6 +59,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/relatorios/contas-a-pagar': ArrowUpFromLine,
   '/dashboard/relatorios/contas-recebidas': HandCoins,
   '/dashboard/relatorios/contas-pagas': Banknote,
+  '/dashboard/relatorios/historico-pagamentos': History,
   '/dashboard/relatorios/tarifas': Percent,
   '/dashboard/relatorios/dre': Scale,
   '/dashboard/relatorios/categorias': ListTree,
@@ -110,7 +112,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   configuracoes: 'Configurações da loja', relatorios: 'Resumo financeiro', hospitalaria: 'Hospitalaria',
   sessoes: 'Sessões', usuarios: 'Usuários & acessos', 'minha-conta': 'Minha conta', permissoes: 'Permissões', 'importar-financeiro': 'Importar backup financeiro',
   fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', tarifas: 'Tarifas de cobrança (Asaas)', fundos: 'Fundos (Tronco e Doações)', portal: 'Meu portal', secretaria: 'Secretaria',
-  inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos', categorias: 'Razão por categoria',
+  inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos', categorias: 'Razão por categoria', 'historico-pagamentos': 'Histórico de pagamentos', historico: 'Meu histórico de pagamentos',
   'fluxo-caixa': 'Fluxo de caixa projetado', orcamento: 'Orçamento anual',
   patrimonio: 'Patrimônio', 'conciliacao-bancaria': 'Conciliação bancária',
   completo: 'Relatório completo', balanco: 'Balanço Financeiro', balancete: 'Balancete de Verificação',

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { UserRound } from 'lucide-react';
 import { degreeShort } from '@/lib/masonic-degree';
@@ -430,6 +431,12 @@ export default function PortalPage() {
                   <p className="text-xs uppercase tracking-[0.25em] text-gold">Vencido</p>
                   <p className={`mt-2 text-xl font-semibold ${summary.overdue > 0 ? 'text-rose-300' : 'text-sand-light'}`}>{brl(summary.overdue)}</p>
                 </div>
+                {member ? (
+                  <Link href="/dashboard/portal/historico" className="flex items-center justify-between rounded-lg border border-gold/25 px-4 py-3 text-sm font-medium text-gold transition-colors hover:border-gold/50 hover:text-gold-light">
+                    Meu histórico de pagamentos
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                ) : null}
               </div>
             )}
           </div>

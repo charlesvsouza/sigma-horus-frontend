@@ -62,6 +62,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-dre', label: '7.16 DRE comparativo entre períodos' },
       { id: 'tes-tarifas', label: '7.17 Tarifas de cobrança (Asaas)' },
       { id: 'tes-razao', label: '7.18 Razão por categoria (Tronco e qualquer outra)' },
+      { id: 'tes-historico', label: '7.19 Histórico de pagamentos dos irmãos' },
     ],
   },
   {
@@ -259,7 +260,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.45</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.46</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -321,7 +322,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.45 — 27 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.46 — 27 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1478,6 +1479,21 @@ export function ManualBook() {
                   relatório da categoria certa.
                 </Note>
               </Sub>
+
+              <Sub id="tes-historico" title="7.19 Histórico de pagamentos dos irmãos">
+                <p>
+                  Em <UI>Relatórios → Histórico de pagamentos</UI>, o Tesoureiro, o Administrador e o Venerável Mestre veem
+                  tudo o que os irmãos pagaram à loja, pela <strong>data do pagamento</strong>. O Secretário não tem acesso a
+                  este relatório. Cada irmão vê o próprio histórico no portal (capítulo 10).
+                </p>
+                <Bullets>
+                  <li><strong>Filtros:</strong> período (padrão: de 1º de janeiro até hoje) e irmão, ou todos.</li>
+                  <li><strong>Colunas:</strong> data do pagamento, irmão, a que se refere (título e categoria), vencimento da conta, forma de pagamento (Pix, dinheiro, Asaas…) e valor, com o link <UI>Recibo</UI> de cada linha.</li>
+                  <li><strong>Por irmão:</strong> com &quot;Todos os irmãos&quot;, um quadro soma a quantidade e o total pago por irmão; clique no nome para ver só o histórico dele.</li>
+                  <li>Pagamento registrado sem &quot;vincular a um membro&quot; conta para o dono da conta — nenhuma baixa antiga some do histórico do irmão. O relatório <UI>Contas recebidas</UI> passou a seguir a mesma regra no filtro por pessoa.</li>
+                  <li><UI>Imprimir / PDF</UI> e <UI>Exportar CSV</UI>, com o período e o irmão no cabeçalho.</li>
+                </Bullets>
+              </Sub>
             </Chapter>
 
             {/* ============== 8. SECRETÁRIO ============== */}
@@ -1855,6 +1871,7 @@ export function ManualBook() {
                 <li><strong>Resumo financeiro:</strong> três indicadores, sempre do que está <strong>em aberto</strong> (conta paga sai na hora da baixa) — <UI>O que devo</UI>, <UI>A Loja me deve</UI> e <UI>Vencido</UI> (a parte do que você deve que já passou do vencimento).</li>
                 <li><strong>Minhas pendências:</strong> as contas que você deve à loja e ainda estão em aberto (mensalidade, material, evento — qualquer origem), com o selo <UI>Vencida há N dias</UI> e o total em aberto. Clique em <UI>Pagar</UI> para gerar o Pix com o valor exato (QR Code e <UI>Copiar código</UI>). Se a loja recebe pelo <strong>Asaas</strong>, a confirmação é automática: depois do Pix, a conta sai das pendências e o recibo aparece no extrato. Se a loja recebe <strong>direto na conta dela</strong>, o Pix cai na chave da loja; depois de pagar, clique em <UI>Já paguei</UI> para avisar a Tesouraria, que confere o extrato e dá a baixa. O Asaas exige CPF: se o seu não estiver no cadastro, peça à Secretaria.</li>
                 <li><strong>Meu extrato:</strong> cada conta vinculada a você — tipo (a receber/a pagar), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado — sai com o cabeçalho da loja, o saldo do filtro e o aviso de que é um documento informativo (o comprovante oficial de um pagamento é o recibo da Tesouraria, que você abre pelo link <UI>Recibo</UI> de cada conta paga).</li>
+                <li><strong>Meu histórico de pagamentos:</strong> no Resumo financeiro, abra <UI>Meu histórico de pagamentos</UI> para ver tudo o que você já pagou à loja, por período (padrão: o ano corrente): data, a que se refere, vencimento, forma de pagamento e valor, com o <UI>Recibo</UI> de cada pagamento e o total. Use <UI>Imprimir / PDF</UI> ou <UI>Exportar CSV</UI> para guardar. Assim você confere, por conta própria, o que já quitou.</li>
                 <li><strong>Documentos recentes:</strong> os arquivos disponibilizados a você pela loja.</li>
                 <li><strong>Documentos da Loja:</strong> regimento interno, regulamento geral, constituição da Potência e outros documentos institucionais, publicados pela Secretaria pra todos os obreiros — abra ou baixe direto por aqui.</li>
               </Bullets>
