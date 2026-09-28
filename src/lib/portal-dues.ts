@@ -63,6 +63,10 @@ export function portalSummary(items: { type: string; balance: number; effectiveS
   };
 }
 
+/** Recusa de escrita no portal (matriz da loja): diz o que fazer, em vez de só "Acesso negado". */
+export const PORTAL_WRITE_DENIED =
+  'Sua loja não liberou para o seu cargo pagar pelo portal. Peça ao Administrador: Configurações → Permissões → "Portal do irmão", coluna Editar.';
+
 /** Entidade do AuditLog que guarda o "Já paguei" do irmão (Modo Loja). */
 export const PAYMENT_NOTICE_ENTITY = 'member-payment-notice';
 

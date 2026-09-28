@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { submitPaymentNotice } from '@/lib/payment-notice-server';
+import { PORTAL_WRITE_DENIED } from '@/lib/portal-dues';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
@@ -12,7 +13,8 @@ export async function POST(request: Request) {
   if (!lodgeId || !memberId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const access = await requireLodgeAccess(lodgeId, session?.user?.role, 'portal', 'write');
-  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
+  // 403 = a matriz da loja não dá escrita no portal a este cargo (402 = assinatura): mensagem que orienta.
+  if (!access.ok) return NextResponse.json({ error: access.status === 403 ? PORTAL_WRITE_DENIED : access.error }, { status: access.status });
 
   const form = await request.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: 'Envie como formulário.' }, { status: 400 });

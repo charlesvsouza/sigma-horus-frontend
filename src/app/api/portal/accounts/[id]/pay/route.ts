@@ -6,7 +6,7 @@ import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { isAsaasMode, paymentInstructions } from '@/lib/collection';
 import { round2 } from '@/lib/money';
 import { buildPixPayload } from '@/lib/pix';
-import { canPay, openBalance } from '@/lib/portal-dues';
+import { canPay, openBalance, PORTAL_WRITE_DENIED } from '@/lib/portal-dues';
 import { CLOSED_INVOICE_STATUSES, ensureOpenInvoice } from '@/lib/portal-invoice';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -30,7 +30,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   if (!lodgeId || !memberId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const access = await requireLodgeAccess(lodgeId, session?.user?.role, 'portal', 'write');
-  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
+  // 403 = a matriz da loja não dá escrita no portal a este cargo (402 = assinatura): mensagem que orienta.
+  if (!access.ok) return NextResponse.json({ error: access.status === 403 ? PORTAL_WRITE_DENIED : access.error }, { status: access.status });
 
   const { id } = await params;
 
