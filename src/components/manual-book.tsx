@@ -261,7 +261,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.53</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.54</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -323,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.53 — 27 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.54 — 27 de setembro de 2026</p>
               </div>
             </div>
 
@@ -993,7 +993,7 @@ export function ManualBook() {
                   <li>Selecione o <UI>membro</UI> a cobrar (obrigatório; necessário para emitir boleto/PIX depois, ver 7.4).</li>
                   <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> de vencimento. O <UI>Número / referência</UI> é <strong>gerado automaticamente</strong> (formato <code>COB-AAAAMM-NNNN</code>) se você deixar o campo em branco.</li>
                   <li>Opcional: <UI>Descrição</UI>.</li>
-                  <li>Para mensalidades, marque <UI>Criar como cobrança recorrente</UI> e defina o intervalo (<strong>Mensal</strong>, <strong>Trimestral</strong> ou <strong>Anual</strong>) e a <UI>quantidade de ocorrências</UI>.</li>
+                  <li>Para mensalidades, marque <UI>Criar como cobrança recorrente</UI> e defina o intervalo (<strong>Mensal</strong>, <strong>Trimestral</strong> ou <strong>Anual</strong>) e as <UI>Repetições depois da primeira</UI> — a cobrança que você está criando já é a primeira; o número conta só as seguintes. Ex.: vencimento em setembro e <strong>3</strong> repetições = 4 cobranças (setembro a dezembro). Em branco, a recorrência não tem fim. Logo abaixo do campo o sistema mostra o total e o período.</li>
                   <li>Clique em <UI>Criar cobrança</UI>.</li>
                 </Steps>
                 <p>

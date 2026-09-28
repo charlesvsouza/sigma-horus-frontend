@@ -58,3 +58,24 @@ export function isHeldForArt002(
   if (member.status === 'art_002') return true;
   return art002Enabled && overdueDays != null && overdueDays > thresholdDays;
 }
+
+const MONTHS_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const monthLabel = (d: Date) => `${MONTHS_PT[d.getUTCMonth()]}/${d.getUTCFullYear()}`;
+
+/**
+ * Resumo do formulário de cobrança recorrente: o campo pede as REPETIÇÕES depois da primeira
+ * (recurringCount), e o total confundia ("3 ocorrências" = 4 cobranças). Ex.: vencimento em
+ * setembro, mensal, 3 → "= 4 cobranças: set/2026 a dez/2026". Em branco = sem fim.
+ */
+export function recurrenceSummary(dueDate: string, interval: string, repetitions: string): string {
+  const raw = repetitions.trim();
+  if (raw === '') return 'Em branco = sem fim: uma cobrança por período até você encerrar.';
+  const n = Math.floor(Number(raw));
+  if (!Number.isFinite(n) || n < 1) return 'Informe 1 ou mais (ou deixe em branco para sem fim).';
+  const total = n + 1;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return `= ${total} cobranças no total (a primeira + ${n}).`;
+  let last = new Date(`${dueDate}T00:00:00Z`);
+  const first = last;
+  for (let i = 0; i < n; i++) last = addInterval(last, interval);
+  return `= ${total} cobranças no total: ${monthLabel(first)} a ${monthLabel(last)}.`;
+}

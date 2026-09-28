@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { addInterval, isHeldForArt002, isLegacyGeneratedNumber, pendingOccurrences } from './recurring-rules';
+import { addInterval, isHeldForArt002, isLegacyGeneratedNumber, pendingOccurrences, recurrenceSummary } from './recurring-rules';
 
 const d = (s: string) => new Date(`${s}T00:00:00.000Z`);
 const iso = (x: Date) => x.toISOString().slice(0, 10);
@@ -61,4 +61,13 @@ test('isLegacyGeneratedNumber: reconhece o sufixo do código antigo e não o nú
   assert.equal(isLegacyGeneratedNumber('COB-202609-0001-1758300000000-1758400000000'), true);
   assert.equal(isLegacyGeneratedNumber('COB-202609-0001'), false);
   assert.equal(isLegacyGeneratedNumber('MENS-2026'), false);
+});
+
+test('resumo da recorrência: o campo conta as repetições depois da primeira', () => {
+  assert.equal(recurrenceSummary('2026-09-10', 'monthly', '3'), '= 4 cobranças no total: set/2026 a dez/2026.');
+  assert.equal(recurrenceSummary('2026-10-10', 'monthly', '2'), '= 3 cobranças no total: out/2026 a dez/2026.');
+  assert.equal(recurrenceSummary('2026-01-31', 'quarterly', '3'), '= 4 cobranças no total: jan/2026 a out/2026.');
+  assert.equal(recurrenceSummary('', 'monthly', '3'), '= 4 cobranças no total (a primeira + 3).');
+  assert.match(recurrenceSummary('2026-09-10', 'monthly', ''), /sem fim/);
+  assert.match(recurrenceSummary('2026-09-10', 'monthly', '0'), /1 ou mais/);
 });
