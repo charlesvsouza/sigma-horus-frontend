@@ -1091,7 +1091,7 @@ export function ManualBook() {
                 </Steps>
                 <p>
                   <strong>Avisos &quot;Já paguei&quot; (Modo Loja).</strong> Quando o irmão paga pelo portal no Pix da chave da
-                  loja e clica em <UI>Já paguei</UI> (capítulo 10), o Tesoureiro e o Administrador recebem um e-mail com um
+                  loja e clica em <UI>Já paguei</UI> (capítulo 10), o Tesoureiro, o Administrador e o Venerável Mestre recebem um e-mail com um
                   link direto para a baixa, e o aviso aparece no topo de Pagamentos, em <UI>Avisos de pagamento dos
                   irmãos</UI>, com o irmão, a conta, o vencimento, o saldo e a observação dele — e <UI>Ver comprovante</UI>, quando ele anexou um (o arquivo fica guardado de forma privada; o link vale por poucos minutos). Confira o crédito no extrato
                   do banco e clique em <UI>Dar baixa</UI>: o formulário vem preenchido (conta, irmão, valor, PIX, data do aviso

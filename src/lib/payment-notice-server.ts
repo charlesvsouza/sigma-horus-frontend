@@ -52,7 +52,7 @@ export async function submitPaymentNotice(params: {
         select: { createdAt: true },
         orderBy: { createdAt: 'desc' },
       }),
-      db.user.findMany({ where: { lodgeId, role: { in: ['treasurer', 'admin'] }, status: 'active' }, select: { email: true } }),
+      db.user.findMany({ where: { lodgeId, role: { in: ['treasurer', 'admin', 'venerable'] }, status: 'active' }, select: { email: true } }),
     ]);
     return { accounts, lodge, member, last, staff };
   });
