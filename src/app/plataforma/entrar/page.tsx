@@ -18,6 +18,8 @@ interface LodgeOption {
   slug: string;
   city: string | null;
   state: string | null;
+  /** Canal de divulgação que trouxe a loja (link rastreável); null = sem link. */
+  acquisitionSource?: string | null;
 }
 
 export default function EntrarSuperadminPage() {
@@ -179,7 +181,7 @@ export default function EntrarSuperadminPage() {
                 <option value="">{loadingLodges ? 'Carregando…' : 'Selecione uma loja'}</option>
                 {lodges.map((l) => (
                   <option key={l.id} value={l.id}>
-                    {l.name}{l.city ? ` — ${l.city}${l.state ? '/' + l.state : ''}` : ''}
+                    {l.name}{l.city ? ` — ${l.city}${l.state ? '/' + l.state : ''}` : ''}{` · origem: ${l.acquisitionSource ?? 'sem link'}`}
                   </option>
                 ))}
               </select>

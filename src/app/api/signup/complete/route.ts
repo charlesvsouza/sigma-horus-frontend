@@ -78,7 +78,8 @@ export async function POST(request: Request) {
   const passwordHash = await bcrypt.hash(adminPassword, 12);
 
   const result = await prismaAdmin.$transaction(async (tx) => {
-    const lodge = await tx.lodge.create({ data: { name, slug, status: 'active', riteName: riteName ?? null } });
+    const acquisitionSource = typeof session.metadata?.source === 'string' ? session.metadata.source.slice(0, 130) : null;
+    const lodge = await tx.lodge.create({ data: { name, slug, status: 'active', riteName: riteName ?? null, acquisitionSource } });
     const user = await tx.user.create({
       data: { name: adminName, email: adminEmail, passwordHash, role: 'admin', lodgeId: lodge.id },
     });

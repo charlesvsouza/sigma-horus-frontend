@@ -2,13 +2,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PlansSection } from '@/components/plans-section';
 import { Reveal } from '@/components/reveal';
+import { FOUNDER_PRICE_LOCK_MONTHS, FOUNDER_SLOTS, countPaidLodges, foundersLeft } from '@/lib/founders';
+
+// O contador de vagas de Lojas Fundadoras lê o banco: revalida a cada 10 minutos (sem pesar a página).
+export const revalidate = 600;
 
 const modules = [
   {
     numeral: 'I',
     name: 'Tesouraria',
     description:
-      'O coração financeiro: cobranças e mensalidades, boletos e PIX com baixa automática, contas a pagar e a receber com cadastro de clientes e fornecedores, contas bancárias e transferências entre elas, conciliação bancária, fechamento de caixa e balancetes, com análise preditiva de inadimplência.',
+      'O coração financeiro: cobranças e mensalidades, boletos e PIX com baixa automática, contas a pagar e a receber com cadastro de clientes e fornecedores, contas bancárias e transferências entre elas, conciliação bancária, fechamento de caixa e balancetes, fluxo de caixa projetado e a régua do Art. 002 para a inadimplência.',
   },
   {
     numeral: 'II',
@@ -20,14 +24,31 @@ const modules = [
     numeral: 'III',
     name: 'Chancelaria',
     description:
-      'A ordem e a memória: ritos e graus, quadro de obreiros, inventário de materiais e alfaias com fornecimento por grau, correspondência oficial, prontuários e emissão de certificados.',
+      'A ordem e a memória: ritos e graus, quadro de obreiros, inventário de materiais e alfaias com fornecimento por grau e termo de entrega, documentos oficiais da loja e o arquivo de prontuários e certificados.',
   },
   {
     numeral: 'IV',
     name: 'Hospitalaria',
     description:
-      'O cuidado fraterno: campanhas de benemerência, tronco de beneficência, aniversários e visitas — e o obreiro pode propor uma campanha ou pedir auxílio direto pelo portal.',
+      'O cuidado fraterno: campanhas de benemerência, tronco de beneficência com doação por Pix, felicitações de aniversário e jubileus — e o obreiro pode propor uma campanha ou pedir auxílio direto pelo portal.',
   },
+];
+
+// O que o irmão ganha — o argumento que convence a loja: acabou o "fica à mercê do que o tesoureiro fala".
+const brotherBenefits = [
+  { title: 'Paga pelo portal, com Pix', detail: 'Vê as pendências, clica em Pagar e usa o QR Code — uma conta ou várias num Pix só. No Asaas, a baixa é automática.' },
+  { title: 'Confere o próprio histórico', detail: 'Tudo o que já pagou, por período, com o recibo de cada pagamento. Sem depender de ninguém para saber se está em dia.' },
+  { title: 'Emite a declaração de regularidade', detail: 'Em dia com a Tesouraria? A declaração oficial da loja sai na hora, para transferência, elevação ou filiação.' },
+  { title: 'Recebe o lembrete certo', detail: 'Aviso antes do vencimento por e-mail, WhatsApp ou SMS, já com o link para pagar.' },
+];
+
+const faq = [
+  { q: 'Preciso instalar alguma coisa?', a: 'Não. Funciona no navegador do computador e do celular. Cada irmão entra com o próprio e-mail e senha.' },
+  { q: 'Quanto tempo dura o teste grátis?', a: 'Dez dias, com todos os módulos do plano escolhido. O cartão é cadastrado no início, mas a primeira cobrança só acontece ao fim do teste — cancele antes e nada é cobrado.' },
+  { q: 'Como os irmãos pagam?', a: 'A loja escolhe: direto na conta da loja, com o Pix da chave da loja (sem tarifa do sistema), ou pelo Asaas, com Pix ou boleto e baixa automática. Nos dois casos o irmão paga pelo portal.' },
+  { q: 'Os dados da loja ficam seguros?', a: 'Cada loja só enxerga os próprios dados (isolamento no banco), cada cargo só vê a sua área, tudo fica na auditoria e há backup diário criptografado. Conforme a LGPD.' },
+  { q: 'Consigo trazer o cadastro de outro sistema?', a: 'Sim. A importação reconhece as colunas da planilha de membros sozinha, e o histórico financeiro também pode ser importado.' },
+  { q: 'Serve para a nossa Potência e o nosso rito?', a: 'Sim. Rito, Potência e cargos são configurados pela loja, e os documentos oficiais saem com a fórmula de abertura e o cabeçalho da loja.' },
 ];
 
 const pillars = [
@@ -109,12 +130,17 @@ export default function Home() {
               Tesouraria, secretaria, chancelaria e hospitalaria — os quatro ofícios da administração
               maçônica em uma só plataforma, segura e com a precisão de quem presta contas.
             </p>
+            <ul className="animate-rise mt-6 flex flex-wrap gap-2 text-xs text-sand-light" style={{ animationDelay: '350ms' }} aria-label="Destaques">
+              {['Irmão paga pelo portal com Pix', 'Histórico e recibos para cada irmão', 'Art. 002 automático', 'Prestação de contas pronta'].map((t) => (
+                <li key={t} className="rounded-full border border-gold/30 bg-sigma-blue-deep/50 px-3 py-1 backdrop-blur-sm">{t}</li>
+              ))}
+            </ul>
             <div className="animate-rise mt-9 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: '400ms' }}>
               <Link
                 href="#planos"
                 className="rounded-full bg-gold px-7 py-3 text-center font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light"
               >
-                Começar agora
+                Testar grátis por 10 dias
               </Link>
               <a
                 href="#modulos"
@@ -167,6 +193,32 @@ export default function Home() {
       </Reveal>
       </section>
 
+      {/* ===================== PARA O IRMÃO ===================== */}
+      <section className="relative border-t border-white/[0.06]">
+        <Reveal>
+        <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-24">
+          <div className="max-w-2xl">
+            <p className="font-display text-xs tracking-[0.4em] text-gold">PARA O IRMÃO</p>
+            <h2 className="mt-5 font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-semibold leading-tight text-sand-light">
+              Transparência que o irmão sente
+            </h2>
+            <p className="mt-4 text-base leading-7 text-sand">
+              Cada obreiro tem o seu portal. Ele vê o que deve, paga, confere o que já pagou e emite a própria
+              declaração — e a Tesouraria para de responder a mesma pergunta toda semana.
+            </p>
+          </div>
+          <div className="mt-12 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+            {brotherBenefits.map((b) => (
+              <div key={b.title} className="border-t border-gold/25 pt-5">
+                <h3 className="text-base font-semibold text-sand-light">{b.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-sand-dark">{b.detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        </Reveal>
+      </section>
+
       {/* ===================== A BASE ===================== */}
       <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-24">
         <Reveal>
@@ -214,7 +266,30 @@ export default function Home() {
         </Reveal>
       </section>
 
+      <FoundersSection />
+
       <PlansSection />
+
+      {/* ===================== PERGUNTAS FREQUENTES ===================== */}
+      <section id="perguntas" className="mx-auto max-w-4xl px-6 pb-24 lg:px-10">
+        <Reveal>
+        <p className="font-display text-xs tracking-[0.4em] text-gold">PERGUNTAS FREQUENTES</p>
+        <h2 className="mt-5 font-display text-[clamp(1.6rem,3vw,2.3rem)] font-semibold leading-tight text-sand-light">
+          Antes de começar
+        </h2>
+        <div className="mt-8 divide-y divide-white/[0.08] border-y border-white/[0.08]">
+          {faq.map((f) => (
+            <details key={f.q} className="group py-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-medium text-sand-light outline-none focus-visible:text-gold">
+                {f.q}
+                <span aria-hidden="true" className="text-gold transition-transform duration-200 group-open:rotate-45">+</span>
+              </summary>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-sand-dark">{f.a}</p>
+            </details>
+          ))}
+        </div>
+        </Reveal>
+      </section>
 
       {/* ===================== CTA FINAL ===================== */}
       <section className="mx-auto max-w-7xl px-6 pb-28 lg:px-10">
@@ -264,6 +339,7 @@ export default function Home() {
           <div className="grid grid-cols-2 gap-x-12 gap-y-2 text-sm sm:grid-cols-3">
             <a href="#modulos" className="text-sand-dark transition-colors hover:text-sand-light">Módulos</a>
             <a href="#planos" className="text-sand-dark transition-colors hover:text-sand-light">Planos</a>
+            <a href="#perguntas" className="text-sand-dark transition-colors hover:text-sand-light">Perguntas</a>
             <Link href="/login" className="text-sand-dark transition-colors hover:text-sand-light">Entrar</Link>
             <Link href="/sobre" className="text-sand-dark transition-colors hover:text-sand-light">Sobre</Link>
             <Link href="/manual" className="text-sand-dark transition-colors hover:text-sand-light">Manual</Link>
@@ -281,5 +357,47 @@ export default function Home() {
         </div>
       </footer>
     </main>
+  );
+}
+
+/** "Lojas Fundadoras": 30 vagas com preço travado por 24 meses. Contador real (assinaturas pagas). */
+async function FoundersSection() {
+  const paid = await countPaidLodges();
+  const left = paid == null ? null : foundersLeft(paid);
+  if (left === 0) return null; // oferta encerrada: a seção some sozinha
+  return (
+    <section id="fundadoras" className="mx-auto max-w-7xl px-6 pt-8 lg:px-10">
+      <Reveal>
+      <div className="relative overflow-hidden rounded-2xl border border-gold/35 bg-sigma-blue-deep/60 px-8 py-10 backdrop-blur-sm lg:px-12">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(60% 140% at 100% 0%, color-mix(in srgb, var(--sigma-gold) 14%, transparent), transparent 60%)' }} />
+        <div className="relative grid gap-8 lg:grid-cols-[1.4fr_0.6fr] lg:items-center">
+          <div>
+            <p className="font-display text-xs tracking-[0.4em] text-gold">OFERTA DE LANÇAMENTO</p>
+            <h2 className="mt-4 font-display text-[clamp(1.6rem,3vw,2.3rem)] font-semibold leading-tight text-sand-light">
+              Lojas Fundadoras
+            </h2>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-sand">
+              As primeiras {FOUNDER_SLOTS} lojas que assinarem um plano mantêm o preço contratado por
+              {' '}{FOUNDER_PRICE_LOCK_MONTHS} meses — sem reajuste — e recebem o selo de <strong className="text-sand-light">Loja Fundadora</strong> do Sigma Horus.
+            </p>
+            <p className="mt-3 text-xs text-sand-dark">
+              Vale para assinatura paga de qualquer plano, mensal ou anual, a partir da data da assinatura. O teste grátis não ocupa vaga.
+            </p>
+          </div>
+          <div className="text-center lg:text-right">
+            {left != null ? (
+              <p>
+                <span className="block font-display text-5xl font-bold text-gold">{left}</span>
+                <span className="mt-1 block text-sm text-sand">de {FOUNDER_SLOTS} vagas restantes</span>
+              </p>
+            ) : null}
+            <a href="#planos" className="mt-5 inline-flex rounded-full bg-gold px-7 py-3 font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light">
+              Garantir a vaga da minha loja
+            </a>
+          </div>
+        </div>
+      </div>
+      </Reveal>
+    </section>
   );
 }

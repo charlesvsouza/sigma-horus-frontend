@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Cinzel } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
+import { SourceCapture } from "@/components/source-capture";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +30,8 @@ export const metadata: Metadata = {
     template: "%s · Sigma Horus",
   },
   description:
-    "Plataforma SaaS para gestão financeira e administrativa de lojas maçônicas: tesouraria, cobrança automatizada, presença e auditoria.",
+    "Sistema para loja maçônica: tesouraria com Pix e baixa automática, portal do irmão, mensalidades e inadimplência (Art. 002), secretaria, chancelaria e hospitalaria — com prestação de contas pronta e LGPD.",
+  keywords: ["sistema para loja maçônica", "tesouraria de loja maçônica", "gestão de loja maçônica", "mensalidade loja maçônica", "software maçonaria"],
   applicationName: "Sigma Horus",
   openGraph: {
     type: "website",
@@ -68,7 +71,11 @@ export default function RootLayout({
         e dashboard/layout.tsx). Sem script aqui — landing, login e páginas
         institucionais sempre renderizam no escuro padrão (sem data-theme).
       */}
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <SourceCapture />
+        <Analytics />
+      </body>
     </html>
   );
 }

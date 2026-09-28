@@ -1,3 +1,4 @@
+import { sourceFromCookieHeader } from '@/lib/acquisition';
 import { prismaAdmin } from '@/lib/prisma';
 import { seedLodgeDefaults } from '@/lib/seed-lodge';
 import { validateInvite, consumeInvite, INVITE_ERROR_MESSAGES } from '@/lib/invites';
@@ -12,6 +13,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json();
+  const acquisitionSource = sourceFromCookieHeader(request.headers.get('cookie')) ?? 'convite';
   const name = String(body?.name ?? '').trim();
   const slug = String(body?.slug ?? '').trim().toLowerCase();
   const adminName = String(body?.adminName ?? '').trim();
@@ -63,6 +65,7 @@ export async function POST(request: Request) {
         name,
         slug,
         status: 'active',
+        acquisitionSource,
         riteName: riteName ?? null,
       },
     });

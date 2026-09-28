@@ -73,6 +73,9 @@ model Lodge {
   // Emissão automática (opt-in, só no Modo Asaas): a rotina diária emite no Asaas as cobranças ainda não
   // emitidas que vencem de hoje até 3 dias (recorrência e avulsas), para o lembrete já sair com o Pix.
   asaasAutoEmit            Boolean @default(false)
+  // Canal de divulgação que trouxe a loja ("fonte/meio/campanha", ex.: "whatsapp/grupo/fundadoras"),
+  // do link rastreável da 1ª visita (lib/acquisition.ts). Null = sem link rastreável.
+  acquisitionSource        String?
   // Mensageria BYO por loja (WhatsApp/SMS): credenciais próprias da loja, custo direto dela.
   // E-mail é provido pela plataforma (Resend). Tokens criptografados (AES-256-GCM).
   whatsappPhoneId      String?

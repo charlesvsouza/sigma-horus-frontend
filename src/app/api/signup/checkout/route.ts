@@ -1,6 +1,7 @@
 import { ensurePrice, getStripe, isPlanId, TRIAL_DAYS, type BillingInterval } from '@/lib/stripe';
 import { NextResponse } from 'next/server';
 import { limitByIp } from '@/lib/rate-limit';
+import { sourceFromCookieHeader } from '@/lib/acquisition';
 
 // Checkout PÚBLICO de self-service (sem login): o visitante escolhe o plano,
 // põe o cartão e ganha trial de TRIAL_DAYS dias. O cartão é capturado já no
@@ -22,7 +23,9 @@ export async function POST(request: Request) {
   const stripe = getStripe();
   const priceId = await ensurePrice(planId, interval);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const metadata = { selfSignup: 'true', plan: planId, interval };
+  // Canal da 1ª visita (cookie do link rastreável) — volta no retorno e fica gravado na loja.
+  const source = sourceFromCookieHeader(request.headers.get('cookie'));
+  const metadata = { selfSignup: 'true', plan: planId, interval, ...(source ? { source } : {}) };
 
   const checkout = await stripe.checkout.sessions.create({
     mode: 'subscription',

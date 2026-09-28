@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
   const lodges = await prismaAdmin.lodge.findMany({
     where: { status: 'active' },
-    select: { id: true, name: true, slug: true, city: true, state: true },
+    select: { id: true, name: true, slug: true, city: true, state: true, acquisitionSource: true, createdAt: true },
     orderBy: { name: 'asc' },
   });
 
