@@ -14,6 +14,10 @@ export async function GET() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Phone ID do WhatsApp, SID e remetente do Twilio: dados internos, só o Administrador lê.
+  if (normalizeRole(session?.user?.role) !== 'admin') {
+    return NextResponse.json({ error: 'Apenas administradores veem as integrações.' }, { status: 403 });
+  }
 
   const lodge = await withTenant(String(lodgeId), (db) =>
     db.lodge.findUnique({ where: { id: String(lodgeId) }, select: LODGE_MESSAGING_SELECT }),

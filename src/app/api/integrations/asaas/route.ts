@@ -11,6 +11,10 @@ export async function GET() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Configuração da integração é do Administrador (a escrita já era): outros papéis não leem.
+  if (normalizeRole(session?.user?.role) !== 'admin') {
+    return NextResponse.json({ error: 'Apenas administradores veem as integrações.' }, { status: 403 });
+  }
 
   const lodge = await withTenant(String(lodgeId), (db) =>
     db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { asaasApiKeyEnc: true, asaasEnv: true, asaasWebhookToken: true } }),
