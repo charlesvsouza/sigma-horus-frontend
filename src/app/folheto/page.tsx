@@ -34,7 +34,8 @@ export default async function Folheto({ searchParams }: { searchParams: Promise<
     <main className="folheto min-h-screen bg-[#f4efe4] px-4 py-8 text-[#0A1628] print:bg-white print:p-0">
       <style>{`
         @page { size: A4 portrait; margin: 12mm; }
-        @media print { .no-print { display: none !important; } .folheto { min-height: auto; } }
+        html, body { background: #f4efe4 !important; }
+        @media print { html, body { background: #fff !important; } .no-print { display: none !important; } .folheto { min-height: auto; } }
       `}</style>
       <div className="no-print mx-auto mb-4 flex max-w-[190mm] items-center justify-between gap-4 text-sm">
         <p className="text-[#5b5344]">Folheto A4 — use <strong>Imprimir → Salvar como PDF</strong>. Campanha do QR: <code>{campaign}</code></p>
