@@ -23,7 +23,18 @@ interface AccountOption {
 }
 /** "Já paguei" do portal (Modo Loja) ainda sem baixa. */
 interface BankMatch { lineId: string; date: string; amount: number; description: string; by: 'txid' | 'amount'; }
-interface PaymentNotice { accountId: string; noticeAt: string; noticeDay: string; note: string | null; hasReceipt?: boolean; bankMatch?: BankMatch | null; group?: { accountIds: string[]; total: number } | null; }
+interface ReceiptCheck { status: 'conferido' | 'divergente' | 'ilegivel'; txid: boolean; amount: boolean; payee: boolean; e2e: string | null; paidAt: string | null }
+interface PaymentNotice {
+  accountId: string; noticeAt: string; noticeDay: string; note: string | null; hasReceipt?: boolean;
+  bankMatch?: BankMatch | null; group?: { accountIds: string[]; total: number } | null;
+  /** Comprovante em PDF (conferível) e o resultado da conferência. */
+  receiptPdf?: boolean; receiptCheck?: ReceiptCheck | null; e2eUsed?: boolean; suggestedBankId?: string | null;
+}
+
+/** Dia do pagamento (Brasília) a partir do ISO do comprovante. */
+function brDay(iso: string): string {
+  return new Date(new Date(iso).getTime() - 3 * 3_600_000).toISOString().slice(0, 10);
+}
 
 function accountLabel(a: AccountOption): string {
   return [a.title, a.who, `venc. ${formatDateOnly(a.dueDate)}`, `saldo ${brl(a.balance)}`].filter(Boolean).join(' · ');
@@ -74,6 +85,51 @@ export default function PagamentosClient({ accounts, members, payments, financia
     // Troca de conta: irmão, saldo e conta prevista vêm dela (mantém data, método e observação digitados).
     // A linha do extrato achada para um aviso é da conta DELE: trocar de conta desfaz o vínculo.
     setForm((prev) => ({ ...prev, accountId: id, memberId: account.memberId ?? '', amount: String(account.balance), bankAccountId: account.bankAccountId ?? prev.bankAccountId, bankTransactionId: '' }));
+  }
+
+  const [noticeBusy, setNoticeBusy] = useState<string | null>(null);
+  const [bankChoice, setBankChoice] = useState<Record<string, string>>({});
+
+  // Conferência do comprovante de um aviso antigo (ou de novo): grava um registro próprio e recarrega.
+  async function checkNoticeReceipt(notice: PaymentNotice) {
+    setNoticeBusy(notice.accountId);
+    setMessage(null);
+    const res = await fetch('/api/payments/notice-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountId: notice.accountId }) });
+    const data = await res.json().catch(() => ({}));
+    setNoticeBusy(null);
+    if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Não foi possível conferir o comprovante.' }); return; }
+    router.refresh();
+  }
+
+  // Baixa de UM clique para comprovante conferido: a Tesouraria só confirma.
+  async function confirmNotice(notice: PaymentNotice) {
+    const account = byId.get(notice.accountId);
+    const check = notice.receiptCheck;
+    const bankAccountId = bankChoice[notice.accountId] ?? notice.suggestedBankId ?? '';
+    if (!account || !check || check.status !== 'conferido') return;
+    if (!bankAccountId) { setMessage({ kind: 'error', text: 'Escolha a conta bancária onde o Pix caiu.' }); return; }
+    setNoticeBusy(notice.accountId);
+    setMessage(null);
+    const res = await fetch('/api/payments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accountId: account.id,
+        memberId: account.memberId ?? undefined,
+        amount: account.balance,
+        paidAt: check.paidAt ? brDay(check.paidAt) : notice.noticeDay,
+        method: 'pix',
+        bankAccountId,
+        note: `Pix conferido pelo comprovante (nº de controle ${check.e2e}).${notice.group ? ` Pix agrupado de ${notice.group.accountIds.length} contas.` : ''}`,
+        e2eId: check.e2e,
+        ...(notice.bankMatch && Math.round(notice.bankMatch.amount * 100) === Math.round(account.balance * 100) ? { bankTransactionId: notice.bankMatch.lineId } : {}),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setNoticeBusy(null);
+    if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Não foi possível registrar a baixa.' }); return; }
+    setMessage({ kind: 'ok', text: `Baixa registrada: ${account.who ?? ''} — ${account.title}, ${brl(account.balance)}.` });
+    router.refresh();
   }
 
   function settleNotice(notice: PaymentNotice) {
@@ -194,6 +250,20 @@ export default function PagamentosClient({ accounts, members, payments, financia
                       ) : (
                         <p className="mt-1 text-xs text-sand-dark">Nenhum crédito correspondente no extrato importado — confira no banco.</p>
                       )}
+                      {n.receiptCheck ? (
+                        n.receiptCheck.status === 'conferido' ? (
+                          <p className="mt-1 text-xs text-emerald-300">
+                            Comprovante conferido: ✓ identificador do QR · ✓ valor · ✓ recebido pela loja · ✓ nº de controle {n.receiptCheck.e2e}
+                            {n.e2eUsed ? <span className="block text-rose-300">Atenção: este nº de controle já foi usado na baixa de outra conta.</span> : null}
+                          </p>
+                        ) : n.receiptCheck.status === 'ilegivel' ? (
+                          <p className="mt-1 text-xs text-sand-dark">Comprovante sem texto legível (PDF escaneado) — confira pelo &quot;Ver comprovante&quot;.</p>
+                        ) : (
+                          <p className="mt-1 text-xs text-amber-300">
+                            Comprovante com divergência: {[!n.receiptCheck.txid && 'identificador não é o do QR desta conta', !n.receiptCheck.amount && 'valor diferente do saldo', !n.receiptCheck.payee && 'não mostra a loja como recebedora', !n.receiptCheck.e2e && 'sem nº de controle do Pix'].filter(Boolean).join(' · ')}. Confira antes de dar baixa.
+                          </p>
+                        )
+                      ) : null}
                     </div>
                     <div className="flex items-center gap-3">
                       {n.hasReceipt ? (
@@ -201,7 +271,32 @@ export default function PagamentosClient({ accounts, members, payments, financia
                           Ver comprovante
                         </a>
                       ) : null}
-                      <Button size="sm" onClick={() => settleNotice(n)}>Dar baixa</Button>
+                      {n.receiptPdf && !n.receiptCheck ? (
+                        <Button size="sm" variant="secondary" onClick={() => void checkNoticeReceipt(n)} disabled={noticeBusy === n.accountId}>
+                          {noticeBusy === n.accountId ? 'Conferindo…' : 'Conferir comprovante'}
+                        </Button>
+                      ) : null}
+                      {n.receiptCheck?.status === 'conferido' && !n.e2eUsed ? (
+                        <>
+                          {!n.suggestedBankId ? (
+                            <select
+                              aria-label="Conta onde o Pix caiu"
+                              value={bankChoice[n.accountId] ?? ''}
+                              onChange={(e) => setBankChoice((prev) => ({ ...prev, [n.accountId]: e.target.value }))}
+                              className={`${INPUT} max-w-[12rem] py-1.5 text-xs`}
+                            >
+                              <option value="">Conta onde caiu…</option>
+                              {financialAccounts.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                            </select>
+                          ) : null}
+                          <Button size="sm" onClick={() => void confirmNotice(n)} disabled={noticeBusy === n.accountId || (!n.suggestedBankId && !bankChoice[n.accountId])}>
+                            {noticeBusy === n.accountId ? 'Registrando…' : 'Confirmar e dar baixa'}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => settleNotice(n)}>Revisar</Button>
+                        </>
+                      ) : (
+                        <Button size="sm" onClick={() => settleNotice(n)}>Dar baixa</Button>
+                      )}
                     </div>
                   </li>
                 );

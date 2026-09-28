@@ -1,7 +1,8 @@
 import { auth } from '@/lib/auth';
 import { todayBR } from '@/lib/date-only';
 import { matchNoticesToBank } from '@/lib/notice-bank-match';
-import { openBalance, PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
+import { openBalance, PAYMENT_NOTICE_CHECK_ENTITY, PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
+import type { ReceiptCheck } from '@/lib/receipt-check';
 import { withTenant } from '@/lib/prisma';
 import PagamentosClient from './PagamentosClient';
 
@@ -40,8 +41,15 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
         }),
         financialAccounts: await db.financialAccount.findMany({
           where: { lodgeId: String(lodgeId), active: true },
-          select: { id: true, name: true, kind: true },
+          select: { id: true, name: true, kind: true, isDefault: true, isInvestment: true },
           orderBy: { name: 'asc' },
+        }),
+        // Conferências de comprovante feitas depois do aviso (botão "Conferir comprovante").
+        receiptChecks: await db.auditLog.findMany({
+          where: { lodgeId: String(lodgeId), entity: PAYMENT_NOTICE_CHECK_ENTITY },
+          select: { entityId: true, createdAt: true, after: true },
+          orderBy: { createdAt: 'desc' },
+          take: 200,
         }),
         notices: await db.auditLog.findMany({
           where: { lodgeId: String(lodgeId), entity: PAYMENT_NOTICE_ENTITY },
@@ -55,7 +63,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           select: { id: true, date: true, amount: true, description: true },
         }),
       }))
-    : { accounts: [], members: [], payments: [], financialAccounts: [], notices: [], bankLines: [] };
+    : { accounts: [], members: [], payments: [], financialAccounts: [], notices: [], bankLines: [], receiptChecks: [] };
 
   const accounts = data.accounts
     .map((a) => {
@@ -87,15 +95,30 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
     let note: string | null = null;
     let hasReceipt = false;
     let group: { accountIds: string[]; total: number } | null = null;
+    let receiptPdf = false;
+    let receiptCheck: ReceiptCheck | null = null;
     try {
-      const meta = JSON.parse(n.after ?? '{}') as { note?: string | null; receiptKey?: string; groupAccountIds?: string[]; groupTotal?: number };
+      const meta = JSON.parse(n.after ?? '{}') as { note?: string | null; receiptKey?: string; receiptType?: string; receiptCheck?: ReceiptCheck; groupAccountIds?: string[]; groupTotal?: number };
       note = meta.note ?? null;
       hasReceipt = Boolean(meta.receiptKey);
+      receiptPdf = meta.receiptType === 'application/pdf';
+      receiptCheck = meta.receiptCheck ?? null;
       if (Array.isArray(meta.groupAccountIds) && meta.groupAccountIds.length > 1 && typeof meta.groupTotal === 'number') {
         group = { accountIds: meta.groupAccountIds, total: meta.groupTotal };
       }
     } catch { note = null; }
-    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt, balance: account.balance, group }];
+    // Conferência posterior ao aviso vale mais que a do envio (a mais recente).
+    const later = data.receiptChecks.find((c) => c.entityId === account.id && c.createdAt > n.createdAt);
+    if (later) {
+      try { receiptCheck = (JSON.parse(later.after ?? '{}') as { receiptCheck?: ReceiptCheck }).receiptCheck ?? receiptCheck; } catch { /* mantém */ }
+    }
+    // Número de controle já usado numa baixa (de outra conta, fora do mesmo Pix agrupado): trava o clique.
+    const e2e = receiptCheck?.e2e ?? null;
+    const e2eUsed = Boolean(e2e && data.payments.some((p) => (p.note ?? '').includes(e2e) && !(group?.accountIds ?? []).includes(p.accountId)));
+    // Conta onde o Pix caiu: a prevista da conta, a padrão da loja ou a única conta corrente.
+    const banks = data.financialAccounts.filter((f) => f.kind === 'bank' && !f.isInvestment);
+    const suggestedBankId = account.bankAccountId ?? data.financialAccounts.find((f) => f.isDefault)?.id ?? (banks.length === 1 ? banks[0].id : null);
+    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt, receiptPdf, receiptCheck, e2eUsed, suggestedBankId, balance: account.balance, group }];
   });
   // Pix agrupado (Modo Loja): o crédito no banco é o TOTAL do grupo e o txid é o da 1ª conta dele —
   // casa o grupo inteiro pela 1ª conta e repete o resultado nas demais.

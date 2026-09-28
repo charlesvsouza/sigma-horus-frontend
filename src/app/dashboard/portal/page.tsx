@@ -512,7 +512,7 @@ export default function PortalPage() {
                           <p className="font-semibold text-sand-light">{brl(account.amount)}</p>
                         </div>
                         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                          <p className={`text-xs uppercase tracking-[0.25em] ${account.effectiveStatus === 'overdue' ? 'text-rose-300' : 'text-sand-dark'}`}>{ACCOUNT_STATUS_LABEL[account.effectiveStatus] ?? account.status}</p>
+                          <p className={`text-xs uppercase tracking-[0.25em] ${account.effectiveStatus === 'overdue' ? 'text-rose-300' : 'text-sand-dark'}`}>{account.paidNoticeAt && account.effectiveStatus !== 'paid' ? 'Aguardando confirmação da Tesouraria' : ACCOUNT_STATUS_LABEL[account.effectiveStatus] ?? account.status}</p>
                           {account.payments.length > 0 ? (
                             <div className="flex flex-wrap gap-3">
                               {account.payments.map((p, i) => (
@@ -580,7 +580,7 @@ export default function PortalPage() {
                 <td>{account.title}</td>
                 <td>{account.chartAccount ? `${account.chartAccount.category ? account.chartAccount.category + ' — ' : ''}${account.chartAccount.name}` : '—'}</td>
                 <td>{account.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'}</td>
-                <td>{ACCOUNT_STATUS_LABEL[account.effectiveStatus] ?? account.status}</td>
+                <td>{account.paidNoticeAt && account.effectiveStatus !== 'paid' ? 'Aguardando confirmação da Tesouraria' : ACCOUNT_STATUS_LABEL[account.effectiveStatus] ?? account.status}</td>
                 <td className="num">{brl(account.amount)}</td>
               </tr>
             ))}

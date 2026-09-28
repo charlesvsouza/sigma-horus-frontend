@@ -73,7 +73,10 @@ function buildEmailHtml(body: string, branding?: { lodgeName?: string | null; cr
   </body></html>`;
 }
 
-async function sendEmail(to: string, subject: string, body: string, branding?: { lodgeName?: string | null; crestUrl?: string | null }): Promise<SendResult> {
+/** Anexo de e-mail (ex.: comprovante do "Já paguei"): conteúdo em base64. */
+export interface EmailAttachment { filename: string; content: string }
+
+async function sendEmail(to: string, subject: string, body: string, branding?: { lodgeName?: string | null; crestUrl?: string | null }, attachments?: EmailAttachment[]): Promise<SendResult> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
   if (!key || !from) return { status: 'queued', detail: 'E-mail não configurado na plataforma.' };
@@ -82,7 +85,7 @@ async function sendEmail(to: string, subject: string, body: string, branding?: {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, subject, text: body, ...(html ? { html } : {}) }),
+      body: JSON.stringify({ from, to, subject, text: body, ...(html ? { html } : {}), ...(attachments?.length ? { attachments } : {}) }),
     });
     if (!res.ok) return { status: 'failed', detail: `Resend ${res.status}` };
     return { status: 'sent' };
@@ -137,9 +140,9 @@ async function sendSms(to: string, body: string, cfg: SmsCfg): Promise<SendResul
 }
 
 /** Envia por um canal. `to` = e-mail (email) ou telefone (whatsapp/sms). WhatsApp/SMS usam as credenciais da loja. */
-export async function dispatch(channel: Channel, to: string, subject: string, body: string, ch: LodgeChannels): Promise<SendResult> {
+export async function dispatch(channel: Channel, to: string, subject: string, body: string, ch: LodgeChannels, opts?: { attachments?: EmailAttachment[] }): Promise<SendResult> {
   if (!to) return { status: 'failed', detail: 'Destinatário sem contato.' };
-  if (channel === 'email') return sendEmail(to, subject, body, { lodgeName: ch.lodgeName, crestUrl: ch.crestUrl });
+  if (channel === 'email') return sendEmail(to, subject, body, { lodgeName: ch.lodgeName, crestUrl: ch.crestUrl }, opts?.attachments);
   if (channel === 'whatsapp') return ch.whatsapp ? sendWhatsApp(to, body, ch.whatsapp) : { status: 'queued', detail: 'WhatsApp não conectado nesta loja.' };
   return ch.sms ? sendSms(to, body, ch.sms) : { status: 'queued', detail: 'SMS não conectado nesta loja.' };
 }

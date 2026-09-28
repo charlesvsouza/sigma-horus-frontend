@@ -261,7 +261,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 27 de setembro de 2026 · versão 1.55</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 28 de setembro de 2026 · versão 1.56</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -323,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.55 — 27 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.56 — 28 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1104,6 +1104,7 @@ export function ManualBook() {
                   do mesmo valor em até 3 dias do aviso. Nesse caso, <UI>Dar baixa</UI> já usa a data do crédito e, ao
                   registrar, <strong>concilia a linha do extrato</strong> junto — sem precisar vinculá-la depois. Crédito
                   ambíguo (dois iguais) não é sugerido: confira à mão.
+                  <strong> Comprovante em PDF conferido:</strong> quando o irmão anexa o comprovante em PDF (o que os apps de banco geram), o sistema o lê e confere quatro pontos — o <strong>identificador</strong> é o que o QR daquela conta carregava, o <strong>valor</strong> é o do saldo, a <strong>loja</strong> é a recebedora (CNPJ ou chave Pix) e o <strong>número de controle do Pix</strong> nunca foi usado em outra baixa. O PDF segue anexado ao e-mail do aviso. Conferido, o aviso mostra <em>Comprovante conferido</em> e o botão <UI>Confirmar e dar baixa</UI>: um clique registra o pagamento com a data do comprovante (se a loja não tiver conta padrão, escolha antes a conta onde o Pix caiu). Com divergência, o aviso diz o que não bateu e fica o <UI>Dar baixa</UI> de sempre. Avisos antigos têm o botão <UI>Conferir comprovante</UI>. Comprovante é arquivo enviado pelo irmão e pode ser editado: por isso a baixa nunca é automática — quem confirma é a Tesouraria. Enquanto isso, o irmão vê a conta como <em>Aguardando confirmação da Tesouraria</em>; ela continua em aberto para o Art. 002 e a declaração até a baixa.
                 </p>
                 <Bullets>
                   <li><strong>Recibo:</strong> cada pagamento tem um link <UI>Recibo</UI> — abre o comprovante com o cabeçalho da loja (CNPJ, endereço, número do documento) e as linhas de assinatura do <strong>Tesoureiro em exercício na data do pagamento</strong> (o nome já vem impresso) e do contribuinte. Use <UI>Imprimir / PDF</UI>.</li>

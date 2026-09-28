@@ -72,3 +72,6 @@ export const PAYMENT_NOTICE_ENTITY = 'member-payment-notice';
 
 /** Intervalo mínimo entre dois avisos "Já paguei" da mesma conta. */
 export const PAYMENT_NOTICE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+/** Conferência do comprovante feita depois do aviso (avisos antigos): registro PRÓPRIO na auditoria. */
+export const PAYMENT_NOTICE_CHECK_ENTITY = 'member-payment-notice-check';

@@ -66,6 +66,8 @@ export async function POST(request: Request) {
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
   // Baixa a partir de um aviso "Já paguei" com crédito achado no extrato: concilia a linha junto.
   const bankTransactionId = body?.bankTransactionId ? String(body.bankTransactionId) : null;
+  // Número de controle do Pix (EndToEndId) do comprovante conferido: um comprovante não quita duas contas.
+  const e2eId = typeof body?.e2eId === 'string' && /^E[0-9A-Za-z]{31}$/.test(body.e2eId) ? body.e2eId : null;
 
   if (!accountId) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
@@ -119,6 +121,17 @@ export async function POST(request: Request) {
       if (amount > open) return { overpay: open } as const;
     }
 
+    // Mesmo número de controle já usado em outra baixa: só vale entre contas do MESMO Pix agrupado.
+    if (e2eId) {
+      const used = await db.payment.findFirst({ where: { lodgeId: String(lodgeId), note: { contains: e2eId } }, select: { accountId: true } });
+      if (used) {
+        const notice = await db.auditLog.findFirst({ where: { lodgeId: String(lodgeId), entity: 'member-payment-notice', entityId: accountId }, select: { after: true }, orderBy: { createdAt: 'desc' } });
+        let group: string[] = [];
+        try { group = (JSON.parse(notice?.after ?? '{}') as { groupAccountIds?: string[] }).groupAccountIds ?? []; } catch { group = []; }
+        if (used.accountId === accountId || !group.includes(used.accountId)) return { e2eUsed: e2eId } as const;
+      }
+    }
+
     const created = await db.payment.create({
       data: {
         lodgeId: String(lodgeId),
@@ -137,6 +150,7 @@ export async function POST(request: Request) {
       },
     });
 
+    // (conferido abaixo, antes do vínculo com o extrato)
     // Linha do extrato: só concilia crédito ainda livre e do mesmo valor (senão a baixa segue sem vínculo).
     if (bankTransactionId && account.type === 'RECEIVABLE') {
       await db.bankTransaction.updateMany({
@@ -217,6 +231,10 @@ export async function POST(request: Request) {
       { error: result.overpay > 0 ? `Valor maior que o saldo em aberto desta conta (${brl(result.overpay)}).` : 'Esta conta já está quitada — não há saldo em aberto para receber ou pagar.' },
       { status: 400 },
     );
+  }
+
+  if ('e2eUsed' in result) {
+    return NextResponse.json({ error: `Este comprovante (número de controle ${result.e2eUsed}) já foi usado na baixa de outra conta.` }, { status: 409 });
   }
 
   if ('asaasGroup' in result && result.asaasGroup) {

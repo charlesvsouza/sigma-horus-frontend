@@ -8,6 +8,8 @@ import { canPay, openBalance, PAYMENT_NOTICE_COOLDOWN_MS, PAYMENT_NOTICE_ENTITY 
 import { withTenant } from '@/lib/prisma';
 import { buildObjectKey, deleteObject, putObject } from '@/lib/storage';
 import { receiptUploadError } from '@/lib/upload-guards';
+import { checkReceipt, type ReceiptCheck } from '@/lib/receipt-check';
+import { pdfText } from '@/lib/receipt-pdf';
 
 // "Já paguei" (Modo Loja) de UMA ou de VÁRIAS contas (Pix agrupado): o Pix caiu direto na
 // conta da loja e o sistema não fica sabendo. Registra um aviso por conta (AuditLog), sobe o
@@ -45,7 +47,7 @@ export async function submitPaymentNotice(params: {
         },
         orderBy: { dueDate: 'asc' },
       }),
-      db.lodge.findUnique({ where: { id: lodgeId }, select: { name: true, collectionMode: true } }),
+      db.lodge.findUnique({ where: { id: lodgeId }, select: { name: true, collectionMode: true, cnpj: true, pixKey: true } }),
       db.member.findUnique({ where: { id: memberId }, select: { name: true } }),
       db.auditLog.findFirst({
         where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, entityId: { in: accountIds } },
@@ -72,15 +74,25 @@ export async function submitPaymentNotice(params: {
 
   // Comprovante: sobe antes de registrar (sem o arquivo no storage, o aviso não o cita).
   let receipt: { key: string; name: string; type: string } | null = null;
+  let receiptBuffer: Buffer | null = null;
   if (params.file) {
     const key = buildObjectKey(params.file.name, `payment-receipts/${lodgeId}`);
-    const ok = await putObject(key, Buffer.from(await params.file.arrayBuffer()), params.file.type).catch(() => false);
+    receiptBuffer = Buffer.from(await params.file.arrayBuffer());
+    const ok = await putObject(key, receiptBuffer, params.file.type).catch(() => false);
     if (!ok) return { ok: false, status: 502, error: 'Não foi possível enviar o comprovante. Tente de novo ou avise sem anexo.' };
     receipt = { key, name: params.file.name.slice(0, 120), type: params.file.type };
   }
 
   const total = sumMoney(items.map((i) => i.balance));
   const group = items.length > 1 ? { groupAccountIds: accountIds, groupTotal: total } : {};
+
+  // Comprovante em PDF: conferido contra o QR que o sistema gerou (txid = conta mais antiga do
+  // Pix; no agrupado o valor é o total). Só habilita a baixa de um clique — quem confirma é a Tesouraria.
+  let receiptCheck: ReceiptCheck | null = null;
+  if (params.file && params.file.type === 'application/pdf') {
+    const text = await pdfText(receiptBuffer ?? Buffer.from(await params.file.arrayBuffer()));
+    receiptCheck = checkReceipt(text, { txids: items.map((i) => i.account.id), amount: total, lodgeCnpj: lodge.cnpj, lodgePixKey: lodge.pixKey });
+  }
   const createdAt = new Date();
   try {
     await withTenant(lodgeId, async (db) => {
@@ -94,6 +106,7 @@ export async function submitPaymentNotice(params: {
           metadata: {
             memberId, amount: i.balance, title: i.account.title, note: note || null, ...group,
             ...(receipt ? { receiptKey: receipt.key, receiptName: receipt.name, receiptType: receipt.type } : {}),
+            ...(receiptCheck ? { receiptCheck } : {}),
           },
         });
       }
@@ -110,14 +123,16 @@ export async function submitPaymentNotice(params: {
     ? `O irmão ${member.name} informou pelo portal que pagou num único Pix de ${brl(total)} as ${items.length} contas abaixo:`
     : `O irmão ${member.name} informou pelo portal que pagou via Pix a conta abaixo:`;
   const text = `${intro}
-${lines.join('\n')}${note ? `\n\nObservação do irmão: ${note}` : ''}${receipt ? '\n\nO irmão anexou o comprovante — abra pelo aviso, no topo de Pagamentos.' : ''}
+${lines.join('\n')}${note ? `\n\nObservação do irmão: ${note}` : ''}${receipt ? `\n\nComprovante em anexo (${receipt.name}).${receiptCheck ? ` Conferência automática: ${receiptCheck.status === 'conferido' ? `CONFERIDO — identificador do QR, valor, recebedor (loja) e nº de controle ${receiptCheck.e2e} batem. No topo de Pagamentos, basta clicar em "Confirmar e dar baixa".` : receiptCheck.status === 'ilegivel' ? 'PDF sem texto legível; confira pela imagem.' : 'COM DIVERGÊNCIA — confira antes de dar baixa.'}` : ''}` : ''}
 
 Confira o crédito no extrato da conta da loja e dê a baixa (cada link abre o formulário preenchido).
 Este aviso não dá baixa automática. Os avisos pendentes também ficam no topo de Financeiro → Pagamentos.
 
 ${lodge.name}`;
   const recipients = [...new Set(staff.map((u) => u.email).filter(Boolean))];
-  await Promise.all(recipients.map((to) => dispatch('email', to, subject, text, EMPTY_CHANNELS).catch(() => null)));
+  // O comprovante vai anexado: o Tesoureiro confere direto no e-mail.
+  const attachments = receiptBuffer && receipt ? [{ filename: receipt.name, content: receiptBuffer.toString('base64') }] : undefined;
+  await Promise.all(recipients.map((to) => dispatch('email', to, subject, text, EMPTY_CHANNELS, { attachments }).catch(() => null)));
 
   return { ok: true, paidNoticeAt: createdAt, notified: recipients.length, receipt: Boolean(receipt) };
 }

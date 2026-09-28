@@ -277,7 +277,9 @@ export function PendenciasCard({
                     <p className="font-medium text-sand-light">{a.title}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sand-dark">
                       <span>Vence em {formatDateOnly(a.dueDate)}</span>
-                      {a.effectiveStatus === 'overdue' ? (
+                      {a.paidNoticeAt ? (
+                        <Badge variant="billed">Aguardando confirmação da Tesouraria</Badge>
+                      ) : a.effectiveStatus === 'overdue' ? (
                         <Badge variant="overdue">Vencida há {days} dia{days !== 1 ? 's' : ''}</Badge>
                       ) : (
                         <Badge variant="pending">Em aberto</Badge>
