@@ -5,7 +5,7 @@ import { todayBR } from '@/lib/date-only';
 import { lockKey } from '@/lib/locks';
 import { getLodgeOverdueDuesReport, isArt002Enabled, ART_002_THRESHOLD_DAYS, syncMemberArt002Status } from '@/lib/overdue';
 import { prismaAdmin, withTenant } from '@/lib/prisma';
-import { addInterval, isHeldForArt002, isLegacyGeneratedNumber, pendingOccurrences } from '@/lib/recurring-rules';
+import { addInterval, descriptionForOccurrence, isHeldForArt002, isLegacyGeneratedNumber, pendingOccurrences } from '@/lib/recurring-rules';
 import { findClosedTermForDate } from '@/lib/term-lock';
 
 type Db = Prisma.TransactionClient;
@@ -99,7 +99,8 @@ async function emitOccurrence(lodgeId: string, templateId: string, expectedDue: 
           title: t.account.title,
           amount: t.amount,
           dueDate,
-          description: t.account.description,
+          // O mês escrito na 1ª cobrança vira o desta ocorrência ("setembro" → "outubro").
+          description: descriptionForOccurrence(t.account.description, t.dueDate, dueDate),
           memberId: t.account.memberId,
           chartAccountId: t.account.chartAccountId,
           isDues: t.account.isDues,
@@ -119,7 +120,7 @@ async function emitOccurrence(lodgeId: string, templateId: string, expectedDue: 
         number,
         amount: t.amount,
         dueDate,
-        description: t.description,
+        description: descriptionForOccurrence(t.description, t.dueDate, dueDate),
         status: 'pending',
         isRecurring: false,
       },

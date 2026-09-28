@@ -79,3 +79,69 @@ export function recurrenceSummary(dueDate: string, interval: string, repetitions
   for (let i = 0; i < n; i++) last = addInterval(last, interval);
   return `= ${total} cobranças no total: ${monthLabel(first)} a ${monthLabel(last)}.`;
 }
+
+// ── Descrição por ocorrência ────────────────────────────────────────────────
+// A recorrência copiava a descrição da 1ª cobrança para todas ("Mensalidade de setembro" em
+// outubro, novembro…). Agora: {mês}/{mes} e {ano} viram o mês/ano do vencimento, e o nome do
+// mês da 1ª cobrança escrito na descrição (por extenso, abreviado com ano, ou MM/AAAA) é trocado
+// pelo da ocorrência, mantendo a forma em que foi escrito.
+
+const MONTHS_FULL = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const stripAccents = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Reaplica a caixa do original ("Setembro" → "Outubro", "SET" → "OUT"). */
+function sameCase(original: string, next: string): string {
+  if (original === original.toUpperCase() && original !== original.toLowerCase()) return next.toUpperCase();
+  if (original[0] === original[0].toUpperCase()) return next[0].toUpperCase() + next.slice(1);
+  return next;
+}
+
+/** Resolve {mês}/{mes} e {ano} com a data do vencimento. */
+export function resolveDescriptionPlaceholders(text: string, due: Date): string {
+  return text
+    .replace(/\{m[eê]s\}/gi, MONTHS_FULL[due.getUTCMonth()])
+    .replace(/\{ano\}/gi, String(due.getUTCFullYear()));
+}
+
+/**
+ * Descrição da ocorrência que vence em `due`, a partir da descrição da 1ª cobrança (que venceu
+ * em `firstDue`). Só troca o mês que CORRESPONDE ao da 1ª cobrança — outro texto fica igual.
+ */
+export function descriptionForOccurrence(text: string | null | undefined, firstDue: Date, due: Date): string | null {
+  if (!text) return text ?? null;
+  let out = resolveDescriptionPlaceholders(text, due);
+  const fm = firstDue.getUTCMonth();
+  const fy = firstDue.getUTCFullYear();
+  const nm = due.getUTCMonth();
+  const ny = due.getUTCFullYear();
+  const full = MONTHS_FULL[fm];
+  const abbr = stripAccents(full).slice(0, 3);
+
+  // MM/AAAA (ex.: 09/2026).
+  out = out.replace(new RegExp(`(^|\\D)0?${fm + 1}/${fy}(?!\\d)`, 'g'), (_m, pre: string) => `${pre}${String(nm + 1).padStart(2, '0')}/${ny}`);
+  // Nome por extenso (com ou sem acento), opcionalmente seguido do ano: "setembro", "Setembro de 2026", "setembro/2026".
+  out = out.replace(new RegExp(`(^|[^\\p{L}])(${escapeRe(full)}|${escapeRe(stripAccents(full))})((?:\\s+de\\s+|/|\\s+)${fy})?(?![\\p{L}])`, 'giu'),
+    (_m, pre: string, word: string, year?: string) => `${pre}${sameCase(word, MONTHS_FULL[nm])}${year ? year.replace(String(fy), String(ny)) : ''}`);
+  // Abreviado só COM o ano junto ("set/2026", "set. 2026") — sozinho, "set"/"mar" podem ser outra palavra.
+  out = out.replace(new RegExp(`(^|[^\\p{L}])(${abbr})(\\.?)(/|\\s+)${fy}(?!\\d)`, 'giu'),
+    (_m, pre: string, word: string, dot: string, sep: string) => `${pre}${sameCase(word, stripAccents(MONTHS_FULL[nm]).slice(0, 3))}${dot}${sep}${ny}`);
+  return out;
+}
+
+/** Prévia do formulário: como sairão as próximas descrições (até `limit`). Vazio sem descrição/data. */
+export function occurrenceDescriptionsPreview(description: string, dueDate: string, interval: string, repetitions: string, limit = 3): string[] {
+  const text = description.trim();
+  if (!text || !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return [];
+  const first = new Date(`${dueDate}T00:00:00Z`);
+  const raw = repetitions.trim();
+  const n = raw === '' ? limit : Math.min(limit, Math.max(0, Math.floor(Number(raw)) || 0));
+  const firstText = resolveDescriptionPlaceholders(text, first);
+  const out: string[] = [];
+  let due = first;
+  for (let i = 0; i < n; i++) {
+    due = addInterval(due, interval);
+    out.push(descriptionForOccurrence(firstText, first, due) ?? '');
+  }
+  return out;
+}

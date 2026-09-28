@@ -5,7 +5,7 @@ import { isValidMoney } from '@/lib/money';
 import { nextSequenceNumbers } from '@/lib/invoice-number';
 
 export { addInterval } from '@/lib/recurring-rules';
-import { addInterval } from '@/lib/recurring-rules';
+import { addInterval, resolveDescriptionPlaceholders } from '@/lib/recurring-rules';
 
 /**
  * Reserva os próximos `count` números de cobrança da loja (COB-AAAAMM-NNNN, sequencial por
@@ -48,7 +48,9 @@ export type ChargeResult =
  */
 export async function createChargesWithAccounts(db: Prisma.TransactionClient, input: ChargeInput): Promise<ChargeResult> {
   const { lodgeId, chartAccountId, memberIds, amount, dueDate } = input;
-  const description = input.description?.trim() || null;
+  // {mês}/{ano} já saem resolvidos na 1ª cobrança; as repetições trocam o mês a partir dela.
+  const rawDescription = input.description?.trim() || null;
+  const description = rawDescription && !Number.isNaN(input.dueDate.getTime()) ? resolveDescriptionPlaceholders(rawDescription, input.dueDate) : rawDescription;
   const isRecurring = Boolean(input.isRecurring);
   const recurringInterval = input.recurringInterval ?? 'monthly';
 

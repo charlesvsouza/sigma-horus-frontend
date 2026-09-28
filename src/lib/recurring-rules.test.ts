@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { addInterval, isHeldForArt002, isLegacyGeneratedNumber, pendingOccurrences, recurrenceSummary } from './recurring-rules';
+import { addInterval, isHeldForArt002, isLegacyGeneratedNumber, pendingOccurrences, recurrenceSummary, descriptionForOccurrence, resolveDescriptionPlaceholders, occurrenceDescriptionsPreview } from './recurring-rules';
 
 const d = (s: string) => new Date(`${s}T00:00:00.000Z`);
 const iso = (x: Date) => x.toISOString().slice(0, 10);
@@ -70,4 +70,40 @@ test('resumo da recorrência: o campo conta as repetições depois da primeira',
   assert.equal(recurrenceSummary('', 'monthly', '3'), '= 4 cobranças no total (a primeira + 3).');
   assert.match(recurrenceSummary('2026-09-10', 'monthly', ''), /sem fim/);
   assert.match(recurrenceSummary('2026-09-10', 'monthly', '0'), /1 ou mais/);
+});
+
+test('descrição por ocorrência: troca o mês da 1ª cobrança pelo de cada repetição', () => {
+  const set = new Date('2026-09-10T00:00:00Z');
+  const out = new Date('2026-10-10T00:00:00Z');
+  const jan = new Date('2027-01-10T00:00:00Z');
+  assert.equal(descriptionForOccurrence('Mensalidade de setembro', set, out), 'Mensalidade de outubro');
+  assert.equal(descriptionForOccurrence('Mensalidade de Setembro de 2026', set, jan), 'Mensalidade de Janeiro de 2027');
+  assert.equal(descriptionForOccurrence('MENSALIDADE SETEMBRO/2026', set, out), 'MENSALIDADE OUTUBRO/2026');
+  assert.equal(descriptionForOccurrence('Mensalidade set/2026', set, jan), 'Mensalidade jan/2027');
+  assert.equal(descriptionForOccurrence('Ref. 09/2026', set, out), 'Ref. 10/2026');
+  assert.equal(descriptionForOccurrence('Mensalidade {mês}/{ano}', set, out), 'Mensalidade outubro/2026');
+});
+
+test('descrição por ocorrência: não mexe no que não é o mês da 1ª cobrança', () => {
+  const set = new Date('2026-09-10T00:00:00Z');
+  const out = new Date('2026-10-10T00:00:00Z');
+  const mar = new Date('2026-03-10T00:00:00Z');
+  const abr = new Date('2026-04-10T00:00:00Z');
+  assert.equal(descriptionForOccurrence('Mensalidade de agosto', set, out), 'Mensalidade de agosto');
+  assert.equal(descriptionForOccurrence('Contribuição anual', set, out), 'Contribuição anual');
+  assert.equal(descriptionForOccurrence('Campanha do mar', mar, abr), 'Campanha do mar'); // "mar" sem ano não é março
+  assert.equal(descriptionForOccurrence('Mensalidade de março', mar, abr), 'Mensalidade de abril');
+  assert.equal(descriptionForOccurrence('Mensalidade de marco', mar, abr), 'Mensalidade de abril'); // sem acento
+  assert.equal(descriptionForOccurrence(null, set, out), null);
+});
+
+test('marcadores na 1ª cobrança viram o mês dela', () => {
+  assert.equal(resolveDescriptionPlaceholders('Mensalidade {Mês} de {ano}', new Date('2026-09-10T00:00:00Z')), 'Mensalidade setembro de 2026');
+});
+
+test('prévia das próximas descrições no formulário', () => {
+  assert.deepEqual(occurrenceDescriptionsPreview('Mensalidade de setembro', '2026-09-10', 'monthly', '3'), ['Mensalidade de outubro', 'Mensalidade de novembro', 'Mensalidade de dezembro']);
+  assert.deepEqual(occurrenceDescriptionsPreview('Mensalidade {mês}/{ano}', '2026-11-10', 'monthly', '2'), ['Mensalidade dezembro/2026', 'Mensalidade janeiro/2027']);
+  assert.deepEqual(occurrenceDescriptionsPreview('', '2026-09-10', 'monthly', '3'), []);
+  assert.equal(occurrenceDescriptionsPreview('Mensalidade', '2026-09-10', 'monthly', '').length, 3);
 });

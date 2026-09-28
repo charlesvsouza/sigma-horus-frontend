@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from 'react';
-import { recurrenceSummary } from '@/lib/recurring-rules';
+import { occurrenceDescriptionsPreview, recurrenceSummary } from '@/lib/recurring-rules';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Card, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
@@ -270,6 +270,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
                 <Field label="Repetições depois da primeira">
                   <input type="number" min="1" value={bulk.recurringCount} onChange={(event) => setBulk({ ...bulk, recurringCount: event.target.value })} className={INPUT} placeholder="em branco = sem fim" />
                   <span className="mt-1.5 block text-xs text-gold/80">{recurrenceSummary(bulk.dueDate, bulk.recurringInterval, bulk.recurringCount)}</span>
+                  {(() => { const next = occurrenceDescriptionsPreview(bulk.description, bulk.dueDate, bulk.recurringInterval, bulk.recurringCount); return next.length ? <span className="mt-1 block text-xs text-sand-dark">Próximas descrições: {next.join(" · ")}{bulk.recurringCount.trim() === "" || Number(bulk.recurringCount) > next.length ? " …" : ""}</span> : <span className="mt-1 block text-xs text-sand-dark">Dica: escreva o mês na descrição (ex.: &quot;Mensalidade de setembro&quot;) ou use {"{mês}"} — cada repetição sai com o mês dela.</span>; })()}
                 </Field>
               </div>
             ) : null}
@@ -325,6 +326,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
                 <Field label="Repetições depois da primeira">
                   <input type="number" min="1" value={form.recurringCount} onChange={(event) => setForm({ ...form, recurringCount: event.target.value })} className={INPUT} placeholder="em branco = sem fim" />
                   <span className="mt-1.5 block text-xs text-gold/80">{recurrenceSummary(form.dueDate, form.recurringInterval, form.recurringCount)}</span>
+                  {(() => { const next = occurrenceDescriptionsPreview(form.description, form.dueDate, form.recurringInterval, form.recurringCount); return next.length ? <span className="mt-1 block text-xs text-sand-dark">Próximas descrições: {next.join(" · ")}{form.recurringCount.trim() === "" || Number(form.recurringCount) > next.length ? " …" : ""}</span> : <span className="mt-1 block text-xs text-sand-dark">Dica: escreva o mês na descrição (ex.: &quot;Mensalidade de setembro&quot;) ou use {"{mês}"} — cada repetição sai com o mês dela.</span>; })()}
                 </Field>
               </div>
             ) : null}
