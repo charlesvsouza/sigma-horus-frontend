@@ -285,9 +285,9 @@ export default function PagamentosClient({ accounts, members, payments, financia
                           Ver comprovante
                         </a>
                       ) : null}
-                      {n.receiptPdf && !n.receiptCheck ? (
+                      {n.receiptPdf && n.receiptCheck?.status !== 'conferido' ? (
                         <Button size="sm" variant="secondary" onClick={() => void checkNoticeReceipt(n)} disabled={noticeBusy === n.accountId}>
-                          {noticeBusy === n.accountId ? 'Conferindo…' : 'Conferir comprovante'}
+                          {noticeBusy === n.accountId ? 'Conferindo…' : n.receiptCheck ? 'Conferir de novo' : 'Conferir comprovante'}
                         </Button>
                       ) : null}
                       {n.receiptCheck?.status === 'conferido' && !n.e2eUsed ? (

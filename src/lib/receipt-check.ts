@@ -34,15 +34,31 @@ const alnumLower = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /** EndToEndId: "E" + ISPB (8 dígitos) + AAAAMMDDHHMM (12) + 11 alfanuméricos = 32 caracteres. */
 const E2E_RE = /\bE\d{8}(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])([01]\d|2[0-3])[0-5]\d[A-Za-z0-9]{11}\b/;
+const E2E_EXACT = /^E\d{8}(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])([01]\d|2[0-3])[0-5]\d[A-Za-z0-9]{11}$/;
+
+/**
+ * Número de controle do Pix. Alguns bancos (ex.: CAIXA) quebram o número em duas linhas no PDF
+ * ("E003603052026092902485b" / "256a35492"): sem achá-lo inteiro, junta o que vem depois de um
+ * início válido (E + ISPB + ano) ignorando espaços e quebras, e confere os 32 caracteres.
+ */
+export function e2eInText(text: string): string | null {
+  const whole = text.match(E2E_RE)?.[0];
+  if (whole) return whole;
+  for (const m of text.matchAll(/E\d{8}20\d{2}[0-9A-Za-z\s]{0,48}/g)) {
+    const candidate = m[0].replace(/\s+/g, '').slice(0, 32);
+    if (E2E_EXACT.test(candidate)) return candidate;
+  }
+  return null;
+}
 
 /** Valores em reais escritos no comprovante ("R$ 1.234,56"). */
 export function amountsInText(text: string): number[] {
   return [...text.matchAll(/R\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/g)].map((m) => Number(`${m[1].replace(/\./g, '')}.${m[2]}`));
 }
 
-/** Primeira data com hora ("27/09/2026 - 23:45:17" ou "27/09/2026 23:45"), em Brasília → ISO. */
+/** Primeira data com hora ("27/09/2026 - 23:45:17", "28/09/2026, 23:48:35" ou "27/09/2026 23:45"), em Brasília → ISO. */
 export function paidAtInText(text: string): string | null {
-  const m = text.match(/\b(\d{2})\/(\d{2})\/(20\d{2})\s*(?:-|às|as)?\s*(\d{2}):(\d{2})(?::(\d{2}))?/i);
+  const m = text.match(/\b(\d{2})\/(\d{2})\/(20\d{2})\s*(?:-|,|às|as)?\s*(\d{2}):(\d{2})(?::(\d{2}))?/i);
   if (m) {
     const [, d, mo, y, h, mi, s] = m;
     const iso = `${y}-${mo}-${d}T${h}:${mi}:${s ?? '00'}-03:00`;
@@ -83,7 +99,7 @@ export function checkReceipt(text: string, expected: ReceiptExpectation): Receip
   const byKey = key.length >= 5 && (key.includes('@') ? clean.toLowerCase().includes(key) : digits(key).length >= 10 && digits(clean).includes(digits(key)));
   const payee = byCnpj || byKey;
 
-  const e2e = clean.match(E2E_RE)?.[0] ?? null;
+  const e2e = e2eInText(clean);
   const paidAt = paidAtInText(clean);
   const status = txid && amount && payee && e2e ? 'conferido' : 'divergente';
   return { status, txid, amount, payee, e2e, paidAt, amountsFound, amountPaid };

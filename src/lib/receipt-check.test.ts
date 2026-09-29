@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { amountsInText, checkReceipt, paidAtInText, receiptTxids } from './receipt-check.ts';
+import { amountsInText, checkReceipt, e2eInText, paidAtInText, receiptTxids } from './receipt-check.ts';
 
 // Texto real extraído do comprovante do App Bradesco (Pix para a amm139, 2026-09-27).
 const BRADESCO = `Comprovante de pagamento Pix
@@ -63,4 +63,39 @@ test('Pix enviado pelo WhatsApp: identificador é o nº da cobrança e também c
   assert.equal(checkReceipt(whatsapp, { ...expected, txids }).status, 'conferido');
   // Só com o id da conta (como era antes), o mesmo comprovante acusava divergência.
   assert.equal(checkReceipt(whatsapp, expected).txid, false);
+});
+
+// Texto real do comprovante da CAIXA (Pix de 2026-09-28; pagador anonimizado): o número de controle
+// vem QUEBRADO em duas linhas e a data usa vírgula antes da hora.
+const CAIXA = `Comprovante de PixComprovante de PixComprovante de PixComprovante de Pix
+Pix enviadoPix enviadoPix enviadoPix enviado
+28/09/2026, 23:48:35
+Valor R$ 220,00
+RecebedorRecebedorRecebedorRecebedor
+Nome Loja Maconica Antonio Monteiro
+Martins N
+CNPJ 07.470.382/0001-66
+Instituição BCO SANTANDER (BRASIL) S.A.
+PagadorPagadorPagadorPagador
+Nome Irmão Pagador de Teste
+CPF ***.000.000-**
+Instituição CAIXA ECONÔMICA FEDERAL
+Dados da transaçãoDados da transaçãoDados da transaçãoDados da transação
+Situação Efetivado
+ID transação E003603052026092902485b
+256a35492
+Identificador COB2026090021
+VoltarVoltarVoltarVoltar`;
+
+test('CAIXA: número de controle quebrado em duas linhas e data com vírgula', () => {
+  assert.equal(e2eInText(CAIXA), 'E003603052026092902485b256a35492');
+  const r = checkReceipt(CAIXA, { txids: receiptTxids(['cmukms8u8000h04idq22vauj7'], ['COB-202609-0021']), amount: 220, lodgeCnpj: '07.470.382/0001-66' });
+  assert.equal(r.status, 'conferido');
+  assert.equal(r.e2e, 'E003603052026092902485b256a35492');
+  assert.equal(r.paidAt, '2026-09-29T02:48:35.000Z'); // 23:48:35 de 28/09 em Brasília
+});
+
+test('número de controle: não inventa com pedaços que não fecham 32 caracteres válidos', () => {
+  assert.equal(e2eInText('ID transação E0036030520260929\nfim'), null);
+  assert.equal(e2eInText('sem nada aqui'), null);
 });
