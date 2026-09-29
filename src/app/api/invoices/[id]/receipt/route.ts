@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { invoiceOpenBalance } from '@/lib/charge-notice';
 import { isAsaasMode } from '@/lib/collection';
 import { submitPaymentNotice } from '@/lib/payment-notice-server';
-import { PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
+import { PAYMENT_NOTICE_ENTITY, PAYMENT_NOTICE_REJECT_ENTITY, withoutRejected } from '@/lib/portal-dues';
 import { CLOSED_INVOICE_STATUSES } from '@/lib/portal-invoice';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -34,12 +34,20 @@ async function load(id: string) {
       },
     });
     const lodge = await db.lodge.findUnique({ where: { id: lodgeId }, select: { collectionMode: true } });
+    // Aviso recusado (comprovante errado) não conta como existente: registrar de novo não é "substituir".
     const last = invoice
-      ? await db.auditLog.findFirst({
-          where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, entityId: invoice.accountId },
-          select: { createdAt: true, after: true },
-          orderBy: { createdAt: 'desc' },
-        })
+      ? withoutRejected(
+          await db.auditLog.findMany({
+            where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, entityId: invoice.accountId },
+            select: { entityId: true, createdAt: true, after: true },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+          }),
+          await db.auditLog.findMany({
+            where: { lodgeId, entity: PAYMENT_NOTICE_REJECT_ENTITY, entityId: invoice.accountId },
+            select: { entityId: true, createdAt: true },
+          }),
+        )[0] ?? null
       : null;
     return { invoice, lodge, last };
   });

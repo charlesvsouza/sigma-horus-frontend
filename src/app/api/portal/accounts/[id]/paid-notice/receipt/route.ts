@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { canSeePaymentHistory } from '@/lib/payment-history';
-import { PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
+import { PAYMENT_NOTICE_ENTITY, PAYMENT_NOTICE_REJECT_ENTITY, withoutRejected } from '@/lib/portal-dues';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { getPresignedDownloadUrl } from '@/lib/storage';
@@ -21,12 +21,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const account = await db.account.findFirst({ where: { id, lodgeId }, select: { memberId: true } });
     if (!account) return null;
     if (!staff && (!memberId || account.memberId !== memberId)) return 'forbidden' as const;
-    const notices = await db.auditLog.findMany({
-      where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, entityId: id },
-      select: { after: true },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-    });
+    // Comprovante de aviso recusado (arquivo errado) não é mais "o comprovante da conta".
+    const notices = withoutRejected(
+      await db.auditLog.findMany({
+        where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, entityId: id },
+        select: { entityId: true, createdAt: true, after: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+      await db.auditLog.findMany({ where: { lodgeId, entity: PAYMENT_NOTICE_REJECT_ENTITY, entityId: id }, select: { entityId: true, createdAt: true } }),
+    );
     for (const n of notices) {
       try {
         const meta = JSON.parse(n.after ?? '{}') as { receiptKey?: string };

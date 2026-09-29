@@ -3,7 +3,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NOT_INTERNAL_DOCUMENT } from '@/lib/documents';
 import { normalizeCollectionMode } from '@/lib/collection';
-import { canPay, effectiveStatus, openBalance, PAYMENT_NOTICE_ENTITY, portalSummary } from '@/lib/portal-dues';
+import { canPay, effectiveStatus, openBalance, PAYMENT_NOTICE_ENTITY, PAYMENT_NOTICE_REJECT_ENTITY, portalSummary, withoutRejected } from '@/lib/portal-dues';
 import { canSeePaymentHistory } from '@/lib/payment-history';
 import { NextResponse } from 'next/server';
 
@@ -92,17 +92,31 @@ export async function GET() {
 
   // Último "Já paguei" de cada conta em aberto (Modo Loja) — a tela mostra "Aviso enviado em …".
   const openIds = accounts.filter((a) => a.status !== 'paid').map((a) => a.id);
-  const notices = openIds.length
-    ? await withTenant(String(lodgeId), (db) =>
-        db.auditLog.findMany({
+  // Aviso recusado pela Tesouraria (comprovante errado) não vale: a conta volta a "em aberto" e o
+  // irmão vê o motivo da recusa mais recente, até avisar de novo.
+  const { notices, rejections } = openIds.length
+    ? await withTenant(String(lodgeId), async (db) => ({
+        notices: await db.auditLog.findMany({
           where: { lodgeId: String(lodgeId), entity: PAYMENT_NOTICE_ENTITY, entityId: { in: openIds } },
           select: { entityId: true, createdAt: true },
           orderBy: { createdAt: 'desc' },
         }),
-      )
-    : [];
+        rejections: await db.auditLog.findMany({
+          where: { lodgeId: String(lodgeId), entity: PAYMENT_NOTICE_REJECT_ENTITY, entityId: { in: openIds } },
+          select: { entityId: true, createdAt: true, after: true },
+          orderBy: { createdAt: 'desc' },
+        }),
+      }))
+    : { notices: [], rejections: [] };
   const lastNotice = new Map<string, Date>();
-  for (const n of notices) if (!lastNotice.has(n.entityId)) lastNotice.set(n.entityId, n.createdAt);
+  for (const n of withoutRejected(notices, rejections)) if (!lastNotice.has(n.entityId)) lastNotice.set(n.entityId, n.createdAt);
+  const lastRejection = new Map<string, { at: Date; reason: string | null }>();
+  for (const r of rejections) {
+    if (lastRejection.has(r.entityId)) continue;
+    let reason: string | null = null;
+    try { reason = (JSON.parse(r.after ?? '{}') as { reason?: string }).reason ?? null; } catch { reason = null; }
+    lastRejection.set(r.entityId, { at: r.createdAt, reason });
+  }
 
   const now = new Date();
   const items = accounts.map(({ memberId: owner, approvalStatus, ...a }) => {
@@ -113,6 +127,8 @@ export async function GET() {
       balance,
       payable: canPay({ ...a, memberId: owner, approvalStatus }, String(memberId), balance),
       paidNoticeAt: lastNotice.get(a.id) ?? null,
+      // Só enquanto não houver aviso novo: depois dele, a recusa antiga é história.
+      paidNoticeRejected: !lastNotice.has(a.id) && lastRejection.has(a.id) ? lastRejection.get(a.id)! : null,
     };
   });
 

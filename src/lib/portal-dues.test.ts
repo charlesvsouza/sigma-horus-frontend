@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canPay, effectiveStatus, openBalance, portalSummary } from './portal-dues.ts';
+import { canPay, effectiveStatus, openBalance, portalSummary, withoutRejected } from './portal-dues.ts';
 
 // 27/09/2026 10:00 em Brasília.
 const NOW = new Date('2026-09-27T13:00:00Z');
@@ -39,4 +39,17 @@ test('resumo do portal: só o que está em aberto — conta paga não entra em "
   ]);
   assert.deepEqual(s, { totalReceivables: 120.1, totalPayables: 20.2, overdue: 110 });
   assert.deepEqual(portalSummary([{ type: 'RECEIVABLE', balance: 0, effectiveStatus: 'paid' }]), { totalReceivables: 0, totalPayables: 0, overdue: 0 });
+});
+
+test('withoutRejected: recusa invalida os avisos da conta até ela; aviso novo volta a valer', () => {
+  const d = (s: string) => new Date(s);
+  const notices = [
+    { entityId: 'a', createdAt: d('2026-09-20T10:00:00Z') },
+    { entityId: 'a', createdAt: d('2026-09-25T10:00:00Z') },
+    { entityId: 'b', createdAt: d('2026-09-20T10:00:00Z') },
+  ];
+  const rejections = [{ entityId: 'a', createdAt: d('2026-09-21T10:00:00Z') }];
+  assert.deepEqual(withoutRejected(notices, rejections), [notices[1], notices[2]]);
+  assert.deepEqual(withoutRejected(notices.slice(0, 1), rejections), []);
+  assert.deepEqual(withoutRejected(notices, []), notices);
 });

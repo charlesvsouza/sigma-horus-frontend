@@ -18,6 +18,8 @@ export interface PendingAccount {
   effectiveStatus: 'paid' | 'overdue' | 'pending';
   balance: number;
   paidNoticeAt?: string | null;
+  /** Último aviso recusado pela Tesouraria (comprovante não conferiu), enquanto não houver aviso novo. */
+  paidNoticeRejected?: { at: string; reason: string | null } | null;
   chartAccount?: { name: string; category: string | null } | null;
 }
 
@@ -295,6 +297,10 @@ export function PendenciasCard({
                     </p>
                     {a.paidNoticeAt ? (
                       <p className="mt-1 text-xs text-sky-200">Você avisou o pagamento em {new Date(a.paidNoticeAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}. Aguardando a Tesouraria.</p>
+                    ) : a.paidNoticeRejected ? (
+                      <p className="mt-1 text-xs text-amber-300">
+                        A Tesouraria não confirmou seu aviso de pagamento{a.paidNoticeRejected.reason ? `: ${a.paidNoticeRejected.reason}` : ''}. Se já pagou, envie o comprovante correto em &quot;Já paguei&quot;.
+                      </p>
                     ) : null}
                   </div>
                 </div>

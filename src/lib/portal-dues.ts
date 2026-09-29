@@ -75,3 +75,23 @@ export const PAYMENT_NOTICE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 /** Conferência do comprovante feita depois do aviso (avisos antigos): registro PRÓPRIO na auditoria. */
 export const PAYMENT_NOTICE_CHECK_ENTITY = 'member-payment-notice-check';
+
+/**
+ * Aviso recusado pela Tesouraria (comprovante errado): registro PRÓPRIO na auditoria, o aviso
+ * original fica. Todo aviso da conta criado até a recusa deixa de valer — a conta volta a "em
+ * aberto" no portal e o irmão pode avisar de novo, sem carência.
+ */
+export const PAYMENT_NOTICE_REJECT_ENTITY = 'member-payment-notice-reject';
+
+/** Tira os avisos que uma recusa posterior (da mesma conta) invalidou. */
+export function withoutRejected<T extends { entityId: string; createdAt: Date }>(
+  notices: T[],
+  rejections: { entityId: string; createdAt: Date }[],
+): T[] {
+  const lastRejection = new Map<string, number>();
+  for (const r of rejections) {
+    const t = r.createdAt.getTime();
+    if (t > (lastRejection.get(r.entityId) ?? 0)) lastRejection.set(r.entityId, t);
+  }
+  return notices.filter((n) => n.createdAt.getTime() > (lastRejection.get(n.entityId) ?? 0));
+}

@@ -138,6 +138,40 @@ export default function PagamentosClient({ accounts, members, payments, financia
     router.refresh();
   }
 
+  // Recusar aviso (comprovante errado): a conta volta a "em aberto" sem aviso e o irmão, avisado
+  // do motivo, manda o comprovante certo pelo mesmo "Já paguei". Nada é apagado (fica na auditoria).
+  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectNotify, setRejectNotify] = useState(true);
+
+  function openReject(notice: PaymentNotice) {
+    setRejecting(notice.accountId);
+    setRejectReason('');
+    setRejectNotify(true);
+    setMessage(null);
+  }
+
+  async function rejectNotice(notice: PaymentNotice) {
+    const account = byId.get(notice.accountId);
+    setNoticeBusy(notice.accountId);
+    setMessage(null);
+    const res = await fetch('/api/payments/notice-reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accountId: notice.accountId, reason: rejectReason, notifyMember: rejectNotify }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setNoticeBusy(null);
+    if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Não foi possível recusar o aviso.' }); return; }
+    setRejecting(null);
+    const n = Array.isArray(data.accountIds) ? data.accountIds.length : 1;
+    setMessage({
+      kind: 'ok',
+      text: `Aviso recusado: ${account?.who ?? ''} — ${n > 1 ? `${n} contas do Pix agrupado voltaram` : 'a conta voltou'} a "em aberto".${rejectNotify ? (data.notified ? ' O irmão recebeu o motivo por e-mail.' : ' Não foi possível mandar o e-mail ao irmão — avise-o por outro meio.') : ''}`,
+    });
+    router.refresh();
+  }
+
   function settleNotice(notice: PaymentNotice) {
     const account = byId.get(notice.accountId);
     if (!account) return;
@@ -311,7 +345,46 @@ export default function PagamentosClient({ accounts, members, payments, financia
                       ) : (
                         <Button size="sm" onClick={() => settleNotice(n)}>Dar baixa</Button>
                       )}
+                      {rejecting !== n.accountId ? (
+                        <Button size="sm" variant="ghost" onClick={() => openReject(n)} disabled={noticeBusy === n.accountId}>Recusar aviso</Button>
+                      ) : null}
                     </div>
+                    {rejecting === n.accountId ? (
+                      <div className="w-full rounded-lg border border-rose-500/25 bg-rose-500/5 p-4">
+                        <p className="text-sm font-medium text-sand-light">Recusar este aviso de pagamento</p>
+                        <p className="mt-1 text-xs text-sand-dark">
+                          Use quando o comprovante não é deste pagamento (arquivo errado, outra conta, valor ou recebedor diferente).
+                          {n.group ? ` É um Pix agrupado: as ${n.group.accountIds.length} contas do grupo voltam juntas.` : ''} A conta volta a &quot;em aberto&quot; no portal
+                          e o irmão pode avisar de novo com o comprovante certo. O aviso recusado fica registrado na auditoria.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {['Comprovante anexado não corresponde a este pagamento.', 'Valor do comprovante diferente do cobrado.', 'Crédito não localizado no extrato da loja.', 'Comprovante ilegível.'].map((r) => (
+                            <button key={r} type="button" onClick={() => setRejectReason(r)} className="rounded-full border border-white/10 px-3 py-1 text-xs text-sand-dark transition-colors hover:border-gold/40 hover:text-sand">
+                              {r}
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          aria-label="Motivo da recusa"
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          maxLength={300}
+                          rows={2}
+                          placeholder="Motivo (vai no e-mail ao irmão)"
+                          className={`${INPUT} mt-3 text-sm`}
+                        />
+                        <label className="mt-2 flex items-center gap-2 text-xs text-sand-dark">
+                          <input type="checkbox" checked={rejectNotify} onChange={(e) => setRejectNotify(e.target.checked)} className="h-4 w-4 accent-gold" />
+                          Avisar o irmão por e-mail, com o motivo
+                        </label>
+                        <div className="mt-3 flex justify-end gap-3">
+                          <Button size="sm" variant="ghost" onClick={() => setRejecting(null)} disabled={noticeBusy === n.accountId}>Cancelar</Button>
+                          <Button size="sm" variant="danger" onClick={() => void rejectNotice(n)} disabled={noticeBusy === n.accountId || rejectReason.trim().length < 3}>
+                            {noticeBusy === n.accountId ? 'Recusando…' : 'Recusar aviso'}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
                   </li>
                 );
               })}

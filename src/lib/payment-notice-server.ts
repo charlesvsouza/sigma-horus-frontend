@@ -4,7 +4,7 @@ import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { sumMoney } from '@/lib/money';
-import { canPay, openBalance, PAYMENT_NOTICE_COOLDOWN_MS, PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
+import { canPay, openBalance, PAYMENT_NOTICE_COOLDOWN_MS, PAYMENT_NOTICE_ENTITY, PAYMENT_NOTICE_REJECT_ENTITY, withoutRejected } from '@/lib/portal-dues';
 import { withTenant } from '@/lib/prisma';
 import { buildObjectKey, deleteObject, putObject } from '@/lib/storage';
 import { receiptUploadError } from '@/lib/upload-guards';
@@ -54,7 +54,7 @@ export async function submitPaymentNotice(params: {
   }
 
   const ctx = await withTenant(lodgeId, async (db) => {
-    const [accounts, lodge, member, last, staff, invoices] = await Promise.all([
+    const [accounts, lodge, member, notices, rejections, staff, invoices] = await Promise.all([
       db.account.findMany({
         where: { id: { in: accountIds }, lodgeId, memberId },
         select: {
@@ -65,15 +65,21 @@ export async function submitPaymentNotice(params: {
       }),
       db.lodge.findUnique({ where: { id: lodgeId }, select: { name: true, collectionMode: true, cnpj: true, pixKey: true, chargeLateFeesOnPix: true, lateFeePercent: true, lateInterestPercentMonth: true } }),
       db.member.findUnique({ where: { id: memberId }, select: { name: true, email: true } }),
-      db.auditLog.findFirst({
+      db.auditLog.findMany({
         where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, entityId: { in: accountIds } },
-        select: { createdAt: true },
+        select: { entityId: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      // Aviso recusado pela Tesouraria não conta: nem carência, nem "já existe aviso".
+      db.auditLog.findMany({
+        where: { lodgeId, entity: PAYMENT_NOTICE_REJECT_ENTITY, entityId: { in: accountIds } },
+        select: { entityId: true, createdAt: true },
       }),
       db.user.findMany({ where: { lodgeId, role: { in: ['treasurer', 'admin', 'venerable'] }, status: 'active' }, select: { id: true, email: true } }),
       db.invoice.findMany({ where: { lodgeId, accountId: { in: accountIds } }, select: { number: true } }),
     ]);
-    return { accounts, lodge, member, last, staff, invoices };
+    return { accounts, lodge, member, last: withoutRejected(notices, rejections)[0] ?? null, staff, invoices };
   });
 
   const { accounts, lodge, member, last, staff, invoices } = ctx;

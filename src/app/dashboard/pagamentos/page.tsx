@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { todayBR } from '@/lib/date-only';
 import { matchNoticesToBank } from '@/lib/notice-bank-match';
-import { openBalance, PAYMENT_NOTICE_CHECK_ENTITY, PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
+import { openBalance, PAYMENT_NOTICE_CHECK_ENTITY, PAYMENT_NOTICE_ENTITY, PAYMENT_NOTICE_REJECT_ENTITY, withoutRejected } from '@/lib/portal-dues';
 import type { ReceiptCheck } from '@/lib/receipt-check';
 import { withTenant } from '@/lib/prisma';
 import { round2 } from '@/lib/money';
@@ -58,13 +58,20 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           orderBy: { createdAt: 'desc' },
           take: 200,
         }),
+        // Avisos recusados pela Tesouraria (comprovante errado): saem do quadro.
+        noticeRejections: await db.auditLog.findMany({
+          where: { lodgeId: String(lodgeId), entity: PAYMENT_NOTICE_REJECT_ENTITY },
+          select: { entityId: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 200,
+        }),
         // Créditos do extrato importado ainda não conciliados (últimos 45 dias): casam com os avisos.
         bankLines: await db.bankTransaction.findMany({
           where: { lodgeId: String(lodgeId), status: 'unmatched', amount: { gt: 0 }, date: { gte: new Date(todayBR().getTime() - 45 * 86_400_000) } },
           select: { id: true, date: true, amount: true, description: true },
         }),
       }))
-    : { accounts: [], members: [], payments: [], financialAccounts: [], notices: [], bankLines: [], receiptChecks: [] };
+    : { accounts: [], members: [], payments: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], receiptChecks: [] };
 
   const accounts = data.accounts
     .map((a) => {
@@ -89,7 +96,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
   // "Já paguei" do portal (Modo Loja) ainda sem baixa: o último aviso de cada conta em aberto.
   const openById = new Map(accounts.map((a) => [a.id, a]));
   const seen = new Set<string>();
-  const rawNotices = data.notices.flatMap((n) => {
+  const rawNotices = withoutRejected(data.notices, data.noticeRejections).flatMap((n) => {
     const account = openById.get(n.entityId);
     if (!account || seen.has(n.entityId)) return [];
     seen.add(n.entityId);

@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-import { PAYMENT_NOTICE_CHECK_ENTITY, PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
+import { PAYMENT_NOTICE_CHECK_ENTITY, PAYMENT_NOTICE_ENTITY, PAYMENT_NOTICE_REJECT_ENTITY, withoutRejected } from '@/lib/portal-dues';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { checkReceipt, receiptTxids } from '@/lib/receipt-check';
@@ -24,11 +24,15 @@ export async function POST(request: Request) {
   const accountId = String(body?.accountId ?? '');
 
   const ctx = await withTenant(lodgeId, async (db) => ({
-    notice: await db.auditLog.findFirst({
-      where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, entityId: accountId },
-      select: { after: true },
-      orderBy: { createdAt: 'desc' },
-    }),
+    notice: withoutRejected(
+      await db.auditLog.findMany({
+        where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, entityId: accountId },
+        select: { entityId: true, createdAt: true, after: true },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+      await db.auditLog.findMany({ where: { lodgeId, entity: PAYMENT_NOTICE_REJECT_ENTITY, entityId: accountId }, select: { entityId: true, createdAt: true } }),
+    )[0] ?? null,
     lodge: await db.lodge.findUnique({ where: { id: lodgeId }, select: { cnpj: true, pixKey: true, chargeLateFeesOnPix: true, lateFeePercent: true, lateInterestPercentMonth: true } }),
   }));
   let meta: { receiptKey?: string; receiptType?: string; amount?: number; groupAccountIds?: string[]; groupTotal?: number } = {};
