@@ -3,14 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
-import { Alert, Button, inputClass, useConfirm } from '@/components/ui';
+import { toBRDateTimeLocal } from '@/lib/br-time';
+import { degreesLabel } from '@/lib/session-convocation';
+import { Alert, Button, Field, inputClass, useConfirm } from '@/components/ui';
+import { SessionDegreePicker } from '@/components/session-degree-picker';
+import { ConvocationPanel } from './ConvocationPanel';
 
 interface Member { id: string; name: string; }
 interface SessionInfo {
-  id: string; title: string; date: string; endDate?: string | null; type: string; grade?: string | null;
-  agenda?: string | null; minutesFileName?: string | null; convocationSentAt?: string | null;
+  id: string; title: string; date: string; endDate?: string | null; type: string; degrees: number[];
+  agenda?: string | null; minutesFileName?: string | null;
+  convocationSentAt?: string | null; convocationSentText: string | null; convocationCurrentText: string; convocationChanged: boolean;
   locked: boolean; lockedAt?: string | null;
 }
+
+const fmtDateTime = (iso: string) => new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' });
 
 export default function SessionDetailClient({
   session,
@@ -27,19 +34,43 @@ export default function SessionDetailClient({
   const askConfirm = useConfirm();
   const [attendanceMap, setAttendanceMap] = useState<Record<string, string>>(initialAttendance);
   const [agenda, setAgenda] = useState(session.agenda ?? '');
+  const [savedAgenda, setSavedAgenda] = useState(session.agenda ?? '');
   const [minutesFileName, setMinutesFileName] = useState(session.minutesFileName ?? null);
   const [savingAgenda, setSavingAgenda] = useState(false);
   const [uploadingMinutes, setUploadingMinutes] = useState(false);
-  const [sendingConvocation, setSendingConvocation] = useState(false);
-  const [convocationSentAt, setConvocationSentAt] = useState(session.convocationSentAt);
   const [locked, setLocked] = useState(session.locked);
   const [lockedAt, setLockedAt] = useState(session.lockedAt ?? null);
   const [lockBusy, setLockBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  // Edição dos dados da sessão (título, horário, tipo, graus).
+  const [editing, setEditing] = useState(false);
+  const [savingData, setSavingData] = useState(false);
+  const [dataForm, setDataForm] = useState(() => formFrom(session));
 
   const canUnlock = role === 'admin' || role === 'venerable';
   const endDate = session.endDate ? new Date(session.endDate) : null;
   const sessionEnded = !endDate || new Date() >= endDate;
+  const convoked = !!session.convocationSentAt;
+  const agendaDirty = agenda !== savedAgenda;
+  const blockedReason = agendaDirty
+    ? 'A ordem do dia foi editada e não foi salva. Salve antes de convocar.'
+    : editing
+      ? 'Salve ou cancele a edição dos dados da sessão antes de convocar.'
+      : null;
+
+  function formFrom(s: SessionInfo) {
+    return { title: s.title, date: toBRDateTimeLocal(s.date), endDate: s.endDate ? toBRDateTimeLocal(s.endDate) : '', type: s.type, degrees: s.degrees };
+  }
+
+  /** Depois de convocada, qualquer alteração deixa os irmãos com a versão antiga — avisa antes. */
+  async function confirmChangeAfterConvocation(what: string): Promise<boolean> {
+    if (!convoked) return true;
+    return askConfirm({
+      title: 'Sessão já convocada',
+      message: `A convocação foi enviada em ${fmtDateTime(session.convocationSentAt!)}. Ao salvar ${what}, os irmãos ficam com a versão antiga até você enviar a retificação (o sistema mostra a diferença e prepara a mensagem).`,
+      confirmLabel: 'Salvar mesmo assim',
+    });
+  }
 
   async function toggleLock() {
     const willLock = !locked;
@@ -63,7 +94,30 @@ export default function SessionDetailClient({
     }
   }
 
+  async function saveData() {
+    if (!dataForm.title.trim()) { setMessage({ kind: 'error', text: 'Título é obrigatório.' }); return; }
+    if (dataForm.degrees.length === 0) { setMessage({ kind: 'error', text: 'Marque ao menos um grau trabalhado na sessão.' }); return; }
+    if (!(await confirmChangeAfterConvocation('os dados da sessão'))) return;
+    setSavingData(true);
+    setMessage(null);
+    const res = await fetch(`/api/sessions/${session.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: dataForm.title, date: dataForm.date, endDate: dataForm.endDate || null, type: dataForm.type, degrees: dataForm.degrees }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setSavingData(false);
+    if (res.ok) {
+      setEditing(false);
+      setMessage({ kind: 'ok', text: convoked ? 'Dados salvos. Envie a retificação da convocação.' : 'Dados da sessão salvos.' });
+      router.refresh();
+    } else {
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao salvar os dados da sessão.' });
+    }
+  }
+
   async function saveAgenda() {
+    if (!(await confirmChangeAfterConvocation('a ordem do dia'))) return;
     setSavingAgenda(true);
     setMessage(null);
     const res = await fetch(`/api/sessions/${session.id}`, {
@@ -73,7 +127,9 @@ export default function SessionDetailClient({
     });
     setSavingAgenda(false);
     if (res.ok) {
-      setMessage({ kind: 'ok', text: 'Ordem do dia salva.' });
+      setSavedAgenda(agenda);
+      setMessage({ kind: 'ok', text: convoked ? 'Ordem do dia salva. Envie a retificação da convocação.' : 'Ordem do dia salva.' });
+      router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));
       setMessage({ kind: 'error', text: data.error ?? 'Erro ao salvar.' });
@@ -111,26 +167,6 @@ export default function SessionDetailClient({
     }
   }
 
-  async function sendConvocation() {
-    const verb = convocationSentAt ? 'reenviar' : 'enviar';
-    if (!(await askConfirm({
-      title: 'Enviar convocação',
-      message: `Deseja ${verb} o chamado desta sessão por e-mail a todos os obreiros ativos?`,
-      confirmLabel: 'Enviar',
-    }))) return;
-    setSendingConvocation(true);
-    setMessage(null);
-    const res = await fetch(`/api/sessions/${session.id}/convocation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-    const data = await res.json().catch(() => ({}));
-    setSendingConvocation(false);
-    if (res.ok) {
-      setConvocationSentAt(new Date().toISOString());
-      setMessage({ kind: 'ok', text: `Convocação enviada: ${data.stats?.sent ?? 0} enviada(s), ${data.stats?.queued ?? 0} na fila, ${data.stats?.failed ?? 0} falhou(aram).` });
-    } else {
-      setMessage({ kind: 'error', text: data.error ?? 'Erro ao enviar convocação.' });
-    }
-  }
-
   async function toggleAttendance(memberId: string) {
     if (!sessionEnded || locked) return;
     const current = attendanceMap[memberId];
@@ -148,6 +184,8 @@ export default function SessionDetailClient({
     }
   }
 
+  const degrees = degreesLabel(session.degrees);
+
   return (
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -158,10 +196,10 @@ export default function SessionDetailClient({
               {locked ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300 align-middle">🔒 Trancada</span> : null}
             </h1>
             <p className="mt-1 text-sm text-sand-dark">
-              {new Date(session.date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' })}
-              {endDate ? ` – ${endDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' })}` : ''}
+              {fmtDateTime(session.date)}
+              {endDate ? ` – ${fmtDateTime(session.endDate!)}` : ''}
               {' • '}{SESSION_TYPE_LABEL[session.type] ?? session.type}
-              {session.grade ? ` • Grau: ${session.grade}` : ''}
+              {degrees ? ` • Graus: ${degrees}` : ' • Graus não marcados'}
             </p>
             {locked && lockedAt ? (
               <p className="mt-1 text-xs text-sand-dark/70">Trancada em {new Date(lockedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })} — protege os registros contra edição.</p>
@@ -186,20 +224,58 @@ export default function SessionDetailClient({
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-sand-light">Convocação (chamado)</h2>
-              <p className="mt-1 text-xs text-sand-dark">
-                {convocationSentAt ? `Enviada em ${new Date(convocationSentAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}` : 'Ainda não enviada'} — vai por e-mail a todos os obreiros ativos, com data, hora e ordem do dia.
-              </p>
+              <h2 className="text-base font-semibold text-sand-light">Dados da sessão</h2>
+              <p className="mt-1 text-xs text-sand-dark">Título, horário, tipo e graus trabalhados — é daqui que sai o texto da convocação.</p>
             </div>
-            <Button type="button" onClick={sendConvocation} disabled={sendingConvocation}>
-              {sendingConvocation ? 'Enviando…' : convocationSentAt ? 'Reenviar convocação' : 'Enviar convocação'}
-            </Button>
+            {!editing ? (
+              <Button type="button" variant="secondary" size="sm" onClick={() => { setDataForm(formFrom(session)); setEditing(true); }} disabled={locked}>Editar</Button>
+            ) : null}
           </div>
+          {editing ? (
+            <div className="mt-5 space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Título da sessão" className="md:col-span-2">
+                  <input value={dataForm.title} onChange={(e) => setDataForm({ ...dataForm, title: e.target.value })} className={inputClass} />
+                </Field>
+                <Field label="Início">
+                  <input type="datetime-local" value={dataForm.date} onChange={(e) => setDataForm({ ...dataForm, date: e.target.value })} className={inputClass} />
+                </Field>
+                <Field label="Término">
+                  <input type="datetime-local" value={dataForm.endDate} onChange={(e) => setDataForm({ ...dataForm, endDate: e.target.value })} className={inputClass} />
+                </Field>
+                <Field label="Tipo de sessão">
+                  <select value={dataForm.type} onChange={(e) => setDataForm({ ...dataForm, type: e.target.value })} className={inputClass}>
+                    {Object.entries(SESSION_TYPE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                </Field>
+              </div>
+              <SessionDegreePicker value={dataForm.degrees} onChange={(d) => setDataForm({ ...dataForm, degrees: d })} />
+              <div className="flex gap-2">
+                <Button type="button" onClick={() => void saveData()} disabled={savingData}>{savingData ? 'Salvando…' : 'Salvar dados'}</Button>
+                <Button type="button" variant="ghost" onClick={() => setEditing(false)} disabled={savingData}>Cancelar</Button>
+              </div>
+            </div>
+          ) : null}
+        </section>
 
-          <div className="mt-5">
-            <label className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Ordem do dia (visível ao obreiro)</label>
-            <textarea value={agenda} onChange={(e) => setAgenda(e.target.value)} disabled={locked} className={`${inputClass} mt-2 disabled:opacity-50`} rows={5} placeholder="1. Abertura dos trabalhos&#10;2. Leitura do balaustre anterior&#10;3. ..." />
-            <Button type="button" onClick={saveAgenda} disabled={savingAgenda || locked} className="mt-3">{savingAgenda ? 'Salvando…' : 'Salvar ordem do dia'}</Button>
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
+          <ConvocationPanel
+            sessionId={session.id}
+            sentAt={session.convocationSentAt ?? null}
+            changed={session.convocationChanged}
+            sentText={session.convocationSentText}
+            currentText={session.convocationCurrentText}
+            blockedReason={blockedReason}
+            onSent={() => router.refresh()}
+          />
+
+          <div className="mt-6 border-t border-white/5 pt-5">
+            <label className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Ordem do dia (visível ao obreiro e enviada na convocação)</label>
+            <textarea value={agenda} onChange={(e) => setAgenda(e.target.value)} disabled={locked} className={`${inputClass} mt-2 disabled:opacity-50`} rows={5} placeholder="1. Abertura dos trabalhos em grau de Aprendiz&#10;2. Leitura do balaustre anterior&#10;3. ..." />
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button type="button" onClick={() => void saveAgenda()} disabled={savingAgenda || locked || !agendaDirty}>{savingAgenda ? 'Salvando…' : 'Salvar ordem do dia'}</Button>
+              {agendaDirty ? <span className="text-xs text-amber-300">Alterações não salvas.</span> : null}
+            </div>
           </div>
         </section>
 
@@ -240,7 +316,7 @@ export default function SessionDetailClient({
               ? 'Sessão trancada — destranque para alterar a presença.'
               : sessionEnded
               ? 'Clique no membro para marcar presença/ausência.'
-              : `Disponível após o término da sessão${endDate ? `, em ${endDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' })}` : ''}.`}
+              : `Disponível após o término da sessão${endDate ? `, em ${fmtDateTime(session.endDate!)}` : ''}.`}
           </p>
           <div className="mt-5 space-y-2">
             {members.map((member) => {

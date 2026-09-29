@@ -4,30 +4,35 @@ import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { SessionDegreePicker } from '@/components/session-degree-picker';
+import { degreesLabel } from '@/lib/session-convocation';
 
-interface SessionItem { id: string; title: string; date: string; type: string; grade?: string | null; notes?: string | null; agenda?: string | null; _count: { attendances: number }; }
+interface SessionItem { id: string; title: string; date: string; type: string; degrees: number[]; convocationSentAt: string | null; notes?: string | null; agenda?: string | null; _count: { attendances: number }; }
+
+const EMPTY_FORM = { title: '', date: '', endDate: '', type: 'ordinary', degrees: [] as number[], notes: '', agenda: '' };
 
 export default function SessoesClient({ sessions }: { sessions: SessionItem[] }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ title: '', date: '', endDate: '', type: 'ordinary', grade: '', notes: '', agenda: '' });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (form.degrees.length === 0) { setMessage({ kind: 'error', text: 'Marque ao menos um grau trabalhado na sessão.' }); return; }
     setSubmitting(true);
     try {
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, grade: form.grade || undefined, notes: form.notes || undefined, agenda: form.agenda || undefined, endDate: form.endDate || undefined }),
+        body: JSON.stringify({ ...form, notes: form.notes || undefined, agenda: form.agenda || undefined, endDate: form.endDate || undefined }),
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ kind: 'ok', text: 'Sessão criada.' });
-        setForm({ title: '', date: '', endDate: '', type: 'ordinary', grade: '', notes: '', agenda: '' });
-        router.refresh();
+        setForm(EMPTY_FORM);
+        // Abre a sessão criada: é lá que se revisa e envia a convocação.
+        router.push(`/dashboard/sessoes/${data.item?.id ?? ''}`);
       } else {
         setMessage({ kind: 'error', text: data.error ?? 'Erro.' });
       }
@@ -84,9 +89,9 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
                   <option value="other">Outra</option>
                 </select>
               </Field>
-              <Field label="Grau (opcional)">
-                <input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} className={INPUT} />
-              </Field>
+              <div className="md:col-span-2">
+                <SessionDegreePicker value={form.degrees} onChange={(degrees) => setForm({ ...form, degrees })} />
+              </div>
               <Field label="Ordem do dia (visível ao obreiro na Secretaria)" className="md:col-span-2">
                 <textarea value={form.agenda} onChange={(e) => setForm({ ...form, agenda: e.target.value })} className={`${INPUT} md:col-span-2`} rows={3} />
               </Field>
@@ -106,10 +111,15 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
               <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{s.title}</p>
-                  <p className="mt-1 text-xs text-sand-dark">{typeLabel[s.type] ?? s.type} • {s._count.attendances} presentes</p>
+                  <p className="mt-1 text-xs text-sand-dark">
+                    {typeLabel[s.type] ?? s.type}{degreesLabel(s.degrees) ? ` • ${degreesLabel(s.degrees)}` : ''} • {s._count.attendances} presentes
+                  </p>
+                  <p className={`mt-1 text-xs ${s.convocationSentAt ? 'text-emerald-300' : 'text-sand-dark/70'}`}>
+                    {s.convocationSentAt ? `Convocada em ${new Date(s.convocationSentAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}` : 'Convocação não enviada'}
+                  </p>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-sand-dark">
-                  <Link href={`/dashboard/sessoes/${s.id}`} className="text-gold hover:text-gold-light">Presença</Link>
+                  <Link href={`/dashboard/sessoes/${s.id}`} className="text-gold hover:text-gold-light">Abrir</Link>
                   <span>{new Date(s.date).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</span>
                   <button onClick={() => void remove(s.id, s.title)} className="text-rose-300 hover:text-rose-200">Remover</button>
                 </div>

@@ -276,11 +276,15 @@ model MessageLog {
   // salvo, obrigando quem investigasse a ler o código-fonte pra descobrir a
   // causa. Null quando status='sent' (nada a explicar).
   error     String?
+  // Referência ao que originou o envio (ex.: "session-convocation:<id>"), para agrupar os
+  // envios de uma mesma convocação sem depender do título.
+  ref       String?
   createdAt DateTime @default(now())
 
   lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   member    Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
   @@index([lodgeId, createdAt])
+  @@index([lodgeId, ref])
 }
 
 model Account {
@@ -698,7 +702,10 @@ model Session {
   date      DateTime
   endDate   DateTime? // término da sessão — presença só pode ser marcada depois deste horário (sessões antigas sem este campo não são bloqueadas)
   type      String   @default("ordinary")
-  grade     String?
+  grade     String?  // DEPRECADO: texto livre; substituído por `degrees` (lido como fallback em lib/session-convocation)
+  // Graus trabalhados na sessão (1 = Aprendiz, 2 = Companheiro, 3 = Mestre). A sessão abre no
+  // menor e pode subir conforme a ordem do dia; a convocação vai a quem alcançou o menor grau.
+  degrees   Int[]    @default([])
   notes     String?  // anotações internas do Secretário, não visível ao obreiro
   agenda    String?  // ordem do dia — visível ao obreiro antes da sessão (Secretaria)
   minutes   String?  // DEPRECADO: balaustre digitado direto; substituído pelo upload de arquivo abaixo
@@ -710,6 +717,9 @@ model Session {
   minutesMimeType   String?
   convocationSentAt   DateTime? // quando o chamado foi enviado por e-mail a todos
   convocationSentById String?
+  // Texto exato da última convocação/retificação enviada — base para detectar alteração da
+  // sessão depois do envio e para a fila de WhatsApp mandar o mesmo texto do e-mail.
+  convocationText     String?
   // Trava a sessão contra edição (agenda, presença, balaustre) — travada
   // automaticamente ao salvar o balaustre; só Administrador/Venerável destranca.
   locked     Boolean   @default(false)

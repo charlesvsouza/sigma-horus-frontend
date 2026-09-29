@@ -1,5 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import { sessionDegrees } from '@/lib/session-convocation';
+import { loadConvocation } from '@/lib/session-convocation-server';
 import SessionDetailClient from './SessionDetailClient';
 
 // Server Component: sessão + membros + presença inicial (sem fetch-on-mount).
@@ -32,6 +34,9 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     );
   }
 
+  // Texto que a convocação teria hoje × o último enviado: acusa sessão alterada depois do envio.
+  const convocation = await loadConvocation(String(lodgeId), id);
+
   const initialAttendance: Record<string, string> = {};
   for (const att of data.item.attendances) initialAttendance[att.member.id] = att.status;
 
@@ -40,10 +45,13 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
       session={{
         id: data.item.id, title: data.item.title, date: data.item.date.toISOString(),
         endDate: data.item.endDate ? data.item.endDate.toISOString() : null,
-        type: data.item.type, grade: data.item.grade ?? null,
+        type: data.item.type, degrees: sessionDegrees(data.item),
         agenda: data.item.agenda ?? null,
         minutesFileName: data.item.minutesFileName ?? null,
         convocationSentAt: data.item.convocationSentAt ? data.item.convocationSentAt.toISOString() : null,
+        convocationSentText: convocation?.sentText ?? null,
+        convocationCurrentText: convocation?.base ?? '',
+        convocationChanged: convocation?.changed ?? false,
         locked: data.item.locked,
         lockedAt: data.item.lockedAt ? data.item.lockedAt.toISOString() : null,
       }}

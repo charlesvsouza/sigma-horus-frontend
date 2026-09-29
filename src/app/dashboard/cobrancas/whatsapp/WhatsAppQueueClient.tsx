@@ -180,7 +180,7 @@ export default function WhatsAppQueueClient({ rows, hasPixKey }: { rows: QueueRo
           </div>
         </section>
       </div>
-      {share ? <WhatsAppSendDialog key={share.invoiceId} share={share} onClose={() => setShare(null)} onChange={onChange} /> : null}
+      {share ? <WhatsAppSendDialog key={share.key} share={share} onClose={() => setShare(null)} onChange={onChange} /> : null}
     </main>
   );
 }

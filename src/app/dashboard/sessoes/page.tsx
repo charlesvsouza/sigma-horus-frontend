@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import { sessionDegrees } from '@/lib/session-convocation';
 import SessoesClient from './SessoesClient';
 
 // Server Component: carrega as sessões no servidor (sem fetch-on-mount).
@@ -20,7 +21,8 @@ export default async function SessoesPage() {
     title: s.title,
     date: s.date.toISOString(),
     type: s.type,
-    grade: s.grade ?? null,
+    degrees: sessionDegrees(s),
+    convocationSentAt: s.convocationSentAt ? s.convocationSentAt.toISOString() : null,
     notes: s.notes ?? null,
     _count: { attendances: s._count.attendances },
   }));

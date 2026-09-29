@@ -188,6 +188,7 @@ Apuração do período (entradas/saídas/saldo), transferência de saldo para a 
 Registro imutável de toda alteração relevante (usuário, ação, registro, valor anterior/novo, data/hora). Helper `src/lib/audit.ts` integrado em 11 endpoints + página de consulta.
 
 ### 5.8 Presença em Sessões
+- **Convocação segura (2026-09-29):** `Session.degrees Int[]` (graus trabalhados, checkbox 1/2/3; `grade` texto livre virou legado lido como fallback) — convoca pelo menor grau (`lib/session-convocation.ts`, eligibilidade pelos marcos de `masonic-degree`; sem marcos fica fora de 2º/3º e aparece na prévia). `GET /api/sessions/[id]/convocation` = prévia exata (gerada do salvo), destinatários, excluídos, avisos; `POST` exige `expectedText` igual à prévia (409 se a sessão mudou) e reserva o envio por comparar-e-gravar (`convocationSentAt`+`convocationText`) antes do laço — sem envio duplo. `Session.convocationText` guarda o texto enviado; alteração posterior → comparação lado a lado + retificação (`RETIFICAÇÃO — …`). Fila WhatsApp manual em `api/sessions/[id]/convocation/whatsapp` (mesmo texto, rodada atual = logs após `convocationSentAt`). `MessageLog.ref` (`session-convocation:<id>`). Tela: "Dados da sessão" editável, envio bloqueado com ordem do dia não salva. Migration `20260929120000_session_degrees_convocation`.
 Cadastro de sessões (data, tipo, grau), registro de presença por sessão (toggle), frequência/percentual por membro, relatório por período.
 
 ### 5.9 Comunicação (Fase 7 — em grande parte concluída)

@@ -446,7 +446,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
           </div>
         </section>
       </div>
-      {share ? <WhatsAppSendDialog key={share.invoiceId} share={share} onClose={() => setShare(null)} /> : null}
+      {share ? <WhatsAppSendDialog key={share.key} share={share} onClose={() => setShare(null)} /> : null}
     </main>
   );
 }

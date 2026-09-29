@@ -1,88 +1,120 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
+import { buildLodgeChannels } from '@/lib/lodge-channels';
 import { dispatch, sleep, DISPATCH_THROTTLE_MS, type Channel } from '@/lib/messaging';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { convocationMessage, convocationRef, convocationSubject, degreesLabel, stripRectification } from '@/lib/session-convocation';
+import { loadConvocation, type LoadedConvocation } from '@/lib/session-convocation-server';
 import { NextResponse } from 'next/server';
 
 type Ctx = { params: Promise<{ id: string }> };
 const VALID: Channel[] = ['email', 'whatsapp', 'sms'];
 
-// Chamado (convocação) da sessão: envia data/hora e ordem do dia a todos os
-// obreiros ativos. E-mail sempre disponível (provido pela plataforma);
-// WhatsApp/SMS entram se a loja tiver conectado. Mesmo padrão de
-// campaigns/[id]/convocar — MessageLog por envio, dedupe é responsabilidade
-// de quem chama (marca convocationSentAt pra não deixar reenviar sem querer).
-export async function POST(request: Request, { params }: Ctx) {
-  const { id } = await params;
-  const session = await auth();
-  const lodgeId = session?.user?.lodgeId;
-  const role = session?.user?.role;
-  if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+// Chamado (convocação) da sessão, em dois passos para não sair nada errado:
+//  GET  → prévia: a mensagem exata (gerada do que está SALVO), quem recebe e quem fica de fora.
+//  POST → envia, mas só se o texto for o mesmo da prévia (`expectedText`); se a sessão mudou no
+//         meio, 409 e o Secretário revisa de novo.
+// Depois do primeiro envio, alterar a sessão faz a próxima mensagem sair como RETIFICAÇÃO.
+// Convoca pelo menor grau trabalhado (lib/session-convocation). E-mail sempre; WhatsApp/SMS se a
+// loja conectou (API). O WhatsApp manual (wa.me) tem fila própria em ./whatsapp.
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'write');
-  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
+async function guard() {
+  const session = await auth();
+  const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
+  if (!lodgeId || !session?.user?.id) return { ok: false as const, res: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  const access = await requireLodgeAccess(lodgeId, session.user.role, 'members', 'write');
+  if (!access.ok) return { ok: false as const, res: NextResponse.json({ error: access.error }, { status: access.status }) };
+  return { ok: true as const, lodgeId, userId: session.user.id };
+}
+
+/**
+ * O que sai agora: 1º envio, retificação (a sessão mudou depois do envio) ou reenvio do mesmo
+ * texto. Sessão convocada antes de guardarmos o texto enviado: não há como comparar — reenvio simples.
+ */
+function nextMessage(c: LoadedConvocation) {
+  const kind = !c.sentAt ? 'initial' : c.sentText && c.changed ? 'rectification' : 'resend';
+  const text = kind === 'rectification' ? convocationMessage(c.base, true) : kind === 'resend' && c.sentText ? c.sentText : c.base;
+  return { kind, text, subject: convocationSubject(c.meeting.title, text !== stripRectification(text)) } as const;
+}
+
+export async function GET(_request: Request, { params }: Ctx) {
+  const g = await guard();
+  if (!g.ok) return g.res;
+  const { id } = await params;
+  const c = await loadConvocation(g.lodgeId, id);
+  if (!c) return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
+
+  const next = nextMessage(c);
+  const warnings: string[] = [];
+  if (c.meeting.date.getTime() < Date.now()) warnings.push('A data da sessão já passou.');
+  if (!c.meeting.agenda?.trim()) warnings.push('A ordem do dia está vazia.');
+  if (c.degrees.length === 0) warnings.push('Nenhum grau marcado: a convocação vai a todos os obreiros ativos.');
+
+  return NextResponse.json({
+    kind: next.kind,
+    subject: next.subject,
+    text: next.text,
+    sentText: c.sentText,
+    sentAt: c.sentAt?.toISOString() ?? null,
+    changed: c.changed,
+    degreesLabel: degreesLabel(c.degrees),
+    recipients: c.recipients.map((r) => ({ id: r.id, name: r.name, hasEmail: !!r.email, hasPhone: !!r.phone })),
+    excluded: c.excluded.map((e) => ({ id: e.id, name: e.name, reason: e.reason })),
+    warnings,
+  });
+}
+
+export async function POST(request: Request, { params }: Ctx) {
+  const g = await guard();
+  if (!g.ok) return g.res;
+  const { id } = await params;
 
   const body = await request.json().catch(() => ({}));
+  const expectedText = typeof body?.expectedText === 'string' ? body.expectedText : '';
   const requested: Channel[] = Array.isArray(body?.channels) ? body.channels.filter((c: string) => VALID.includes(c as Channel)) : ['email'];
   const channels = requested.length > 0 ? requested : (['email'] as Channel[]);
 
+  const c = await loadConvocation(g.lodgeId, id);
+  if (!c) return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
+  const next = nextMessage(c);
+  if (!expectedText || expectedText !== next.text) {
+    return NextResponse.json({ error: 'A sessão foi alterada depois da prévia. Revise a convocação de novo antes de enviar.' }, { status: 409 });
+  }
+  if (c.recipients.length === 0) return NextResponse.json({ error: 'Nenhum irmão a convocar para os graus desta sessão.' }, { status: 409 });
+
+  // Reserva o envio antes do laço (comparar-e-gravar): dois cliques ou duas abas não mandam duas
+  // vezes, e uma edição concorrente derruba este envio em vez de sair texto velho.
+  const claimed = await withTenant(g.lodgeId, (db) => db.session.updateMany({
+    where: { id, lodgeId: g.lodgeId, convocationSentAt: c.sentAt, convocationText: c.sentText },
+    data: { convocationSentAt: new Date(), convocationSentById: g.userId, convocationText: next.text },
+  }));
+  if (claimed.count === 0) return NextResponse.json({ error: 'Esta convocação acabou de ser enviada ou alterada por outra pessoa. Atualize a página.' }, { status: 409 });
+
+  // Laço de despacho FORA de transação (transação interativa expira em 5s; dezenas de irmãos ×
+  // DISPATCH_THROTTLE_MS passam disso). Cada MessageLog numa transação curta.
+  const lodgeChannels = buildLodgeChannels(c.lodge);
+  const ref = convocationRef(id);
   const stats = { sent: 0, queued: 0, failed: 0, skipped: 0 };
-
-  // Etapa 1 (transação curta): só leitura. O laço de despacho roda FORA de
-  // qualquer transação — uma transação interativa do Prisma expira em 5s por
-  // padrão, e esta loja pode ter dezenas de membros ativos × pausa de
-  // DISPATCH_THROTTLE_MS entre cada envio, o que passa fácil de 5s e
-  // derrubava a convocação inteira com "query cannot be executed on an
-  // expired transaction" (visto em produção).
-  const setup = await withTenant(String(lodgeId), async (db) => {
-    const meeting = await db.session.findFirst({ where: { id, lodgeId: String(lodgeId) } });
-    if (!meeting) return null;
-    const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { ...LODGE_MESSAGING_SELECT } });
-    const members = await db.member.findMany({
-      where: { lodgeId: String(lodgeId), status: 'active', deceased: false },
-      select: { id: true, name: true, email: true, phone: true },
-    });
-    return { meeting, lodge, members };
-  });
-  if (!setup) return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
-
-  const { meeting, lodge, members } = setup;
-  const lodgeChannels = buildLodgeChannels(lodge);
-  const dataHora = meeting.date.toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'America/Sao_Paulo' });
-  const subject = `Convocação: ${meeting.title}`;
-  const text = [
-    `Meus irmãos, fica convocada a sessão "${meeting.title}" da ${lodge?.name ?? 'loja'}.`,
-    `Data e hora: ${dataHora}.`,
-    meeting.agenda ? `Ordem do dia:\n${meeting.agenda}` : null,
-    'Contamos com a presença de todos. Fraternalmente.',
-  ].filter(Boolean).join('\n\n');
-
-  // Etapa 2: laço de despacho, sem transação aberta. Cada MessageLog é
-  // gravado na sua própria transação curta (RLS continua garantido).
   let dispatched = 0;
-  for (const m of members) {
+  for (const m of c.recipients) {
     for (const channel of channels) {
       const to = channel === 'email' ? (m.email ?? '') : (m.phone ?? '');
       if (!to) { stats.skipped++; continue; }
       if (dispatched > 0) await sleep(DISPATCH_THROTTLE_MS);
       dispatched++;
-      const r = await dispatch(channel, to, subject, text, lodgeChannels);
+      const r = await dispatch(channel, to, next.subject, next.text, lodgeChannels);
       stats[r.status]++;
-      await withTenant(String(lodgeId), (db) =>
-        db.messageLog.create({
-          data: { lodgeId: String(lodgeId), memberId: m.id, channel, title: subject, content: text, status: r.status, error: r.detail ?? null },
-        }),
-      );
+      await withTenant(g.lodgeId, (db) => db.messageLog.create({
+        data: { lodgeId: g.lodgeId, memberId: m.id, channel, title: next.subject, content: next.text, status: r.status, error: r.detail ?? null, ref },
+      }));
     }
   }
 
-  // Etapa 3 (transação curta): marca a sessão como convocada + auditoria.
-  await withTenant(String(lodgeId), async (db) => {
-    await db.session.update({ where: { id }, data: { convocationSentAt: new Date(), convocationSentById: session.user.id } });
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'session-convocacao', entityId: id, metadata: { channels, ...stats } });
-  });
+  await withTenant(g.lodgeId, (db) => logAudit(db, {
+    lodgeId: g.lodgeId, userId: g.userId, action: 'UPDATE', entity: 'session-convocacao', entityId: id,
+    metadata: { kind: next.kind, channels, recipients: c.recipients.length, excluded: c.excluded.length, degrees: c.degrees, ...stats },
+  }));
 
-  return NextResponse.json({ ok: true, stats });
+  return NextResponse.json({ ok: true, kind: next.kind, stats, recipients: c.recipients.length });
 }

@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { normalizeDegrees } from '@/lib/session-convocation';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -34,20 +35,23 @@ export async function POST(request: Request) {
   const date = body?.date ? parseBRDateTimeLocal(String(body.date)) : new Date();
   const endDate = body?.endDate ? parseBRDateTimeLocal(String(body.endDate)) : null;
   const type = String(body?.type ?? 'ordinary');
-  const grade = body?.grade ? String(body.grade) : null;
+  const grade = body?.grade ? String(body.grade) : null; // legado (texto livre); a tela nova manda `degrees`
+  const degrees = normalizeDegrees(body?.degrees);
   const notes = body?.notes ? String(body.notes) : null;
   const agenda = body?.agenda ? String(body.agenda) : null;
 
   if (!title) return NextResponse.json({ error: 'Título é obrigatório.' }, { status: 400 });
+  if (Array.isArray(body?.degrees) && degrees.length === 0) return NextResponse.json({ error: 'Marque ao menos um grau trabalhado na sessão.' }, { status: 400 });
+  if (Number.isNaN(date.getTime()) || (endDate && Number.isNaN(endDate.getTime()))) return NextResponse.json({ error: 'Data ou horário inválido.' }, { status: 400 });
   if (endDate && endDate <= date) {
     return NextResponse.json({ error: 'O término precisa ser depois do início da sessão.' }, { status: 400 });
   }
 
   const item = await withTenant(String(lodgeId), async (db) => {
     const created = await db.session.create({
-      data: { lodgeId: String(lodgeId), title, date, endDate, type, grade, notes, agenda },
+      data: { lodgeId: String(lodgeId), title, date, endDate, type, grade, degrees, notes, agenda },
     });
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'session', entityId: created.id, metadata: { title, type } });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'session', entityId: created.id, metadata: { title, type, degrees } });
     return created;
   });
   return NextResponse.json({ item });

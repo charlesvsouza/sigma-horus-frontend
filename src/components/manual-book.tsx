@@ -323,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.58 — 28 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.59 — 29 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1728,15 +1728,26 @@ export function ManualBook() {
                 <p>
                   Em <UI>Secretaria → Veneralato & Sessões → Sessões</UI>, use <UI>Criar sessão</UI> informando título, <UI>Início</UI> e
                   <UI> Término</UI> (data e hora dos dois — o término define quando a presença libera, ver abaixo),
-                  tipo, grau opcional e a <UI>Ordem do dia</UI> — o texto que os obreiros verão na Secretaria do
+                  tipo, os <UI>Graus trabalhados</UI> e a <UI>Ordem do dia</UI> — o texto que os obreiros verão na Secretaria do
                   portal. As <UI>Observações internas</UI> ficam só para a diretoria, nunca aparecem para o membro.
                 </p>
                 <p>
-                  Abra a sessão criada para acessar a tela de detalhe, com quatro blocos:
+                  <strong>Graus trabalhados:</strong> marque todos os graus em que a sessão vai trabalhar (ex.: abre em
+                  Aprendiz e eleva a Companheiro → marque 1º e 2º; a ordem do dia descreve a elevação). A sessão abre no
+                  <strong> menor grau marcado</strong>, e é por ele que se convoca: 1º grau → todos os obreiros ativos;
+                  2º → Companheiros e Mestres; só 3º → Mestres (Mestre Instalado conta como Mestre). O grau de cada irmão
+                  vem dos marcos de evolução do cadastro — irmão sem data de iniciação fica fora das sessões de 2º/3º e
+                  aparece na prévia para você corrigir o cadastro.
+                </p>
+                <p>
+                  Ao criar, a sessão já abre na tela de detalhe (na lista, use <UI>Abrir</UI>), com estes blocos:
                 </p>
                 <Bullets>
-                  <li><strong>Convocação (chamado):</strong> clique em <UI>Enviar convocação</UI> para disparar um e-mail a todos os obreiros <strong>ativos</strong>, com título, data/hora e ordem do dia da sessão. Pode ser reenviada quantas vezes precisar (ex.: após atualizar a ordem do dia) — cada envio fica registrado com data e hora.</li>
-                  <li><strong>Ordem do dia:</strong> edite e clique em <UI>Salvar ordem do dia</UI> a qualquer momento.</li>
+                  <li><strong>Dados da sessão:</strong> <UI>Editar</UI> corrige título, início, término, tipo e graus.</li>
+                  <li><strong>Convocação (chamado):</strong> <UI>Revisar e enviar convocação</UI> mostra a mensagem <strong>exatamente</strong> como os irmãos vão receber — gerada do que está salvo —, quantos serão convocados, quem está sem e-mail e quem ficou de fora pelo grau. O envio só libera depois de marcar <UI>Conferi o título, a data e o horário, os graus e a ordem do dia</UI>. Se alguém alterar a sessão entre a prévia e o clique, o sistema recusa e pede para revisar de novo. Com a ordem do dia editada e não salva, o botão fica bloqueado.</li>
+                  <li><strong>Alterou depois de convocar:</strong> ao salvar, o sistema avisa que a sessão já foi convocada. Em seguida o cartão mostra <strong>⚠ A sessão foi alterada depois da convocação</strong>, com a versão enviada ao lado da atual, e o botão vira <UI>Revisar e enviar retificação</UI> — a mensagem sai marcada como <strong>RETIFICAÇÃO</strong>.</li>
+                  <li><strong>Enviar também pelo WhatsApp:</strong> depois do e-mail, lista os convocados para você mandar o mesmo texto irmão por irmão, pelo seu WhatsApp (como no envio de cobranças): <UI>Enviar</UI> abre a conversa com o texto pronto; ao voltar, confirme <UI>Sim, enviei</UI>. Se a sessão mudou, a lista só volta depois da retificação.</li>
+                  <li><strong>Ordem do dia:</strong> edite e clique em <UI>Salvar ordem do dia</UI>. Ela vai na convocação.</li>
                   <li><strong>Balaustre / Ata:</strong> <strong>não é digitado no sistema</strong> — importe o arquivo (PDF ou Word) em <UI>Enviar arquivo</UI>. Depois de enviado, qualquer membro pode baixá-lo ao revisitar a sessão na Secretaria do portal (<UI>Baixar</UI>). <UI>Trocar arquivo</UI> substitui a versão anterior; <UI>Remover</UI> tira o arquivo da sessão.</li>
                   <li><strong>Registrar presença:</strong> toggle por obreiro (presente/ausente) — <strong>só libera depois do horário de término da sessão</strong> (campo <UI>Término</UI> da criação); antes disso os botões ficam desabilitados. Sessões criadas antes deste recurso (sem término definido) não são bloqueadas.</li>
                 </Bullets>

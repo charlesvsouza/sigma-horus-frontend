@@ -14,3 +14,9 @@ export function parseBRDateTimeLocal(value: string): Date {
   const hasExplicitOffset = /Z$|[+-]\d{2}:\d{2}$/.test(value);
   return new Date(hasExplicitOffset ? value : `${value}${BR_OFFSET}`);
 }
+
+/** Inverso de parseBRDateTimeLocal: instante → valor de <input type="datetime-local"> no horário de Brasília. */
+export function toBRDateTimeLocal(value: Date | string): string {
+  const d = new Date(value);
+  return new Date(d.getTime() - 3 * 60 * 60_000).toISOString().slice(0, 16);
+}
