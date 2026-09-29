@@ -3,7 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { PAYMENT_NOTICE_CHECK_ENTITY, PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
-import { checkReceipt } from '@/lib/receipt-check';
+import { checkReceipt, receiptTxids } from '@/lib/receipt-check';
 import { pdfText } from '@/lib/receipt-pdf';
 import { getObjectBuffer } from '@/lib/storage';
 import { NextResponse } from 'next/server';
@@ -37,11 +37,14 @@ export async function POST(request: Request) {
   if (meta.receiptType !== 'application/pdf') {
     return NextResponse.json({ error: 'Só comprovantes em PDF são conferidos automaticamente. Confira a imagem pelo "Ver comprovante".' }, { status: 409 });
   }
+  const accountIds = meta.groupAccountIds?.length ? meta.groupAccountIds : [accountId];
+  // Pix do WhatsApp leva o nº da cobrança como identificador; o do portal, o id da conta.
+  const invoices = await withTenant(lodgeId, (db) => db.invoice.findMany({ where: { lodgeId, accountId: { in: accountIds } }, select: { number: true } }));
   const buffer = await getObjectBuffer(meta.receiptKey).catch(() => null);
   if (!buffer) return NextResponse.json({ error: 'Não foi possível abrir o comprovante no armazenamento.' }, { status: 503 });
 
   const receiptCheck = checkReceipt(await pdfText(buffer), {
-    txids: meta.groupAccountIds?.length ? meta.groupAccountIds : [accountId],
+    txids: receiptTxids(accountIds, invoices.map((i) => i.number)),
     amount: Number(meta.groupTotal ?? meta.amount ?? 0),
     lodgeCnpj: ctx.lodge?.cnpj,
     lodgePixKey: ctx.lodge?.pixKey,

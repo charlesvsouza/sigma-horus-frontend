@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, EmptyState, inputClass } from '@/components/ui';
 import { fetchWhatsAppShare, WhatsAppSendDialog, type WhatsAppSendEvent, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
+import { fetchReceiptContext, RegisterReceiptDialog, type ReceiptContext } from '@/components/register-receipt-dialog';
 import type { ChargeUrgency } from '@/lib/charge-notice';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
@@ -46,6 +47,9 @@ export default function WhatsAppQueueClient({ rows, hasPixKey }: { rows: QueueRo
   const [share, setShare] = useState<WhatsAppShare | null>(null);
   const [loadingId, setLoadingId] = useState('');
   const [error, setError] = useState('');
+  // O irmão respondeu com o comprovante: registrar daqui mesmo.
+  const [receiptCtx, setReceiptCtx] = useState<ReceiptContext | null>(null);
+  const [receiptLoadingId, setReceiptLoadingId] = useState('');
   // Marcação imediata (o router.refresh traz as datas do servidor em seguida).
   const [local, setLocal] = useState<Record<string, { sentAt?: string; openedAt?: string | null }>>({});
 
@@ -70,6 +74,15 @@ export default function WhatsAppQueueClient({ rows, hasPixKey }: { rows: QueueRo
     const result = await fetchWhatsAppShare(id);
     setLoadingId('');
     if (result.ok) setShare(result.share);
+    else setError(result.error);
+  }
+
+  async function openReceipt(id: string) {
+    setReceiptLoadingId(id);
+    setError('');
+    const result = await fetchReceiptContext(id);
+    setReceiptLoadingId('');
+    if (result.ok) setReceiptCtx(result.ctx);
     else setError(result.error);
   }
 
@@ -164,6 +177,15 @@ export default function WhatsAppQueueClient({ rows, hasPixKey }: { rows: QueueRo
                         <td className="py-3 text-right">
                           <button
                             type="button"
+                            onClick={() => void openReceipt(r.id)}
+                            disabled={receiptLoadingId === r.id}
+                            title="O irmão respondeu com o comprovante: registre para conferência e baixa"
+                            className="mr-2 text-xs text-sky-300 transition hover:text-sky-200 disabled:opacity-40"
+                          >
+                            {receiptLoadingId === r.id ? 'Abrindo…' : 'Comprovante'}
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => void open(r.id)}
                             disabled={loadingId === r.id}
                             className="rounded-full border border-emerald-400/40 px-3 py-1 text-xs font-medium text-emerald-300 transition hover:border-emerald-300/70 hover:text-emerald-200 disabled:opacity-40"
@@ -181,6 +203,7 @@ export default function WhatsAppQueueClient({ rows, hasPixKey }: { rows: QueueRo
         </section>
       </div>
       {share ? <WhatsAppSendDialog key={share.key} share={share} onClose={() => setShare(null)} onChange={onChange} /> : null}
+      {receiptCtx ? <RegisterReceiptDialog key={receiptCtx.invoiceId} ctx={receiptCtx} onClose={() => setReceiptCtx(null)} onDone={() => { setReceiptCtx(null); router.refresh(); }} /> : null}
     </main>
   );
 }

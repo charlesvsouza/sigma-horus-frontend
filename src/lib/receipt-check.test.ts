@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { amountsInText, checkReceipt, paidAtInText } from './receipt-check.ts';
+import { amountsInText, checkReceipt, paidAtInText, receiptTxids } from './receipt-check.ts';
 
 // Texto real extraído do comprovante do App Bradesco (Pix para a amm139, 2026-09-27).
 const BRADESCO = `Comprovante de pagamento Pix
@@ -54,4 +54,13 @@ test('valores e datas em formatos comuns', () => {
   assert.deepEqual(amountsInText('Total R$ 1.234,56 · tarifa R$0,00'), [1234.56, 0]);
   assert.equal(paidAtInText('Pago em 05/10/2026 às 08:07'), '2026-10-05T11:07:00.000Z');
   assert.equal(paidAtInText('Data: 05/10/2026'), '2026-10-05T15:00:00.000Z');
+});
+
+test('Pix enviado pelo WhatsApp: identificador é o nº da cobrança e também confere', () => {
+  const whatsapp = BRADESCO.replace('Identificador: cmukms8u8000804idnyx3vppj', 'Identificador: COB2026090043');
+  const txids = receiptTxids(['cmukms8u8000804idnyx3vppj'], ['COB-202609-0043']);
+  assert.deepEqual(txids, ['cmukms8u8000804idnyx3vppj', 'COB2026090043']);
+  assert.equal(checkReceipt(whatsapp, { ...expected, txids }).status, 'conferido');
+  // Só com o id da conta (como era antes), o mesmo comprovante acusava divergência.
+  assert.equal(checkReceipt(whatsapp, expected).txid, false);
 });

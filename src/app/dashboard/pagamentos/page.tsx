@@ -97,9 +97,14 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
     let group: { accountIds: string[]; total: number } | null = null;
     let receiptPdf = false;
     let receiptCheck: ReceiptCheck | null = null;
+    // Registrado pela Tesouraria (comprovante recebido fora do portal) e a data do Pix informada.
+    let registeredBy: { userId: string; name: string } | null = null;
+    let paidAtInformed: string | null = null;
     try {
-      const meta = JSON.parse(n.after ?? '{}') as { note?: string | null; receiptKey?: string; receiptType?: string; receiptCheck?: ReceiptCheck; groupAccountIds?: string[]; groupTotal?: number };
+      const meta = JSON.parse(n.after ?? '{}') as { note?: string | null; receiptKey?: string; receiptType?: string; receiptCheck?: ReceiptCheck; groupAccountIds?: string[]; groupTotal?: number; registeredBy?: { userId?: string; name?: string }; paidAtInformed?: string };
       note = meta.note ?? null;
+      if (meta.registeredBy?.userId) registeredBy = { userId: meta.registeredBy.userId, name: meta.registeredBy.name ?? 'Tesouraria' };
+      paidAtInformed = meta.paidAtInformed ?? null;
       hasReceipt = Boolean(meta.receiptKey);
       receiptPdf = meta.receiptType === 'application/pdf';
       receiptCheck = meta.receiptCheck ?? null;
@@ -118,7 +123,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
     // Conta onde o Pix caiu: a prevista da conta, a padrão da loja ou a única conta corrente.
     const banks = data.financialAccounts.filter((f) => f.kind === 'bank' && !f.isInvestment);
     const suggestedBankId = account.bankAccountId ?? data.financialAccounts.find((f) => f.isDefault)?.id ?? (banks.length === 1 ? banks[0].id : null);
-    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt, receiptPdf, receiptCheck, e2eUsed, suggestedBankId, balance: account.balance, group }];
+    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt, receiptPdf, receiptCheck, e2eUsed, suggestedBankId, balance: account.balance, group, registeredBy, paidAtInformed }];
   });
   // Pix agrupado (Modo Loja): o crédito no banco é o TOTAL do grupo e o txid é o da 1ª conta dele —
   // casa o grupo inteiro pela 1ª conta e repete o resultado nas demais.
@@ -149,6 +154,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
       payments={payments}
       financialAccounts={data.financialAccounts}
       notices={notices}
+      currentUserId={session?.user?.id ?? null}
       initialAccountId={conta && openById.has(conta) ? conta : null}
     />
   );

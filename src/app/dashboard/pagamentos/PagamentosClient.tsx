@@ -29,6 +29,8 @@ interface PaymentNotice {
   bankMatch?: BankMatch | null; group?: { accountIds: string[]; total: number } | null;
   /** Comprovante em PDF (conferível) e o resultado da conferência. */
   receiptPdf?: boolean; receiptCheck?: ReceiptCheck | null; e2eUsed?: boolean; suggestedBankId?: string | null;
+  /** Comprovante recebido fora do portal e registrado pela Tesouraria; data do Pix informada por ela. */
+  registeredBy?: { userId: string; name: string } | null; paidAtInformed?: string | null;
 }
 
 /** Dia do pagamento (Brasília) a partir do ISO do comprovante. */
@@ -51,9 +53,9 @@ function formFor(account: AccountOption, notice?: PaymentNotice | null) {
     bankAccountId: account.bankAccountId ?? '',
     amount: String(account.balance),
     // Crédito achado no extrato: a data do pagamento é a do crédito e a linha é conciliada junto.
-    paidAt: notice?.bankMatch ? notice.bankMatch.date.slice(0, 10) : notice?.noticeDay ?? todayBR().toISOString().slice(0, 10),
+    paidAt: notice?.bankMatch ? notice.bankMatch.date.slice(0, 10) : notice?.paidAtInformed ?? notice?.noticeDay ?? todayBR().toISOString().slice(0, 10),
     method: notice ? 'pix' : 'manual',
-    note: notice ? `Pix informado pelo irmão no portal em ${new Date(notice.noticeAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}${notice.note ? ` — "${notice.note}"` : ''}. ${notice.bankMatch ? `Crédito no extrato em ${formatDateOnly(notice.bankMatch.date)}.` : 'Conferido no extrato.'}` : '',
+    note: notice ? `${notice.registeredBy ? `Comprovante do irmão registrado por ${notice.registeredBy.name}` : 'Pix informado pelo irmão no portal'} em ${new Date(notice.noticeAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}${notice.note ? ` — "${notice.note}"` : ''}. ${notice.bankMatch ? `Crédito no extrato em ${formatDateOnly(notice.bankMatch.date)}.` : 'Conferido no extrato.'}` : '',
     bankTransactionId: notice?.bankMatch && Math.round(notice.bankMatch.amount * 100) === Math.round(account.balance * 100) ? notice.bankMatch.lineId : '',
   };
 }
@@ -69,7 +71,7 @@ interface PaymentItem {
   bankAccount?: { id: string; name: string; kind: string } | null;
 }
 
-export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null }: { accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[]; notices?: PaymentNotice[]; initialAccountId?: string | null }) {
+export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null, currentUserId = null }: { accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[]; notices?: PaymentNotice[]; initialAccountId?: string | null; currentUserId?: string | null }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -117,7 +119,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
         accountId: account.id,
         memberId: account.memberId ?? undefined,
         amount: account.balance,
-        paidAt: check.paidAt ? brDay(check.paidAt) : notice.noticeDay,
+        paidAt: check.paidAt ? brDay(check.paidAt) : notice.paidAtInformed ?? notice.noticeDay,
         method: 'pix',
         bankAccountId,
         note: `Pix conferido pelo comprovante (nº de controle ${check.e2e}).${notice.group ? ` Pix agrupado de ${notice.group.accountIds.length} contas.` : ''}`,
@@ -223,8 +225,8 @@ export default function PagamentosClient({ accounts, members, payments, financia
           <section className="rounded-xl border border-sky-500/25 bg-sky-500/5 p-6" aria-labelledby="avisos-title">
             <h2 id="avisos-title" className="text-base font-semibold text-sand-light">Avisos de pagamento dos irmãos</h2>
             <p className="mt-1 text-sm text-sand-dark">
-              O irmão informou pelo portal que pagou via Pix na chave da loja. Confira o crédito no extrato do banco e clique em
-              <strong> Dar baixa</strong>: o formulário abaixo vem preenchido.
+              O irmão informou pelo portal que pagou via Pix na chave da loja — ou a Tesouraria registrou o comprovante que ele mandou por fora.
+              Confira o crédito no extrato do banco e clique em <strong>Dar baixa</strong>: o formulário abaixo vem preenchido.
             </p>
             <ul className="mt-4 space-y-3">
               {notices.map((n) => {
@@ -238,6 +240,12 @@ export default function PagamentosClient({ accounts, members, payments, financia
                         Venc. {formatDateOnly(a.dueDate)} · saldo {brl(a.balance)} · avisou em {new Date(n.noticeAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}
                         {n.note ? ` · "${n.note}"` : ''}
                       </p>
+                      {n.registeredBy ? (
+                        <p className="mt-1 text-xs text-sky-200">
+                          Registrado por {n.registeredBy.name} (comprovante recebido fora do portal){n.paidAtInformed ? ` · Pix em ${formatDateOnly(n.paidAtInformed)}, data informada` : ''}.
+                          {n.registeredBy.userId === currentUserId ? <span className="block text-amber-300">Você registrou este comprovante: confira o crédito no extrato antes de dar a baixa.</span> : null}
+                        </p>
+                      ) : null}
                       {n.group ? (
                         <p className="mt-1 text-xs text-sky-200">
                           Pix agrupado: {n.group.accountIds.length} contas num só Pix de {brl(n.group.total)} — dê a baixa em cada uma.

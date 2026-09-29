@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Card, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { fetchWhatsAppShare, WhatsAppSendDialog, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
+import { fetchReceiptContext, RegisterReceiptDialog, type ReceiptContext } from '@/components/register-receipt-dialog';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -50,6 +51,9 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
   const [sharingId, setSharingId] = useState('');
   const [justCreated, setJustCreated] = useState<{ id: string; number: string } | null>(null);
   const lodgeMode = collection.mode === 'lodge';
+  // Comprovante recebido fora do portal (ex.: WhatsApp), registrado pela Tesouraria.
+  const [receiptCtx, setReceiptCtx] = useState<ReceiptContext | null>(null);
+  const [receiptLoadingId, setReceiptLoadingId] = useState('');
   // Um formulário por vez e só sob demanda: a lista é o que o Tesoureiro usa todo dia.
   const [panel, setPanel] = useState<'none' | 'single' | 'bulk'>(invoices.length === 0 ? 'single' : 'none');
 
@@ -131,6 +135,15 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
     const result = await fetchWhatsAppShare(invoiceId);
     setSharingId('');
     if (result.ok) setShare(result.share);
+    else setMessage({ kind: 'error', text: result.error });
+  }
+
+  async function openReceipt(invoiceId: string) {
+    setReceiptLoadingId(invoiceId);
+    setMessage(null);
+    const result = await fetchReceiptContext(invoiceId);
+    setReceiptLoadingId('');
+    if (result.ok) setReceiptCtx(result.ctx);
     else setMessage({ kind: 'error', text: result.error });
   }
 
@@ -435,6 +448,11 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
                             {sharingId === invoice.id ? 'Preparando…' : 'WhatsApp'}
                           </button>
                         ) : null}
+                        {lodgeMode && invoice.member ? (
+                          <button onClick={() => void openReceipt(invoice.id)} disabled={receiptLoadingId === invoice.id} title="O irmão mandou o comprovante por fora (ex.: WhatsApp): registre em nome dele para conferência e baixa" className="text-xs text-sky-300 transition hover:text-sky-200 disabled:opacity-40">
+                            {receiptLoadingId === invoice.id ? 'Abrindo…' : 'Registrar comprovante'}
+                          </button>
+                        ) : null}
                         <button onClick={() => void remindInvoice(invoice.id)} title="Envia um lembrete por e-mail ao membro" className="text-xs text-sand-dark transition hover:text-sand-light">Lembrar por e-mail</button>
                         <button onClick={() => void cancelInvoice(invoice.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Cancelar</button>
                       </>
@@ -447,6 +465,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
         </section>
       </div>
       {share ? <WhatsAppSendDialog key={share.key} share={share} onClose={() => setShare(null)} /> : null}
+      {receiptCtx ? <RegisterReceiptDialog key={receiptCtx.invoiceId} ctx={receiptCtx} onClose={() => setReceiptCtx(null)} onDone={() => { setReceiptCtx(null); router.refresh(); }} /> : null}
     </main>
   );
 }

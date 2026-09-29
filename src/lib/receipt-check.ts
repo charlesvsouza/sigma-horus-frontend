@@ -1,11 +1,11 @@
 // Conferência do comprovante de Pix anexado ao "Já paguei" (Modo Loja). Não depende dos rótulos
 // de cada banco ("Identificador", "ID da transação"…): procura no texto o identificador que o
-// PRÓPRIO sistema pôs no QR (txid = id da conta), o número de controle do Pix no formato oficial
+// PRÓPRIO sistema pôs no QR (txid = id da conta no portal, nº da cobrança no WhatsApp), o número de controle do Pix no formato oficial
 // do Banco Central (EndToEndId), o valor e o CNPJ/chave da loja. Comprovante pode ser editado —
 // por isso o resultado só HABILITA a baixa de um clique; quem confirma é a Tesouraria.
 
 export interface ReceiptExpectation {
-  /** txids aceitos (id da conta; no Pix agrupado, o da conta mais antiga). */
+  /** txids aceitos (id da conta e nº da cobrança — ver receiptTxids; no Pix agrupado, os de todas as contas). */
   txids: string[];
   /** Valor esperado (saldo da conta, ou o total do Pix agrupado). */
   amount: number;
@@ -48,6 +48,14 @@ export function paidAtInText(text: string): string | null {
   if (!only) return null;
   const iso = `${only[3]}-${only[2]}-${only[1]}T12:00:00-03:00`;
   return Number.isNaN(new Date(iso).getTime()) ? null : new Date(iso).toISOString();
+}
+
+/**
+ * Identificadores aceitos no comprovante: o id da conta (Pix do portal) e o número da cobrança
+ * (Pix enviado pelo WhatsApp). O txid do Pix estático só guarda letras e números, até 25.
+ */
+export function receiptTxids(accountIds: string[], invoiceNumbers: string[]): string[] {
+  return [...accountIds, ...invoiceNumbers.map((n) => n.replace(/[^A-Za-z0-9]/g, '').slice(0, 25))].filter((t) => t.length > 0);
 }
 
 export function checkReceipt(text: string, expected: ReceiptExpectation): ReceiptCheck {
