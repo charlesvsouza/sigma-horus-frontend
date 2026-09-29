@@ -5,7 +5,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://sigmahorus.com.br')
 // Buscadores indexam só as páginas públicas; área logada, API e painel da plataforma ficam de fora.
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [{ userAgent: '*', allow: '/', disallow: ['/dashboard', '/api', '/plataforma', '/comecar', '/trocar-senha', '/folheto'] }],
+    rules: [{ userAgent: '*', allow: '/', disallow: ['/dashboard', '/api', '/plataforma', '/comecar', '/trocar-senha', '/folheto', '/verificar'] }],
     sitemap: `${APP_URL}/sitemap.xml`,
   };
 }

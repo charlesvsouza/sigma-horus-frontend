@@ -81,6 +81,7 @@ const INDEX: IndexEntry[] = [
       { id: 'sec-frequencia', label: '8.8 Frequência às sessões' },
       { id: 'sec-materiais', label: '8.9 Materiais e patrimônio' },
       { id: 'sec-documentos', label: '8.10 Documentos e comunicação' },
+      { id: 'sec-certificados', label: '8.11 Visitantes e certificados de presença' },
     ],
   },
   { id: 'veneravel', num: '9', label: 'Guia do Venerável' },
@@ -323,7 +324,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.64 — 29 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.65 — 29 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1924,6 +1925,27 @@ export function ManualBook() {
                   limite de requisições por segundo do provedor de e-mail — um lote grande pode levar alguns segundos
                   a mais que antes, mas evita que uma fração das mensagens falhe por sobrecarga.
                 </Note>
+              </Sub>
+
+              <Sub id="sec-certificados" title="8.11 Visitantes e certificados de presença">
+                <p>
+                  O fluxo completo, do papel ao certificado: nos <UI>Impressos da sessão</UI> (8.7), imprima a
+                  <UI> Lista de visitantes (em branco)</UI>; na sessão, os irmãos visitantes a preenchem; depois, digite a
+                  lista em <UI>Visitantes da sessão</UI> (8.7). Os certificados ficam em <UI>Social → Certificados de presença</UI>
+                  (Secretário, Venerável e Administrador).
+                </p>
+                <Steps>
+                  <li>Escolha a sessão à esquerda — aparecem só as sessões já realizadas com visitantes, com quantos certificados já foram enviados.</li>
+                  <li>Escolha o <UI>Modelo</UI>: <strong>Clássico</strong> (fundo marfim, moldura dourada dupla) ou <strong>Pergaminho</strong> (fundo papiro, moldura sépia). O navegador lembra a escolha.</li>
+                  <li>Clique em <UI>Prévia</UI> para ver o certificado de cada irmão — é o próprio PDF, com a marca d&apos;água &quot;PRÉVIA&quot; no lugar do número e do QR Code. Confira o nome, a loja e o grau: o texto sai exatamente do cadastro da visita (corrija em <UI>Secretaria → Visitantes</UI> se preciso).</li>
+                  <li><UI>Enviar por e-mail</UI> (um) ou <UI>Enviar pendentes</UI> (todos de uma vez): cada irmão recebe o certificado em PDF anexo, com o link de verificação. Irmão sem e-mail: use <UI>Baixar PDF</UI> e entregue em mãos.</li>
+                </Steps>
+                <Bullets>
+                  <li><strong>O texto:</strong> a loja (com a Potência e o Oriente) certifica que o Ir∴ visitante — com o grau e a loja dele — esteve presente à sessão, na data, <strong>nos graus em que ele pôde estar</strong>: um Aprendiz numa sessão de 1º e 2º grau aparece só &quot;nos trabalhos em Grau de Aprendiz&quot;. Assinam o Secretário e o Venerável do veneralato da data da sessão; o brasão da loja (Configurações) vai no topo.</li>
+                  <li><strong>Número e verificação:</strong> na primeira emissão (envio ou download), o certificado recebe um número sequencial por ano (<strong>CP-2026-0001</strong>) e um código de verificação. O QR Code e o endereço impressos levam à página pública <strong>sigmahorus.com.br/verificar/código</strong>, que confirma a autenticidade (número, irmão, loja e sessão — sem e-mail nem telefone). Reenviar mantém o mesmo número.</li>
+                  <li><strong>Travas:</strong> só depois do término da sessão; só com e-mail e com o consentimento registrado na visita (a caixa &quot;Autorizou o envio do certificado&quot;); reenviar pede confirmação; visitante com dados excluídos (LGPD) não recebe.</li>
+                  <li>Cada envio fica registrado em <UI>Comunicação</UI> e na auditoria; falha de envio aparece como &quot;falhou — tente de novo&quot;.</li>
+                </Bullets>
               </Sub>
             </Chapter>
 

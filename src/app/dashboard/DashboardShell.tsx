@@ -16,7 +16,7 @@ import {
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
   Scale, ListTree, Users2, Images, LayoutGrid, UsersRound, PencilLine,
   ArrowDownToLine, ArrowUpFromLine, HandCoins, Banknote, Percent, type LucideIcon,
-  History, BadgeCheck, UserPlus,
+  History, BadgeCheck, UserPlus, Award,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -72,6 +72,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/sessoes': CalendarDays,
   '/dashboard/sessoes/frequencia': UserCheck,
   '/dashboard/visitantes': UserPlus,
+  '/dashboard/certificados': Award,
   '/dashboard/portal/secretaria': CalendarDays,
   '/dashboard/documentos': FolderClosed,
   '/dashboard/comunicacao': MessageSquare,

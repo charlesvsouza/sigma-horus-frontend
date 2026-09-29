@@ -45,6 +45,7 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/galeria-veneraveis', label: 'Galeria de Veneráveis', roles: [], resource: 'social' },
       { href: '/dashboard/quadro-gestao', label: 'Quadro da Gestão', roles: [], resource: 'social' },
       { href: '/dashboard/composicao', label: 'Composição da loja', roles: [], resource: 'social' },
+      { href: '/dashboard/certificados', label: 'Certificados de presença', roles: ['admin', 'venerable', 'secretary'] },
     ],
   },
   {

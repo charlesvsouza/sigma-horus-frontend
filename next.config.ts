@@ -12,8 +12,17 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  // Fontes do certificado de presença: lidas do disco pelas rotas que geram o PDF — o
+  // rastreamento de arquivos do build não as veria sozinho.
+  outputFileTracingIncludes: {
+    "/api/certificates/**": ["./src/assets/fonts/**"],
+  },
   async headers() {
-    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+    return [
+      { source: "/:path*", headers: SECURITY_HEADERS },
+      // A prévia do certificado abre num <iframe> da própria tela (o último valor vale).
+      { source: "/api/certificates/:path*", headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }] },
+    ];
   },
 };
 
