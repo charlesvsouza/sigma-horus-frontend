@@ -73,7 +73,7 @@ export interface PixPayloadInput {
   city?: string | null;
   /** Valor exato; omitido = o pagador digita. */
   amount?: number | null;
-  /** Identificador do pagamento (até 25 alfanuméricos). Aparece no extrato da loja. */
+  /** Identificador do pagamento (até 25 alfanuméricos). Vai no Pix; se aparece no extrato da loja depende do banco. */
   txid?: string | null;
 }
 

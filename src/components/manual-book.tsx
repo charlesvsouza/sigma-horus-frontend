@@ -323,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.56 — 28 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.57 — 28 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1024,7 +1024,9 @@ export function ManualBook() {
                   filtrar por número, membro ou status.
                 </p>
                 <Bullets>
-                  <li><strong>Lembrar:</strong> envia por e-mail um lembrete avulso da cobrança ao membro — útil pra cobrar na hora, além do lembrete automático que o sistema já envia 3 dias antes do vencimento. Os lembretes levam o link do Pix (quando emitido no Asaas) ou os dados de pagamento da loja, e o <strong>link do portal</strong>, onde o irmão paga sozinho (<UI>Minhas pendências</UI>).</li>
+                  <li><strong>WhatsApp</strong> (só no <strong>Modo Loja</strong>): abre uma janela com a mensagem pronta — o mesmo texto do lembrete por e-mail — com o <strong>Pix copia e cola</strong> na chave da loja, com o valor em aberto já preenchido, e o QR Code. <UI>Abrir no WhatsApp</UI> abre a conversa do irmão (no WhatsApp Web ou no app) com o texto escrito; você só aperta <strong>Enviar</strong>, do seu número. Nada é enviado sem você. A mensagem pode ser editada antes; <UI>Copiar QR</UI>, <UI>Baixar QR</UI> e, no celular, <UI>Compartilhar QR</UI> mandam a imagem também. Dica: no celular o irmão não consegue escanear o QR da própria tela — é o código copia e cola que ele usa no app do banco. O Pix cai direto na conta da loja e a <strong>baixa continua manual</strong>, em Pagamentos. Ao criar uma cobrança avulsa, o sistema já oferece <UI>Enviar pelo WhatsApp</UI>.</li>
+                  <li><strong>Envio pelo WhatsApp</strong> (botão no topo de Cobranças, só no Modo Loja): lista todas as cobranças em aberto, com filtros <UI>A vencer (3 dias)</UI> e <UI>Vencidas</UI>, e a data do último envio de cada uma. Use depois da cobrança em massa ou das recorrentes: passe irmão por irmão com <UI>Enviar</UI>; quem já recebeu sai da lista (desmarque <UI>Ocultar as já enviadas</UI> para reenviar). O celular vem do cadastro do membro; sem celular, o WhatsApp abre para você escolher o contato. Cada envio fica registrado em Comunicação como “Aberta no WhatsApp” (o sistema não tem como saber se você apertou Enviar).</li>
+                  <li><strong>Lembrar por e-mail:</strong> envia por e-mail um lembrete avulso da cobrança ao membro — útil pra cobrar na hora, além do lembrete automático que o sistema já envia 3 dias antes do vencimento. Os lembretes levam o link do Pix (quando emitido no Asaas) ou os dados de pagamento da loja, e o <strong>link do portal</strong>, onde o irmão paga sozinho (<UI>Minhas pendências</UI>).</li>
                   <li><strong>Cancelar:</strong> remove a cobrança e o lançamento a receber gerado por ela (nunca mexe em pagamentos já registrados). Só funciona em cobranças ainda não pagas.</li>
                 </Bullets>
               </Sub>

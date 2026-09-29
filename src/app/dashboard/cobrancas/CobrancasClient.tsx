@@ -2,8 +2,10 @@
 
 import { FormEvent, useState } from 'react';
 import { occurrenceDescriptionsPreview, recurrenceSummary } from '@/lib/recurring-rules';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Card, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { fetchWhatsAppShare, WhatsAppSendDialog, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -43,6 +45,11 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
   const [bulk, setBulk] = useState({ chartAccountId: '', amount: '', dueDate: '', description: '', scope: 'active', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [search, setSearch] = useState('');
+  // Envio pelo WhatsApp (só Modo Loja): diálogo da cobrança e atalho logo após criar uma avulsa.
+  const [share, setShare] = useState<WhatsAppShare | null>(null);
+  const [sharingId, setSharingId] = useState('');
+  const [justCreated, setJustCreated] = useState<{ id: string; number: string } | null>(null);
+  const lodgeMode = collection.mode === 'lodge';
   // Um formulário por vez e só sob demanda: a lista é o que o Tesoureiro usa todo dia.
   const [panel, setPanel] = useState<'none' | 'single' | 'bulk'>(invoices.length === 0 ? 'single' : 'none');
 
@@ -62,6 +69,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
       const data = await response.json();
       if (response.ok) {
         setMessage({ kind: 'ok', text: 'Cobrança criada com sucesso.' });
+        setJustCreated(lodgeMode && data.item?.member ? { id: data.item.id, number: data.item.number } : null);
         setPanel('none');
         setForm({ chartAccountId: '', memberId: '', number: '', amount: '', dueDate: '', description: '', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
         router.refresh();
@@ -115,6 +123,15 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
     } else {
       setMessage({ kind: 'error', text: data.error ?? 'Erro ao emitir no Asaas.' });
     }
+  }
+
+  async function openWhatsApp(invoiceId: string) {
+    setSharingId(invoiceId);
+    setMessage(null);
+    const result = await fetchWhatsAppShare(invoiceId);
+    setSharingId('');
+    if (result.ok) setShare(result.share);
+    else setMessage({ kind: 'error', text: result.error });
   }
 
   async function cancelInvoice(invoiceId: string) {
@@ -191,6 +208,11 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" onClick={() => setPanel(panel === 'single' ? 'none' : 'single')}>{panel === 'single' ? 'Fechar' : 'Nova cobrança'}</Button>
             <Button type="button" variant="secondary" onClick={() => setPanel(panel === 'bulk' ? 'none' : 'bulk')}>{panel === 'bulk' ? 'Fechar' : 'Cobrança em massa'}</Button>
+            {lodgeMode ? (
+              <Link href="/dashboard/cobrancas/whatsapp" className="inline-flex items-center justify-center rounded-full border border-white/10 bg-sigma-blue-mid/30 px-5 py-2.5 text-sm text-sand-light transition-all duration-200 ease-out hover:bg-sigma-blue-mid/50">
+                Envio pelo WhatsApp
+              </Link>
+            ) : null}
             <Button type="button" variant="secondary" onClick={processRecurring} disabled={processing} title="Gera as próximas ocorrências das cobranças recorrentes já cadastradas">
               {processing ? 'Processando…' : 'Processar recorrentes'}
             </Button>
@@ -198,6 +220,13 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
         </div>
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        {justCreated ? (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand">
+            <span>Enviar a cobrança {justCreated.number} ao irmão pelo WhatsApp?</span>
+            <Button type="button" size="sm" onClick={() => { const id = justCreated.id; setJustCreated(null); void openWhatsApp(id); }} disabled={sharingId === justCreated.id}>Enviar pelo WhatsApp</Button>
+            <button type="button" onClick={() => setJustCreated(null)} className="text-xs text-sand-dark transition hover:text-sand-light">Agora não</button>
+          </div>
+        ) : null}
 
         {collection.mode === 'asaas' ? (
           <Card className="max-w-2xl">
@@ -401,7 +430,12 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
                           {emittingId === invoice.id ? 'Emitindo…' : invoice.status === 'billed' ? 'Reemitir' : 'Emitir no Asaas'}
                         </button>
                         ) : null}
-                        <button onClick={() => void remindInvoice(invoice.id)} title="Envia um lembrete por e-mail ao membro" className="text-xs text-sand-dark transition hover:text-sand-light">Lembrar</button>
+                        {lodgeMode && invoice.member ? (
+                          <button onClick={() => void openWhatsApp(invoice.id)} disabled={sharingId === invoice.id} title="Abre a conversa do irmão no WhatsApp com a cobrança e o Pix copia e cola" className="text-xs text-emerald-300 transition hover:text-emerald-200 disabled:opacity-40">
+                            {sharingId === invoice.id ? 'Preparando…' : 'WhatsApp'}
+                          </button>
+                        ) : null}
+                        <button onClick={() => void remindInvoice(invoice.id)} title="Envia um lembrete por e-mail ao membro" className="text-xs text-sand-dark transition hover:text-sand-light">Lembrar por e-mail</button>
                         <button onClick={() => void cancelInvoice(invoice.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Cancelar</button>
                       </>
                     ) : null}
@@ -412,6 +446,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
           </div>
         </section>
       </div>
+      {share ? <WhatsAppSendDialog key={share.invoiceId} share={share} onClose={() => setShare(null)} /> : null}
     </main>
   );
 }

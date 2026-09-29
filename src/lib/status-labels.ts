@@ -18,6 +18,7 @@ export const MESSAGE_STATUS_LABEL: Record<string, string> = {
   queued: 'Na fila',
   sent: 'Enviada',
   failed: 'Falhou',
+  'handed-off': 'Aberta no WhatsApp',
 };
 
 export const DOCUMENT_KIND_LABEL: Record<string, string> = {

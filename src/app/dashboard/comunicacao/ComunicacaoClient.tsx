@@ -16,7 +16,7 @@ interface MessageItem {
   member?: { name: string } | null;
 }
 
-const CHANNEL_LABEL: Record<string, string> = { email: 'E-mail', whatsapp: 'WhatsApp', sms: 'SMS' };
+const CHANNEL_LABEL: Record<string, string> = { email: 'E-mail', whatsapp: 'WhatsApp', 'whatsapp-manual': 'WhatsApp (pelo Tesoureiro)', sms: 'SMS' };
 
 export default function ComunicacaoClient({ items, members }: { items: MessageItem[]; members: { id: string; name: string }[] }) {
   const router = useRouter();
