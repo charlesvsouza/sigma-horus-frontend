@@ -118,7 +118,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   patrimonio: 'Patrimônio', 'conciliacao-bancaria': 'Conciliação bancária',
   completo: 'Relatório completo', balanco: 'Balanço Financeiro', balancete: 'Balancete de Verificação',
   'receitas-despesas': 'Receitas × Despesas', 'livro-caixa': 'Livro Caixa', cobrancas: 'Cobranças',
-  'saldo-irmaos': 'Saldo dos Irmãos', whatsapp: 'Envio pelo WhatsApp',
+  'saldo-irmaos': 'Saldo dos Irmãos', whatsapp: 'Envio pelo WhatsApp', livro: 'Livro de presença', 'lista-visitantes': 'Lista de visitantes',
 };
 
 export default function DashboardShell({ groups, lodgeName, userName, role, children, art002DaysOverdue }: Props) {

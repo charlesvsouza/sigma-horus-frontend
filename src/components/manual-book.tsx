@@ -323,7 +323,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.62 — 29 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.63 — 29 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1748,6 +1748,7 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li><strong>Dados da sessão:</strong> <UI>Editar</UI> corrige título, início, término, tipo e graus.</li>
+                  <li><strong>Impressos da sessão:</strong> <UI>Livro de presença</UI> imprime, no papel timbrado, o escopo da sessão (tipo, data e horário, graus trabalhados e ordem do dia) e os <strong>irmãos convocados</strong> — primeiro quem tem cargo no veneralato da data da sessão, na ordem ritualística, depois os demais em ordem alfabética —, com cargo, grau e linha de <strong>assinatura</strong>, linhas em branco para quem não estava na lista, &quot;Total de presentes&quot; e as assinaturas do Secretário e do Venerável. <UI>Lista de visitantes (em branco)</UI> imprime, em paisagem, a folha para os irmãos visitantes preencherem: nome, grau, loja, nº, Oriente, Potência, CIM, telefone, e-mail e assinatura, com o consentimento para o envio do certificado de presença. Use <UI>Imprimir / PDF</UI>. A presença continua sendo marcada no sistema depois da sessão.</li>
                   <li><strong>Convocação (chamado):</strong> <UI>Revisar e enviar convocação</UI> mostra a mensagem <strong>exatamente</strong> como os irmãos vão receber — gerada do que está salvo —, quantos serão convocados, quem está sem e-mail e quem ficou de fora pelo grau. O envio só libera depois de marcar <UI>Conferi o título, a data e o horário, os graus e a ordem do dia</UI>. Se alguém alterar a sessão entre a prévia e o clique, o sistema recusa e pede para revisar de novo. Com a ordem do dia editada e não salva, o botão fica bloqueado.</li>
                   <li><strong>Alterou depois de convocar:</strong> ao salvar, o sistema avisa que a sessão já foi convocada. Em seguida o cartão mostra <strong>⚠ A sessão foi alterada depois da convocação</strong>, com a versão enviada ao lado da atual, e o botão vira <UI>Revisar e enviar retificação</UI> — a mensagem sai marcada como <strong>RETIFICAÇÃO</strong>.</li>
                   <li><strong>Enviar também pelo WhatsApp:</strong> depois do e-mail, lista os convocados para você mandar o mesmo texto irmão por irmão, pelo seu WhatsApp (como no envio de cobranças): <UI>Enviar</UI> abre a conversa com o texto pronto; ao voltar, confirme <UI>Sim, enviei</UI>. Se a sessão mudou, a lista só volta depois da retificação.</li>

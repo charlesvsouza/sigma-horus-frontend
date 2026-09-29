@@ -26,6 +26,7 @@ export function OfficialDocument({
   printOnly = false,
   pageBreakBefore = false,
   withPrintCss = true,
+  orientation = 'portrait',
   className = '',
   children,
 }: {
@@ -39,6 +40,8 @@ export function OfficialDocument({
   pageBreakBefore?: boolean;
   /** Só um <style> por página: com vários documentos, desligue nos demais. */
   withPrintCss?: boolean;
+  /** Folhas largas (ex.: lista de visitantes, 11 colunas) saem em paisagem. */
+  orientation?: 'portrait' | 'landscape';
   className?: string;
   children: ReactNode;
 }) {
@@ -55,7 +58,7 @@ export function OfficialDocument({
   return (
     <>
       {withPrintCss ? (
-        <style dangerouslySetInnerHTML={{ __html: printCss({ footer, margin: '16mm 16mm 18mm', fontSize: '10pt', extra: OFFICIAL_CSS }) }} />
+        <style dangerouslySetInnerHTML={{ __html: printCss({ footer, orientation, margin: '16mm 16mm 18mm', fontSize: '10pt', extra: OFFICIAL_CSS }) }} />
       ) : null}
       <div
         className={`rpt-doc ${pageBreakBefore ? 'off-break' : ''} rounded-xl border border-white/6 bg-sigma-card p-8 ${printOnly ? 'hidden' : ''} ${className}`}

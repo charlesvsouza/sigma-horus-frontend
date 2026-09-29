@@ -1,15 +1,15 @@
 # Livro de presença, visitantes e certificado de presença — análise e plano
 
-> Status: **em pausa** (2026-09-29). Nada implementado. O dono pediu para alinhar antes um
-> procedimento de pagamentos e voltar a este tema depois.
+> Status: **em execução** (retomado em 2026-09-29). **Fase 1 concluída** (livro de presença e lista de visitantes em branco: `sessoes/[id]/livro`, `sessoes/[id]/lista-visitantes`, `lib/attendance-book.ts`, `lib/session-sheets-server.ts`). Próxima: fase 2 (cadastro de visitantes).
 >
-> **Ao retomar:**
-> 1. Confirmar se a convocação com graus já está no ar: o commit `c3b91d5` ficou só local,
->    porque a migration `20260929120000_session_degrees_convocation` precisa ser aplicada em
->    produção **antes** do push. Este plano depende dela (graus trabalhados e convocados).
-> 2. Colher as 7 decisões da seção 8. As principais: modelos de diploma, assinaturas e campos
->    da lista de visitantes.
-> 3. Começar pela fase 1 (seção 9), que não mexe no banco.
+> **Decisões do dono (2026-09-29):**
+> 1. Diploma: modelos prontos agora (Clássico e Pergaminho), arte própria da loja depois (fase 4).
+> 2. Assinaturas: digitalizada opcional (Venerável e Secretário sobem a imagem); sem imagem, nome impresso.
+> 3. Lista de visitantes: nome, **grau**, loja, **nº da loja**, **Oriente**, Potência, **CIM**, **telefone**, e-mail e assinatura.
+> 4. Livro de presença: **cargos primeiro** (ordem ritualística), depois os demais em ordem alfabética.
+> 5. Certificado só para visitantes (não para membros da loja).
+> 6. Envio do certificado manual, pelo botão, depois de revisar.
+> 7. Verificação pública com QR Code.
 
 ## 1. O que o dono pediu
 

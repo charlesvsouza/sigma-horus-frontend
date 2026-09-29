@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
 import { toBRDateTimeLocal } from '@/lib/br-time';
@@ -256,6 +257,15 @@ export default function SessionDetailClient({
               </div>
             </div>
           ) : null}
+        </section>
+
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
+          <h2 className="text-base font-semibold text-sand-light">Impressos da sessão</h2>
+          <p className="mt-1 text-xs text-sand-dark">Para levar à sessão: o livro com os convocados para assinar e a lista em branco para os irmãos visitantes.</p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link href={`/dashboard/sessoes/${session.id}/livro`} className="inline-flex items-center rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition hover:border-gold/60 hover:text-gold">Livro de presença</Link>
+            <Link href={`/dashboard/sessoes/${session.id}/lista-visitantes`} className="inline-flex items-center rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition hover:border-gold/60 hover:text-gold">Lista de visitantes (em branco)</Link>
+          </div>
         </section>
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
