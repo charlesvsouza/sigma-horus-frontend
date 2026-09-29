@@ -49,3 +49,10 @@ test('numeração por loja e ano, e código de verificação', () => {
   assert.equal(normalizeVerificationCode(code.toLowerCase().replace('-', ' ')), code);
   assert.equal(normalizeVerificationCode('abc'), null);
 });
+
+test('Potência que já tem parênteses não sai com parênteses duplos', async () => {
+  const { powerInParens } = await import('./certificate.ts');
+  assert.equal(powerInParens('Grande Loja Maçônica do Estado do Rio de Janeiro (GLMERJ)'), '(Grande Loja Maçônica do Estado do Rio de Janeiro – GLMERJ)');
+  assert.equal(powerInParens('GOB'), '(GOB)');
+  assert.equal(powerInParens('  '), null);
+});

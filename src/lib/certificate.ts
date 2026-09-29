@@ -58,12 +58,22 @@ export function visitorLodgePhrase(name: string | null, number: string | null): 
   return `${hasPrefix ? '' : 'Loja '}${name.trim()}${number ? ` nº ${number}` : ''}`;
 }
 
+/**
+ * Potência entre parênteses no texto. Se o nome já traz parênteses ("Grande Loja … (GLMERJ)"),
+ * eles viram travessão — senão sairia "(… (GLMERJ))".
+ */
+export function powerInParens(power: string | null): string | null {
+  const p = power?.trim();
+  if (!p) return null;
+  return `(${p.replace(/\s*\(([^()]*)\)\s*/g, (_m, inner: string) => ` – ${inner.trim()} `).replace(/\s+/g, ' ').trim()})`;
+}
+
 /** O texto em três partes: antes do nome, o nome (em destaque) e depois. */
 export function certificateText(c: CertificateContent): { before: string; name: string; after: string } {
-  const issuer = [c.lodgeName, c.lodgePower ? `(${c.lodgePower})` : null, c.lodgeOrient ? `ao ${c.lodgeOrient}` : null].filter(Boolean).join(', ').replace(', (', ' (');
+  const issuer = [c.lodgeName, powerInParens(c.lodgePower), c.lodgeOrient ? `ao ${c.lodgeOrient}` : null].filter(Boolean).join(', ').replace(', (', ' (');
   const lodge = visitorLodgePhrase(c.visitorLodgeName, c.visitorLodgeNumber);
   const origin = lodge
-    ? `do Quadro da ${lodge}${c.visitorOrient ? `, ao Oriente de ${c.visitorOrient}` : ''}${c.visitorPower ? ` (${c.visitorPower})` : ''}`
+    ? `do Quadro da ${lodge}${c.visitorOrient ? `, ao Oriente de ${c.visitorOrient}` : ''}${c.visitorPower ? ` ${powerInParens(c.visitorPower)}` : ''}`
     : null;
   const degrees = attendedDegreesText(c.attended);
   const after = [

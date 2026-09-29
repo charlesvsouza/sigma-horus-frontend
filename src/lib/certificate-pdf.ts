@@ -185,32 +185,28 @@ export async function renderCertificatePdf(input: CertificatePdfInput, fonts: Ce
   y = drawCentered(page, input.text.name, nameStyle(nameSize), y - 8, 700, nameLeading);
   y = drawCentered(page, input.text.after, body, y - 8, 640, leading);
 
-  // Local e data.
-  const placeY = 150;
-  const place = { font: fItalic, size: 13, color: p.ink };
-  page.drawText(input.placeDate, { x: W - 70 - fItalic.widthOfTextAtSize(input.placeDate, 13), y: placeY, ...place });
+  // Local e data, centralizados como o resto do texto, entre o corpo e as assinaturas.
+  const placeSize = 13.5;
+  page.drawText(input.placeDate, { x: (W - fItalic.widthOfTextAtSize(input.placeDate, placeSize)) / 2, y: 146, font: fItalic, size: placeSize, color: p.ink });
 
-  // Assinaturas (linha, nome, cargo).
-  const centers = input.signatures.length === 1 ? [W * 0.6] : [W * 0.47, W * 0.76];
+  // Assinaturas (linha, nome, cargo), centralizadas na página como o resto do texto.
+  const centers = input.signatures.length === 1 ? [W / 2] : [W / 2 - 150, W / 2 + 150];
   input.signatures.slice(0, 2).forEach((s, i) => {
     const cx = centers[i];
-    page.drawLine({ start: { x: cx - 95, y: 102 }, end: { x: cx + 95, y: 102 }, thickness: 0.7, color: p.ink });
-    if (s.name) page.drawText(s.name, { x: cx - fBold.widthOfTextAtSize(s.name, 11.5) / 2, y: 89, font: fBold, size: 11.5, color: p.ink });
-    page.drawText(s.role, { x: cx - fItalic.widthOfTextAtSize(s.role, 10.5) / 2, y: s.name ? 77 : 89, font: fItalic, size: 10.5, color: p.soft });
+    page.drawLine({ start: { x: cx - 95, y: 104 }, end: { x: cx + 95, y: 104 }, thickness: 0.7, color: p.ink });
+    if (s.name) page.drawText(s.name, { x: cx - fBold.widthOfTextAtSize(s.name, 11.5) / 2, y: 91, font: fBold, size: 11.5, color: p.ink });
+    page.drawText(s.role, { x: cx - fItalic.widthOfTextAtSize(s.role, 10.5) / 2, y: s.name ? 79 : 91, font: fItalic, size: 10.5, color: p.soft });
   });
 
-  // Número e verificação pública (QR).
-  const small = { font: fRegular, size: 9.5, color: p.soft };
+  // QR de verificação no canto inferior direito; número e endereço numa linha centralizada no rodapé.
   if (input.qrPng) {
     const qr = await doc.embedPng(input.qrPng);
-    page.drawImage(qr, { x: 50, y: 48, width: 66, height: 66 });
+    page.drawImage(qr, { x: W - 42 - 56, y: 42, width: 56, height: 56 });
   }
-  const tx = input.qrPng ? 124 : 50;
-  page.drawText(input.number ? `Certificado nº ${input.number}` : 'Número atribuído na emissão', { x: tx, y: 96, ...small, font: fBold });
-  if (input.verifyUrl) {
-    page.drawText('Verifique a autenticidade em:', { x: tx, y: 83, ...small });
-    page.drawText(input.verifyUrl.replace(/^https?:\/\//, ''), { x: tx, y: 71, ...small, size: 8.5 });
-  }
+  const footer = input.number
+    ? `Certificado nº ${input.number}${input.verifyUrl ? ` · autenticidade: ${input.verifyUrl.replace(/^https?:\/\//, '')}` : ''}`
+    : 'Número e QR Code de verificação atribuídos na emissão';
+  page.drawText(footer, { x: (W - fRegular.widthOfTextAtSize(footer, 9)) / 2, y: 44, font: fRegular, size: 9, color: p.soft });
 
   if (input.preview) {
     page.drawText('PRÉVIA', { x: W / 2 - 190, y: H / 2 - 90, font: fTitle, size: 110, color: p.accent, opacity: 0.09, rotate: degrees(18) });
