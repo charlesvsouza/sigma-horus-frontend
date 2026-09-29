@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { donorDisplayName } from '@/lib/hospitalaria';
+import { isArt002Enabled } from '@/lib/overdue';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
 import ContasClient from './ContasClient';
@@ -18,7 +19,7 @@ export default async function ContasView({ startWithForm = false }: { startWithF
             member: { select: { id: true, name: true } },
             counterparty: { select: { id: true, name: true, kind: true } },
             bankAccount: { select: { id: true, name: true, kind: true } },
-            chartAccount: { select: { isSolidarity: true } },
+            chartAccount: { select: { isSolidarity: true, isDues: true } },
             // Cobrança emitida e ainda aberta no Asaas → "Aguardando Asaas".
             invoices: { where: { asaasPaymentId: { not: null }, status: { in: ['billed', 'overdue'] } }, select: { id: true }, take: 1 },
           },
@@ -31,7 +32,7 @@ export default async function ContasView({ startWithForm = false }: { startWithF
         }),
         chartAccounts: await db.chartAccount.findMany({
           where: { lodgeId: String(lodgeId) },
-          select: { id: true, code: true, name: true, type: true },
+          select: { id: true, code: true, name: true, type: true, isDues: true },
           orderBy: { code: 'asc' },
         }),
         counterparties: await db.counterparty.findMany({
@@ -44,8 +45,9 @@ export default async function ContasView({ startWithForm = false }: { startWithF
           select: { id: true, name: true, kind: true, purpose: true },
           orderBy: { name: 'asc' },
         }),
+        lodge: await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { art002Enabled: true } }),
       }))
-    : { accounts: [], members: [], chartAccounts: [], counterparties: [], financialAccounts: [] };
+    : { accounts: [], members: [], chartAccounts: [], counterparties: [], financialAccounts: [], lodge: null };
 
   const accounts = data.accounts.map((a) => {
     const isSolidarity = a.chartAccount?.isSolidarity ?? false;
@@ -57,7 +59,9 @@ export default async function ContasView({ startWithForm = false }: { startWithF
       dueDate: a.dueDate.toISOString(),
       status: a.status,
       description: a.description ?? null,
-      isDues: a.isDues,
+      // Mensalidade = flag OU categoria (a mesma regra do Art. 002, DUES_ACCOUNT_WHERE): conta de
+      // Mensalidades com o flag desligado (recorrência antiga) não aparece desmarcada ao editar.
+      isDues: a.isDues || Boolean(a.chartAccount?.isDues),
       approvalStatus: a.approvalStatus,
       awaitingAsaas: a.invoices.length > 0,
       member: a.member ? { id: a.member.id, name: donorDisplayName(a.member.name, isSolidarity, role)! } : null,
@@ -71,7 +75,8 @@ export default async function ContasView({ startWithForm = false }: { startWithF
     code: c.code,
     name: c.name,
     type: c.type,
+    isDues: c.isDues,
   }));
 
-  return <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} startWithForm={startWithForm} />;
+  return <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} startWithForm={startWithForm} art002Enabled={isArt002Enabled(data.lodge)} />;
 }

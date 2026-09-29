@@ -13,10 +13,45 @@ export interface AccountReportRowInput {
   description: string;
   category: string | null; // nome da ChartAccount
   amount: number;
+  /** Vencimento da conta (também nas liquidadas): define a Referência — mês/ano do vencimento. */
+  dueDate?: Date | null;
 }
 
-export interface AccountReportRow extends Omit<AccountReportRowInput, 'date'> {
+export interface AccountReportRow extends Omit<AccountReportRowInput, 'date' | 'dueDate'> {
   date: string; // ISO
+  /** Mês de referência da conta ("outubro/2026") = mês do vencimento (regra da loja). */
+  reference: string | null;
+  /** Título da conta só quando diz algo além da categoria ("Mensalidades" em Mensalidades some). */
+  detail: string | null;
+}
+
+const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+/** "outubro/2026" — vencimento é data sem hora (meia-noite UTC), por isso o mês em UTC. */
+export function referenceLabel(dueDate: Date | null | undefined): string | null {
+  if (!dueDate || Number.isNaN(dueDate.getTime())) return null;
+  return `${MONTHS[dueDate.getUTCMonth()]}/${dueDate.getUTCFullYear()}`;
+}
+
+/** Minúsculas, sem acento. */
+function plain(s: string): string {
+  return s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+}
+
+/** Nome sem plural e sem o mês/ano do fim ("Mensalidade — Junho/2025" → "mensalidade"). */
+function core(s: string): string {
+  return plain(s)
+    .replace(/[\s\-–—:·,/]*([a-z]+\s*\/\s*)?\d{4}$/, '')
+    .replace(/[\s\-–—:·,]+$/, '')
+    .replace(/s$/, '');
+}
+
+/** O título só repete a categoria (singular/plural, com ou sem o mês/ano)? Então some; senão é o detalhe. */
+export function accountDetail(title: string, category: string | null): string | null {
+  const t = title.trim();
+  if (!t) return null;
+  if (!category) return t;
+  return core(t) === core(category) ? null : t;
 }
 
 export interface AccountReportFilters {
@@ -39,12 +74,17 @@ export function buildAccountsReport(rows: AccountReportRowInput[], filters: Acco
   const filtered = rows
     .filter((r) => r.date >= filters.from && r.date <= filters.to)
     .filter((r) => !filters.personId || r.personId === filters.personId)
-    .filter((r) => !text || r.description.toLowerCase().includes(text) || (r.category ?? '').toLowerCase().includes(text))
+    .filter((r) => !text || r.description.toLowerCase().includes(text) || (r.category ?? '').toLowerCase().includes(text) || (referenceLabel(r.dueDate) ?? '').includes(text))
     .filter((r) => filters.amountMin == null || r.amount >= filters.amountMin)
     .filter((r) => filters.amountMax == null || r.amount <= filters.amountMax)
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  const out = filtered.map((r) => ({ ...r, date: r.date.toISOString() }));
+  const out = filtered.map(({ dueDate, ...r }) => ({
+    ...r,
+    date: r.date.toISOString(),
+    reference: referenceLabel(dueDate),
+    detail: accountDetail(r.description, r.category),
+  }));
   const total = out.reduce((s, r) => s + r.amount, 0);
   return { rows: out, total };
 }

@@ -70,8 +70,9 @@ export async function GET(request: Request) {
   sheet.columns = [
     { header: DATE_LABEL[variant], key: 'data', width: 14 },
     { header: 'Nome', key: 'nome', width: 28 },
-    { header: 'Descrição', key: 'descricao', width: 34 },
+    { header: 'Referência', key: 'referencia', width: 16 },
     { header: 'Categoria', key: 'categoria', width: 24 },
+    { header: 'Detalhe', key: 'detalhe', width: 30 },
     { header: 'Valor', key: 'valor', width: 15 },
   ];
 
@@ -81,15 +82,15 @@ export async function GET(request: Request) {
   sheet.addRow([]);
 
   const headerRowIdx = sheet.rowCount + 1;
-  sheet.addRow([DATE_LABEL[variant], 'Nome', 'Descrição', 'Categoria', 'Valor']);
+  sheet.addRow([DATE_LABEL[variant], 'Nome', 'Referência', 'Categoria', 'Detalhe', 'Valor']);
   const headerRow = sheet.getRow(headerRowIdx);
   headerRow.font = { bold: true };
   headerRow.eachCell((cell) => { cell.border = { bottom: { style: 'thin' } }; });
 
   for (const r of report.rows) {
-    sheet.addRow([new Date(r.date).toLocaleDateString('pt-BR'), r.personName ?? '—', r.description, r.category ?? '—', r.amount]);
+    sheet.addRow([new Date(r.date).toLocaleDateString('pt-BR'), r.personName ?? '—', r.reference ?? '—', r.category ?? '—', r.detail ?? '', r.amount]);
   }
-  const totalRow = sheet.addRow(['', '', '', 'Total do período', report.total]);
+  const totalRow = sheet.addRow(['', '', '', '', 'Total do período', report.total]);
   totalRow.font = { bold: true };
 
   sheet.getColumn('valor').numFmt = '"R$" #,##0.00';

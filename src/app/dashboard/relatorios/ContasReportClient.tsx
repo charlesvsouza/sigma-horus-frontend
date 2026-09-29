@@ -8,7 +8,7 @@ import { brl } from '@/lib/currency';
 import { csvNumber } from '@/lib/csv';
 
 interface PersonOption { id: string; name: string; }
-interface ReportRow { id: string; date: string; personId: string | null; personName: string | null; description: string; category: string | null; amount: number; }
+interface ReportRow { id: string; date: string; personId: string | null; personName: string | null; description: string; category: string | null; amount: number; reference: string | null; detail: string | null; }
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR');
@@ -67,9 +67,9 @@ export default function ContasReportClient({
   const personName = personId ? people.find((p) => p.id === personId)?.name : null;
   const details = [period, personName ? `Pessoa: ${personName}` : null, text ? `Busca: "${text}"` : null];
   const csvRows = [
-    [dateLabel, 'Nome', 'Descrição', 'Categoria', 'Valor'],
-    ...report.rows.map((r) => [fmtDate(r.date), r.personName ?? '', r.description, r.category ?? '', csvNumber(r.amount)]),
-    ['Total', '', '', '', csvNumber(report.total)],
+    [dateLabel, 'Nome', 'Referência', 'Categoria', 'Detalhe', 'Valor'],
+    ...report.rows.map((r) => [fmtDate(r.date), r.personName ?? '', r.reference ?? '', r.category ?? '', r.detail ?? '', csvNumber(r.amount)]),
+    ['Total', '', '', '', '', csvNumber(report.total)],
   ];
 
   return (
@@ -94,7 +94,7 @@ export default function ContasReportClient({
                 {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </label>
-            <label className="text-xs text-sand-dark">Descrição ou categoria
+            <label className="text-xs text-sand-dark">Categoria, descrição ou referência
               <input value={textVal} onChange={(e) => setTextVal(e.target.value)} className={`mt-1 ${inputClass}`} placeholder="Buscar…" />
             </label>
             <div className="flex items-end">
@@ -132,7 +132,7 @@ export default function ContasReportClient({
                   <tr className="text-left text-xs uppercase tracking-wide text-sand-dark/70">
                     <th className="border-b border-white/10 px-2 py-2">{dateLabel}</th>
                     <th className="border-b border-white/10 px-2 py-2">Nome</th>
-                    <th className="border-b border-white/10 px-2 py-2">Descrição</th>
+                    <th className="border-b border-white/10 px-2 py-2">Referência</th>
                     <th className="border-b border-white/10 px-2 py-2">Categoria</th>
                     <th className="border-b border-white/10 px-2 py-2 text-right num">Valor</th>
                   </tr>
@@ -142,8 +142,11 @@ export default function ContasReportClient({
                     <tr key={r.id}>
                       <td className="border-b border-white/5 px-2 py-2 text-sand">{fmtDate(r.date)}</td>
                       <td className="border-b border-white/5 px-2 py-2 text-sand">{r.personName ?? '—'}</td>
-                      <td className="border-b border-white/5 px-2 py-2 text-sand">{r.description}</td>
-                      <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{r.category ?? '—'}</td>
+                      <td className="border-b border-white/5 px-2 py-2 text-sand">{r.reference ?? '—'}</td>
+                      <td className="border-b border-white/5 px-2 py-2 text-sand-dark">
+                        {r.category ?? (r.detail ? null : '—')}
+                        {r.detail ? <span className={r.category ? 'block text-xs text-sand-dark/80' : 'text-sand'}>{r.detail}</span> : null}
+                      </td>
                       <td className="border-b border-white/5 px-2 py-2 text-right num tabular-nums text-sand-light">{brl(r.amount)}</td>
                     </tr>
                   ))}

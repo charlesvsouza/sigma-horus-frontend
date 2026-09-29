@@ -86,6 +86,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const nextType = body?.type !== undefined ? String(body.type).trim().toUpperCase() : existing.type;
     const nextAmount = body?.amount !== undefined ? Number(body.amount) : Number(existing.amount);
     const nextMemberId = body?.memberId !== undefined ? (body.memberId ? String(body.memberId) : null) : existing.memberId;
+    // Mensalidade é sempre de um irmão.
+    if (body?.isDues === true && nextType === 'RECEIVABLE' && !nextMemberId) return { error: 'dues-no-member' as const };
 
     // Status: "Pago" gera o Payment do que falta quitar (é ele que move o caixa,
     // extrato e DRE) — só gravar o texto deixava o valor fora do caixa. Já
@@ -157,6 +159,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   if ('error' in result) {
     if (result.error === 'notfound') return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });
+    if (result.error === 'dues-no-member') return NextResponse.json({ error: 'Mensalidade precisa estar vinculada a um irmão. Escolha o membro em "Vincular a um membro".' }, { status: 400 });
     if (result.error === 'asaas-group') {
       return NextResponse.json({
         code: 'ASAAS_GROUP_OPEN',

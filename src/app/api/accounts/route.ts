@@ -85,6 +85,8 @@ export async function POST(request: Request) {
       validChartId = chart?.id ?? null;
       chartIsDues = chart?.isDues ?? false;
     }
+    // Mensalidade é sempre de um irmão: sem o vínculo, não entra no Art. 002 de ninguém.
+    if ((isDues || chartIsDues) && type === 'RECEIVABLE' && !memberId) return { duesNoMember: true } as const;
 
     // Garante que a contraparte informada pertence à loja.
     let validCounterpartyId: string | null = null;
@@ -152,6 +154,10 @@ export async function POST(request: Request) {
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'account', entityId: created.id, metadata: { title, type, amount, status } });
     return { created } as const;
   });
+
+  if ('duesNoMember' in result) {
+    return NextResponse.json({ error: 'Mensalidade precisa estar vinculada a um irmão. Escolha o membro em "Vincular a um membro".' }, { status: 400 });
+  }
 
   if ('settleError' in result && result.settleError) {
     return NextResponse.json({ error: result.settleError.error }, { status: result.settleError.status });

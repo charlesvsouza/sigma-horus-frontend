@@ -50,6 +50,7 @@ export async function loadAccountsReportRows(
         description: a.title,
         category: a.chartAccount?.name ?? null,
         amount: Number(a.amount),
+        dueDate: a.dueDate,
       };
     });
   }
@@ -61,6 +62,7 @@ export async function loadAccountsReportRows(
       account: {
         select: {
           title: true,
+          dueDate: true,
           // Baixa manual sem "vincular a um membro": o irmão é o dono da conta (senão some do filtro por pessoa).
           member: { select: { id: true, name: true } },
           counterparty: { select: { id: true, name: true } },
@@ -82,6 +84,7 @@ export async function loadAccountsReportRows(
       description: p.account?.title ?? 'Pagamento',
       category: p.account?.chartAccount?.name ?? null,
       amount: Number(p.amount),
+      dueDate: p.account?.dueDate ?? null,
     };
   });
 }

@@ -6,7 +6,7 @@ import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
-interface ChartAccountOption { id: string; code: string; name: string; type: string; }
+interface ChartAccountOption { id: string; code: string; name: string; type: string; isDues?: boolean; }
 interface MemberOption { id: string; name: string; }
 interface CounterpartyOption { id: string; name: string; kind: string; }
 interface FinancialAccountOption { id: string; name: string; kind: string; }
@@ -28,26 +28,16 @@ interface AccountItem {
 
 const INPUT_CLASS = inputClass; // fonte única do design system
 
-export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, role, startWithForm = false }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string; startWithForm?: boolean }) {
+export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, role, startWithForm = false, art002Enabled = true }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string; startWithForm?: boolean; art002Enabled?: boolean }) {
   const canApprove = role === 'venerable' || role === 'admin';
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    title: '',
-    type: 'RECEIVABLE',
-    chartAccountId: '',
-    amount: '',
-    dueDate: '',
-    status: 'pending',
-    description: '',
-    memberId: '',
-    counterpartyId: '',
-    bankAccountId: '',
-    isDues: false,
-    paidAt: '',
-  });
+  // Mensalidade (Art. 002) vem marcada por padrão quando a loja aplica o Art. 002 em Configurações;
+  // com ele desligado, vem desmarcada. A categoria escolhida ajusta (só Mensalidades conta).
+  const emptyForm = () => ({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', bankAccountId: '', isDues: art002Enabled, paidAt: '' });
+  const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   // O formulário de lançamento abre pelo item "Lançamento" do menu (startWithForm) — e fica aberto
   // entre um lançamento e outro. Em /contas (só a lista) abre ao editar uma conta; sem contas ainda, já vem aberto.
@@ -77,13 +67,17 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   function cancelEdit() {
     setEditingId(null);
     setFormOpen(startWithForm);
-    setForm({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', bankAccountId: '', isDues: false, paidAt: '' });
+    setForm(emptyForm());
   }
+
+  // Lançamento de mensalidade (categoria de mensalidade; na edição, conta já marcada): exige o irmão.
+  const chosenChart = chartAccounts.find((c) => c.id === form.chartAccountId);
+  const duesEntry = form.type === 'RECEIVABLE' && (chosenChart ? Boolean(chosenChart.isDues) : Boolean(editingId) && form.isDues);
 
   function selectChart(id: string) {
     const chart = chartAccounts.find((c) => c.id === id);
     if (chart) {
-      setForm((prev) => ({ ...prev, chartAccountId: id, title: chart.name, type: chart.type === 'REVENUE' ? 'RECEIVABLE' : 'PAYABLE', bankAccountId: prev.bankAccountId }));
+      setForm((prev) => ({ ...prev, chartAccountId: id, title: chart.name, type: chart.type === 'REVENUE' ? 'RECEIVABLE' : 'PAYABLE', bankAccountId: prev.bankAccountId, isDues: art002Enabled && Boolean(chart.isDues) }));
     }
   }
 
@@ -98,6 +92,8 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
         ...rest,
         ...(editingId ? {} : { chartAccountId }),
         amount: Number(form.amount),
+        // A caixa só aparece em conta a receber de um irmão: fora disso, nunca é mensalidade.
+        isDues: form.isDues && form.type === 'RECEIVABLE' && Boolean(form.memberId),
         memberId: form.memberId || undefined,
         counterpartyId: form.counterpartyId || undefined,
         bankAccountId: form.bankAccountId || undefined,
@@ -234,9 +230,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-sand-dark">Vínculo e observações</h3>
               <div className="mt-3 grid gap-4">
-                <Field label="Vincular a um membro">
-                  <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value, counterpartyId: event.target.value ? '' : form.counterpartyId })} className={INPUT_CLASS}>
-                    <option value="">Nenhum</option>
+                <Field label={duesEntry ? 'Vincular a um membro (obrigatório na mensalidade)' : 'Vincular a um membro'}>
+                  <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value, counterpartyId: event.target.value ? '' : form.counterpartyId })} className={INPUT_CLASS} required={duesEntry}>
+                    <option value="">{duesEntry ? 'Selecione o irmão…' : 'Nenhum'}</option>
                     {members.map((member) => (
                       <option key={member.id} value={member.id}>{member.name}</option>
                     ))}
@@ -262,6 +258,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                   <label className="flex items-center gap-2 text-sm text-sand-dark">
                     <input type="checkbox" checked={form.isDues} onChange={(event) => setForm({ ...form, isDues: event.target.checked })} />
                     É mensalidade do membro (conta para a regra do Art. 002 — 60 dias de inadimplência)
+                    {!art002Enabled ? <span className="text-xs text-sand-dark/70">· Art. 002 desligado em Configurações</span> : null}
                   </label>
                 ) : null}
                 <Field label="Descrição">
