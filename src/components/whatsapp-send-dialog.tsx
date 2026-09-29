@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { whatsAppUrl } from '@/lib/whatsapp-link';
@@ -8,6 +8,8 @@ import { whatsAppUrl } from '@/lib/whatsapp-link';
 // Envio da cobrança pelo WhatsApp (Modo Loja): mostra a mensagem pronta (editável), o QR e os
 // atalhos de cópia; "Abrir no WhatsApp" abre a conversa do irmão pelo wa.me e o Tesoureiro
 // aperta Enviar. Usado na lista de Cobranças e na página "Envio pelo WhatsApp".
+// O wa.me não devolve nada: ao voltar para a aba, a janela pergunta se ele enviou — só o
+// "Sim, enviei" marca a cobrança como enviada; sem resposta fica "aberta, não confirmada".
 
 export interface WhatsAppShare {
   invoiceId: string;
@@ -42,10 +44,33 @@ function canShareFiles(): boolean {
   }
 }
 
-export function WhatsAppSendDialog({ share, onClose, onSent }: { share: WhatsAppShare; onClose: () => void; onSent?: (invoiceId: string) => void }) {
+export type WhatsAppSendEvent = 'opened' | 'sent' | 'not-sent';
+
+export function WhatsAppSendDialog({ share, onClose, onChange }: { share: WhatsAppShare; onClose: () => void; onChange?: (invoiceId: string, event: WhatsAppSendEvent) => void }) {
   const [text, setText] = useState(share.text);
   const [feedback, setFeedback] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [shareable] = useState(canShareFiles);
+  // Registro "aberto" no servidor, aguardando a confirmação do Tesoureiro.
+  const [logId, setLogId] = useState<string | null>(null);
+  const [returned, setReturned] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  // Voltou para a aba depois de abrir o WhatsApp: destaca a pergunta e põe o foco no "Sim".
+  useEffect(() => {
+    if (!logId) return;
+    const onBack = () => {
+      if (document.visibilityState !== 'visible') return;
+      setReturned(true);
+      confirmRef.current?.focus();
+    };
+    document.addEventListener('visibilitychange', onBack);
+    window.addEventListener('focus', onBack);
+    return () => {
+      document.removeEventListener('visibilitychange', onBack);
+      window.removeEventListener('focus', onBack);
+    };
+  }, [logId]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -53,20 +78,46 @@ export function WhatsAppSendDialog({ share, onClose, onSent }: { share: WhatsApp
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  async function registerSent() {
+  async function registerOpened() {
     const res = await fetch(`/api/invoices/${share.invoiceId}/whatsapp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
     }).catch(() => null);
-    if (res?.ok) onSent?.(share.invoiceId);
+    const data = res?.ok ? await res.json().catch(() => ({})) : null;
+    if (data?.logId) {
+      setLogId(data.logId);
+      setReturned(false);
+      onChange?.(share.invoiceId, 'opened');
+    }
+  }
+
+  async function confirmSent(sent: boolean) {
+    if (!logId) return;
+    setConfirming(true);
+    const res = await fetch(`/api/invoices/${share.invoiceId}/whatsapp`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ logId, sent }),
+    }).catch(() => null);
+    setConfirming(false);
+    if (!res?.ok) {
+      setFeedback({ kind: 'error', text: 'Não foi possível registrar a resposta. Tente de novo.' });
+      return;
+    }
+    setLogId(null);
+    onChange?.(share.invoiceId, sent ? 'sent' : 'not-sent');
+    if (sent) onClose();
+    else setFeedback({ kind: 'ok', text: 'Tudo bem — a cobrança continua na fila para enviar depois.' });
   }
 
   function openWhatsApp() {
     // window.open primeiro, ainda dentro do clique (senão o navegador bloqueia o pop-up).
     window.open(whatsAppUrl(share.phone, text), '_blank', 'noopener');
-    setFeedback({ kind: 'ok', text: 'WhatsApp aberto. Confira a conversa e aperte Enviar.' });
-    void registerSent();
+    setFeedback(null);
+    // Reabrir não cria outro registro: a mesma confirmação vale para as duas aberturas.
+    if (logId) setReturned(false);
+    else void registerOpened();
   }
 
   async function copyText(value: string, label: string) {
@@ -94,7 +145,7 @@ export function WhatsAppSendDialog({ share, onClose, onSent }: { share: WhatsApp
     try {
       const file = new File([await qrBlob(share.qrDataUrl)], `pix-${share.number}.png`, { type: 'image/png' });
       await navigator.share({ files: [file], text });
-      void registerSent();
+      void registerOpened();
     } catch {
       // Cancelar a folha de compartilhamento também cai aqui — sem mensagem de erro.
     }
@@ -143,10 +194,24 @@ export function WhatsAppSendDialog({ share, onClose, onSent }: { share: WhatsApp
           O Pix cai direto na conta da loja e a baixa continua manual, em Pagamentos.
         </p>
 
+        {logId ? (
+          <div className={`mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-colors ${returned ? 'border-gold/60 bg-gold/10' : 'border-white/10 bg-sigma-blue-deep/60'}`} role="status">
+            <p className="text-sm text-sand-light">
+              {returned ? `Enviou a mensagem para ${share.memberName}?` : 'Envie a mensagem no WhatsApp e volte aqui para confirmar.'}
+            </p>
+            <div className="flex gap-2">
+              <Button type="button" variant="secondary" size="sm" onClick={() => void confirmSent(false)} disabled={confirming}>Não enviei</Button>
+              <Button ref={confirmRef} type="button" size="sm" onClick={() => void confirmSent(true)} disabled={confirming}>Sim, enviei</Button>
+            </div>
+            <p className="w-full text-xs text-sand-dark">Se fechar sem responder, a cobrança fica como &quot;aberta, não confirmada&quot; e continua na fila.</p>
+          </div>
+        ) : null}
+
         <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={onClose} className="mr-auto">Fechar</Button>
           {share.pixCopyPaste ? <Button type="button" variant="secondary" size="sm" onClick={() => void copyText(share.pixCopyPaste!, 'Código Pix')}>Copiar código Pix</Button> : null}
           <Button type="button" variant="secondary" size="sm" onClick={() => void copyText(text, 'Mensagem')}>Copiar mensagem</Button>
-          <Button type="button" onClick={openWhatsApp}>Abrir no WhatsApp</Button>
+          <Button type="button" variant={logId ? 'secondary' : 'primary'} onClick={openWhatsApp}>{logId ? 'Abrir de novo' : 'Abrir no WhatsApp'}</Button>
         </div>
       </div>
     </div>

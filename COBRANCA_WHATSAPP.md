@@ -6,7 +6,9 @@
 >   envio, filtros a vencer/vencidas, último envio) para massa e recorrentes;
 > - texto = o mesmo do lembrete por e-mail (`lib/charge-notice.ts`), com o Pix copia e cola numa
 >   linha própria e pedido de comprovante;
-> - rota ficou `api/invoices/[id]/whatsapp`; registro `MessageLog` com título `WhatsApp: cobrança <número>`.
+> - rota ficou `api/invoices/[id]/whatsapp`; registro `MessageLog` com título `WhatsApp: cobrança <número>`;
+> - o wa.me não devolve status: ao voltar para a aba, o Tesoureiro confirma "Sim, enviei" (→ `sent`,
+>   sai da fila) ou "Não enviei" (apaga o registro); sem resposta fica "aberta, não confirmada".
 > **Escopo: só lojas em Modo Loja** (recebimento direto na chave Pix da loja). O Modo Asaas
 > fica como está: já tem link público de pagamento (`asaasInvoiceUrl`) e o próprio Asaas
 > notifica o cliente.

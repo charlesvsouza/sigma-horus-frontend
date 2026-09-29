@@ -8,8 +8,8 @@ import { invoiceNumberFromLogTitle, normalizeWhatsAppPhone, WHATSAPP_LOG_TITLE_P
 import WhatsAppQueueClient, { type QueueRow } from './WhatsAppQueueClient';
 
 // Fila de envio pelo WhatsApp (Modo Loja): todas as cobranças em aberto com saldo, e quando
-// cada uma foi aberta no WhatsApp pela última vez. O Tesoureiro passa irmão por irmão —
-// o envio em si é dele, pelo wa.me (sem API, sem custo).
+// cada uma foi enviada (confirmada pelo Tesoureiro) ou só aberta no WhatsApp. O Tesoureiro passa
+// irmão por irmão — o envio em si é dele, pelo wa.me (sem API, sem custo).
 export default async function WhatsAppQueuePage() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
@@ -36,7 +36,7 @@ export default async function WhatsAppQueuePage() {
       }),
       db.messageLog.findMany({
         where: { lodgeId, channel: WHATSAPP_MANUAL_CHANNEL, title: { startsWith: WHATSAPP_LOG_TITLE_PREFIX } },
-        select: { title: true, createdAt: true },
+        select: { title: true, status: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
       }),
     ]);
@@ -47,11 +47,18 @@ export default async function WhatsAppQueuePage() {
     return denied('O envio pelo WhatsApp é do Modo Loja. No Modo Asaas, o link da cobrança emitida e as notificações do próprio Asaas cumprem esse papel.');
   }
 
-  // Último envio por número de cobrança (logs já vêm do mais recente para o mais antigo).
+  // Por número de cobrança (logs do mais recente para o mais antigo): último envio confirmado e
+  // abertura sem confirmação mais recente que ele.
   const lastSent = new Map<string, string>();
+  const lastOpened = new Map<string, string>();
   for (const log of data.logs) {
     const number = invoiceNumberFromLogTitle(log.title);
-    if (number && !lastSent.has(number)) lastSent.set(number, log.createdAt.toISOString());
+    if (!number) continue;
+    if (log.status === 'sent') {
+      if (!lastSent.has(number)) lastSent.set(number, log.createdAt.toISOString());
+    } else if (log.status === 'handed-off' && !lastSent.has(number) && !lastOpened.has(number)) {
+      lastOpened.set(number, log.createdAt.toISOString());
+    }
   }
 
   const rows: QueueRow[] = data.invoices
@@ -65,6 +72,7 @@ export default async function WhatsAppQueuePage() {
       dueDate: i.dueDate.toISOString(),
       urgency: chargeUrgency(i.dueDate, i.status),
       lastSentAt: lastSent.get(i.number) ?? null,
+      lastOpenedAt: lastOpened.get(i.number) ?? null,
     }))
     .filter((r) => r.balance > 0);
 

@@ -13,8 +13,10 @@ import { NextResponse } from 'next/server';
 // lembrete por e-mail) com o Pix copia e cola na chave da loja e o QR; quem envia é o
 // Tesoureiro, pelo wa.me. No Modo Asaas o próprio Asaas tem link público e notifica o cliente.
 //  GET  → mensagem pronta + Pix + QR + celular normalizado.
-//  POST → registra no MessageLog que a mensagem foi entregue ao WhatsApp (não dá para saber
-//         se ele apertou Enviar — por isso status "handed-off").
+//  POST  → registra no MessageLog que a mensagem foi aberta no WhatsApp (status "handed-off":
+//          o wa.me não devolve nada, não dá para saber se ele apertou Enviar).
+//  PATCH → confirmação do próprio Tesoureiro ao voltar: "Sim, enviei" → "sent";
+//          "Não enviei" → apaga o registro (nada saiu). Sem resposta, fica "handed-off".
 
 const MAX_TEXT = 4000;
 
@@ -109,7 +111,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const body = await request.json().catch(() => ({}));
   const text = typeof body?.text === 'string' ? body.text.slice(0, MAX_TEXT) : '';
 
-  await withTenant(g.lodgeId, (db) => db.messageLog.create({
+  const log = await withTenant(g.lodgeId, (db) => db.messageLog.create({
+    select: { id: true },
     data: {
       lodgeId: g.lodgeId,
       memberId: c.member.id,
@@ -119,5 +122,31 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       status: 'handed-off',
     },
   }));
-  return NextResponse.json({ success: true, sentAt: new Date().toISOString() });
+  return NextResponse.json({ success: true, logId: log.id });
+}
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const g = await guard();
+  if (!g.ok) return g.res;
+  const { id } = await params;
+  const body = await request.json().catch(() => ({}));
+  const logId = typeof body?.logId === 'string' ? body.logId : '';
+  if (!logId || typeof body?.sent !== 'boolean') return NextResponse.json({ error: 'Informe o registro e se a mensagem foi enviada.' }, { status: 400 });
+
+  const result = await withTenant(g.lodgeId, async (db) => {
+    const invoice = await db.invoice.findFirst({ where: { id, lodgeId: g.lodgeId }, select: { number: true } });
+    if (!invoice) return 'not-found' as const;
+    // Só o registro "aberto" desta cobrança — não deixa confirmar/apagar outra mensagem da loja.
+    const log = await db.messageLog.findFirst({
+      where: { id: logId, lodgeId: g.lodgeId, channel: WHATSAPP_MANUAL_CHANNEL, title: whatsAppLogTitle(invoice.number), status: 'handed-off' },
+      select: { id: true },
+    });
+    if (!log) return 'not-found' as const;
+    if (body.sent) await db.messageLog.update({ where: { id: log.id }, data: { status: 'sent' } });
+    else await db.messageLog.delete({ where: { id: log.id } });
+    return 'ok' as const;
+  });
+
+  if (result === 'not-found') return NextResponse.json({ error: 'Registro de envio não encontrado.' }, { status: 404 });
+  return NextResponse.json({ success: true });
 }

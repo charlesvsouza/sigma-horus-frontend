@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, EmptyState, inputClass } from '@/components/ui';
-import { fetchWhatsAppShare, WhatsAppSendDialog, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
+import { fetchWhatsAppShare, WhatsAppSendDialog, type WhatsAppSendEvent, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
 import type { ChargeUrgency } from '@/lib/charge-notice';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
@@ -18,7 +18,10 @@ export interface QueueRow {
   balance: number;
   dueDate: string;
   urgency: ChargeUrgency;
+  /** Último envio confirmado pelo Tesoureiro ("Sim, enviei"). */
   lastSentAt: string | null;
+  /** Aberto no WhatsApp depois do último envio, sem confirmação. */
+  lastOpenedAt: string | null;
 }
 
 type Filter = 'all' | 'dueSoon' | 'overdue';
@@ -43,10 +46,15 @@ export default function WhatsAppQueueClient({ rows, hasPixKey }: { rows: QueueRo
   const [share, setShare] = useState<WhatsAppShare | null>(null);
   const [loadingId, setLoadingId] = useState('');
   const [error, setError] = useState('');
-  // Marcação imediata ao abrir o WhatsApp (o router.refresh traz a data do servidor em seguida).
-  const [sentNow, setSentNow] = useState<Record<string, string>>({});
+  // Marcação imediata (o router.refresh traz as datas do servidor em seguida).
+  const [local, setLocal] = useState<Record<string, { sentAt?: string; openedAt?: string | null }>>({});
 
-  const withSent = rows.map((r) => ({ ...r, lastSentAt: sentNow[r.id] ?? r.lastSentAt }));
+  const withSent = rows.map((r) => {
+    const l = local[r.id];
+    if (!l) return r;
+    if (l.sentAt) return { ...r, lastSentAt: l.sentAt, lastOpenedAt: null };
+    return { ...r, lastOpenedAt: l.openedAt ?? null };
+  });
   const count = (f: Filter) => withSent.filter((r) => f === 'all' || r.urgency === f).length;
   const q = search.trim().toLowerCase();
   const visible = withSent
@@ -65,8 +73,12 @@ export default function WhatsAppQueueClient({ rows, hasPixKey }: { rows: QueueRo
     else setError(result.error);
   }
 
-  function markSent(id: string) {
-    setSentNow((prev) => ({ ...prev, [id]: new Date().toISOString() }));
+  function onChange(id: string, event: WhatsAppSendEvent) {
+    const now = new Date().toISOString();
+    setLocal((prev) => ({
+      ...prev,
+      [id]: event === 'sent' ? { sentAt: now } : event === 'opened' ? { ...prev[id], openedAt: now } : { ...prev[id], openedAt: null },
+    }));
     router.refresh();
   }
 
@@ -77,7 +89,7 @@ export default function WhatsAppQueueClient({ rows, hasPixKey }: { rows: QueueRo
           <h1 className="font-display text-2xl font-bold text-sand-light">Envio pelo WhatsApp</h1>
           <p className="mt-1 max-w-3xl text-sm text-sand-dark">
             Cobranças em aberto, irmão por irmão. &quot;Enviar&quot; abre a conversa no WhatsApp com a mensagem e o Pix copia e cola prontos — você só aperta Enviar,
-            do seu número. O Pix cai direto na conta da loja; a baixa continua em Pagamentos.
+            do seu número. Ao voltar, confirme o envio: só as confirmadas saem da lista. O Pix cai direto na conta da loja; a baixa continua em Pagamentos.
           </p>
           <Link href="/dashboard/cobrancas" className="mt-2 inline-block text-xs text-gold transition hover:text-gold-light">← Voltar para Cobranças</Link>
         </div>
@@ -144,7 +156,11 @@ export default function WhatsAppQueueClient({ rows, hasPixKey }: { rows: QueueRo
                           {formatDateOnly(r.dueDate)}
                           {r.urgency === 'overdue' ? ' · vencida' : r.urgency === 'dueSoon' ? ' · a vencer' : ''}
                         </td>
-                        <td className="py-3 pr-3 text-xs text-sand-dark">{r.lastSentAt ? sentLabel(r.lastSentAt) : '—'}</td>
+                        <td className="py-3 pr-3 text-xs text-sand-dark">
+                          {r.lastSentAt ? <span className="block">Enviada {sentLabel(r.lastSentAt)}</span> : null}
+                          {r.lastOpenedAt ? <span className="block text-amber-300">Aberta {sentLabel(r.lastOpenedAt)}, não confirmada</span> : null}
+                          {!r.lastSentAt && !r.lastOpenedAt ? '—' : null}
+                        </td>
                         <td className="py-3 text-right">
                           <button
                             type="button"
@@ -164,7 +180,7 @@ export default function WhatsAppQueueClient({ rows, hasPixKey }: { rows: QueueRo
           </div>
         </section>
       </div>
-      {share ? <WhatsAppSendDialog key={share.invoiceId} share={share} onClose={() => setShare(null)} onSent={markSent} /> : null}
+      {share ? <WhatsAppSendDialog key={share.invoiceId} share={share} onClose={() => setShare(null)} onChange={onChange} /> : null}
     </main>
   );
 }
