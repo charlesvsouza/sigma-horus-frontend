@@ -63,3 +63,14 @@ test('linha liquidada: referência pelo vencimento da conta, não pela data do p
   assert.equal(r.rows[0].detail, null);
   assert.equal(buildAccountsReport(r.rows.length ? [{ id: 'p1', date: new Date('2026-07-10'), personId: null, personName: null, description: 'Mensalidades', category: 'Mensalidades', amount: 1, dueDate: new Date('2026-05-05T00:00:00Z') }] : [], { from: new Date('2026-07-01'), to: new Date('2026-07-31'), text: 'maio' }).rows.length, 1);
 });
+
+test('ordena pelo mês de referência, depois nome, depois data (não pela data do pagamento)', () => {
+  const d = (s: string) => new Date(s);
+  const r = buildAccountsReport([
+    { id: 'jun-bruno', date: d('2026-06-10'), personId: 'm2', personName: 'Bruno', description: 'Mensalidades', category: 'Mensalidades', amount: 1, dueDate: d('2026-06-05T00:00:00Z') },
+    { id: 'mai-carlos', date: d('2026-07-02'), personId: 'm3', personName: 'Carlos', description: 'Mensalidades', category: 'Mensalidades', amount: 1, dueDate: d('2026-05-05T00:00:00Z') },
+    { id: 'jun-ana', date: d('2026-06-20'), personId: 'm1', personName: 'Ana', description: 'Mensalidades', category: 'Mensalidades', amount: 1, dueDate: d('2026-06-05T00:00:00Z') },
+    { id: 'mai-alvaro', date: d('2026-05-06'), personId: 'm4', personName: 'Álvaro', description: 'Mensalidades', category: 'Mensalidades', amount: 1, dueDate: d('2026-05-05T00:00:00Z') },
+  ], { from: d('2026-01-01'), to: d('2026-12-31') });
+  assert.deepEqual(r.rows.map((x) => x.id), ['mai-alvaro', 'mai-carlos', 'jun-ana', 'jun-bruno']);
+});

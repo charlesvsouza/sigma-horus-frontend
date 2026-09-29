@@ -33,6 +33,12 @@ export function referenceLabel(dueDate: Date | null | undefined): string | null 
   return `${MONTHS[dueDate.getUTCMonth()]}/${dueDate.getUTCFullYear()}`;
 }
 
+/** Mês de referência como número ordenável (ano*12 + mês); sem vencimento, o mês da própria data. */
+function refMonth(r: AccountReportRowInput): number {
+  const d = r.dueDate && !Number.isNaN(r.dueDate.getTime()) ? r.dueDate : r.date;
+  return d.getUTCFullYear() * 12 + d.getUTCMonth();
+}
+
 /** Minúsculas, sem acento. */
 function plain(s: string): string {
   return s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
@@ -77,7 +83,10 @@ export function buildAccountsReport(rows: AccountReportRowInput[], filters: Acco
     .filter((r) => !text || r.description.toLowerCase().includes(text) || (r.category ?? '').toLowerCase().includes(text) || (referenceLabel(r.dueDate) ?? '').includes(text))
     .filter((r) => filters.amountMin == null || r.amount >= filters.amountMin)
     .filter((r) => filters.amountMax == null || r.amount <= filters.amountMax)
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Pelo mês de referência (vencimento), depois o nome e a data: cada mês fica agrupado, em ordem alfabética.
+    .sort((a, b) => refMonth(a) - refMonth(b)
+      || (a.personName ?? '').localeCompare(b.personName ?? '', 'pt-BR')
+      || a.date.getTime() - b.date.getTime());
 
   const out = filtered.map(({ dueDate, ...r }) => ({
     ...r,
