@@ -9,6 +9,7 @@ import { degreesLabel } from '@/lib/session-convocation';
 import { Alert, Button, Field, inputClass, useConfirm } from '@/components/ui';
 import { SessionDegreePicker } from '@/components/session-degree-picker';
 import { ConvocationPanel } from './ConvocationPanel';
+import { VisitorsPanel, type SessionVisit } from './VisitorsPanel';
 
 interface Member { id: string; name: string; }
 interface SessionInfo {
@@ -23,11 +24,13 @@ const fmtDateTime = (iso: string) => new Date(iso).toLocaleString('pt-BR', { dat
 export default function SessionDetailClient({
   session,
   members,
+  visits,
   initialAttendance,
   role,
 }: {
   session: SessionInfo;
   members: Member[];
+  visits: SessionVisit[];
   initialAttendance: Record<string, string>;
   role: string;
 }) {
@@ -265,6 +268,9 @@ export default function SessionDetailClient({
           <div className="mt-4 flex flex-wrap gap-3">
             <Link href={`/dashboard/sessoes/${session.id}/livro`} className="inline-flex items-center rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition hover:border-gold/60 hover:text-gold">Livro de presença</Link>
             <Link href={`/dashboard/sessoes/${session.id}/lista-visitantes`} className="inline-flex items-center rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition hover:border-gold/60 hover:text-gold">Lista de visitantes (em branco)</Link>
+            {visits.length > 0 ? (
+              <Link href={`/dashboard/sessoes/${session.id}/lista-visitantes?preenchida=1`} className="inline-flex items-center rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition hover:border-gold/60 hover:text-gold">Lista de visitantes (preenchida, para arquivo)</Link>
+            ) : null}
           </div>
         </section>
 
@@ -287,6 +293,10 @@ export default function SessionDetailClient({
               {agendaDirty ? <span className="text-xs text-amber-300">Alterações não salvas.</span> : null}
             </div>
           </div>
+        </section>
+
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
+          <VisitorsPanel sessionId={session.id} visits={visits} />
         </section>
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">

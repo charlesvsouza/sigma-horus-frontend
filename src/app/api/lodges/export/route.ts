@@ -64,6 +64,7 @@ export async function GET() {
     const [
       financialAccounts, accountTransfers, counterparties, hospitalityRequests,
       materials, materialLoans, materialIncidents, venerableGalleryEntries,
+      visitors, sessionVisitors,
     ] = await Promise.all([
       db.financialAccount.findMany({ where: { lodgeId: id } }),
       db.accountTransfer.findMany({ where: { lodgeId: id } }),
@@ -73,6 +74,8 @@ export async function GET() {
       db.materialLoan.findMany({ where: { lodgeId: id } }),
       db.materialIncident.findMany({ where: { lodgeId: id } }),
       db.venerableGalleryEntry.findMany({ where: { lodgeId: id } }),
+      db.visitor.findMany({ where: { lodgeId: id } }),
+      db.sessionVisitor.findMany({ where: { lodgeId: id } }),
     ]);
 
     // Remove os campos de credenciais/segredos criptografados — sem valor pro
@@ -95,6 +98,7 @@ export async function GET() {
         campaigns, campaignDonations, rolePermissions, subscription, auditLogs,
         financialAccounts, accountTransfers, counterparties, hospitalityRequests,
         materials, materialLoans, materialIncidents, venerableGalleryEntries,
+        visitors, sessionVisitors,
       },
     };
   }, { timeoutMs: 45_000 });

@@ -1,6 +1,6 @@
 # Livro de presença, visitantes e certificado de presença — análise e plano
 
-> Status: **em execução** (retomado em 2026-09-29). **Fase 1 concluída** (livro de presença e lista de visitantes em branco: `sessoes/[id]/livro`, `sessoes/[id]/lista-visitantes`, `lib/attendance-book.ts`, `lib/session-sheets-server.ts`). Próxima: fase 2 (cadastro de visitantes).
+> Status: **em execução** (retomado em 2026-09-29). **Fase 1 concluída** (livro de presença e lista de visitantes em branco: `sessoes/[id]/livro`, `sessoes/[id]/lista-visitantes`, `lib/attendance-book.ts`, `lib/session-sheets-server.ts`). **Fase 2 concluída** (migration `20260929220000_add_visitors`: `Visitor`, `SessionVisitor` com RLS e campos do certificado; `api/visitors`, `api/sessions/[id]/visitors`; painel na sessão com sugestão de cadastro; lista preenchida; Secretaria → Visitantes com histórico, edição e exclusão LGPD). Próxima: fase 3 (certificado).
 >
 > **Decisões do dono (2026-09-29):**
 > 1. Diploma: modelos prontos agora (Clássico e Pergaminho), arte própria da loja depois (fase 4).

@@ -119,6 +119,8 @@ model Lodge {
   campaigns     Campaign[]
   campaignDonations CampaignDonation[]
   counterparties Counterparty[]
+  visitors       Visitor[]
+  sessionVisitors SessionVisitor[]
   hospitalityRequests HospitalityRequest[]
   financialAccounts FinancialAccount[]
   accountTransfers  AccountTransfer[]
@@ -734,7 +736,56 @@ model Session {
   lodge      Lodge       @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   attendances Attendance[]
   accounts   Account[]
+  visitors   SessionVisitor[]
   @@index([lodgeId, date])
+}
+
+// Irmão visitante (de outra loja). Cadastro reaproveitável: o mesmo irmão que volta é só
+// ligado à nova sessão. Dados pessoais de não membro (LGPD): coletados com consentimento na
+// lista de presença, usados só para o certificado; "excluir" anonimiza e mantém as visitas.
+model Visitor {
+  id          String    @id @default(cuid())
+  lodgeId     String
+  name        String
+  degree      String?   // Aprendiz | Companheiro | Mestre | Mestre Instalado (ou grau filosófico)
+  lodgeName   String?   // loja do visitante
+  lodgeNumber String?
+  orient      String?   // Oriente (cidade) da loja do visitante
+  powerName   String?   // Potência da loja do visitante
+  cim         String?
+  phone       String?
+  email       String?
+  consentAt   DateTime? // autorizou o envio do certificado (consentimento na lista)
+  anonymizedAt DateTime? // dados pessoais apagados a pedido (LGPD)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  lodge  Lodge            @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  visits SessionVisitor[]
+  @@index([lodgeId, name])
+  @@index([lodgeId, email])
+}
+
+// Visita de um irmão a uma sessão. Os campos de certificado são preenchidos na emissão
+// (numeração por loja/ano e código de verificação pública).
+model SessionVisitor {
+  id                String    @id @default(cuid())
+  lodgeId           String
+  sessionId         String
+  visitorId         String
+  degreeAtVisit     String?   // grau em que ele esteve (pode ter sido elevado desde a última visita)
+  certificateNumber String?
+  certificateCode   String?   @unique
+  certificateSentAt DateTime?
+  certificateStatus String?   // sent | failed
+  createdAt         DateTime  @default(now())
+
+  lodge   Lodge   @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  visitor Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  @@unique([sessionId, visitorId])
+  @@index([lodgeId])
+  @@index([visitorId])
 }
 
 // Pedido leve do obreiro à Hospitalaria (proposta de campanha ou solicitação

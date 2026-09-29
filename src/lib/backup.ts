@@ -33,6 +33,8 @@ export const BACKUP_MODELS = [
   'materialIncident',
   'venerableGalleryEntry',
   'session',
+  'visitor',
+  'sessionVisitor', // depois de session e visitor
   'chartAccount',
   'account',
   'materialLoan', // depois de account: a venda aponta para a conta a receber

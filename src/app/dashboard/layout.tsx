@@ -65,6 +65,7 @@ const NAV: NavGroupDef[] = [
           { href: '/dashboard/veneralato', label: 'Veneralato', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/sessoes', label: 'Sessões', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/sessoes/frequencia', label: 'Frequência às sessões', roles: ['admin', 'venerable', 'secretary'] },
+          { href: '/dashboard/visitantes', label: 'Visitantes', roles: ['admin', 'venerable', 'secretary'] },
         ],
       },
       {

@@ -17,14 +17,23 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
           where: { id, lodgeId: String(lodgeId) },
           include: { attendances: { include: { member: { select: { id: true, name: true } } } } },
         });
+        // Visitantes da sessão (lista digitada pela Secretaria), na ordem em que foram incluídos.
+        const visits = await db.sessionVisitor.findMany({
+          where: { lodgeId: String(lodgeId), sessionId: id },
+          select: {
+            id: true, visitorId: true, degreeAtVisit: true, certificateSentAt: true,
+            visitor: { select: { name: true, degree: true, lodgeName: true, lodgeNumber: true, orient: true, powerName: true, email: true, phone: true, anonymizedAt: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        });
         const members = await db.member.findMany({
           where: { lodgeId: String(lodgeId) },
           select: { id: true, name: true },
           orderBy: { name: 'asc' },
         });
-        return { item, members };
+        return { item, members, visits };
       })
-    : { item: null, members: [] };
+    : { item: null, members: [], visits: [] };
 
   if (!data.item) {
     return (
@@ -56,6 +65,20 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         lockedAt: data.item.lockedAt ? data.item.lockedAt.toISOString() : null,
       }}
       members={data.members}
+      visits={data.visits.map((v) => ({
+        visitId: v.id,
+        visitorId: v.visitorId,
+        name: v.visitor.name,
+        degree: v.degreeAtVisit ?? v.visitor.degree,
+        lodgeName: v.visitor.lodgeName,
+        lodgeNumber: v.visitor.lodgeNumber,
+        orient: v.visitor.orient,
+        powerName: v.visitor.powerName,
+        email: v.visitor.email,
+        phone: v.visitor.phone,
+        anonymized: Boolean(v.visitor.anonymizedAt),
+        certificateSentAt: v.certificateSentAt ? v.certificateSentAt.toISOString() : null,
+      }))}
       initialAttendance={initialAttendance}
       role={role}
     />

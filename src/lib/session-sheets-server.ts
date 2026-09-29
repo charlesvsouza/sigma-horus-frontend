@@ -21,11 +21,17 @@ export interface SessionScope {
   agenda: string | null;
 }
 
+export interface VisitorSheetRow {
+  name: string; degree: string; lodgeName: string; lodgeNumber: string; orient: string; powerName: string; cim: string; phone: string; email: string;
+}
+
 export interface SessionSheetData {
   letterhead: Letterhead;
   scope: SessionScope;
   signatures: Signatory[];
   rows: BookRow[];
+  /** Visitantes já digitados (lista preenchida, para arquivo). */
+  visitors: VisitorSheetRow[];
 }
 
 export async function loadSessionSheet(lodgeId: string, sessionId: string): Promise<SessionSheetData | null> {
@@ -35,7 +41,7 @@ export async function loadSessionSheet(lodgeId: string, sessionId: string): Prom
   const ids = convocation.recipients.map((r) => r.id);
 
   const data = await withTenant(lodgeId, async (db) => {
-    const [letterhead, signatures, term, members] = await Promise.all([
+    const [letterhead, signatures, term, members, visits] = await Promise.all([
       getLetterhead(db, lodgeId),
       getReportSignatories(db, lodgeId, { at: meeting.date, by: 'secretary' }),
       db.term.findFirst({
@@ -47,6 +53,11 @@ export async function loadSessionSheet(lodgeId: string, sessionId: string): Prom
         where: { lodgeId, id: { in: ids } },
         select: { id: true, name: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
       }),
+      db.sessionVisitor.findMany({
+        where: { lodgeId, sessionId },
+        select: { degreeAtVisit: true, visitor: { select: { name: true, degree: true, lodgeName: true, lodgeNumber: true, orient: true, powerName: true, cim: true, phone: true, email: true } } },
+        orderBy: { createdAt: 'asc' },
+      }),
     ]);
     // Cargos no veneralato que cobre a data da sessão (sem período cadastrado, ninguém vai ao topo).
     const holders = term
@@ -55,7 +66,7 @@ export async function loadSessionSheet(lodgeId: string, sessionId: string): Prom
           select: { memberId: true, office: { select: { name: true, order: true } } },
         })
       : [];
-    return { letterhead, signatures, members, holders };
+    return { letterhead, signatures, members, holders, visits };
   });
 
   const rows = attendanceBookRows(
@@ -71,6 +82,10 @@ export async function loadSessionSheet(lodgeId: string, sessionId: string): Prom
     letterhead: data.letterhead,
     signatures: data.signatures,
     rows,
+    visitors: data.visits.map(({ degreeAtVisit, visitor: v }) => ({
+      name: v.name, degree: degreeAtVisit ?? v.degree ?? '', lodgeName: v.lodgeName ?? '', lodgeNumber: v.lodgeNumber ?? '',
+      orient: v.orient ?? '', powerName: v.powerName ?? '', cim: v.cim ?? '', phone: v.phone ?? '', email: v.email ?? '',
+    })),
     scope: {
       title: meeting.title,
       typeLabel: SESSION_TYPE_LABEL[meeting.type] ?? meeting.type,

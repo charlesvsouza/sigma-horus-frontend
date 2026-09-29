@@ -4,8 +4,10 @@ import { loadSessionSheet } from '@/lib/session-sheets-server';
 import SessionSheetClient from '../SessionSheetClient';
 
 // Lista de presença de visitantes (em branco) para os irmãos visitantes preencherem na sessão.
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+// `?preenchida=1`: a mesma folha com os visitantes já digitados na sessão (para arquivo).
+export default async function Page({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ preenchida?: string }> }) {
   const { id } = await params;
+  const filled = (await searchParams).preenchida === '1';
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
   const denied = (text: string) => (
@@ -19,5 +21,5 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   const data = await loadSessionSheet(lodgeId, id);
   if (!data) return denied('Sessão não encontrada.');
-  return <SessionSheetClient kind="visitors" sessionId={id} data={data} issuedBy={session?.user?.name ?? null} />;
+  return <SessionSheetClient kind="visitors" sessionId={id} data={data} issuedBy={session?.user?.name ?? null} filled={filled} />;
 }
