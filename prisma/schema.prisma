@@ -48,6 +48,9 @@ model Lodge {
   // valor lançado; usado no relatório de inadimplência e na renegociação).
   lateFeePercent           Float? // multa única, ex.: 2 = 2%
   lateInterestPercentMonth Float? // juros ao mês, pro-rata por dia, ex.: 1 = 1%/mês
+  // Modo Loja: cobrar a multa/juros acima no Pix de cobrança vencida (portal e WhatsApp). Desligado,
+  // os percentuais seguem só informativos. O acréscimo recebido é lançado em 1.2.06 (lib/late-charge).
+  chargeLateFeesOnPix      Boolean @default(false)
   // Emite automaticamente o balancete do mês anterior no dia 1 (cron mensal).
   autoBalanceteEnabled     Boolean @default(false)
   // Aplica a régua automática do Art. 002 (afastamento por mensalidade em

@@ -3,7 +3,9 @@ import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels
 import { channelsAvailable, dispatch, sleep, DISPATCH_THROTTLE_MS, type Channel, type LodgeChannels } from '@/lib/messaging';
 import { TENURE_MILESTONES } from '@/lib/masonic-degree';
 import { CHARGE_NOTICE_SIGNOFF, chargeNoticeLead, chargeNoticeTitle } from '@/lib/charge-notice';
-import { payHint } from '@/lib/collection';
+import { isAsaasMode, payHint } from '@/lib/collection';
+import { brl } from '@/lib/currency';
+import { lateChargeConfig, lateChargeSentence, pixAmount } from '@/lib/late-charge';
 
 // Gatilhos automáticos diários (Fase 7): aniversariantes (obreiro + família),
 // jubileus (iniciação/elevação/exaltação — tempo de mestre) e lembretes de
@@ -79,6 +81,7 @@ export async function runDailyNotifications(): Promise<Stats> {
       notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
       notifyFoundationAnniversaryEnabled: true,
       collectionMode: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true,
+      chargeLateFeesOnPix: true, lateFeePercent: true, lateInterestPercentMonth: true,
     },
   });
 
@@ -180,7 +183,9 @@ export async function runDailyNotifications(): Promise<Stats> {
         if (overdue) stats.overdue++; else stats.dueSoon++;
         const title = chargeNoticeTitle(overdue);
         const lead = chargeNoticeLead({ memberName: inv.member.name, number: inv.number, amount: inv.amount, dueDate: inv.dueDate, overdue });
-        const body = `${lead}${payHint(lodge, inv)} ${CHARGE_NOTICE_SIGNOFF}`;
+        // Modo Loja cobrando multa e juros no Pix: o aviso de vencida já traz o valor atualizado.
+        const late = overdue && !isAsaasMode(lodge) ? lateChargeSentence(pixAmount(inv.amount, inv.dueDate, lateChargeConfig(lodge)), brl) : null;
+        const body = `${lead}${late ? ` ${late}` : ''}${payHint(lodge, inv)} ${CHARGE_NOTICE_SIGNOFF}`;
         for (const channel of list) {
           await notify(lodge.id, [channel], lodgeChannels, inv.member.id, contactFor(channel, inv.member.email, inv.member.phone), title, body);
         }

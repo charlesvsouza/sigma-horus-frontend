@@ -2,6 +2,8 @@ import QRCode from 'qrcode';
 import { auth } from '@/lib/auth';
 import { chargeUrgency, invoiceOpenBalance, whatsAppChargeMessage } from '@/lib/charge-notice';
 import { isAsaasMode, paymentInstructions } from '@/lib/collection';
+import { brl } from '@/lib/currency';
+import { lateChargeConfig, lateChargeSentence, pixAmount } from '@/lib/late-charge';
 import { buildPixPayload } from '@/lib/pix';
 import { CLOSED_INVOICE_STATUSES } from '@/lib/portal-invoice';
 import { withTenant } from '@/lib/prisma';
@@ -41,7 +43,10 @@ async function loadInvoice(lodgeId: string, id: string) {
     });
     const lodge = await db.lodge.findUnique({
       where: { id: lodgeId },
-      select: { name: true, tradeName: true, city: true, collectionMode: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true },
+      select: {
+        name: true, tradeName: true, city: true, collectionMode: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true,
+        chargeLateFeesOnPix: true, lateFeePercent: true, lateInterestPercentMonth: true,
+      },
     });
     return { invoice, lodge };
   });
@@ -68,9 +73,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!c.ok) return c.res;
   const { invoice, member, lodge, balance } = c;
 
+  // Valor do Pix: saldo e, se a loja cobra, multa e juros até hoje.
+  const pix = pixAmount(balance, invoice.dueDate, lateChargeConfig(lodge));
   // Identificador = número da cobrança (único por cobrança). Se aparece no extrato depende do banco.
   const pixCopyPaste = lodge.pixKey?.trim()
-    ? buildPixPayload({ key: lodge.pixKey, name: lodge.tradeName || lodge.name, city: lodge.city, amount: balance, txid: invoice.number })
+    ? buildPixPayload({ key: lodge.pixKey, name: lodge.tradeName || lodge.name, city: lodge.city, amount: pix.total, txid: invoice.number })
     : null;
   const qrDataUrl = pixCopyPaste ? await QRCode.toDataURL(pixCopyPaste, { margin: 1, width: 320, errorCorrectionLevel: 'M' }) : null;
   const instructions = paymentInstructions(lodge);
@@ -84,6 +91,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     overdue,
     pixCopyPaste,
     instructions,
+    lateChargeSentence: lateChargeSentence(pix, brl),
   });
 
   return NextResponse.json({
@@ -92,7 +100,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     memberName: member.name,
     phone: normalizeWhatsAppPhone(member.phone),
     rawPhone: member.phone ?? null,
-    amount: balance,
+    amount: pix.total,
+    principal: pix.principal,
+    lateCharge: pix.extra,
     overdue,
     text,
     pixCopyPaste,

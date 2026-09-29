@@ -35,7 +35,7 @@ export interface WhatsAppShare {
 
 interface InvoiceShareResponse {
   invoiceId: string; number: string; memberName: string; phone: string | null; rawPhone: string | null;
-  amount: number; overdue: boolean; text: string; pixCopyPaste: string | null; qrDataUrl: string | null; hasPixKey: boolean;
+  amount: number; principal?: number; lateCharge?: number; overdue: boolean; text: string; pixCopyPaste: string | null; qrDataUrl: string | null; hasPixKey: boolean;
 }
 
 export async function fetchWhatsAppShare(invoiceId: string): Promise<{ ok: true; share: WhatsAppShare } | { ok: false; error: string }> {
@@ -51,7 +51,9 @@ export async function fetchWhatsAppShare(invoiceId: string): Promise<{ ok: true;
       recipientName: d.memberName,
       phone: d.phone,
       rawPhone: d.rawPhone,
-      details: `${d.number} · saldo em aberto ${brl(d.amount)}${d.overdue ? ' · vencida' : ''}`,
+      details: d.lateCharge && d.lateCharge > 0
+        ? `${d.number} · vencida · ${brl(d.principal ?? d.amount)} + ${brl(d.lateCharge)} de multa e juros = ${brl(d.amount)}`
+        : `${d.number} · saldo em aberto ${brl(d.amount)}${d.overdue ? ' · vencida' : ''}`,
       text: d.text,
       itemNoun: 'a cobrança',
       endpoint: `/api/invoices/${d.invoiceId}/whatsapp`,

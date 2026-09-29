@@ -26,7 +26,7 @@ export async function GET() {
         bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
         riteName: true, powerName: true, openingFormula: true, foundationDate: true, sessionWeekdays: true, sessionFrequency: true,
         expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
-        autoBalanceteEnabled: true, art002Enabled: true,
+        autoBalanceteEnabled: true, art002Enabled: true, chargeLateFeesOnPix: true,
         notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
         notifyFoundationAnniversaryEnabled: true,
       },
@@ -58,6 +58,9 @@ export async function PUT(request: Request) {
   const data: Record<string, string | number | boolean | null> = {};
   if ('autoBalanceteEnabled' in body) {
     data.autoBalanceteEnabled = String(body.autoBalanceteEnabled) === 'true';
+  }
+  if ('chargeLateFeesOnPix' in body) {
+    data.chargeLateFeesOnPix = String(body.chargeLateFeesOnPix) === 'true';
   }
   if ('art002Enabled' in body) {
     data.art002Enabled = String(body.art002Enabled) === 'true';

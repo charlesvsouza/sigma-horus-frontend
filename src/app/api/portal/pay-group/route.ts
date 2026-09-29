@@ -6,6 +6,7 @@ import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { emitGroupCharge } from '@/lib/asaas-group-server';
 import { isAsaasMode, paymentInstructions } from '@/lib/collection';
 import { round2, sumMoney } from '@/lib/money';
+import { lateChargeConfig, pixAmount } from '@/lib/late-charge';
 import { buildPixPayload } from '@/lib/pix';
 import { canPay, openBalance, PORTAL_WRITE_DENIED } from '@/lib/portal-dues';
 import { CLOSED_INVOICE_STATUSES, ensureOpenInvoice } from '@/lib/portal-invoice';
@@ -48,7 +49,10 @@ export async function POST(request: Request) {
     }),
     lodge: await db.lodge.findUnique({
       where: { id: lodgeId },
-      select: { name: true, tradeName: true, city: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true, collectionMode: true, asaasApiKeyEnc: true, asaasEnv: true },
+      select: {
+        name: true, tradeName: true, city: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true, collectionMode: true, asaasApiKeyEnc: true, asaasEnv: true,
+        chargeLateFeesOnPix: true, lateFeePercent: true, lateInterestPercentMonth: true,
+      },
     }),
   }));
   const { accounts, lodge } = ctx;
@@ -65,9 +69,14 @@ export async function POST(request: Request) {
     if (!lodge.pixKey?.trim()) {
       return NextResponse.json({ error: 'A loja ainda não cadastrou a chave Pix. Fale com a Tesouraria para saber como pagar.' }, { status: 409 });
     }
-    const pixCopyPaste = buildPixPayload({ key: lodge.pixKey, name: lodge.tradeName || lodge.name, city: lodge.city, amount: total, txid: items[0].account.id });
+    // Multa e juros (se a loja cobra) de cada conta vencida, somados no mesmo Pix.
+    const cfg = lateChargeConfig(lodge);
+    const parts = items.map((i) => pixAmount(i.balance, i.account.dueDate, cfg));
+    const lateCharge = sumMoney(parts.map((p) => p.extra));
+    const pixTotal = sumMoney(parts.map((p) => p.total));
+    const pixCopyPaste = buildPixPayload({ key: lodge.pixKey, name: lodge.tradeName || lodge.name, city: lodge.city, amount: pixTotal, txid: items[0].account.id });
     const qrImage = await QRCode.toDataURL(pixCopyPaste, { margin: 1, width: 280, errorCorrectionLevel: 'M' });
-    return NextResponse.json({ mode: 'lodge', amount: total, pixCopyPaste, qrImage, instructions: paymentInstructions(lodge), accountIds });
+    return NextResponse.json({ mode: 'lodge', amount: pixTotal, principal: total, lateCharge, pixCopyPaste, qrImage, instructions: paymentInstructions(lodge), accountIds });
   }
 
   // ── Modo Asaas ───────────────────────────────────────────────────────────

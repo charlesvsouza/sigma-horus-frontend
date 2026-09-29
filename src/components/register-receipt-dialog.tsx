@@ -21,7 +21,7 @@ export interface ReceiptContext {
   existing: { at: string; byStaff: string | null; hasReceipt: boolean } | null;
 }
 
-interface ReceiptCheck { status: 'conferido' | 'divergente' | 'ilegivel'; txid: boolean; amount: boolean; payee: boolean; e2e: string | null; paidAt: string | null }
+interface ReceiptCheck { status: 'conferido' | 'divergente' | 'ilegivel'; txid: boolean; amount: boolean; payee: boolean; e2e: string | null; paidAt: string | null; amountPaid?: number | null }
 
 export async function fetchReceiptContext(invoiceId: string): Promise<{ ok: true; ctx: ReceiptContext } | { ok: false; error: string }> {
   const res = await fetch(`/api/invoices/${invoiceId}/receipt`);
@@ -91,10 +91,10 @@ export function RegisterReceiptDialog({ ctx, onClose, onDone }: { ctx: ReceiptCo
 
         {result ? (
           <div className="mt-5 space-y-4">
-            <ResultMessage result={result} />
+            <ResultMessage result={result} balance={ctx.balance} />
             <p className="text-xs text-sand-dark">
               O aviso está em <strong>Pagamentos → Avisos de pagamento dos irmãos</strong>, com a data de hoje e a marca de que foi registrado pela Tesouraria.
-              A baixa continua sendo sua: confira o crédito no extrato.{notifyMember ? ' O irmão recebeu um e-mail de confirmação do recebimento.' : ''}
+              A baixa continua sendo sua: confira o crédito no extrato.{notifyMember ? ' O irmão recebeu o e-mail de comprovante recebido e analisado.' : ''}
             </p>
             <div className="flex flex-wrap justify-end gap-2">
               <Link href="/dashboard/pagamentos" className="inline-flex items-center rounded-full border border-white/10 bg-sigma-blue-mid/30 px-5 py-2.5 text-sm text-sand-light transition hover:bg-sigma-blue-mid/50">Abrir Pagamentos</Link>
@@ -135,7 +135,7 @@ export function RegisterReceiptDialog({ ctx, onClose, onDone }: { ctx: ReceiptCo
 
             <label className={`flex items-center gap-2 text-sm ${ctx.memberHasEmail ? 'text-sand' : 'text-sand-dark/60'}`}>
               <input type="checkbox" checked={notifyMember} onChange={(e) => setNotifyMember(e.target.checked)} disabled={!ctx.memberHasEmail} className="accent-gold" />
-              Avisar o irmão por e-mail que o comprovante foi recebido{ctx.memberHasEmail ? '' : ' (sem e-mail no cadastro)'}
+              Enviar ao irmão o e-mail de comprovante recebido e analisado{ctx.memberHasEmail ? '' : ' (sem e-mail no cadastro)'}
             </label>
 
             {error ? <Alert intent="danger">{error}</Alert> : null}
@@ -151,17 +151,23 @@ export function RegisterReceiptDialog({ ctx, onClose, onDone }: { ctx: ReceiptCo
   );
 }
 
-function ResultMessage({ result }: { result: { check: ReceiptCheck | null; image: boolean } }) {
+function ResultMessage({ result, balance }: { result: { check: ReceiptCheck | null; image: boolean }; balance: number }) {
   const c = result.check;
   if (result.image) return <Alert intent="warn">Comprovante (foto) registrado. Não há conferência automática de imagem: confira pelo &quot;Ver comprovante&quot; e pelo extrato antes de dar baixa.</Alert>;
   if (!c) return <Alert intent="ok">Comprovante registrado.</Alert>;
   if (c.status === 'conferido') {
-    return <Alert intent="ok">Comprovante conferido: ✓ identificador do Pix · ✓ valor · ✓ recebido pela loja · ✓ nº de controle {c.e2e}. Em Pagamentos, basta &quot;Confirmar e dar baixa&quot;.</Alert>;
+    const extra = c.amountPaid != null ? Math.round((c.amountPaid - balance) * 100) / 100 : 0;
+    return (
+      <Alert intent="ok">
+        Comprovante conferido: ✓ identificador do Pix · ✓ valor · ✓ recebido pela loja · ✓ nº de controle {c.e2e}. Em Pagamentos, basta &quot;Confirmar e dar baixa&quot;.
+        {extra > 0 ? <span className="mt-1 block">Pago com {brl(extra)} de multa e juros por atraso — a baixa lança o acréscimo à parte (1.2.06).</span> : null}
+      </Alert>
+    );
   }
   if (c.status === 'ilegivel') return <Alert intent="warn">Comprovante registrado, mas o PDF não tem texto legível (escaneado). Confira pela imagem e pelo extrato.</Alert>;
   const issues = [
     !c.txid && 'o identificador não é o do Pix desta cobrança',
-    !c.amount && 'o valor é diferente do saldo em aberto',
+    !c.amount && 'o valor não bate com o esperado (saldo, ou saldo com multa e juros)',
     !c.payee && 'não mostra a loja como recebedora',
     !c.e2e && 'sem nº de controle do Pix',
   ].filter(Boolean).join(' · ');

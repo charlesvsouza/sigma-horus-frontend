@@ -96,28 +96,9 @@ export async function getMemberDuesStatus(
   };
 }
 
-export interface LateCharge {
-  fee: number;
-  interest: number;
-  total: number; // amount + fee + interest
-}
-
-/**
- * Multa (única) + juros de mora (ao mês, pro-rata por dia) sobre um valor em
- * atraso. Informativo: não altera o Account.amount lançado, só serve para
- * exibir "quanto seria hoje com encargos" e para a renegociação/parcelamento.
- */
-export function calculateLateCharge(
-  amount: number,
-  daysOverdue: number,
-  feePercent?: number | null,
-  interestPercentMonth?: number | null,
-): LateCharge {
-  if (daysOverdue <= 0) return { fee: 0, interest: 0, total: amount };
-  const fee = feePercent ? amount * (feePercent / 100) : 0;
-  const interest = interestPercentMonth ? amount * (interestPercentMonth / 100) * (daysOverdue / 30) : 0;
-  return { fee, interest, total: amount + fee + interest };
-}
+// Multa/juros: fonte única em lib/late-charge (reexportado aqui para quem já importava daqui).
+export { calculateLateCharge, type LateCharge } from '@/lib/late-charge';
+import { calculateLateCharge, type LateCharge } from '@/lib/late-charge';
 
 /**
  * Soma a multa/juros de CADA pendência pelos seus próprios dias de atraso

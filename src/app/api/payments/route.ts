@@ -12,6 +12,7 @@ import { buildLodgeChannels } from '@/lib/lodge-channels';
 import { brl } from '@/lib/currency';
 import { NextResponse } from 'next/server';
 import { lockKey } from '@/lib/locks';
+import { LATE_CHARGE_CHART, lateChargeMarker } from '@/lib/late-charge';
 
 export async function GET() {
   const session = await auth();
@@ -68,6 +69,9 @@ export async function POST(request: Request) {
   const bankTransactionId = body?.bankTransactionId ? String(body.bankTransactionId) : null;
   // Número de controle do Pix (EndToEndId) do comprovante conferido: um comprovante não quita duas contas.
   const e2eId = typeof body?.e2eId === 'string' && /^E[0-9A-Za-z]{31}$/.test(body.e2eId) ? body.e2eId : null;
+  // Multa e juros por atraso recebidos junto (conta a receber de irmão): lançados à parte, em
+  // "1.2.06 Multas e Juros por Atraso" — a conta original quita pelo valor dela.
+  const lateCharge = body?.lateCharge != null && body.lateCharge !== '' ? round2(Number(body.lateCharge)) : 0;
 
   if (!accountId) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
@@ -77,6 +81,9 @@ export async function POST(request: Request) {
   }
   if (!bankAccountId) {
     return NextResponse.json({ error: 'Selecione a conta bancária/caixa que recebeu ou pagou este valor.' }, { status: 400 });
+  }
+  if (lateCharge !== 0 && !isValidMoney(lateCharge)) {
+    return NextResponse.json({ error: 'Multa e juros: informe um valor maior que zero, com até 2 casas decimais (ou deixe em branco).' }, { status: 400 });
   }
 
   const result = await withTenant(String(lodgeId), async (db) => {
@@ -101,6 +108,9 @@ export async function POST(request: Request) {
     const bank = await db.financialAccount.findFirst({ where: { id: bankAccountId, lodgeId: String(lodgeId), active: true }, select: { id: true } });
     if (!bank) {
       return { invalidBank: true as const };
+    }
+    if (lateCharge > 0 && (account.type !== 'RECEIVABLE' || !account.memberId)) {
+      return { lateNotAllowed: true as const };
     }
 
     // Cobrança aberta no Asaas: a baixa é do Asaas. Baixa manual só com a
@@ -150,11 +160,46 @@ export async function POST(request: Request) {
       },
     });
 
-    // (conferido abaixo, antes do vínculo com o extrato)
-    // Linha do extrato: só concilia crédito ainda livre e do mesmo valor (senão a baixa segue sem vínculo).
+    // Acréscimo por atraso: conta a receber já paga, na categoria própria, mesma data/banco/método.
+    if (lateCharge > 0) {
+      const chart =
+        (await db.chartAccount.findFirst({ where: { lodgeId: String(lodgeId), code: LATE_CHARGE_CHART.code }, select: { id: true } })) ??
+        (await db.chartAccount.create({ data: { lodgeId: String(lodgeId), ...LATE_CHARGE_CHART }, select: { id: true } }));
+      const lateAccount = await db.account.create({
+        data: {
+          lodgeId: String(lodgeId),
+          memberId: account.memberId,
+          type: 'RECEIVABLE',
+          title: `Multa e juros por atraso — ${account.title}`,
+          amount: lateCharge,
+          dueDate: paidAt,
+          status: 'paid',
+          chartAccountId: chart.id,
+          bankAccountId: bank.id,
+          description: lateChargeMarker(created.id),
+        },
+        select: { id: true },
+      });
+      await db.payment.create({
+        data: {
+          lodgeId: String(lodgeId),
+          accountId: lateAccount.id,
+          memberId: account.memberId,
+          bankAccountId: bank.id,
+          amount: lateCharge,
+          paidAt,
+          method: method || 'manual',
+          note: `Multa e juros por atraso recebidos junto com "${account.title}".`,
+        },
+      });
+    }
+
+    // Linha do extrato: só concilia crédito ainda livre e do mesmo valor (com o acréscimo, o crédito é
+    // o total) — senão a baixa segue sem vínculo.
     if (bankTransactionId && account.type === 'RECEIVABLE') {
+      const credited = round2(amount + lateCharge);
       await db.bankTransaction.updateMany({
-        where: { id: bankTransactionId, lodgeId: String(lodgeId), status: 'unmatched', amount: { gte: amount - 0.005, lte: amount + 0.005 } },
+        where: { id: bankTransactionId, lodgeId: String(lodgeId), status: 'unmatched', amount: { gte: credited - 0.005, lte: credited + 0.005 } },
         data: { status: 'matched', matchedPaymentId: created.id },
       });
     }
@@ -194,7 +239,7 @@ export async function POST(request: Request) {
       await syncMemberArt002Status(db, String(lodgeId), memberId);
     }
 
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method } });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method, ...(lateCharge > 0 ? { lateCharge } : {}) } });
 
     let lodgeName = 'Sua loja';
     let lodgeChannels = buildLodgeChannels(null);
@@ -204,7 +249,7 @@ export async function POST(request: Request) {
       lodgeChannels = buildLodgeChannels(lodge);
     }
 
-    return { payment: created, lodgeName, lodgeChannels, chargeIds: openCharges.map((c) => c.id) };
+    return { payment: created, lodgeName, lodgeChannels, chargeIds: openCharges.map((c) => c.id), lateCharge };
   });
 
   if ('locked' in result && result.locked) {
@@ -224,6 +269,10 @@ export async function POST(request: Request) {
 
   if ('invalidBank' in result) {
     return NextResponse.json({ error: 'Conta bancária/caixa inválida ou inativa.' }, { status: 400 });
+  }
+
+  if ('lateNotAllowed' in result) {
+    return NextResponse.json({ error: 'Multa e juros só se aplicam a conta a receber de um irmão.' }, { status: 400 });
   }
 
   if ('overpay' in result && result.overpay !== undefined) {
@@ -255,7 +304,9 @@ export async function POST(request: Request) {
   // envio não deve derrubar o registro do pagamento, que já está salvo.
   const { payment, lodgeName, lodgeChannels } = result;
   if (payment.account?.type === 'RECEIVABLE' && payment.member?.email) {
-    const valor = brl(payment.amount);
+    const valor = result.lateCharge > 0
+      ? `${brl(payment.amount)} + ${brl(result.lateCharge)} de multa e juros por atraso (total ${brl(payment.amount + result.lateCharge)})`
+      : brl(payment.amount);
     const data = new Date(payment.paidAt).toLocaleDateString('pt-BR');
     dispatch(
       'email',

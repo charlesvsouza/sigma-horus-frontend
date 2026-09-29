@@ -6,6 +6,7 @@ import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberArt002Status } from '@/lib/overdue';
 import { coversAmount } from '@/lib/money';
 import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
+import { lateChargeMarker, mainPaymentIdFromMarker } from '@/lib/late-charge';
 import { NextResponse } from 'next/server';
 
 // Estorno/exclusão de um pagamento lançado errado. Recalcula o status da
@@ -36,6 +37,22 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     const linkedBankTx = await db.bankTransaction.findMany({ where: { matchedPaymentId: id }, select: { id: true } });
 
     await db.payment.delete({ where: { id } });
+
+    // Multa e juros lançados à parte na mesma baixa: estornar a baixa principal estorna o acréscimo
+    // junto (a conta dele é apagada e o pagamento vai em cascata). Estornar só o acréscimo mantém a
+    // baixa principal e apaga a conta do acréscimo — não deixa o irmão "devendo" multa.
+    const lateAccounts = await db.account.findMany({ where: { lodgeId: String(lodgeId), description: lateChargeMarker(id) }, select: { id: true } });
+    if (lateAccounts.length > 0) {
+      const lateTx = await db.bankTransaction.findMany({ where: { matchedPayment: { accountId: { in: lateAccounts.map((a) => a.id) } } }, select: { id: true } });
+      await db.account.deleteMany({ where: { id: { in: lateAccounts.map((a) => a.id) } } });
+      if (lateTx.length > 0) await db.bankTransaction.updateMany({ where: { id: { in: lateTx.map((t) => t.id) } }, data: { status: 'unmatched' } });
+    }
+    const own = await db.account.findUnique({ where: { id: payment.accountId }, select: { id: true, description: true } });
+    if (own && mainPaymentIdFromMarker(own.description)) {
+      await db.account.delete({ where: { id: own.id } });
+      await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'payment', entityId: id, metadata: { accountId: payment.accountId, amount: payment.amount, lateCharge: true } });
+      return { ok: true as const };
+    }
 
     if (linkedBankTx.length > 0) {
       await db.bankTransaction.updateMany({ where: { id: { in: linkedBankTx.map((t) => t.id) } }, data: { status: 'unmatched' } });

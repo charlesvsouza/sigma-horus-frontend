@@ -376,7 +376,17 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
               <Field label="Multa por atraso (%)" value={form.lateFeePercent} onChange={(v) => set('lateFeePercent', v)} type="number" step="0.1" min="0" placeholder="Ex.: 2" />
               <Field label="Juros de mora ao mês (%)" value={form.lateInterestPercentMonth} onChange={(v) => set('lateInterestPercentMonth', v)} type="number" step="0.1" min="0" placeholder="Ex.: 1" />
             </div>
-            <p className="mt-2 text-xs text-sand-dark">Multa/juros são informativos: aparecem no relatório de inadimplência e na renegociação, mas não alteram sozinhos o valor das contas já lançadas.</p>
+            <label className="mt-4 flex items-start gap-2 text-sm text-sand">
+              <input type="checkbox" checked={form.chargeLateFeesOnPix === 'true'} onChange={(e) => set('chargeLateFeesOnPix', String(e.target.checked))} className="mt-0.5" />
+              <span>
+                Cobrar multa e juros no Pix de cobrança vencida (Modo Loja)
+                <span className="mt-0.5 block text-xs text-sand-dark">
+                  Ligado: o Pix do portal e o do WhatsApp saem com o saldo mais a multa e os juros até o dia, a mensagem mostra o cálculo e, na baixa, o
+                  acréscimo é lançado à parte em &quot;1.2.06 Multas e Juros por Atraso&quot; — a mensalidade fica pelo valor original. Desligado, multa e juros
+                  são só informativos (relatório de inadimplência e renegociação). No Modo Asaas, multa e juros são os configurados no próprio Asaas.
+                </span>
+              </span>
+            </label>
 
             <label className="mt-5 flex items-center gap-2 text-sm text-sand">
               <input type="checkbox" checked={form.autoBalanceteEnabled === 'true'} onChange={(e) => set('autoBalanceteEnabled', String(e.target.checked))} />

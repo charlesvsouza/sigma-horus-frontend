@@ -5,6 +5,7 @@ import { emitInvoiceCharge, fetchPixQr, type PixQr } from '@/lib/asaas-charge';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { isAsaasMode, paymentInstructions } from '@/lib/collection';
 import { round2 } from '@/lib/money';
+import { lateChargeConfig, pixAmount } from '@/lib/late-charge';
 import { buildPixPayload } from '@/lib/pix';
 import { canPay, openBalance, PORTAL_WRITE_DENIED } from '@/lib/portal-dues';
 import { CLOSED_INVOICE_STATUSES, ensureOpenInvoice } from '@/lib/portal-invoice';
@@ -55,6 +56,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       select: {
         name: true, tradeName: true, city: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true,
         collectionMode: true, asaasApiKeyEnc: true, asaasEnv: true,
+        chargeLateFeesOnPix: true, lateFeePercent: true, lateInterestPercentMonth: true,
       },
     });
     return { account, lodge };
@@ -73,17 +75,21 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     if (!lodge.pixKey?.trim()) {
       return NextResponse.json({ error: 'A loja ainda não cadastrou a chave Pix. Fale com a Tesouraria para saber como pagar.' }, { status: 409 });
     }
+    // Vencida e a loja cobra multa e juros no Pix: o valor sai atualizado até hoje.
+    const pix = pixAmount(balance, account.dueDate, lateChargeConfig(lodge));
     const pixCopyPaste = buildPixPayload({
       key: lodge.pixKey,
       name: lodge.tradeName || lodge.name,
       city: lodge.city,
-      amount: balance,
+      amount: pix.total,
       txid: account.id,
     });
     const qrImage = await QRCode.toDataURL(pixCopyPaste, { margin: 1, width: 280, errorCorrectionLevel: 'M' });
     return NextResponse.json({
       mode: 'lodge',
-      amount: balance,
+      amount: pix.total,
+      principal: pix.principal,
+      lateCharge: pix.extra,
       pixCopyPaste,
       qrImage,
       instructions: paymentInstructions(lodge),

@@ -31,6 +31,8 @@ interface PaymentNotice {
   receiptPdf?: boolean; receiptCheck?: ReceiptCheck | null; e2eUsed?: boolean; suggestedBankId?: string | null;
   /** Comprovante recebido fora do portal e registrado pela Tesouraria; data do Pix informada por ela. */
   registeredBy?: { userId: string; name: string } | null; paidAtInformed?: string | null;
+  /** Multa e juros pagos junto (comprovante conferido acima do saldo): lançados à parte na baixa. */
+  lateCharge?: number;
 }
 
 /** Dia do pagamento (Brasília) a partir do ISO do comprovante. */
@@ -42,7 +44,7 @@ function accountLabel(a: AccountOption): string {
   return [a.title, a.who, `venc. ${formatDateOnly(a.dueDate)}`, `saldo ${brl(a.balance)}`].filter(Boolean).join(' · ');
 }
 
-const EMPTY_FORM = { accountId: '', memberId: '', bankAccountId: '', amount: '', paidAt: '', method: 'manual', note: '', bankTransactionId: '' };
+const EMPTY_FORM = { accountId: '', memberId: '', bankAccountId: '', amount: '', lateCharge: '', paidAt: '', method: 'manual', note: '', bankTransactionId: '' };
 
 /** Formulário pronto para a baixa de uma conta (saldo, irmão, conta prevista); com aviso do portal, Pix na data do aviso. */
 function formFor(account: AccountOption, notice?: PaymentNotice | null) {
@@ -52,11 +54,12 @@ function formFor(account: AccountOption, notice?: PaymentNotice | null) {
     memberId: account.memberId ?? '',
     bankAccountId: account.bankAccountId ?? '',
     amount: String(account.balance),
+    lateCharge: notice?.lateCharge ? String(notice.lateCharge) : '',
     // Crédito achado no extrato: a data do pagamento é a do crédito e a linha é conciliada junto.
     paidAt: notice?.bankMatch ? notice.bankMatch.date.slice(0, 10) : notice?.paidAtInformed ?? notice?.noticeDay ?? todayBR().toISOString().slice(0, 10),
     method: notice ? 'pix' : 'manual',
     note: notice ? `${notice.registeredBy ? `Comprovante do irmão registrado por ${notice.registeredBy.name}` : 'Pix informado pelo irmão no portal'} em ${new Date(notice.noticeAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}${notice.note ? ` — "${notice.note}"` : ''}. ${notice.bankMatch ? `Crédito no extrato em ${formatDateOnly(notice.bankMatch.date)}.` : 'Conferido no extrato.'}` : '',
-    bankTransactionId: notice?.bankMatch && Math.round(notice.bankMatch.amount * 100) === Math.round(account.balance * 100) ? notice.bankMatch.lineId : '',
+    bankTransactionId: notice?.bankMatch && Math.round(notice.bankMatch.amount * 100) === Math.round((account.balance + (notice.lateCharge ?? 0)) * 100) ? notice.bankMatch.lineId : '',
   };
 }
 interface FinancialAccountOption { id: string; name: string; kind: string; }
@@ -124,13 +127,14 @@ export default function PagamentosClient({ accounts, members, payments, financia
         bankAccountId,
         note: `Pix conferido pelo comprovante (nº de controle ${check.e2e}).${notice.group ? ` Pix agrupado de ${notice.group.accountIds.length} contas.` : ''}`,
         e2eId: check.e2e,
-        ...(notice.bankMatch && Math.round(notice.bankMatch.amount * 100) === Math.round(account.balance * 100) ? { bankTransactionId: notice.bankMatch.lineId } : {}),
+        ...(notice.lateCharge ? { lateCharge: notice.lateCharge } : {}),
+        ...(notice.bankMatch && Math.round(notice.bankMatch.amount * 100) === Math.round((account.balance + (notice.lateCharge ?? 0)) * 100) ? { bankTransactionId: notice.bankMatch.lineId } : {}),
       }),
     });
     const data = await res.json().catch(() => ({}));
     setNoticeBusy(null);
     if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Não foi possível registrar a baixa.' }); return; }
-    setMessage({ kind: 'ok', text: `Baixa registrada: ${account.who ?? ''} — ${account.title}, ${brl(account.balance)}.` });
+    setMessage({ kind: 'ok', text: `Baixa registrada: ${account.who ?? ''} — ${account.title}, ${brl(account.balance)}${notice.lateCharge ? ` + ${brl(notice.lateCharge)} de multa e juros (lançados em 1.2.06)` : ''}.` });
     router.refresh();
   }
 
@@ -177,6 +181,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
         body: JSON.stringify({
           ...form,
           amount: Number(form.amount),
+          lateCharge: form.lateCharge ? Number(form.lateCharge) : undefined,
           memberId: form.memberId || undefined,
           ...(confirmOutsideAsaas ? { confirmOutsideAsaas: true } : {}),
         }),
@@ -262,13 +267,14 @@ export default function PagamentosClient({ accounts, members, payments, financia
                         n.receiptCheck.status === 'conferido' ? (
                           <p className="mt-1 text-xs text-emerald-300">
                             Comprovante conferido: ✓ identificador do QR · ✓ valor · ✓ recebido pela loja · ✓ nº de controle {n.receiptCheck.e2e}
+                            {n.lateCharge ? <span className="block text-sky-200">Pago com {brl(n.lateCharge)} de multa e juros por atraso — lançados à parte (1.2.06) na baixa.</span> : null}
                             {n.e2eUsed ? <span className="block text-rose-300">Atenção: este nº de controle já foi usado na baixa de outra conta.</span> : null}
                           </p>
                         ) : n.receiptCheck.status === 'ilegivel' ? (
                           <p className="mt-1 text-xs text-sand-dark">Comprovante sem texto legível (PDF escaneado) — confira pelo &quot;Ver comprovante&quot;.</p>
                         ) : (
                           <p className="mt-1 text-xs text-amber-300">
-                            Comprovante com divergência: {[!n.receiptCheck.txid && 'identificador não é o do QR desta conta', !n.receiptCheck.amount && 'valor diferente do saldo', !n.receiptCheck.payee && 'não mostra a loja como recebedora', !n.receiptCheck.e2e && 'sem nº de controle do Pix'].filter(Boolean).join(' · ')}. Confira antes de dar baixa.
+                            Comprovante com divergência: {[!n.receiptCheck.txid && 'identificador não é o do QR desta conta', !n.receiptCheck.amount && 'valor diferente do esperado (saldo, ou saldo com multa e juros)', !n.receiptCheck.payee && 'não mostra a loja como recebedora', !n.receiptCheck.e2e && 'sem nº de controle do Pix'].filter(Boolean).join(' · ')}. Confira antes de dar baixa.
                           </p>
                         )
                       ) : null}
@@ -332,6 +338,10 @@ export default function PagamentosClient({ accounts, members, payments, financia
               </Field>
               <Field label="Valor">
                 <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT} required />
+              </Field>
+              <Field label="Multa e juros recebidos (opcional)">
+                <input type="number" step="0.01" min="0" value={form.lateCharge} onChange={(event) => setForm({ ...form, lateCharge: event.target.value })} className={INPUT} placeholder="0,00" />
+                <span className="mt-1 block text-xs text-sand-dark">Acréscimo por atraso pago junto: vai à parte, em 1.2.06 Multas e Juros por Atraso. Só para conta a receber de irmão.</span>
               </Field>
               <Field label="Data do pagamento">
                 <input type="date" value={form.paidAt} onChange={(event) => setForm({ ...form, paidAt: event.target.value })} className={INPUT} required />

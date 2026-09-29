@@ -9,7 +9,7 @@ const EMPTY: Record<string, string> = {
   bankName: '', bankAgency: '', bankAccount: '', pixKey: '',
   riteName: '', powerName: '', openingFormula: '', foundationDate: '', sessionWeekdays: '', sessionFrequency: 'weekly',
   expenseApprovalThreshold: '', lateFeePercent: '', lateInterestPercentMonth: '',
-  autoBalanceteEnabled: 'false', art002Enabled: 'true',
+  autoBalanceteEnabled: 'false', art002Enabled: 'true', chargeLateFeesOnPix: 'false',
   notifyBirthdaysEnabled: 'true', notifyMilestonesEnabled: 'true', notifyBillingRemindersEnabled: 'true',
   notifyFoundationAnniversaryEnabled: 'true',
 };
@@ -28,7 +28,7 @@ export default async function ConfiguracoesPage() {
             bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
             riteName: true, powerName: true, openingFormula: true, foundationDate: true, sessionWeekdays: true, sessionFrequency: true,
             expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
-            autoBalanceteEnabled: true, art002Enabled: true,
+            autoBalanceteEnabled: true, art002Enabled: true, chargeLateFeesOnPix: true,
             notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
             notifyFoundationAnniversaryEnabled: true,
           },

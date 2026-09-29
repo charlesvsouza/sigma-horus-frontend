@@ -4,6 +4,7 @@ import { matchNoticesToBank } from '@/lib/notice-bank-match';
 import { openBalance, PAYMENT_NOTICE_CHECK_ENTITY, PAYMENT_NOTICE_ENTITY } from '@/lib/portal-dues';
 import type { ReceiptCheck } from '@/lib/receipt-check';
 import { withTenant } from '@/lib/prisma';
+import { round2 } from '@/lib/money';
 import PagamentosClient from './PagamentosClient';
 
 // Server Component: carrega contas + membros + pagamentos no servidor.
@@ -123,7 +124,13 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
     // Conta onde o Pix caiu: a prevista da conta, a padrão da loja ou a única conta corrente.
     const banks = data.financialAccounts.filter((f) => f.kind === 'bank' && !f.isInvestment);
     const suggestedBankId = account.bankAccountId ?? data.financialAccounts.find((f) => f.isDefault)?.id ?? (banks.length === 1 ? banks[0].id : null);
-    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt, receiptPdf, receiptCheck, e2eUsed, suggestedBankId, balance: account.balance, group, registeredBy, paidAtInformed }];
+    // Pago acima do saldo com valor aceito pela conferência = multa e juros (loja cobra no Pix).
+    // No Pix agrupado, o acréscimo inteiro vai na baixa da 1ª conta do grupo.
+    const expected = group?.total ?? account.balance;
+    const isLeader = !group || group.accountIds[0] === account.id;
+    const extra = receiptCheck?.status === 'conferido' && receiptCheck.amountPaid != null ? round2(receiptCheck.amountPaid - expected) : 0;
+    const lateCharge = isLeader && extra > 0 ? extra : 0;
+    return [{ accountId: account.id, noticeAt: n.createdAt.toISOString(), noticeDay: todayBR(n.createdAt).toISOString().slice(0, 10), note, hasReceipt, receiptPdf, receiptCheck, e2eUsed, suggestedBankId, balance: account.balance, group, registeredBy, paidAtInformed, lateCharge }];
   });
   // Pix agrupado (Modo Loja): o crédito no banco é o TOTAL do grupo e o txid é o da 1ª conta dele —
   // casa o grupo inteiro pela 1ª conta e repete o resultado nas demais.
@@ -131,7 +138,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
   const bankMatches = matchNoticesToBank(
     rawNotices
       .filter((n) => leader(n) === n.accountId)
-      .map((n) => ({ accountId: n.accountId, balance: n.group?.total ?? n.balance, noticeAt: new Date(n.noticeAt) })),
+      .map((n) => ({ accountId: n.accountId, balance: round2((n.group?.total ?? n.balance) + n.lateCharge), noticeAt: new Date(n.noticeAt) })),
     data.bankLines.map((l) => ({ id: l.id, date: l.date, amount: Number(l.amount), description: l.description })),
   );
   const notices = rawNotices.map((n) => ({ ...n, bankMatch: bankMatches.get(leader(n)) ?? null }));

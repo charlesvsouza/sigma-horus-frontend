@@ -29,6 +29,9 @@ export interface CollectionInfo {
 interface PayResult {
   mode: 'lodge' | 'asaas';
   amount: number;
+  /** Modo Loja com multa e juros: valor original e o acréscimo incluído no Pix. */
+  principal?: number;
+  lateCharge?: number;
   pixCopyPaste: string | null;
   qrImage: string | null;
   invoiceUrl?: string | null;
@@ -161,6 +164,11 @@ export function PendenciasCard({
           <p className="text-sand-light">
             Pix de <strong>{brl(result.amount)}</strong>{forGroup ? <> para as <strong>{groupIds.length} contas</strong> selecionadas</> : null}: aponte a câmera do app do banco para o QR ou copie o código.
           </p>
+          {result.lateCharge && result.lateCharge > 0 ? (
+            <p className="text-xs text-amber-300">
+              Inclui {brl(result.lateCharge)} de multa e juros por atraso sobre {brl(result.principal ?? result.amount - result.lateCharge)}, calculados até hoje (regra da loja).
+            </p>
+          ) : null}
           {result.pixCopyPaste ? (
             <div className="flex flex-col gap-2 sm:flex-row">
               <input readOnly value={result.pixCopyPaste} onFocus={(e) => e.currentTarget.select()} aria-label="Pix copia e cola" className={`${inputClass} min-w-0 flex-1 font-mono text-xs`} />

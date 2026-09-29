@@ -59,8 +59,9 @@ export function chargeNoticeLead(input: ChargeNoticeInput): string {
  * QR que está na própria tela, então o código é o meio principal. Sem chave Pix, vão os
  * dados bancários da loja.
  */
-export function whatsAppChargeMessage(input: ChargeNoticeInput & { pixCopyPaste?: string | null; instructions?: string | null }): string {
-  const parts = [chargeNoticeLead(input)];
+export function whatsAppChargeMessage(input: ChargeNoticeInput & { pixCopyPaste?: string | null; instructions?: string | null; lateChargeSentence?: string | null }): string {
+  // Multa e juros (se a loja cobra): a abertura fica no valor original e a frase mostra o cálculo.
+  const parts = [input.lateChargeSentence ? `${chargeNoticeLead(input)} ${input.lateChargeSentence}` : chargeNoticeLead(input)];
   if (input.pixCopyPaste) {
     parts.push('Para pagar, copie o código abaixo e cole no app do seu banco em "Pix copia e cola":', input.pixCopyPaste);
   } else if (input.instructions) {

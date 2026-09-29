@@ -9,6 +9,8 @@ import { withTenant } from '@/lib/prisma';
 import { buildObjectKey, deleteObject, putObject } from '@/lib/storage';
 import { receiptUploadError } from '@/lib/upload-guards';
 import { checkReceipt, receiptTxids, type ReceiptCheck } from '@/lib/receipt-check';
+import { acceptableAmounts, lateChargeConfig } from '@/lib/late-charge';
+import { receiptAckMessage } from '@/lib/receipt-ack';
 import { pdfText } from '@/lib/receipt-pdf';
 
 // "Já paguei" (Modo Loja) de UMA ou de VÁRIAS contas (Pix agrupado): o Pix caiu direto na
@@ -36,7 +38,7 @@ export async function submitPaymentNotice(params: {
   registeredBy?: NoticeRegisteredBy;
   /** Data do Pix (AAAA-MM-DD) informada por quem registrou — obrigatória se o comprovante não traz data legível. */
   paidAtInformed?: string | null;
-  /** Avisar o irmão por e-mail que o comprovante foi recebido. */
+  /** Registro pela Tesouraria: avisar o irmão por e-mail (no portal, o irmão é sempre avisado). */
   notifyMember?: boolean;
   /** Já existe aviso desta conta: substitui (o mais recente vale no quadro de Pagamentos). */
   replace?: boolean;
@@ -61,7 +63,7 @@ export async function submitPaymentNotice(params: {
         },
         orderBy: { dueDate: 'asc' },
       }),
-      db.lodge.findUnique({ where: { id: lodgeId }, select: { name: true, collectionMode: true, cnpj: true, pixKey: true } }),
+      db.lodge.findUnique({ where: { id: lodgeId }, select: { name: true, collectionMode: true, cnpj: true, pixKey: true, chargeLateFeesOnPix: true, lateFeePercent: true, lateInterestPercentMonth: true } }),
       db.member.findUnique({ where: { id: memberId }, select: { name: true, email: true } }),
       db.auditLog.findFirst({
         where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, entityId: { in: accountIds } },
@@ -102,7 +104,9 @@ export async function submitPaymentNotice(params: {
   // Tesouraria. Conferido ANTES de subir: a Tesouraria precisa informar a data se ela não for lida.
   let receiptCheck: ReceiptCheck | null = null;
   if (params.file && fileBuffer && params.file.type === 'application/pdf') {
-    receiptCheck = checkReceipt(await pdfText(fileBuffer), { txids, amount: total, lodgeCnpj: lodge.cnpj, lodgePixKey: lodge.pixKey });
+    // Com multa e juros no Pix, aceita também o valor atualizado de qualquer dia desde o vencimento.
+    const amounts = acceptableAmounts(items.map((i) => ({ balance: i.balance, dueDate: i.account.dueDate })), lateChargeConfig(lodge));
+    receiptCheck = checkReceipt(await pdfText(fileBuffer), { txids, amount: total, amounts, lodgeCnpj: lodge.cnpj, lodgePixKey: lodge.pixKey });
   }
   if (registeredBy && !receiptCheck?.paidAt && !paidAtInformed) {
     return { ok: false, status: 400, code: 'paid-at-required', error: 'Não foi possível ler a data do Pix no comprovante. Informe a data do pagamento.' };
@@ -165,15 +169,19 @@ ${lodge.name}`;
   const attachments = receiptBuffer && receipt ? [{ filename: receipt.name, content: receiptBuffer.toString('base64') }] : undefined;
   await Promise.all(recipients.map((to) => dispatch('email', to, subject, text, EMPTY_CHANNELS, { attachments }).catch(() => null)));
 
-  if (registeredBy && params.notifyMember && member.email) {
-    const what = items.map((i) => `"${i.account.title}" (${brl(i.balance)})`).join(', ');
-    await dispatch(
-      'email',
-      member.email,
-      `Recebemos seu comprovante — ${lodge.name}`,
-      `Caro irmão ${member.name}, recebemos o seu comprovante de pagamento de ${what}. A Tesouraria vai conferir o crédito na conta da loja e dar a baixa; você acompanha pelo portal.\n\nFraternalmente, Tesouraria.\n${lodge.name}`,
-      EMPTY_CHANNELS,
-    ).catch(() => null);
+  // Protocolo ao irmão com o resultado da análise: sempre no portal; na Tesouraria, se marcado.
+  if (member.email && (!registeredBy || params.notifyMember)) {
+    const ack = receiptAckMessage({
+      memberName: member.name,
+      lodgeName: lodge.name,
+      items: items.map((i) => ({ title: i.account.title, amount: i.balance })),
+      invoiceNumbers: invoices.map((i) => i.number),
+      noticeAt: createdAt,
+      check: receiptCheck,
+      hasReceipt: Boolean(receipt),
+      byStaff: Boolean(registeredBy),
+    });
+    await dispatch('email', member.email, ack.subject, ack.text, EMPTY_CHANNELS).catch(() => null);
   }
 
   return { ok: true, paidNoticeAt: createdAt, notified: recipients.length, receipt: Boolean(receipt), receiptCheck };

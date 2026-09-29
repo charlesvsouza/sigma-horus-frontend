@@ -9,6 +9,8 @@ export interface ReceiptExpectation {
   txids: string[];
   /** Valor esperado (saldo da conta, ou o total do Pix agrupado). */
   amount: number;
+  /** Outros valores aceitos — o total com multa e juros de cada dia desde o vencimento (lib/late-charge). */
+  amounts?: number[];
   lodgeCnpj?: string | null;
   lodgePixKey?: string | null;
 }
@@ -23,6 +25,8 @@ export interface ReceiptCheck {
   /** Data/hora do pagamento no comprovante (ISO), se achada. */
   paidAt: string | null;
   amountsFound: number[];
+  /** Valor pago que bateu com um dos esperados (acima do saldo = multa e juros). */
+  amountPaid?: number | null;
 }
 
 const digits = (s: string) => s.replace(/\D/g, '');
@@ -61,7 +65,7 @@ export function receiptTxids(accountIds: string[], invoiceNumbers: string[]): st
 export function checkReceipt(text: string, expected: ReceiptExpectation): ReceiptCheck {
   const clean = text ?? '';
   if (clean.replace(/\s/g, '').length < 20) {
-    return { status: 'ilegivel', txid: false, amount: false, payee: false, e2e: null, paidAt: null, amountsFound: [] };
+    return { status: 'ilegivel', txid: false, amount: false, payee: false, e2e: null, paidAt: null, amountsFound: [], amountPaid: null };
   }
   const flat = alnumLower(clean);
   const txid = expected.txids.some((t) => {
@@ -69,8 +73,9 @@ export function checkReceipt(text: string, expected: ReceiptExpectation): Receip
     return id.length >= 8 && flat.includes(id);
   });
   const amountsFound = amountsInText(clean);
-  const cents = Math.round(expected.amount * 100);
-  const amount = amountsFound.some((a) => Math.round(a * 100) === cents);
+  const accepted = new Set([expected.amount, ...(expected.amounts ?? [])].map((a) => Math.round(a * 100)));
+  const amountPaid = amountsFound.find((a) => accepted.has(Math.round(a * 100))) ?? null;
+  const amount = amountPaid !== null;
 
   const cnpj = digits(expected.lodgeCnpj ?? '');
   const byCnpj = cnpj.length === 14 && digits(clean).includes(cnpj);
@@ -81,5 +86,5 @@ export function checkReceipt(text: string, expected: ReceiptExpectation): Receip
   const e2e = clean.match(E2E_RE)?.[0] ?? null;
   const paidAt = paidAtInText(clean);
   const status = txid && amount && payee && e2e ? 'conferido' : 'divergente';
-  return { status, txid, amount, payee, e2e, paidAt, amountsFound };
+  return { status, txid, amount, payee, e2e, paidAt, amountsFound, amountPaid };
 }
