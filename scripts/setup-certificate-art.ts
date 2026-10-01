@@ -16,6 +16,7 @@
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { certificateText } from '../src/lib/certificate';
 import { artBytesMatch, artDateParts, parseCertificateArtLayout, type CertificateArtType } from '../src/lib/certificate-art';
 import { renderArtCertificatePdf } from '../src/lib/certificate-pdf';
 import { buildObjectKey, deleteObject, putObject } from '../src/lib/storage';
@@ -63,6 +64,22 @@ async function main() {
       art,
       layout,
       values: { name: 'João Batista de Oliveira Albuquerque', lodge: 'Estrela do Oriente nº 1234', ...artDateParts(new Date()) },
+      // Caso longo de propósito (Potência, Oriente, sessão de dois graus): testa se cabe na área.
+      text: certificateText({
+        lodgeName: 'Augusta Respeitável e Benemérita Loja Antônio Monteiro Martins nº 139',
+        lodgeOrient: 'Oriente da Barra da Tijuca',
+        lodgePower: 'Grande Loja Maçônica do Estado do Rio de Janeiro (GLMERJ)',
+        visitorName: 'João Batista de Oliveira Albuquerque',
+        visitorDegree: 'Mestre Maçom',
+        visitorLodgeName: 'Estrela do Oriente',
+        visitorLodgeNumber: '1234',
+        visitorOrient: 'Niterói',
+        visitorPower: 'Grande Oriente do Brasil (GOB-RJ)',
+        sessionTypeLabel: 'Ordinária',
+        sessionDateLong: '15 de outubro de 2026',
+        attended: [1, 2],
+      }),
+      placeDate: 'Oriente da Barra da Tijuca, 16 de outubro de 2026.',
       signatures: [{ role: 'venerable', name: 'Nome do Venerável' }, { role: 'secretary', name: 'Nome do Secretário' }],
       number: null,
       preview: false,

@@ -18,14 +18,28 @@ export interface ArtField {
 
 export type ArtSignatureRole = 'venerable' | 'secretary';
 
+/** Área livre da arte (pontos, a partir do topo) onde o sistema escreve o texto completo. */
+export interface ArtTextBox {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}
+
 export interface CertificateArtLayout {
   /** Página em pontos (A4 paisagem = 842 × 596); a arte é esticada para ela. */
   width: number;
   height: number;
   /** Cor do texto escrito por cima ("#1c2949"). */
   ink: string;
+  /**
+   * Arte SEM o texto do miolo: o sistema escreve aqui o texto completo do certificado (o mesmo
+   * dos modelos Clássico/Pergaminho, que muda com a sessão e o grau) e o local e data. Com ela,
+   * `fields` não é usado.
+   */
+  textBox?: ArtTextBox;
   fields: {
-    name: ArtField;
+    name?: ArtField;
     lodge?: ArtField;
     day?: ArtField;
     month?: ArtField;
@@ -60,10 +74,12 @@ export function parseCertificateArtLayout(raw: unknown): CertificateArtLayout | 
   const r = raw as Record<string, unknown>;
   if (!isNum(r.width, 100, 3000) || !isNum(r.height, 100, 3000)) return null;
   const ink = typeof r.ink === 'string' && /^#[0-9a-f]{6}$/i.test(r.ink) ? r.ink : '#1c2949';
+  const textBox = parseTextBox(r.textBox, r.width, r.height);
   const rawFields = (r.fields && typeof r.fields === 'object' ? r.fields : {}) as Record<string, unknown>;
   const name = parseField(rawFields.name, r.width, r.height);
-  if (!name) return null;
-  const fields: CertificateArtLayout['fields'] = { name };
+  // Precisa de onde escrever: a área de texto ou, no mínimo, a linha do nome.
+  if (!textBox && !name) return null;
+  const fields: CertificateArtLayout['fields'] = name ? { name } : {};
   for (const key of ['lodge', 'day', 'month', 'year'] as const) {
     const f = parseField(rawFields[key], r.width, r.height);
     if (f) fields[key] = f;
@@ -75,7 +91,15 @@ export function parseCertificateArtLayout(raw: unknown): CertificateArtLayout | 
         return f && (role === 'venerable' || role === 'secretary') ? [{ ...f, role: role as ArtSignatureRole }] : [];
       })
     : [];
-  return { width: r.width, height: r.height, ink, fields, ...(signatures.length ? { signatures } : {}) };
+  return { width: r.width, height: r.height, ink, ...(textBox ? { textBox } : {}), fields, ...(signatures.length ? { signatures } : {}) };
+}
+
+function parseTextBox(raw: unknown, width: number, height: number): ArtTextBox | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const b = raw as Record<string, unknown>;
+  if (!isNum(b.x0, 0, width) || !isNum(b.x1, 0, width) || !isNum(b.y0, 0, height) || !isNum(b.y1, 0, height)) return null;
+  if (b.x1 - b.x0 < 200 || b.y1 - b.y0 < 80) return null; // pequena demais para o texto
+  return { x0: b.x0, x1: b.x1, y0: b.y0, y1: b.y1 };
 }
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];

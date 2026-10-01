@@ -60,3 +60,10 @@ test('upload da arte: tipo, tamanho e bytes conferidos', () => {
   assert.equal(artBytesMatch(new Uint8Array([0x25, 0x50, 0x44, 0x46]), 'pdf'), true);
   assert.equal(artBytesMatch(new Uint8Array([0xff, 0xd8, 0xff]), 'png'), false);
 });
+
+test('layout com área de texto (arte sem o miolo): dispensa os campos; área pequena demais é recusada', () => {
+  const l = parseCertificateArtLayout({ width: 842, height: 596, textBox: { x0: 165, x1: 680, y0: 214, y1: 424 }, fields: {} });
+  assert.deepEqual(l?.textBox, { x0: 165, x1: 680, y0: 214, y1: 424 });
+  assert.deepEqual(l?.fields, {});
+  assert.equal(parseCertificateArtLayout({ width: 842, height: 596, textBox: { x0: 165, x1: 300, y0: 214, y1: 260 }, fields: {} }), null);
+});

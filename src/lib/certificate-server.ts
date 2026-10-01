@@ -132,24 +132,6 @@ export async function buildCertificatePdf(
   const { visit, letterhead } = ctx;
   const v = visit.visitor;
 
-  // Modelo da loja: só os campos das linhas em branco, sem número nem QR impressos.
-  if (template === 'loja') {
-    if (!ctx.art) throw new CertificateArtUnavailable('A loja ainda não tem a arte do certificado configurada.');
-    const [fonts, bytes] = await Promise.all([loadFonts(), loadArt(ctx.art.key)]);
-    if (!bytes) throw new CertificateArtUnavailable('Não foi possível carregar a arte do certificado. Tente de novo.');
-    return renderArtCertificatePdf({
-      art: { bytes, type: ctx.art.type },
-      layout: ctx.art.layout,
-      values: { name: v.name, lodge: artLodgeLine(v.lodgeName, v.lodgeNumber), ...artDateParts(visit.session.date) },
-      signatures: ctx.signatures.flatMap((s) => {
-        const role = signatureRoleOf(s.role);
-        return role ? [{ role: role as ArtSignatureRole, name: s.name ?? null }] : [];
-      }),
-      number: issued?.number ?? null,
-      preview: !issued,
-    }, fonts);
-  }
-
   const text = certificateText({
     lodgeName: letterhead.name,
     lodgeOrient: orientOf(letterhead),
@@ -164,8 +146,31 @@ export async function buildCertificatePdf(
     sessionDateLong: longDateBR(visit.session.date),
     attended: attendedDegrees(sessionDegrees(visit.session), visit.degreeAtVisit ?? v.degree),
   });
-  const url = issued ? verificationUrl(issued.code) : null;
   const orient = orientOf(letterhead);
+  const placeDate = `${orient ? `${orient}, ` : ''}${longDateBR(new Date())}.`;
+
+  // Modelo da loja: a arte é o fundo. Com área de texto (arte sem o miolo), o texto completo do
+  // sistema; sem ela, só as linhas em branco da arte. Sem número nem QR impressos.
+  if (template === 'loja') {
+    if (!ctx.art) throw new CertificateArtUnavailable('A loja ainda não tem a arte do certificado configurada.');
+    const [fonts, bytes] = await Promise.all([loadFonts(), loadArt(ctx.art.key)]);
+    if (!bytes) throw new CertificateArtUnavailable('Não foi possível carregar a arte do certificado. Tente de novo.');
+    return renderArtCertificatePdf({
+      art: { bytes, type: ctx.art.type },
+      layout: ctx.art.layout,
+      values: { name: v.name, lodge: artLodgeLine(v.lodgeName, v.lodgeNumber), ...artDateParts(visit.session.date) },
+      text,
+      placeDate,
+      signatures: ctx.signatures.flatMap((s) => {
+        const role = signatureRoleOf(s.role);
+        return role ? [{ role: role as ArtSignatureRole, name: s.name ?? null }] : [];
+      }),
+      number: issued?.number ?? null,
+      preview: !issued,
+    }, fonts);
+  }
+
+  const url = issued ? verificationUrl(issued.code) : null;
   const [fonts, crest, qrPng] = await Promise.all([
     loadFonts(),
     fetchCrest(letterhead.crestUrl),
@@ -175,7 +180,7 @@ export async function buildCertificatePdf(
     template,
     text,
     openingFormula: letterhead.openingFormula,
-    placeDate: `${orient ? `${orient}, ` : ''}${longDateBR(new Date())}.`,
+    placeDate,
     signatures: ctx.signatures.map((s) => ({ role: s.role, name: s.name ?? null })),
     number: issued?.number ?? null,
     verifyUrl: url,

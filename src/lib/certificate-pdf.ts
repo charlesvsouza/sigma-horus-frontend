@@ -101,14 +101,14 @@ function balancedWrap(text: string, s: Style, maxWidth: number): string[][] {
   return best;
 }
 
-/** Desenha o texto centralizado, linha a linha, a partir de `top`. Devolve o y final. */
-function drawCentered(page: PDFPage, text: string, s: Style, top: number, maxWidth: number, leading: number): number {
+/** Desenha o texto centralizado (em `cx`, padrão o meio da página), linha a linha, a partir de `top`. Devolve o y final. */
+function drawCentered(page: PDFPage, text: string, s: Style, top: number, maxWidth: number, leading: number, cx = W / 2): number {
   const space = s.font.widthOfTextAtSize(' ', s.size);
   let y = top;
   for (const l of balancedWrap(text, s, maxWidth)) {
     y -= leading;
     const lw = l.reduce((acc, w, i) => acc + wordWidth(w, s) + (i > 0 ? space : 0), 0);
-    let x = (W - lw) / 2;
+    let x = cx - lw / 2;
     for (const w of l) {
       drawWord(page, w, x, y, s);
       x += wordWidth(w, s) + space;
@@ -220,6 +220,9 @@ export interface ArtCertificatePdfInput {
   art: { bytes: Uint8Array; type: CertificateArtType };
   layout: CertificateArtLayout;
   values: { name: string; lodge: string | null; day: string; month: string; year: string };
+  /** Texto completo e local/data — usados quando o layout tem `textBox` (arte sem o miolo). */
+  text: { before: string; name: string; after: string };
+  placeDate: string;
   /** Quem assina (só sai se o layout tiver a linha do cargo — arte sem os nomes impressos). */
   signatures: { role: ArtSignatureRole; name: string | null }[];
   number: string | null;
@@ -237,9 +240,11 @@ export async function renderArtCertificatePdf(input: ArtCertificatePdfInput, fon
   doc.registerFontkit(fontkit);
   doc.setTitle(`Certificado de presença${input.number ? ` ${input.number}` : ''}`);
   doc.setCreator('Sigma Horus');
-  const [fTitle, fBold] = await Promise.all([
+  const [fTitle, fRegular, fBold, fItalic] = await Promise.all([
     doc.embedFont(fonts.title, { subset: true }),
+    doc.embedFont(fonts.regular, { subset: true }),
     doc.embedFont(fonts.bold, { subset: true }),
+    doc.embedFont(fonts.italic, { subset: true }),
   ]);
   const page = doc.addPage([layout.width, layout.height]);
 
@@ -263,11 +268,15 @@ export async function renderArtCertificatePdf(input: ArtCertificatePdfInput, fon
     page.drawText(t, { x: f.x0 + (f.x1 - f.x0 - w) / 2, y: layout.height - f.y + size * 0.15, font: fBold, size, color: ink });
   }
 
-  onLine(input.values.name, layout.fields.name);
-  onLine(input.values.lodge, layout.fields.lodge);
-  onLine(input.values.day, layout.fields.day);
-  onLine(input.values.month, layout.fields.month);
-  onLine(input.values.year, layout.fields.year);
+  if (layout.textBox) {
+    drawTextBox(page, layout.textBox, layout.height, input.text, input.placeDate, { title: fTitle, regular: fRegular, italic: fItalic }, ink);
+  } else {
+    onLine(input.values.name, layout.fields.name);
+    onLine(input.values.lodge, layout.fields.lodge);
+    onLine(input.values.day, layout.fields.day);
+    onLine(input.values.month, layout.fields.month);
+    onLine(input.values.year, layout.fields.year);
+  }
   for (const slot of layout.signatures ?? []) {
     onLine(input.signatures.find((s) => s.role === slot.role)?.name ?? null, slot);
   }
@@ -278,4 +287,53 @@ export async function renderArtCertificatePdf(input: ArtCertificatePdfInput, fon
     });
   }
   return doc.save();
+}
+
+/**
+ * O texto do Clássico (antes do nome, o nome em destaque, depois, e o local e data) dentro da
+ * área livre da arte: começa no tamanho do Clássico e diminui até caber; centralizado na área.
+ */
+function drawTextBox(
+  page: PDFPage,
+  box: { x0: number; x1: number; y0: number; y1: number },
+  pageHeight: number,
+  text: { before: string; name: string; after: string },
+  placeDate: string,
+  f: { title: PDFFont; regular: PDFFont; italic: PDFFont },
+  ink: RGB,
+): void {
+  const width = box.x1 - box.x0;
+  const cx = (box.x0 + box.x1) / 2;
+  const available = box.y1 - box.y0;
+
+  const metrics = (k: number) => {
+    const body: Style = { font: f.regular, size: 16.5 * k, color: ink };
+    const leading = 24 * k;
+    let nameSize = 28 * k;
+    const nameStyle = (size: number): Style => ({ font: f.title, size, color: ink });
+    while (wordWidth(text.name, nameStyle(nameSize)) > width && nameSize > 12) nameSize -= 0.5;
+    const nameLeading = nameSize + 10 * k;
+    const place: Style = { font: f.italic, size: 13.5 * k, color: ink };
+    const placeGap = 22 * k;
+    const height =
+      balancedWrap(text.before, body, width).length * leading + 8 * k +
+      balancedWrap(text.name, nameStyle(nameSize), width).length * nameLeading + 8 * k +
+      balancedWrap(text.after, body, width).length * leading +
+      placeGap + place.size;
+    return { body, leading, name: nameStyle(nameSize), nameLeading, place, placeGap, height };
+  };
+
+  let k = 1;
+  let m = metrics(k);
+  while (m.height > available && k > 0.55) {
+    k -= 0.025;
+    m = metrics(k);
+  }
+
+  // y do PDF cresce para cima; a área é medida do topo.
+  let y = pageHeight - box.y0 - Math.max(0, (available - m.height) / 2);
+  y = drawCentered(page, text.before, m.body, y, width, m.leading, cx);
+  y = drawCentered(page, text.name, m.name, y - 8 * k, width, m.nameLeading, cx);
+  y = drawCentered(page, text.after, m.body, y - 8 * k, width, m.leading, cx);
+  drawCentered(page, placeDate, m.place, y - m.placeGap + m.place.size, width, m.place.size, cx);
 }
