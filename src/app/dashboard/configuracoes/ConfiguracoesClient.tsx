@@ -420,7 +420,7 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
               </label>
               <label className="flex items-center gap-2 text-sm text-sand">
                 <input type="checkbox" checked={form.notifyBillingRemindersEnabled === 'true'} onChange={(e) => set('notifyBillingRemindersEnabled', String(e.target.checked))} />
-                Lembrete de cobrança a vencer (3 dias antes) e vencida
+                Aviso de cobranças vencidas há mais de 30 dias (um por irmão, todo dia enquanto não pagar)
               </label>
               <label className="flex items-center gap-2 text-sm text-sand">
                 <input type="checkbox" checked={form.notifyFoundationAnniversaryEnabled === 'true'} onChange={(e) => set('notifyFoundationAnniversaryEnabled', String(e.target.checked))} />

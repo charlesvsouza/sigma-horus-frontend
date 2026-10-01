@@ -2,14 +2,12 @@ import { prismaAdmin, withTenant } from '@/lib/prisma';
 import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
 import { channelsAvailable, dispatch, sleep, DISPATCH_THROTTLE_MS, type Channel, type LodgeChannels } from '@/lib/messaging';
 import { TENURE_MILESTONES } from '@/lib/masonic-degree';
-import { CHARGE_NOTICE_SIGNOFF, chargeNoticeLead, chargeNoticeTitle } from '@/lib/charge-notice';
-import { isAsaasMode, payHint } from '@/lib/collection';
-import { brl } from '@/lib/currency';
-import { lateChargeConfig, lateChargeSentence, pixAmount } from '@/lib/late-charge';
+import { AUTO_REMINDER_LOG_TITLE, AUTO_REMINDER_MIN_DAYS_OVERDUE, reminderHtml, reminderShortText, reminderText } from '@/lib/charge-reminder';
+import { loadReminderContext } from '@/lib/charge-reminder-server';
 
 // Gatilhos automáticos diários (Fase 7): aniversariantes (obreiro + família),
 // jubileus (iniciação/elevação/exaltação — tempo de mestre) e lembretes de
-// cobrança. Envia pelos canais disponíveis em cada loja (e-mail pela
+// cobrança (só vencidas há mais de 30 dias, um aviso por irmão — lib/charge-reminder). Envia pelos canais disponíveis em cada loja (e-mail pela
 // plataforma; WhatsApp/SMS BYO por loja) e registra tudo no MessageLog,
 // deduplicado por dia. Cada categoria liga/desliga por loja (Lodge.notify*).
 // Membro/familiar marcado como falecido nunca recebe felicitação de
@@ -24,8 +22,6 @@ const DEGREE_MILESTONES: { field: 'initiationDate' | 'elevationDate' | 'exaltati
   { field: 'exaltationDate', label: 'exaltação (Mestre Maçom)' },
 ];
 
-const REMINDER_DAYS_AHEAD = 3; // cobranças que vencem nos próximos N dias
-
 function partsBR(d: Date): { y: number; m: number; day: number } {
   const f = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' });
   const [{ value: y }, , { value: m }, , { value: day }] = f.formatToParts(d);
@@ -36,15 +32,14 @@ const sameDayMonth = (a: Date, ref: { m: number; day: number }) => {
   return p.m === ref.m && p.day === ref.day;
 };
 
-interface Stats { birthdays: number; relativesBirthdays: number; jubilees: number; foundationAnniversaries: number; dueSoon: number; overdue: number; sent: number; queued: number; failed: number; skipped: number }
+interface Stats { birthdays: number; relativesBirthdays: number; jubilees: number; foundationAnniversaries: number; overdue: number; sent: number; queued: number; failed: number; skipped: number }
 
 export async function runDailyNotifications(): Promise<Stats> {
-  const stats: Stats = { birthdays: 0, relativesBirthdays: 0, jubilees: 0, foundationAnniversaries: 0, dueSoon: 0, overdue: 0, sent: 0, queued: 0, failed: 0, skipped: 0 };
+  const stats: Stats = { birthdays: 0, relativesBirthdays: 0, jubilees: 0, foundationAnniversaries: 0, overdue: 0, sent: 0, queued: 0, failed: 0, skipped: 0 };
 
   const now = new Date();
   const today = partsBR(now);
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-  const dueLimit = new Date(now.getTime() + REMINDER_DAYS_AHEAD * 24 * 3600 * 1000);
 
   // Envia uma vez por (membro, canal, título) por dia (dedup via MessageLog).
   // `dispatched` é compartilhado por TODAS as chamadas de notify() no cron —
@@ -56,7 +51,7 @@ export async function runDailyNotifications(): Promise<Stats> {
   // (todas as lojas, todos os membros) passa disso fácil (visto em produção
   // num caso análogo: convocação de sessão com dezenas de membros).
   let dispatched = 0;
-  async function notify(lodgeId: string, list: Channel[], ch: LodgeChannels, memberId: string | null, to: string, title: string, body: string) {
+  async function notify(lodgeId: string, list: Channel[], ch: LodgeChannels, memberId: string | null, to: string, title: string, body: string, html?: string) {
     for (const channel of list) {
       const dest = to.trim();
       if (!dest) { stats.skipped++; continue; }
@@ -66,7 +61,7 @@ export async function runDailyNotifications(): Promise<Stats> {
       if (dup) { stats.skipped++; continue; }
       if (dispatched > 0) await sleep(DISPATCH_THROTTLE_MS);
       dispatched++;
-      const r = await dispatch(channel, dest, title, body, ch);
+      const r = await dispatch(channel, dest, title, body, ch, html ? { html } : undefined);
       stats[r.status]++;
       await withTenant(lodgeId, (db) =>
         db.messageLog.create({ data: { lodgeId, memberId, channel, title, content: body, status: r.status, error: r.detail ?? null } }),
@@ -80,8 +75,6 @@ export async function runDailyNotifications(): Promise<Stats> {
       foundationDate: true,
       notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
       notifyFoundationAnniversaryEnabled: true,
-      collectionMode: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true,
-      chargeLateFeesOnPix: true, lateFeePercent: true, lateInterestPercentMonth: true,
     },
   });
 
@@ -93,24 +86,16 @@ export async function runDailyNotifications(): Promise<Stats> {
 
     // Transação curta: só leitura. notify() (chamada abaixo, já fora da
     // transação) faz suas próprias transações curtas por escrita.
-    const { members, invoices } = await withTenant(lodge.id, async (db) => {
-      const [members, invoices] = await Promise.all([
-        db.member.findMany({
-          where: { lodgeId: lodge.id, status: 'active', deceased: false },
-          select: {
-            id: true, name: true, email: true, phone: true, birthDate: true,
-            initiationDate: true, elevationDate: true, exaltationDate: true,
-            relatives: { select: { kind: true, name: true, birthDate: true, email: true, phone: true, deceased: true } },
-          },
-        }),
-        db.invoice.findMany({
-          // 'billed' = já emitida no Asaas e ainda em aberto — também recebe lembrete (com o link).
-          where: { lodgeId: lodge.id, status: { in: ['pending', 'billed', 'overdue'] } },
-          select: { id: true, number: true, amount: true, dueDate: true, status: true, asaasInvoiceUrl: true, member: { select: { id: true, name: true, email: true, phone: true } } },
-        }),
-      ]);
-      return { members, invoices };
-    });
+    const members = await withTenant(lodge.id, (db) =>
+      db.member.findMany({
+        where: { lodgeId: lodge.id, status: 'active', deceased: false },
+        select: {
+          id: true, name: true, email: true, phone: true, birthDate: true,
+          initiationDate: true, elevationDate: true, exaltationDate: true,
+          relatives: { select: { kind: true, name: true, birthDate: true, email: true, phone: true, deceased: true } },
+        },
+      }),
+    );
 
     const contactFor = (channel: Channel, email?: string | null, phone?: string | null) => (channel === 'email' ? email : phone) ?? '';
 
@@ -173,21 +158,22 @@ export async function runDailyNotifications(): Promise<Stats> {
       }
     }
 
-    // 5) Cobranças a vencer e vencidas
+    // 5) Cobranças vencidas há mais de 30 dias: UM aviso por irmão com todas elas (e-mail com um
+    // bloco pagável por cobrança; WhatsApp/SMS com o resumo). Dedup diário pelo título no MessageLog.
     if (lodge.notifyBillingRemindersEnabled) {
-      for (const inv of invoices) {
-        if (!inv.member) continue;
-        const overdue = inv.dueDate < startOfDay || inv.status === 'overdue';
-        const dueSoon = !overdue && inv.dueDate <= dueLimit;
-        if (!overdue && !dueSoon) continue;
-        if (overdue) stats.overdue++; else stats.dueSoon++;
-        const title = chargeNoticeTitle(overdue);
-        const lead = chargeNoticeLead({ memberName: inv.member.name, number: inv.number, amount: inv.amount, dueDate: inv.dueDate, overdue });
-        // Modo Loja cobrando multa e juros no Pix: o aviso de vencida já traz o valor atualizado.
-        const late = overdue && !isAsaasMode(lodge) ? lateChargeSentence(pixAmount(inv.amount, inv.dueDate, lateChargeConfig(lodge)), brl) : null;
-        const body = `${lead}${late ? ` ${late}` : ''}${payHint(lodge, inv)} ${CHARGE_NOTICE_SIGNOFF}`;
-        for (const channel of list) {
-          await notify(lodge.id, [channel], lodgeChannels, inv.member.id, contactFor(channel, inv.member.email, inv.member.phone), title, body);
+      const ctx = await loadReminderContext(lodge.id, { scope: 'overdue', minDaysOverdue: AUTO_REMINDER_MIN_DAYS_OVERDUE }, now);
+      if (ctx) {
+        const opts = { lodgeName: ctx.lodgeName, portalUrl: ctx.portalUrl, instructions: ctx.instructions };
+        const phones = new Map(members.map((m) => [m.id, m.phone]));
+        for (const group of ctx.groups) {
+          stats.overdue += group.items.length;
+          for (const channel of list) {
+            if (channel === 'email') {
+              await notify(lodge.id, [channel], lodgeChannels, group.member.id, group.member.email ?? '', AUTO_REMINDER_LOG_TITLE, reminderText(group, opts), reminderHtml(group, opts));
+            } else {
+              await notify(lodge.id, [channel], lodgeChannels, group.member.id, phones.get(group.member.id) ?? '', AUTO_REMINDER_LOG_TITLE, reminderShortText(group, opts));
+            }
+          }
         }
       }
     }

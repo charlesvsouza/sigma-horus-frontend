@@ -58,13 +58,15 @@ function escapeHtml(s: string) {
  * sai só com o texto (nenhuma mudança visual pro que já existia). O `text`
  * plano continua sempre enviado junto, como fallback pra clientes sem HTML.
  */
-function buildEmailHtml(body: string, branding?: { lodgeName?: string | null; crestUrl?: string | null }): string | undefined {
-  if (!branding?.crestUrl && !branding?.lodgeName) return undefined;
+function buildEmailHtml(body: string, branding?: { lodgeName?: string | null; crestUrl?: string | null }, innerHtml?: string): string | undefined {
+  if (!innerHtml && !branding?.crestUrl && !branding?.lodgeName) return undefined;
+  branding = branding ?? {};
   const header = [
     branding.crestUrl ? `<img src="${escapeHtml(branding.crestUrl)}" alt="${escapeHtml(branding.lodgeName ?? '')}" style="max-height:72px;display:block;margin:0 auto 12px" />` : '',
     branding.lodgeName ? `<h2 style="margin:0;text-align:center;font-family:Georgia,serif;color:#1b1b1b">${escapeHtml(branding.lodgeName)}</h2>` : '',
   ].filter(Boolean).join('\n');
-  const bodyHtml = escapeHtml(body).replace(/\n/g, '<br>');
+  // `innerHtml` = corpo já montado em HTML (ex.: lembrete com uma caixa por cobrança).
+  const bodyHtml = innerHtml ?? escapeHtml(body).replace(/\n/g, '<br>');
   return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#1b1b1b;background:#f4f1e8;padding:24px">
     <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2ddc8;border-radius:8px;padding:24px 28px">
       ${header ? `<div style="border-bottom:1px solid #e2ddc8;padding-bottom:16px;margin-bottom:16px">${header}</div>` : ''}
@@ -76,12 +78,12 @@ function buildEmailHtml(body: string, branding?: { lodgeName?: string | null; cr
 /** Anexo de e-mail (ex.: comprovante do "Já paguei"): conteúdo em base64. */
 export interface EmailAttachment { filename: string; content: string }
 
-async function sendEmail(to: string, subject: string, body: string, branding?: { lodgeName?: string | null; crestUrl?: string | null }, attachments?: EmailAttachment[]): Promise<SendResult> {
+async function sendEmail(to: string, subject: string, body: string, branding?: { lodgeName?: string | null; crestUrl?: string | null }, attachments?: EmailAttachment[], innerHtml?: string): Promise<SendResult> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
   if (!key || !from) return { status: 'queued', detail: 'E-mail não configurado na plataforma.' };
   try {
-    const html = buildEmailHtml(body, branding);
+    const html = buildEmailHtml(body, branding, innerHtml);
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
@@ -140,9 +142,9 @@ async function sendSms(to: string, body: string, cfg: SmsCfg): Promise<SendResul
 }
 
 /** Envia por um canal. `to` = e-mail (email) ou telefone (whatsapp/sms). WhatsApp/SMS usam as credenciais da loja. */
-export async function dispatch(channel: Channel, to: string, subject: string, body: string, ch: LodgeChannels, opts?: { attachments?: EmailAttachment[] }): Promise<SendResult> {
+export async function dispatch(channel: Channel, to: string, subject: string, body: string, ch: LodgeChannels, opts?: { attachments?: EmailAttachment[]; html?: string }): Promise<SendResult> {
   if (!to) return { status: 'failed', detail: 'Destinatário sem contato.' };
-  if (channel === 'email') return sendEmail(to, subject, body, { lodgeName: ch.lodgeName, crestUrl: ch.crestUrl }, opts?.attachments);
+  if (channel === 'email') return sendEmail(to, subject, body, { lodgeName: ch.lodgeName, crestUrl: ch.crestUrl }, opts?.attachments, opts?.html);
   if (channel === 'whatsapp') return ch.whatsapp ? sendWhatsApp(to, body, ch.whatsapp) : { status: 'queued', detail: 'WhatsApp não conectado nesta loja.' };
   return ch.sms ? sendSms(to, body, ch.sms) : { status: 'queued', detail: 'SMS não conectado nesta loja.' };
 }

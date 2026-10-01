@@ -1,15 +1,14 @@
 import { auth } from '@/lib/auth';
+import { singleReminderLogTitle } from '@/lib/charge-reminder';
+import { loadReminderContext, sendReminder } from '@/lib/charge-reminder-server';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
-import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
-import { brl } from '@/lib/currency';
-import { payHint } from '@/lib/collection';
-import { formatDateOnly } from '@/lib/date-only';
 import { NextResponse } from 'next/server';
 
 // Lembrete manual de uma cobrança específica — complementa o lembrete
-// automático do cron diário (3 dias antes do vencimento), pra quando o
-// tesoureiro quer cobrar na hora (ex.: cobrança já vencida).
+// automático do cron diário (só vencidas há mais de 30 dias), pra quando o
+// tesoureiro quer cobrar na hora (ex.: cobrança já vencida). Mesmo e-mail do
+// lembrete em lote (lib/charge-reminder), com uma cobrança só.
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
@@ -21,28 +20,19 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
   const { id } = await params;
 
-  const data = await withTenant(String(lodgeId), async (db) => {
-    const invoice = await db.invoice.findFirst({
-      where: { id, lodgeId: String(lodgeId) },
-      include: { member: { select: { name: true, email: true } }, lodge: { select: { name: true, collectionMode: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true } } },
-    });
-    return invoice;
-  });
-
-  if (!data) return NextResponse.json({ error: 'Cobrança não encontrada.' }, { status: 404 });
-  if (data.status === 'paid') return NextResponse.json({ error: 'Esta cobrança já está paga.' }, { status: 409 });
-  if (!data.member?.email) return NextResponse.json({ error: 'O membro desta cobrança não tem e-mail cadastrado.' }, { status: 400 });
-
-  const valor = brl(data.amount);
-  const vencimento = formatDateOnly(data.dueDate);
-  const result = await dispatch(
-    'email',
-    data.member.email,
-    `Lembrete de cobrança — ${data.lodge.name}`,
-    `Olá, ${data.member.name}.\n\nLembramos que a cobrança ${data.number}, no valor de ${valor}, com vencimento em ${vencimento}, ainda está em aberto.${payHint(data.lodge, data)}\n\nAtenciosamente,\n${data.lodge.name}`,
-    EMPTY_CHANNELS,
+  const invoice = await withTenant(String(lodgeId), (db) =>
+    db.invoice.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { number: true, status: true, member: { select: { email: true } } } }),
   );
+  if (!invoice) return NextResponse.json({ error: 'Cobrança não encontrada.' }, { status: 404 });
+  if (invoice.status === 'paid') return NextResponse.json({ error: 'Esta cobrança já está paga.' }, { status: 409 });
+  if (!invoice.member) return NextResponse.json({ error: 'Vincule a cobrança a um membro para enviar o lembrete.' }, { status: 400 });
+  if (!invoice.member.email) return NextResponse.json({ error: 'O membro desta cobrança não tem e-mail cadastrado.' }, { status: 400 });
 
+  const ctx = await loadReminderContext(String(lodgeId), { scope: 'all', invoiceId: id });
+  const group = ctx?.groups[0];
+  if (!ctx || !group) return NextResponse.json({ error: 'Esta cobrança não tem saldo em aberto.' }, { status: 409 });
+
+  const result = await sendReminder(String(lodgeId), ctx, group, singleReminderLogTitle(invoice.number));
   if (result.status === 'failed') {
     return NextResponse.json({ error: result.detail ?? 'Falha ao enviar o lembrete.' }, { status: 502 });
   }

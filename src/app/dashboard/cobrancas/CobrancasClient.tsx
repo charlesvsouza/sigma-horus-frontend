@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Alert, Button, Card, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { fetchWhatsAppShare, WhatsAppSendDialog, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
 import { fetchReceiptContext, RegisterReceiptDialog, type ReceiptContext } from '@/components/register-receipt-dialog';
+import { ChargeReminderDialog } from '@/components/charge-reminder-dialog';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -27,13 +28,19 @@ interface InvoiceItem {
   asaasInvoiceUrl?: string | null;
   account?: AccountOption | null;
   member?: MemberOption | null;
+  openBalance: number;
+  overdue: boolean;
 }
+
+interface OpenSummary { invoices: number; members: number; total: number; overdue: number; withoutEmail: number }
+
+type ListFilter = 'open' | 'overdue' | 'paid' | 'all';
 
 interface HeldRecurring { memberId: string; memberName: string; pending: number; total: number; oldestDueDate: string }
 
 interface CollectionInfo { mode: 'lodge' | 'asaas'; settlementName: string | null; balance: number | null; instructions: string | null }
 
-export default function CobrancasClient({ invoices, chartAccounts, members, collection, heldRecurring }: { invoices: InvoiceItem[]; chartAccounts: ChartOption[]; members: MemberOption[]; collection: CollectionInfo; heldRecurring: HeldRecurring[] }) {
+export default function CobrancasClient({ invoices, chartAccounts, members, collection, heldRecurring, openSummary }: { invoices: InvoiceItem[]; chartAccounts: ChartOption[]; members: MemberOption[]; collection: CollectionInfo; heldRecurring: HeldRecurring[]; openSummary: OpenSummary }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -46,6 +53,9 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
   const [bulk, setBulk] = useState({ chartAccountId: '', amount: '', dueDate: '', description: '', scope: 'active', isRecurring: false, recurringInterval: 'monthly', recurringCount: '' });
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [search, setSearch] = useState('');
+  // Lista abre nas cobranças em aberto (o que o Tesoureiro acompanha no dia a dia).
+  const [listFilter, setListFilter] = useState<ListFilter>('open');
+  const [reminderOpen, setReminderOpen] = useState(false);
   // Envio pelo WhatsApp (só Modo Loja): diálogo da cobrança e atalho logo após criar uma avulsa.
   const [share, setShare] = useState<WhatsAppShare | null>(null);
   const [sharingId, setSharingId] = useState('');
@@ -206,9 +216,23 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
   const INPUT = inputClass; // fonte única do design system
 
   const q = search.trim().toLowerCase();
-  const filteredInvoices = q
-    ? invoices.filter((i) => i.number.toLowerCase().includes(q) || i.member?.name.toLowerCase().includes(q) || i.status.toLowerCase().includes(q))
-    : invoices;
+  const isOpen = (i: InvoiceItem) => i.status !== 'paid' && i.openBalance > 0;
+  const matchesFilter: Record<ListFilter, (i: InvoiceItem) => boolean> = {
+    open: isOpen,
+    overdue: (i) => isOpen(i) && i.overdue,
+    paid: (i) => !isOpen(i),
+    all: () => true,
+  };
+  const filterCounts = Object.fromEntries((Object.keys(matchesFilter) as ListFilter[]).map((k) => [k, invoices.filter(matchesFilter[k]).length])) as Record<ListFilter, number>;
+  const filteredInvoices = invoices
+    .filter(matchesFilter[listFilter])
+    .filter((i) => !q || i.number.toLowerCase().includes(q) || i.member?.name.toLowerCase().includes(q) || (i.account?.title ?? '').toLowerCase().includes(q));
+  const FILTERS: { value: ListFilter; label: string }[] = [
+    { value: 'open', label: 'Em aberto' },
+    { value: 'overdue', label: 'Vencidas' },
+    { value: 'paid', label: 'Pagas' },
+    { value: 'all', label: 'Todas' },
+  ];
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -221,11 +245,6 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" onClick={() => setPanel(panel === 'single' ? 'none' : 'single')}>{panel === 'single' ? 'Fechar' : 'Nova cobrança'}</Button>
             <Button type="button" variant="secondary" onClick={() => setPanel(panel === 'bulk' ? 'none' : 'bulk')}>{panel === 'bulk' ? 'Fechar' : 'Cobrança em massa'}</Button>
-            {lodgeMode ? (
-              <Link href="/dashboard/cobrancas/whatsapp" className="inline-flex items-center justify-center rounded-full border border-white/10 bg-sigma-blue-mid/30 px-5 py-2.5 text-sm text-sand-light transition-all duration-200 ease-out hover:bg-sigma-blue-mid/50">
-                Envio pelo WhatsApp
-              </Link>
-            ) : null}
             <Button type="button" variant="secondary" onClick={processRecurring} disabled={processing} title="Gera as próximas ocorrências das cobranças recorrentes já cadastradas">
               {processing ? 'Processando…' : 'Processar recorrentes'}
             </Button>
@@ -241,34 +260,33 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
           </div>
         ) : null}
 
-        {collection.mode === 'asaas' ? (
-          <Card className="max-w-2xl">
-            <h2 className="text-base font-semibold text-sand-light">Modo Asaas</h2>
-            <p className="mt-1 text-xs text-sand-dark">
-              As baixas caem na conta corrente <strong>{collection.settlementName ?? '— (escolha em Configurações da loja)'}</strong>. O repasse do Asaas para
-              o banco é feito manualmente pelo Tesoureiro, no painel do Asaas. A tarifa cobrada pelo Asaas é lançada como despesa e absorvida pela loja.
-            </p>
-            {collection.balance != null ? (
-              <p className="mt-3 text-sm text-sand-light">
-                Saldo no Asaas, a repassar: <strong className="tabular-nums text-gold">{brl(collection.balance)}</strong>
-                {collection.balance > 0 ? <span className="ml-2 text-xs text-sand-dark">— transfira para a conta corrente no painel do Asaas.</span> : null}
-              </p>
-            ) : (
-              <p className="mt-3 text-xs text-sand-dark">Saldo do Asaas indisponível no momento.</p>
-            )}
-            {!collection.settlementName ? <Alert intent="warn" className="mt-3">Escolha a conta corrente de repasse em Configurações da loja para poder emitir no Asaas.</Alert> : null}
-          </Card>
-        ) : (
-          <Card className="max-w-2xl">
-            <h2 className="text-base font-semibold text-sand-light">Modo Loja — recebimento direto na conta da loja</h2>
-            {collection.instructions ? (
-              <p className="mt-2 whitespace-pre-line text-sm text-sand">{collection.instructions}</p>
-            ) : (
-              <p className="mt-2 text-xs text-amber-300">Cadastre a chave Pix e/ou os dados bancários da loja em Configurações da loja para orientar os pagamentos.</p>
-            )}
-            <p className="mt-2 text-xs text-sand-dark">Confirmado o pagamento, o Tesoureiro dá a baixa em Pagamentos.</p>
-          </Card>
-        )}
+        {/* Como os irmãos pagam — faixa compacta; os detalhes ficam em Configurações da loja. */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-white/8 bg-sigma-blue-deep/50 px-4 py-2.5 text-xs text-sand-dark">
+          {collection.mode === 'asaas' ? (
+            <>
+              <span className="font-semibold text-sand-light">Modo Asaas</span>
+              <span title="O repasse do Asaas para o banco é manual, no painel do Asaas. A tarifa é lançada como despesa da loja.">
+                Baixas na conta <strong className="text-sand">{collection.settlementName ?? '— escolha em Configurações da loja'}</strong>
+              </span>
+              {collection.balance != null ? (
+                <span>Saldo no Asaas a repassar: <strong className="tabular-nums text-gold">{brl(collection.balance)}</strong></span>
+              ) : (
+                <span>Saldo do Asaas indisponível no momento.</span>
+              )}
+            </>
+          ) : (
+            <>
+              <span className="font-semibold text-sand-light">Modo Loja</span>
+              {collection.instructions ? (
+                <span className="text-sand">{collection.instructions.split('\n').join(' · ')}</span>
+              ) : (
+                <span className="text-amber-300">Cadastre a chave Pix e/ou os dados bancários em Configurações da loja.</span>
+              )}
+              <span>Baixa manual em Pagamentos.</span>
+            </>
+          )}
+        </div>
+        {collection.mode === 'asaas' && !collection.settlementName ? <Alert intent="warn">Escolha a conta corrente de repasse em Configurações da loja para poder emitir no Asaas.</Alert> : null}
 
         {panel === 'bulk' ? (
         <FormCard title="Cobrança em massa" description="Gera uma cobrança para todos os irmãos de uma vez (ex.: mensalidade). O número de cada cobrança é gerado automaticamente.">
@@ -402,23 +420,62 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
           </Card>
         ) : null}
 
+        {openSummary.invoices > 0 ? (
+          <section aria-labelledby="cobrar-title" className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gold/20 bg-sigma-card px-6 py-5">
+            <div>
+              <h2 id="cobrar-title" className="text-base font-semibold text-sand-light">Cobrar quem está em aberto</h2>
+              <p className="mt-1 text-sm text-sand">
+                <strong className="tabular-nums text-sand-light">{openSummary.invoices}</strong> cobrança(s) de <strong className="tabular-nums text-sand-light">{openSummary.members}</strong> irmão(s) ·{' '}
+                <strong className="tabular-nums text-gold">{brl(openSummary.total)}</strong>
+                {openSummary.overdue > 0 ? <> · <span className="text-rose-300">{openSummary.overdue} vencida(s)</span></> : null}
+              </p>
+              {openSummary.withoutEmail > 0 ? <p className="mt-0.5 text-xs text-sand-dark">{openSummary.withoutEmail} irmão(s) sem e-mail cadastrado não recebem o lembrete por e-mail.</p> : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" onClick={() => setReminderOpen(true)} title="Um e-mail por irmão com todas as cobranças em aberto dele — você confere a lista antes de enviar">
+                Enviar lembretes por e-mail
+              </Button>
+              {lodgeMode ? (
+                <Link href="/dashboard/cobrancas/whatsapp" className="inline-flex items-center justify-center rounded-full border border-white/10 bg-sigma-blue-mid/30 px-5 py-2.5 text-sm text-sand-light transition-all duration-200 ease-out hover:bg-sigma-blue-mid/50">
+                  Envio pelo WhatsApp
+                </Link>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Cobranças cadastradas</h2>
-            <input aria-label="Buscar por número, membro ou status" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por número, membro ou status…" className={`${INPUT} max-w-xs`} />
+            <input aria-label="Buscar por número, membro ou descrição" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por número, membro ou descrição…" className={`${INPUT} max-w-xs`} />
           </div>
+          {invoices.length > 0 ? (
+            <div role="group" aria-label="Filtrar cobranças" className="mt-4 flex flex-wrap gap-2">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  aria-pressed={listFilter === f.value}
+                  onClick={() => setListFilter(f.value)}
+                  className={`rounded-full border px-3 py-1 text-xs transition ${listFilter === f.value ? 'border-gold/60 bg-gold/15 text-gold' : 'border-white/10 text-sand-dark hover:text-sand-light'}`}
+                >
+                  {f.label} <span className="tabular-nums opacity-70">{filterCounts[f.value]}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className="mt-5 space-y-3">
             {invoices.length === 0 ? (
               <EmptyState title="Ainda não soou o malhete da arrecadação." description="Crie uma cobrança individual ou use a cobrança em massa para gerar as mensalidades de todos os irmãos." />
             ) : filteredInvoices.length === 0 ? (
-              <p className="text-sm text-sand-dark">Nenhuma cobrança encontrada para &quot;{search}&quot;.</p>
+              <p className="text-sm text-sand-dark">{q ? <>Nenhuma cobrança encontrada para &quot;{search}&quot; neste filtro.</> : 'Nenhuma cobrança neste filtro.'}</p>
             ) : filteredInvoices.map((invoice) => (
               <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{invoice.number}</p>
                   <p className="mt-1 text-xs text-sand-dark">{invoice.account?.title ?? 'Conta sem título'} • {invoice.member?.name ?? 'Sem membro'}</p>
-                  <span className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${invoice.status === 'paid' ? 'bg-emerald-500/12 text-emerald-300 border border-emerald-500/20' : invoice.status === 'billed' ? 'bg-sky-500/12 text-sky-200 border border-sky-500/20' : invoice.status === 'overdue' ? 'bg-rose-500/12 text-rose-300 border border-rose-500/20' : 'bg-gold/10 text-gold border border-gold/15'}`}>
-                    {invoice.status === 'paid' ? 'Paga' : invoice.status === 'billed' ? 'Emitida' : invoice.status === 'overdue' ? 'Vencida' : 'Pendente'}
+                  <span className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${invoice.status === 'paid' ? 'bg-emerald-500/12 text-emerald-300 border border-emerald-500/20' : invoice.status === 'billed' ? 'bg-sky-500/12 text-sky-200 border border-sky-500/20' : invoice.status === 'overdue' || invoice.overdue ? 'bg-rose-500/12 text-rose-300 border border-rose-500/20' : 'bg-gold/10 text-gold border border-gold/15'}`}>
+                    {invoice.status === 'paid' ? 'Paga' : invoice.status === 'overdue' || invoice.overdue ? 'Vencida' : invoice.status === 'billed' ? 'Emitida' : 'Pendente'}
                   </span>
                 </div>
                 <div className="text-right text-xs text-sand-dark">
@@ -465,6 +522,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
         </section>
       </div>
       {share ? <WhatsAppSendDialog key={share.key} share={share} onClose={() => setShare(null)} /> : null}
+      {reminderOpen ? <ChargeReminderDialog onClose={() => setReminderOpen(false)} /> : null}
       {receiptCtx ? <RegisterReceiptDialog key={receiptCtx.invoiceId} ctx={receiptCtx} onClose={() => setReceiptCtx(null)} onDone={() => { setReceiptCtx(null); router.refresh(); }} /> : null}
     </main>
   );

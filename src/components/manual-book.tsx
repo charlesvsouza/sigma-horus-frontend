@@ -262,7 +262,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 28 de setembro de 2026 · versão 1.56</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 1º de outubro de 2026 · versão 1.71</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -324,7 +324,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.70 — 30 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.71 — 1º de outubro de 2026</p>
               </div>
             </div>
 
@@ -740,7 +740,9 @@ export function ManualBook() {
                   Cada categoria de mensagem automática (aniversários, jubileus, lembretes de cobrança, aniversário
                   de fundação da loja) liga/desliga independente em <UI>Configurações da loja → Mensagens
                   automáticas</UI>. Jubileu cobre iniciação, elevação e exaltação (tempo de mestre) nos marcos de 1,
-                  5, 10, 15, 20, 25, 30, 40, 50 e 60 anos. <strong>Aniversário de fundação</strong> exige a
+                  5, 10, 15, 20, 25, 30, 40, 50 e 60 anos. O <strong>lembrete de cobrança automático</strong> vai só para
+                  cobranças <strong>vencidas há mais de 30 dias</strong>: um aviso por irmão com todas elas, todo dia enquanto
+                  não forem pagas (para cobrar antes disso, use <UI>Enviar lembretes por e-mail</UI> em Cobranças, 7.3). <strong>Aniversário de fundação</strong> exige a
                   <UI> Data de fundação</UI> preenchida em 6.1 — no dia, todos os obreiros ativos recebem uma
                   mensagem comemorativa. Membro ou familiar marcado como <strong>falecido</strong> (cadastro do
                   membro, seção Família e dependentes — ver capítulo 8) nunca recebe felicitação, mesmo com a
@@ -987,7 +989,7 @@ export function ManualBook() {
 
               <Sub id="tes-cobrancas" title="7.3 Criar cobranças e recorrência">
                 <p>
-                  Cobranças são os títulos que você gera para receber dos membros. Cada cobrança nasce com o seu próprio lançamento a receber, ligado ao membro. Em <UI>Tesouraria → Entradas e Saídas → Cobranças</UI>, a tela abre pela lista <UI>Cobranças cadastradas</UI> e tem três botões no alto: <UI>Nova cobrança</UI>, <UI>Cobrança em massa</UI> e <UI>Processar recorrentes</UI>. Clique em <UI>Nova cobrança</UI> e preencha:
+                  Cobranças são os títulos que você gera para receber dos membros. Cada cobrança nasce com o seu próprio lançamento a receber, ligado ao membro. Em <UI>Tesouraria → Entradas e Saídas → Cobranças</UI>, a tela tem três botões no alto: <UI>Nova cobrança</UI>, <UI>Cobrança em massa</UI> e <UI>Processar recorrentes</UI>. Logo abaixo, uma faixa mostra o modo de recebimento da loja (Modo Loja ou Modo Asaas) e, quando há cobranças em aberto, o painel <UI>Cobrar quem está em aberto</UI> (quantas cobranças, de quantos irmãos, o total e quantas vencidas), com os botões <UI>Enviar lembretes por e-mail</UI> e, no Modo Loja, <UI>Envio pelo WhatsApp</UI>. Clique em <UI>Nova cobrança</UI> e preencha:
                 </p>
                 <Steps>
                   <li>Selecione a <UI>categoria</UI> da cobrança (centro de custo do plano de contas: Mensalidades, Taxa de Iniciação, Taxa de Elevação, Taxa de Exaltação, eventos etc.). O <strong>lançamento a receber é criado automaticamente junto com a cobrança</strong>. O Tronco de Solidariedade não aparece aqui — a doação tem fluxo próprio na Hospitalaria.</li>
@@ -1021,16 +1023,17 @@ export function ManualBook() {
                 </p>
                 <p>
                   Na lista <UI>Cobranças cadastradas</UI>, cada item mostra um status: <strong>Pendente</strong>,
-                  <strong> Emitida</strong>, <strong>Paga</strong> ou <strong>Vencida</strong>. Use o campo de busca para
-                  filtrar por número, membro ou status.
+                  <strong> Emitida</strong>, <strong>Paga</strong> ou <strong>Vencida</strong>. A lista abre em <UI>Em aberto</UI>; os filtros
+                  <UI>Vencidas</UI>, <UI>Pagas</UI> e <UI>Todas</UI> mostram quantas há em cada um. O campo de busca filtra por número, membro ou descrição.
                 </p>
                 <Bullets>
                   <li><strong>WhatsApp</strong> (só no <strong>Modo Loja</strong>): abre uma janela com a mensagem pronta — o mesmo texto do lembrete por e-mail — com o <strong>Pix copia e cola</strong> na chave da loja, com o valor em aberto já preenchido, e o QR Code. <UI>Abrir no WhatsApp</UI> abre a conversa do irmão (no WhatsApp Web ou no app) com o texto escrito; você só aperta <strong>Enviar</strong>, do seu número. Nada é enviado sem você. A mensagem pode ser editada antes; <UI>Copiar QR</UI>, <UI>Baixar QR</UI> e, no celular, <UI>Compartilhar QR</UI> mandam a imagem também. Dica: no celular o irmão não consegue escanear o QR da própria tela — é o código copia e cola que ele usa no app do banco. O Pix cai direto na conta da loja e a <strong>baixa continua manual</strong>, em Pagamentos. Ao criar uma cobrança avulsa, o sistema já oferece <UI>Enviar pelo WhatsApp</UI>.</li>
-                  <li><strong>Envio pelo WhatsApp</strong> (botão no topo de Cobranças, só no Modo Loja): lista todas as cobranças em aberto, com filtros <UI>A vencer (3 dias)</UI> e <UI>Vencidas</UI>, e a data do último envio de cada uma. Use depois da cobrança em massa ou das recorrentes: passe irmão por irmão com <UI>Enviar</UI>. O celular vem do cadastro do membro; sem celular, o WhatsApp abre para você escolher o contato.</li>
+                  <li><strong>Enviar lembretes por e-mail</strong> (painel <UI>Cobrar quem está em aberto</UI>): manda <strong>um e-mail por irmão</strong> com <strong>todas</strong> as cobranças em aberto dele, cada uma num bloco próprio para ele <strong>pagar uma sem a outra</strong>. No <strong>Modo Loja</strong>, cada bloco leva o <strong>Pix copia e cola daquela cobrança</strong> (com multa e juros, se a loja cobra); sem chave Pix, vão os dados bancários. No <strong>Modo Asaas</strong>, cada bloco leva o botão <UI>Pagar esta cobrança</UI> com o link da cobrança emitida; a que ainda não foi emitida leva ao portal (o envio <strong>não emite nada</strong> no Asaas). Com mais de uma cobrança, o e-mail lembra que no portal dá para juntar várias num Pix só. Antes de enviar abre uma <strong>conferência</strong>: escolha quais cobranças entram (<UI>Todas em aberto</UI>, <UI>Vencidas e a vencer em até 3 dias</UI> ou <UI>Só vencidas</UI>), veja irmão por irmão o que vai (clique em <em>N cobranças</em> para abrir a lista), desmarque quem não deve receber e clique em <UI>Enviar</UI>. Irmão <strong>sem e-mail</strong> fica de fora (cadastre em Membros); quem <strong>já recebeu o lembrete hoje</strong> não recebe de novo. Cada envio fica registrado em Comunicação.</li>
+                  <li><strong>Envio pelo WhatsApp</strong> (painel <UI>Cobrar quem está em aberto</UI>, só no Modo Loja): lista todas as cobranças em aberto, com filtros <UI>A vencer (3 dias)</UI> e <UI>Vencidas</UI>, e a data do último envio de cada uma. Use depois da cobrança em massa ou das recorrentes: passe irmão por irmão com <UI>Enviar</UI>. O celular vem do cadastro do membro; sem celular, o WhatsApp abre para você escolher o contato.</li>
                   <li><strong>Confirmar o envio:</strong> o WhatsApp não avisa o sistema se a mensagem foi enviada. Por isso, ao voltar para o Sigma Horus, a janela pergunta <UI>Enviou a mensagem para …?</UI>: <UI>Sim, enviei</UI> marca a cobrança como <strong>Enviada</strong> e ela sai da lista (desmarque <UI>Ocultar as já enviadas</UI> para reenviar); <UI>Não enviei</UI> apaga o registro e ela continua na fila. Se você fechar sem responder, ela aparece como <strong>Aberta, não confirmada</strong> e continua na fila. Os envios ficam em Comunicação. Entregue/lida (✓✓) só existiria com a integração oficial da Meta.</li>
                   <li><strong>Registrar comprovante</strong> (só no <strong>Modo Loja</strong>; Tesoureiro e Administrador, ou quem a matriz de Permissões liberar em Contas): o irmão mandou o comprovante por fora — por exemplo, respondendo no WhatsApp? Registre em nome dele. Anexe o <strong>PDF ou a foto</strong>; o sistema faz a <strong>mesma conferência</strong> do &quot;Já paguei&quot; (PDF: identificador do Pix, valor, loja recebedora e nº de controle; foto não é conferida automaticamente) e mostra o resultado na hora. Se a data do Pix não puder ser lida (foto ou PDF escaneado), informe-a — é ela que vai na baixa. O aviso entra em <UI>Pagamentos → Avisos de pagamento dos irmãos</UI> com a <strong>data da inclusão</strong> e a marca <em>Registrado por …</em>, e segue o fluxo de sempre: conferir no extrato e dar a baixa. Opcionalmente o irmão recebe um e-mail confirmando o recebimento; no portal ele vê <em>Aguardando confirmação da Tesouraria</em>. Se já houver um aviso da mesma cobrança, o sistema mostra e pede para marcar <UI>Substituir o aviso existente</UI>. O mesmo botão (<UI>Comprovante</UI>) está na página <UI>Envio pelo WhatsApp</UI>. Nada é baixado sem você.</li>
                   <li><strong>E-mail de protocolo ao irmão:</strong> todo aviso de pagamento (o &quot;Já paguei&quot; do portal, sempre; o comprovante registrado pela Tesouraria, se a caixa estiver marcada — vem marcada) manda ao irmão um e-mail <em>Comprovante recebido</em> com a cobrança, o valor, a data do aviso e o resultado da análise: <em>conferido</em> (valor, recebedor e identificador batem — aguarda a baixa) ou <em>recebido, será conferido pela Tesouraria</em>. Divergência nunca é descrita ao irmão. Na baixa, ele recebe o <em>Pagamento confirmado</em> de sempre, que fecha o ciclo.</li>
-                  <li><strong>Lembrar por e-mail:</strong> envia por e-mail um lembrete avulso da cobrança ao membro — útil pra cobrar na hora, além do lembrete automático que o sistema já envia 3 dias antes do vencimento. Os lembretes levam o link do Pix (quando emitido no Asaas) ou os dados de pagamento da loja, e o <strong>link do portal</strong>, onde o irmão paga sozinho (<UI>Minhas pendências</UI>).</li>
+                  <li><strong>Lembrar por e-mail</strong> (na linha da cobrança): envia o mesmo e-mail, só com aquela cobrança — um lembrete avulso ao membro — útil pra cobrar na hora, além do aviso automático diário, que o sistema só manda para cobranças <strong>vencidas há mais de 30 dias</strong> (um e-mail por irmão, no mesmo formato, com todas elas; liga e desliga em Configurações da loja). Os lembretes levam o link do Pix (quando emitido no Asaas) ou os dados de pagamento da loja, e o <strong>link do portal</strong>, onde o irmão paga sozinho (<UI>Minhas pendências</UI>).</li>
                   <li><strong>Cancelar:</strong> remove a cobrança e o lançamento a receber gerado por ela (nunca mexe em pagamentos já registrados). Só funciona em cobranças ainda não pagas.</li>
                 </Bullets>
               </Sub>
