@@ -117,3 +117,19 @@ test('ordem Referência: pagamento sem vencimento vai pro fim, num bloco só', (
   ], year);
   assert.deepEqual(r.groups?.map((g) => g.label), ['outubro/2026', 'Sem referência']);
 });
+
+test('ordem Nenhuma: volta ao modo de antes — ordem da Referência, sem blocos', () => {
+  const ref = buildAccountsReport(sortRows, year);
+  const nenhuma = buildAccountsReport(sortRows, { ...year, sort: 'nenhuma' });
+  assert.deepEqual(nenhuma.rows.map((x) => x.id), ref.rows.map((x) => x.id));
+  assert.equal(nenhuma.groups, null);
+  assert.equal(parseAccountsSort('nenhuma'), 'nenhuma');
+});
+
+test('subtotais desligados: mesma ordem, sem blocos', () => {
+  const com = buildAccountsReport(sortRows, { ...year, sort: 'nome' });
+  const sem = buildAccountsReport(sortRows, { ...year, sort: 'nome', subtotals: false });
+  assert.deepEqual(sem.rows.map((x) => x.id), com.rows.map((x) => x.id));
+  assert.equal(sem.groups, null);
+  assert.equal(sem.total, com.total);
+});

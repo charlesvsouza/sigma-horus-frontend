@@ -6,7 +6,7 @@ import { EmptyState, inputClass } from '@/components/ui';
 import { ReportActions, ReportDocument } from '@/components/report/report-document';
 import { brl } from '@/lib/currency';
 import { csvNumber } from '@/lib/csv';
-import { ACCOUNTS_SORT_LABEL, type AccountsSort } from '@/lib/accounts-report';
+import { ACCOUNTS_SORT_LABEL, sortHasGroups, type AccountsSort } from '@/lib/accounts-report';
 
 interface PersonOption { id: string; name: string; }
 interface ReportRow { id: string; date: string; personId: string | null; personName: string | null; description: string; category: string | null; amount: number; reference: string | null; detail: string | null; }
@@ -30,6 +30,7 @@ export default function ContasReportClient({
   personId,
   text,
   sort,
+  subtotals,
   report,
 }: {
   basePath: string;
@@ -45,6 +46,7 @@ export default function ContasReportClient({
   personId: string;
   text: string;
   sort: AccountsSort;
+  subtotals: boolean;
   report: { rows: ReportRow[]; total: number; groups: ReportGroup[] | null };
 }) {
   const router = useRouter();
@@ -53,28 +55,31 @@ export default function ContasReportClient({
   const [personVal, setPersonVal] = useState(personId);
   const [textVal, setTextVal] = useState(text);
   const [sortVal, setSortVal] = useState(sort);
+  const [subVal, setSubVal] = useState(subtotals);
+  const canGroup = sortHasGroups(sortVal);
 
   // A ordem 'data' segue a coluna de data da tela (Vencimento, Recebimento ou Pagamento).
   const sortLabel = (s: AccountsSort) => (s === 'data' ? dateLabel : ACCOUNTS_SORT_LABEL[s]);
 
-  function apply(nextSort: AccountsSort = sortVal) {
+  function apply(nextSort: AccountsSort = sortVal, nextSub: boolean = subVal) {
     const params = new URLSearchParams();
     if (fromVal) params.set('from', fromVal);
     if (toVal) params.set('to', toVal);
     if (personVal) params.set('personId', personVal);
     if (textVal) params.set('text', textVal);
     if (nextSort !== 'referencia') params.set('sort', nextSort);
+    if (!nextSub) params.set('sub', '0');
     router.push(`${basePath}?${params.toString()}`);
   }
 
-  const xlsHref = `/api/reports/accounts/xlsx?variant=${basePath.split('/').pop()}&from=${fromVal}&to=${toVal}${personVal ? `&personId=${personVal}` : ''}${textVal ? `&text=${encodeURIComponent(textVal)}` : ''}${sort !== 'referencia' ? `&sort=${sort}` : ''}`;
+  const xlsHref = `/api/reports/accounts/xlsx?variant=${basePath.split('/').pop()}&from=${fromVal}&to=${toVal}${personVal ? `&personId=${personVal}` : ''}${textVal ? `&text=${encodeURIComponent(textVal)}` : ''}${sort !== 'referencia' ? `&sort=${sort}` : ''}${subtotals ? '' : '&sub=0'}`;
 
   // Contas em aberto sem datas no filtro = todas as pendências (não "Invalid Date").
   const period = from || to
     ? `Período: ${from ? fmtDate(`${from}T00:00:00`) : 'início'} a ${to ? fmtDate(`${to}T00:00:00`) : 'hoje'}`
     : 'Todas as pendências, sem limite de data';
   const personName = personId ? people.find((p) => p.id === personId)?.name : null;
-  const details = [period, personName ? `Pessoa: ${personName}` : null, text ? `Busca: "${text}"` : null, `Ordenado por: ${sortLabel(sort)}`];
+  const details = [period, personName ? `Pessoa: ${personName}` : null, text ? `Busca: "${text}"` : null, `Ordenado por: ${sortLabel(sort === 'nenhuma' ? 'referencia' : sort)}${sortHasGroups(sort) && !subtotals ? ', sem subtotais' : ''}`];
   const csvLine = (r: ReportRow) => [fmtDate(r.date), r.personName ?? '', r.reference ?? '', r.category ?? '', r.detail ?? '', csvNumber(r.amount)];
   const csvRows = [
     [dateLabel, 'Nome', 'Referência', 'Categoria', 'Detalhe', 'Valor'],
@@ -106,7 +111,7 @@ export default function ContasReportClient({
         </div>
 
         <section className="rpt-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
-          <div className="grid gap-4 md:grid-cols-[1fr_1fr_1.4fr_1.4fr_1fr_auto]">
+          <div className="grid gap-4 md:grid-cols-[1fr_1fr_1.4fr_1.4fr_1.3fr_auto_auto]">
             <label className="text-xs text-sand-dark">De
               <input type="date" value={fromVal} onChange={(e) => setFromVal(e.target.value)} className={`mt-1 ${inputClass}`} />
             </label>
@@ -132,8 +137,21 @@ export default function ContasReportClient({
                 }}
                 className={`mt-1 ${inputClass}`}
               >
-                {(['referencia', 'data', 'nome'] as const).map((s) => <option key={s} value={s}>{sortLabel(s)}</option>)}
+                {(['nenhuma', 'referencia', 'data', 'nome'] as const).map((s) => <option key={s} value={s}>{sortLabel(s)}</option>)}
               </select>
+            </label>
+            <label className={`flex items-end gap-2 pb-2.5 text-xs ${canGroup ? 'text-sand-dark' : 'text-sand-dark/40'}`} title={canGroup ? undefined : 'Subtotais só nas ordens Referência e Nome'}>
+              <input
+                type="checkbox"
+                checked={subVal && canGroup}
+                disabled={!canGroup}
+                onChange={(e) => {
+                  setSubVal(e.target.checked);
+                  apply(sortVal, e.target.checked);
+                }}
+                className="h-4 w-4 accent-gold"
+              />
+              Subtotais
             </label>
             <div className="flex items-end">
               <button onClick={() => apply()} className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">

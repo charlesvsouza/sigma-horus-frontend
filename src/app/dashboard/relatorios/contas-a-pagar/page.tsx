@@ -1,5 +1,5 @@
 import AccountsReportPage from '../AccountsReportPage';
 
-export default function Page({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; personId?: string; text?: string; sort?: string }> }) {
+export default function Page({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; personId?: string; text?: string; sort?: string; sub?: string }> }) {
   return <AccountsReportPage variant="contas-a-pagar" searchParams={searchParams} />;
 }

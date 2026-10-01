@@ -76,3 +76,10 @@ test('ordens: data (padrão, sem blocos), referência (mês do vencimento) e nom
   assert.equal(buildPaymentHistory(rows, { ...all, memberId: 'm1', sort: 'nome' }).groups, null);
   assert.equal(parsePaymentHistorySort('xyz'), 'data');
 });
+
+test('histórico: subtotais desligáveis na Referência', () => {
+  const rows = [row({ id: 'c2' }), row({ id: 'c1', dueDate: new Date('2026-04-05T00:00:00Z') })];
+  const all = { from: null, to: null };
+  assert.equal(buildPaymentHistory(rows, { ...all, sort: 'referencia', subtotals: false }).groups, null);
+  assert.equal(buildPaymentHistory(rows, { ...all, sort: 'referencia' }).groups?.length, 2);
+});

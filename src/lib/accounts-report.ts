@@ -62,19 +62,26 @@ export function accountDetail(title: string, category: string | null): string | 
 
 /**
  * Ordem do relatório: 'referencia' (padrão — mês, depois nome), 'data' (a data da coluna:
- * vencimento nas abertas, pagamento nas liquidadas) ou 'nome' (extrato por pessoa).
+ * vencimento nas abertas, pagamento nas liquidadas), 'nome' (extrato por pessoa) ou
+ * 'nenhuma' — volta ao modo de antes: a mesma ordem da Referência, em lista corrida.
  */
-export type AccountsSort = 'referencia' | 'data' | 'nome';
+export type AccountsSort = 'referencia' | 'data' | 'nome' | 'nenhuma';
 
 export const ACCOUNTS_SORT_LABEL: Record<AccountsSort, string> = {
   referencia: 'Referência',
   data: 'Data',
   nome: 'Nome',
+  nenhuma: 'Nenhuma',
 };
 
 /** Valor vindo da URL → ordem válida (qualquer outra coisa cai no padrão). */
 export function parseAccountsSort(v: string | null | undefined): AccountsSort {
-  return v === 'data' || v === 'nome' ? v : 'referencia';
+  return v === 'data' || v === 'nome' || v === 'nenhuma' ? v : 'referencia';
+}
+
+/** Só Referência e Nome formam blocos; nas demais a lista é corrida. */
+export function sortHasGroups(sort: AccountsSort): boolean {
+  return sort === 'referencia' || sort === 'nome';
 }
 
 export interface AccountReportFilters {
@@ -85,6 +92,8 @@ export interface AccountReportFilters {
   amountMin?: number;
   amountMax?: number;
   sort?: AccountsSort;
+  /** Blocos com subtotal nas ordens Referência e Nome (padrão: sim). */
+  subtotals?: boolean;
 }
 
 /** Bloco com subtotal: um por mês de referência (ordem 'referencia') ou por pessoa (ordem 'nome'). */
@@ -97,7 +106,7 @@ export interface AccountReportGroup {
 export interface AccountReport {
   rows: AccountReportRow[];
   total: number;
-  /** null na ordem 'data' — lista corrida, sem subtotais. */
+  /** null na lista corrida: ordem 'data'/'nenhuma' ou subtotais desligados. */
   groups: AccountReportGroup[] | null;
 }
 
@@ -109,7 +118,7 @@ const byName = (a: AccountReportRowInput, b: AccountReportRowInput) =>
   Number(!a.personName) - Number(!b.personName) || (a.personName ?? '').localeCompare(b.personName ?? '', 'pt-BR');
 const byDate = (a: AccountReportRowInput, b: AccountReportRowInput) => a.date.getTime() - b.date.getTime();
 
-const COMPARE: Record<AccountsSort, (a: AccountReportRowInput, b: AccountReportRowInput) => number> = {
+const COMPARE: Record<Exclude<AccountsSort, 'nenhuma'>, (a: AccountReportRowInput, b: AccountReportRowInput) => number> = {
   // Pelo mês de referência (vencimento), depois o nome e a data: cada mês fica agrupado, em ordem alfabética.
   // Sem vencimento (pagamento avulso) vai pro fim, num bloco "Sem referência" só.
   referencia: (a, b) => Number(!referenceLabel(a.dueDate)) - Number(!referenceLabel(b.dueDate)) || refMonth(a) - refMonth(b) || byName(a, b) || byDate(a, b),
@@ -123,7 +132,7 @@ const COMPARE: Record<AccountsSort, (a: AccountReportRowInput, b: AccountReportR
  * personId): doações solidárias mascaradas viram um bloco só, sem revelar quem doou o quê.
  */
 function groupRows(rows: AccountReportRow[], sort: AccountsSort): AccountReportGroup[] | null {
-  if (sort === 'data') return null;
+  if (!sortHasGroups(sort)) return null;
   const groups: AccountReportGroup[] = [];
   for (const r of rows) {
     const label = sort === 'nome' ? (r.personName ?? NO_NAME) : (r.reference ?? NO_REFERENCE);
@@ -148,7 +157,7 @@ export function buildAccountsReport(rows: AccountReportRowInput[], filters: Acco
     .filter((r) => !text || r.description.toLowerCase().includes(text) || (r.category ?? '').toLowerCase().includes(text) || (referenceLabel(r.dueDate) ?? '').includes(text))
     .filter((r) => filters.amountMin == null || r.amount >= filters.amountMin)
     .filter((r) => filters.amountMax == null || r.amount <= filters.amountMax)
-    .sort(COMPARE[sort]);
+    .sort(COMPARE[sort === 'nenhuma' ? 'referencia' : sort]);
 
   const out = filtered.map(({ dueDate, ...r }) => ({
     ...r,
@@ -157,5 +166,5 @@ export function buildAccountsReport(rows: AccountReportRowInput[], filters: Acco
     detail: accountDetail(r.description, r.category),
   }));
   const total = out.reduce((s, r) => s + r.amount, 0);
-  return { rows: out, total, groups: groupRows(out, sort) };
+  return { rows: out, total, groups: filters.subtotals === false ? null : groupRows(out, sort) };
 }

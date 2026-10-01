@@ -65,13 +65,13 @@ export interface PaymentHistory {
   rows: PaymentHistoryRow[];
   total: number;
   byMember: PaymentHistoryByMember[];
-  /** null na ordem 'data' — lista corrida, sem subtotais. */
+  /** null na lista corrida: ordem 'data'/'nenhuma' ou subtotais desligados. */
   groups: PaymentHistoryGroup[] | null;
 }
 
 /**
- * Ordem da lista: 'data' (padrão — data do pagamento), 'referencia' (mês do vencimento da
- * conta paga, depois o nome) ou 'nome' (irmão a irmão, mês a mês).
+ * Ordem da lista: 'data' (padrão — data do pagamento, o modo de antes), 'referencia' (mês do
+ * vencimento da conta paga, depois o nome) ou 'nome' (irmão a irmão, mês a mês).
  */
 export type PaymentHistorySort = 'data' | 'referencia' | 'nome';
 
@@ -83,6 +83,11 @@ export const PAYMENT_HISTORY_SORT_LABEL: Record<PaymentHistorySort, string> = {
 
 export function parsePaymentHistorySort(v: string | null | undefined): PaymentHistorySort {
   return v === 'referencia' || v === 'nome' ? v : 'data';
+}
+
+/** Só Referência e Nome formam blocos; nas demais a lista é corrida. */
+export function paymentSortHasGroups(sort: PaymentHistorySort): boolean {
+  return sort === 'referencia' || sort === 'nome';
 }
 
 const NO_NAME = 'Sem nome';
@@ -119,7 +124,7 @@ export function defaultPeriod(now: Date = new Date()): { from: string; to: strin
 
 export function buildPaymentHistory(
   input: PaymentHistoryInput[],
-  filters: { from?: Date | null; to?: Date | null; memberId?: string | null; sort?: PaymentHistorySort },
+  filters: { from?: Date | null; to?: Date | null; memberId?: string | null; sort?: PaymentHistorySort; subtotals?: boolean },
 ): PaymentHistory {
   // Com um irmão só, "Nome" daria um bloco único: vale a ordem padrão.
   const sort = filters.sort === 'nome' && filters.memberId ? 'data' : (filters.sort ?? 'data');
@@ -145,7 +150,7 @@ export function buildPaymentHistory(
 
   // Blocos consecutivos (a lista já está ordenada pela chave do bloco).
   let blocks: PaymentHistoryGroup[] | null = null;
-  if (sort !== 'data') {
+  if (paymentSortHasGroups(sort) && filters.subtotals !== false) {
     const acc: { label: string; rows: PaymentHistoryRow[]; amounts: number[] }[] = [];
     filtered.forEach((r, i) => {
       const label = sort === 'nome' ? (r.memberName ?? NO_NAME) : (referenceLabel(r.dueDate) ?? NO_REFERENCE);

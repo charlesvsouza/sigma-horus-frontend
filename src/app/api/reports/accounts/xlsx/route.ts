@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { ACCOUNTS_SORT_LABEL, buildAccountsReport, parseAccountsSort } from '@/lib/accounts-report';
+import { ACCOUNTS_SORT_LABEL, buildAccountsReport, parseAccountsSort, sortHasGroups } from '@/lib/accounts-report';
 import { loadAccountsReportRows, type AccountsReportVariant } from '@/lib/accounts-report-data';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -51,6 +51,7 @@ export async function GET(request: Request) {
   const personId = searchParams.get('personId') || null;
   const text = searchParams.get('text') || undefined;
   const sort = parseAccountsSort(searchParams.get('sort'));
+  const subtotals = searchParams.get('sub') !== '0';
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, rowsInput] = await Promise.all([
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
     return { lodge, rowsInput };
   });
 
-  const report = buildAccountsReport(data.rowsInput, { from, to, personId, text, sort });
+  const report = buildAccountsReport(data.rowsInput, { from, to, personId, text, sort, subtotals });
 
   const { default: ExcelJS } = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
@@ -80,7 +81,7 @@ export async function GET(request: Request) {
   sheet.addRow([data.lodge?.name ?? 'Loja']).font = { bold: true, size: 13 };
   sheet.addRow([TITLE[variant]]).font = { bold: true };
   sheet.addRow([`Período: ${from.toLocaleDateString('pt-BR')} a ${to.toLocaleDateString('pt-BR')}`]);
-  sheet.addRow([`Ordenado por: ${sort === 'data' ? DATE_LABEL[variant] : ACCOUNTS_SORT_LABEL[sort]}`]);
+  sheet.addRow([`Ordenado por: ${sort === 'data' ? DATE_LABEL[variant] : ACCOUNTS_SORT_LABEL[sort === 'nenhuma' ? 'referencia' : sort]}${sortHasGroups(sort) && !subtotals ? ', sem subtotais' : ''}`]);
   sheet.addRow([]);
 
   const headerRowIdx = sheet.rowCount + 1;

@@ -8,7 +8,7 @@ import { ReportActions, ReportDocument } from '@/components/report/report-docume
 import { brl } from '@/lib/currency';
 import { csvNumber } from '@/lib/csv';
 import { formatDateOnly } from '@/lib/date-only';
-import { PAYMENT_HISTORY_SORT_LABEL, paymentMethodLabel, type PaymentHistory, type PaymentHistoryRow, type PaymentHistorySort } from '@/lib/payment-history';
+import { PAYMENT_HISTORY_SORT_LABEL, paymentMethodLabel, paymentSortHasGroups, type PaymentHistory, type PaymentHistoryRow, type PaymentHistorySort } from '@/lib/payment-history';
 
 // Histórico de pagamentos — mesma tela para a loja (Tesoureiro/Admin/Venerável, todos os
 // irmãos, com filtro por irmão) e para o irmão (portal, só o dele). Filtros vão na URL,
@@ -30,6 +30,7 @@ export default function HistoricoPagamentosClient({
   memberId = '',
   memberName = null,
   sort = 'data',
+  subtotals = true,
   report,
 }: {
   mode: 'staff' | 'member';
@@ -44,6 +45,7 @@ export default function HistoricoPagamentosClient({
   /** Nome do irmão (modo irmão, ou o filtrado no modo loja). */
   memberName?: string | null;
   sort?: PaymentHistorySort;
+  subtotals?: boolean;
   report: PaymentHistory;
 }) {
   const router = useRouter();
@@ -51,27 +53,32 @@ export default function HistoricoPagamentosClient({
   const [toVal, setToVal] = useState(to);
   const [memberVal, setMemberVal] = useState(memberId);
   const [sortVal, setSortVal] = useState(sort);
+  const [subVal, setSubVal] = useState(subtotals);
   const staff = mode === 'staff';
   const showMemberColumn = staff && !memberId;
   // "Nome" só faz sentido com vários irmãos na lista.
   const sortOptions: PaymentHistorySort[] = showMemberColumn ? ['data', 'referencia', 'nome'] : ['data', 'referencia'];
+  const effectiveSort = sortOptions.includes(sortVal) ? sortVal : 'data';
+  const canGroup = paymentSortHasGroups(effectiveSort);
 
-  function go(next: { from?: string; to?: string; memberId?: string; sort?: PaymentHistorySort }) {
+  function go(next: { from?: string; to?: string; memberId?: string; sort?: PaymentHistorySort; sub?: boolean }) {
     const params = new URLSearchParams();
     const f = next.from ?? fromVal;
     const t = next.to ?? toVal;
     const m = next.memberId ?? memberVal;
     const o = next.sort ?? sortVal;
+    const sub = next.sub ?? subVal;
     if (f) params.set('from', f);
     if (t) params.set('to', t);
     if (staff && m) params.set('memberId', m);
     if (o !== 'data') params.set('sort', o);
+    if (!sub) params.set('sub', '0');
     router.push(`${basePath}?${params.toString()}`);
   }
 
   const title = staff ? 'Histórico de pagamentos' : 'Meu histórico de pagamentos';
   const period = `Período: ${from ? formatDateOnly(from) : 'início'} a ${to ? formatDateOnly(to) : 'hoje'}`;
-  const details = [period, memberName ? `Irmão: ${memberName}` : staff ? 'Todos os irmãos' : null, `Ordenado por: ${PAYMENT_HISTORY_SORT_LABEL[sort]}`];
+  const details = [period, memberName ? `Irmão: ${memberName}` : staff ? 'Todos os irmãos' : null, `Ordenado por: ${PAYMENT_HISTORY_SORT_LABEL[sort]}${paymentSortHasGroups(sort) && !subtotals ? ', sem subtotais' : ''}`];
   const cols = showMemberColumn ? 6 : 5; // colunas antes do recibo
 
   const csvLine = (r: PaymentHistoryRow) => [
@@ -121,7 +128,7 @@ export default function HistoricoPagamentosClient({
 
         <section className="rpt-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
           <form
-            className={`grid gap-4 ${staff ? 'md:grid-cols-[1fr_1fr_1.6fr_1.2fr_auto]' : 'md:grid-cols-[1fr_1fr_1.2fr_auto]'}`}
+            className={`grid gap-4 ${staff ? 'md:grid-cols-[1fr_1fr_1.6fr_1.4fr_auto_auto]' : 'md:grid-cols-[1fr_1fr_1.4fr_auto_auto]'}`}
             onSubmit={(e) => { e.preventDefault(); go({}); }}
           >
             <label className="text-xs text-sand-dark">De
@@ -140,7 +147,7 @@ export default function HistoricoPagamentosClient({
             ) : null}
             <label className="text-xs text-sand-dark">Ordenar por
               <select
-                value={sortOptions.includes(sortVal) ? sortVal : 'data'}
+                value={effectiveSort}
                 onChange={(e) => {
                   const next = e.target.value as PaymentHistorySort;
                   setSortVal(next);
@@ -150,6 +157,19 @@ export default function HistoricoPagamentosClient({
               >
                 {sortOptions.map((s) => <option key={s} value={s}>{PAYMENT_HISTORY_SORT_LABEL[s]}</option>)}
               </select>
+            </label>
+            <label className={`flex items-end gap-2 pb-2.5 text-xs ${canGroup ? 'text-sand-dark' : 'text-sand-dark/40'}`} title={canGroup ? undefined : 'Subtotais só nas ordens Referência e Nome'}>
+              <input
+                type="checkbox"
+                checked={subVal && canGroup}
+                disabled={!canGroup}
+                onChange={(e) => {
+                  setSubVal(e.target.checked);
+                  go({ sub: e.target.checked });
+                }}
+                className="h-4 w-4 accent-gold"
+              />
+              Subtotais
             </label>
             <div className="flex items-end">
               <button type="submit" className="rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-sigma-blue-deep transition-all duration-200 ease-out hover:bg-gold-light active:bg-gold-dark">

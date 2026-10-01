@@ -7,7 +7,7 @@ import HistoricoPagamentosClient from './HistoricoPagamentosClient';
 
 // Histórico de pagamentos de todos os irmãos — só Tesoureiro, Administrador e Venerável
 // (o Secretário fica de fora por decisão do dono). O irmão vê o dele em Meu portal.
-export default async function Page({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; memberId?: string; sort?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; memberId?: string; sort?: string; sub?: string }> }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
   const role = session?.user?.role;
@@ -37,7 +37,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ f
   });
 
   const sort = parsePaymentHistorySort(sp.sort);
-  const report = buildPaymentHistory(data.rows, { ...periodBounds(from, to), memberId, sort });
+  const subtotals = sp.sub !== '0';
+  const report = buildPaymentHistory(data.rows, { ...periodBounds(from, to), memberId, sort, subtotals });
 
   return (
     <HistoricoPagamentosClient
@@ -52,6 +53,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ f
       memberId={memberId ?? ''}
       memberName={memberId ? data.members.find((m) => m.id === memberId)?.name ?? null : null}
       sort={sort}
+      subtotals={subtotals}
       report={report}
     />
   );

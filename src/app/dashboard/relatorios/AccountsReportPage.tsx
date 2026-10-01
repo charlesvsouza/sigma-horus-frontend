@@ -21,13 +21,14 @@ export default async function AccountsReportPage({
   searchParams,
 }: {
   variant: AccountsReportVariant;
-  searchParams: Promise<{ from?: string; to?: string; personId?: string; text?: string; sort?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; personId?: string; text?: string; sort?: string; sub?: string }>;
 }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
   const sp = await searchParams;
   const sort = parseAccountsSort(sp.sort);
+  const subtotals = sp.sub !== '0';
 
   if (!lodgeId) {
     return (
@@ -72,6 +73,7 @@ export default async function AccountsReportPage({
     personId: sp.personId || null,
     text: sp.text,
     sort,
+    subtotals,
   });
 
   const labels = LABELS[variant];
@@ -92,6 +94,7 @@ export default async function AccountsReportPage({
       personId={sp.personId ?? ''}
       text={sp.text ?? ''}
       sort={sort}
+      subtotals={subtotals}
       report={report}
     />
   );
