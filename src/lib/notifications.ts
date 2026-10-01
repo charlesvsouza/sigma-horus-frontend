@@ -2,7 +2,7 @@ import { prismaAdmin, withTenant } from '@/lib/prisma';
 import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
 import { channelsAvailable, dispatch, sleep, DISPATCH_THROTTLE_MS, type Channel, type LodgeChannels } from '@/lib/messaging';
 import { TENURE_MILESTONES } from '@/lib/masonic-degree';
-import { AUTO_REMINDER_LOG_TITLE, AUTO_REMINDER_MIN_DAYS_OVERDUE, reminderHtml, reminderShortText, reminderText } from '@/lib/charge-reminder';
+import { AUTO_REMINDER_LOG_TITLE, AUTO_REMINDER_MIN_DAYS_OVERDUE, autoReminderWindowStart, reminderHtml, reminderShortText, reminderText } from '@/lib/charge-reminder';
 import { loadReminderContext } from '@/lib/charge-reminder-server';
 
 // Gatilhos automáticos diários (Fase 7): aniversariantes (obreiro + família),
@@ -159,13 +159,19 @@ export async function runDailyNotifications(): Promise<Stats> {
     }
 
     // 5) Cobranças vencidas há mais de 30 dias: UM aviso por irmão com todas elas (e-mail com um
-    // bloco pagável por cobrança; WhatsApp/SMS com o resumo). Dedup diário pelo título no MessageLog.
+    // bloco pagável por cobrança; WhatsApp/SMS com o resumo), no máximo um a cada 7 dias por irmão.
     if (lodge.notifyBillingRemindersEnabled) {
       const ctx = await loadReminderContext(lodge.id, { scope: 'overdue', minDaysOverdue: AUTO_REMINDER_MIN_DAYS_OVERDUE }, now);
       if (ctx) {
         const opts = { lodgeName: ctx.lodgeName, portalUrl: ctx.portalUrl, instructions: ctx.instructions };
         const phones = new Map(members.map((m) => [m.id, m.phone]));
+        // Quem recebeu o aviso nos últimos 7 dias (por qualquer canal) espera a próxima semana.
+        const recent = new Set((await withTenant(lodge.id, (db) => db.messageLog.findMany({
+          where: { lodgeId: lodge.id, title: AUTO_REMINDER_LOG_TITLE, status: 'sent', createdAt: { gte: autoReminderWindowStart(now) } },
+          select: { memberId: true },
+        }))).map((l) => l.memberId));
         for (const group of ctx.groups) {
+          if (recent.has(group.member.id)) { stats.skipped++; continue; }
           stats.overdue += group.items.length;
           for (const channel of list) {
             if (channel === 'email') {

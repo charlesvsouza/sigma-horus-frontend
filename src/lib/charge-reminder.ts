@@ -35,6 +35,13 @@ export function singleReminderLogTitle(number: string): string {
  */
 export const AUTO_REMINDER_MIN_DAYS_OVERDUE = 30;
 export const AUTO_REMINDER_LOG_TITLE = 'Aviso de cobranças vencidas há mais de 30 dias';
+/** Repetição do aviso automático: no máximo um a cada 7 dias por irmão (e-mail diário vira spam). */
+export const AUTO_REMINDER_INTERVAL_DAYS = 7;
+
+/** Instante a partir do qual um aviso já enviado ainda "vale" — antes disso, pode mandar de novo. */
+export function autoReminderWindowStart(now: Date = new Date()): Date {
+  return new Date(startOfTodayBR(now).getTime() - (AUTO_REMINDER_INTERVAL_DAYS - 1) * 86_400_000);
+}
 
 /** Vencida há mais de `days` dias (calendário de Brasília). */
 export function overdueMoreThan(dueDate: Date | string, days: number, now: Date = new Date()): boolean {

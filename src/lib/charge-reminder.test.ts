@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  AUTO_REMINDER_MIN_DAYS_OVERDUE, groupReminders, inReminderScope, normalizeReminderScope, overdueMoreThan, reminderHtml, reminderShortText, reminderSubject, reminderText, startOfTodayBR,
+  AUTO_REMINDER_MIN_DAYS_OVERDUE, autoReminderWindowStart, groupReminders, inReminderScope, normalizeReminderScope, overdueMoreThan, reminderHtml, reminderShortText, reminderSubject, reminderText, startOfTodayBR,
   type ReminderItem, type ReminderMember,
 } from './charge-reminder.ts';
 
@@ -111,4 +111,12 @@ test('texto curto (WhatsApp/SMS): sem código Pix, com números, total e onde pa
   assert.match(t, /Pague pelo seu portal: https:\/\/s\.br\/dashboard\/portal\./);
   const [one] = groupReminders([{ member: joao, item: item({}) }]);
   assert.match(reminderShortText(one, { lodgeName: 'L', portalUrl: null, instructions: 'Pix (chave): x\nDepósito/TED: y' }), /consta em aberto a cobrança COB-1[^]*Como pagar — Pix \(chave\): x \| Depósito\/TED: y\./);
+});
+
+test('aviso automático semanal: quem recebeu há 6 dias espera; há 7 dias recebe de novo', () => {
+  const now = new Date('2026-10-15T14:00:00Z'); // 15/10, 11h em Brasília
+  const start = autoReminderWindowStart(now);
+  assert.equal(start.toISOString(), '2026-10-09T03:00:00.000Z'); // 09/10 00h Brasília
+  assert.ok(new Date('2026-10-09T14:00:00Z') >= start); // enviado 09/10 (6 dias) → ainda vale
+  assert.ok(new Date('2026-10-08T14:00:00Z') < start); // enviado 08/10 (7 dias) → manda de novo
 });
