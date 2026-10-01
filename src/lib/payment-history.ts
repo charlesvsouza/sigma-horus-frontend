@@ -1,3 +1,4 @@
+import { referenceLabel } from '@/lib/accounts-report';
 import { sumMoney } from '@/lib/money';
 
 // Histórico de pagamentos dos irmãos — o que cada um já pagou à loja, por data do pagamento.
@@ -53,11 +54,51 @@ export interface PaymentHistoryByMember {
   total: number;
 }
 
+/** Bloco com subtotal: um por mês de referência (vencimento) ou por irmão. */
+export interface PaymentHistoryGroup {
+  label: string;
+  rows: PaymentHistoryRow[];
+  total: number;
+}
+
 export interface PaymentHistory {
   rows: PaymentHistoryRow[];
   total: number;
   byMember: PaymentHistoryByMember[];
+  /** null na ordem 'data' — lista corrida, sem subtotais. */
+  groups: PaymentHistoryGroup[] | null;
 }
+
+/**
+ * Ordem da lista: 'data' (padrão — data do pagamento), 'referencia' (mês do vencimento da
+ * conta paga, depois o nome) ou 'nome' (irmão a irmão, mês a mês).
+ */
+export type PaymentHistorySort = 'data' | 'referencia' | 'nome';
+
+export const PAYMENT_HISTORY_SORT_LABEL: Record<PaymentHistorySort, string> = {
+  data: 'Data do pagamento',
+  referencia: 'Referência',
+  nome: 'Nome',
+};
+
+export function parsePaymentHistorySort(v: string | null | undefined): PaymentHistorySort {
+  return v === 'referencia' || v === 'nome' ? v : 'data';
+}
+
+const NO_NAME = 'Sem nome';
+const NO_REFERENCE = 'Sem referência';
+
+/** Mês do vencimento como número ordenável; sem vencimento vai pro fim. */
+const refMonth = (r: PaymentHistoryInput) => (r.dueDate ? r.dueDate.getUTCFullYear() * 12 + r.dueDate.getUTCMonth() : Number.MAX_SAFE_INTEGER);
+const byName = (a: PaymentHistoryInput, b: PaymentHistoryInput) =>
+  Number(!a.memberName) - Number(!b.memberName) || (a.memberName ?? '').localeCompare(b.memberName ?? '', 'pt-BR');
+const byPaidAt = (a: PaymentHistoryInput, b: PaymentHistoryInput) => a.paidAt.getTime() - b.paidAt.getTime();
+
+const COMPARE: Record<PaymentHistorySort, (a: PaymentHistoryInput, b: PaymentHistoryInput) => number> = {
+  data: byPaidAt,
+  referencia: (a, b) => refMonth(a) - refMonth(b) || byName(a, b) || byPaidAt(a, b),
+  nome: (a, b) => byName(a, b) || refMonth(a) - refMonth(b) || byPaidAt(a, b),
+};
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -78,13 +119,15 @@ export function defaultPeriod(now: Date = new Date()): { from: string; to: strin
 
 export function buildPaymentHistory(
   input: PaymentHistoryInput[],
-  filters: { from?: Date | null; to?: Date | null; memberId?: string | null },
+  filters: { from?: Date | null; to?: Date | null; memberId?: string | null; sort?: PaymentHistorySort },
 ): PaymentHistory {
+  // Com um irmão só, "Nome" daria um bloco único: vale a ordem padrão.
+  const sort = filters.sort === 'nome' && filters.memberId ? 'data' : (filters.sort ?? 'data');
   const filtered = input
     .filter((r) => !filters.from || r.paidAt >= filters.from)
     .filter((r) => !filters.to || r.paidAt <= filters.to)
     .filter((r) => !filters.memberId || r.memberId === filters.memberId)
-    .sort((a, b) => a.paidAt.getTime() - b.paidAt.getTime());
+    .sort(COMPARE[sort]);
 
   const groups = new Map<string, PaymentHistoryByMember & { amounts: number[] }>();
   for (const r of filtered) {
@@ -98,9 +141,29 @@ export function buildPaymentHistory(
     .map(({ amounts, ...g }) => ({ ...g, total: sumMoney(amounts) }))
     .sort((a, b) => a.memberName.localeCompare(b.memberName, 'pt-BR'));
 
+  const rows = filtered.map((r) => ({ ...r, paidAt: r.paidAt.toISOString(), dueDate: r.dueDate ? r.dueDate.toISOString() : null }));
+
+  // Blocos consecutivos (a lista já está ordenada pela chave do bloco).
+  let blocks: PaymentHistoryGroup[] | null = null;
+  if (sort !== 'data') {
+    const acc: { label: string; rows: PaymentHistoryRow[]; amounts: number[] }[] = [];
+    filtered.forEach((r, i) => {
+      const label = sort === 'nome' ? (r.memberName ?? NO_NAME) : (referenceLabel(r.dueDate) ?? NO_REFERENCE);
+      const last = acc[acc.length - 1];
+      if (last && last.label === label) {
+        last.rows.push(rows[i]);
+        last.amounts.push(r.amount);
+      } else {
+        acc.push({ label, rows: [rows[i]], amounts: [r.amount] });
+      }
+    });
+    blocks = acc.map(({ amounts, ...g }) => ({ ...g, total: sumMoney(amounts) }));
+  }
+
   return {
-    rows: filtered.map((r) => ({ ...r, paidAt: r.paidAt.toISOString(), dueDate: r.dueDate ? r.dueDate.toISOString() : null })),
+    rows,
     total: sumMoney(filtered.map((r) => r.amount)),
     byMember,
+    groups: blocks,
   };
 }

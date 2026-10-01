@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { buildAccountsReport } from '@/lib/accounts-report';
+import { ACCOUNTS_SORT_LABEL, buildAccountsReport, parseAccountsSort } from '@/lib/accounts-report';
 import { loadAccountsReportRows, type AccountsReportVariant } from '@/lib/accounts-report-data';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -50,6 +50,7 @@ export async function GET(request: Request) {
   const to = toParam ? new Date(`${toParam}T23:59:59`) : isOpenVariant ? new Date('2100-01-01T23:59:59') : now;
   const personId = searchParams.get('personId') || null;
   const text = searchParams.get('text') || undefined;
+  const sort = parseAccountsSort(searchParams.get('sort'));
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, rowsInput] = await Promise.all([
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
     return { lodge, rowsInput };
   });
 
-  const report = buildAccountsReport(data.rowsInput, { from, to, personId, text });
+  const report = buildAccountsReport(data.rowsInput, { from, to, personId, text, sort });
 
   const { default: ExcelJS } = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
@@ -79,6 +80,7 @@ export async function GET(request: Request) {
   sheet.addRow([data.lodge?.name ?? 'Loja']).font = { bold: true, size: 13 };
   sheet.addRow([TITLE[variant]]).font = { bold: true };
   sheet.addRow([`Período: ${from.toLocaleDateString('pt-BR')} a ${to.toLocaleDateString('pt-BR')}`]);
+  sheet.addRow([`Ordenado por: ${sort === 'data' ? DATE_LABEL[variant] : ACCOUNTS_SORT_LABEL[sort]}`]);
   sheet.addRow([]);
 
   const headerRowIdx = sheet.rowCount + 1;
@@ -87,8 +89,18 @@ export async function GET(request: Request) {
   headerRow.font = { bold: true };
   headerRow.eachCell((cell) => { cell.border = { bottom: { style: 'thin' } }; });
 
-  for (const r of report.rows) {
+  const addLine = (r: (typeof report.rows)[number]) =>
     sheet.addRow([new Date(r.date).toLocaleDateString('pt-BR'), r.personName ?? '—', r.reference ?? '—', r.category ?? '—', r.detail ?? '', r.amount]);
+  if (report.groups) {
+    // Mesmos blocos da tela: um por mês (Referência) ou por pessoa (Nome), cada um com subtotal.
+    for (const g of report.groups) {
+      g.rows.forEach(addLine);
+      const sub = sheet.addRow(['', '', '', '', `Subtotal — ${g.label}`, g.total]);
+      sub.font = { italic: true };
+      sub.getCell(6).border = { top: { style: 'thin' } };
+    }
+  } else {
+    report.rows.forEach(addLine);
   }
   const totalRow = sheet.addRow(['', '', '', '', 'Total do período', report.total]);
   totalRow.font = { bold: true };

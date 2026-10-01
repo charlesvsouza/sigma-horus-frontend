@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPaymentHistory, canSeePaymentHistory, defaultPeriod, paymentMethodLabel, periodBounds, type PaymentHistoryInput } from './payment-history.ts';
+import { buildPaymentHistory, canSeePaymentHistory, defaultPeriod, parsePaymentHistorySort, paymentMethodLabel, periodBounds, type PaymentHistoryInput } from './payment-history.ts';
 
 const row = (over: Partial<PaymentHistoryInput>): PaymentHistoryInput => ({
   id: 'p', paidAt: new Date('2026-03-10T15:00:00Z'), memberId: 'm1', memberName: 'Ana', title: 'Mensalidades',
@@ -51,4 +51,28 @@ test('rótulo da forma de pagamento', () => {
   assert.equal(paymentMethodLabel('asaas'), 'Asaas');
   assert.equal(paymentMethodLabel('outro'), 'outro');
   assert.equal(paymentMethodLabel(null), '—');
+});
+
+test('ordens: data (padrão, sem blocos), referência (mês do vencimento) e nome (irmão a irmão), com subtotais', () => {
+  const rows = [
+    row({ id: 'bruno-set', memberId: 'm2', memberName: 'Bruno', paidAt: new Date('2026-09-02T12:00:00Z'), dueDate: new Date('2026-09-05T00:00:00Z'), amount: 10 }),
+    row({ id: 'ana-out', paidAt: new Date('2026-09-01T12:00:00Z'), dueDate: new Date('2026-10-05T00:00:00Z'), amount: 20 }),
+    row({ id: 'ana-set', paidAt: new Date('2026-09-03T12:00:00Z'), dueDate: new Date('2026-09-05T00:00:00Z'), amount: 30 }),
+  ];
+  const all = { from: null, to: null };
+  const data = buildPaymentHistory(rows, all);
+  assert.deepEqual(data.rows.map((r) => r.id), ['ana-out', 'bruno-set', 'ana-set']);
+  assert.equal(data.groups, null);
+
+  const ref = buildPaymentHistory(rows, { ...all, sort: 'referencia' });
+  assert.deepEqual(ref.rows.map((r) => r.id), ['ana-set', 'bruno-set', 'ana-out']);
+  assert.deepEqual(ref.groups?.map((g) => [g.label, g.total]), [['setembro/2026', 40], ['outubro/2026', 20]]);
+
+  const nome = buildPaymentHistory(rows, { ...all, sort: 'nome' });
+  assert.deepEqual(nome.rows.map((r) => r.id), ['ana-set', 'ana-out', 'bruno-set']);
+  assert.deepEqual(nome.groups?.map((g) => [g.label, g.total]), [['Ana', 50], ['Bruno', 10]]);
+
+  // Um irmão só: "Nome" volta para a ordem padrão.
+  assert.equal(buildPaymentHistory(rows, { ...all, memberId: 'm1', sort: 'nome' }).groups, null);
+  assert.equal(parsePaymentHistorySort('xyz'), 'data');
 });

@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { buildAccountsReport } from '@/lib/accounts-report';
+import { buildAccountsReport, parseAccountsSort } from '@/lib/accounts-report';
 import { loadAccountsReportRows, type AccountsReportVariant } from '@/lib/accounts-report-data';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -21,12 +21,13 @@ export default async function AccountsReportPage({
   searchParams,
 }: {
   variant: AccountsReportVariant;
-  searchParams: Promise<{ from?: string; to?: string; personId?: string; text?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; personId?: string; text?: string; sort?: string }>;
 }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
   const sp = await searchParams;
+  const sort = parseAccountsSort(sp.sort);
 
   if (!lodgeId) {
     return (
@@ -70,6 +71,7 @@ export default async function AccountsReportPage({
     to,
     personId: sp.personId || null,
     text: sp.text,
+    sort,
   });
 
   const labels = LABELS[variant];
@@ -89,6 +91,7 @@ export default async function AccountsReportPage({
       to={sp.to ?? (isOpenVariant ? '' : now.toISOString().slice(0, 10))}
       personId={sp.personId ?? ''}
       text={sp.text ?? ''}
+      sort={sort}
       report={report}
     />
   );

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { accountDetail, buildAccountsReport, referenceLabel, type AccountReportRowInput } from './accounts-report.ts';
+import { accountDetail, buildAccountsReport, parseAccountsSort, referenceLabel, type AccountReportRowInput } from './accounts-report.ts';
 
 const rows: AccountReportRowInput[] = [
   { id: 'a1', date: new Date('2026-06-05'), personId: 'm1', personName: 'Ana', description: 'Mensalidade', category: 'Receitas', amount: 100 },
@@ -73,4 +73,47 @@ test('ordena pelo mês de referência, depois nome, depois data (não pela data 
     { id: 'mai-alvaro', date: d('2026-05-06'), personId: 'm4', personName: 'Álvaro', description: 'Mensalidades', category: 'Mensalidades', amount: 1, dueDate: d('2026-05-05T00:00:00Z') },
   ], { from: d('2026-01-01'), to: d('2026-12-31') });
   assert.deepEqual(r.rows.map((x) => x.id), ['mai-alvaro', 'mai-carlos', 'jun-ana', 'jun-bruno']);
+});
+
+test('parseAccountsSort: valores desconhecidos caem na Referência', () => {
+  assert.equal(parseAccountsSort('nome'), 'nome');
+  assert.equal(parseAccountsSort('data'), 'data');
+  assert.equal(parseAccountsSort(undefined), 'referencia');
+  assert.equal(parseAccountsSort('xyz'), 'referencia');
+});
+
+const sortRows: AccountReportRowInput[] = [
+  { id: 'out-bruno-05', date: new Date('2026-10-05T00:00:00Z'), personId: 'm2', personName: 'Bruno', description: 'Mensalidades', category: 'Mensalidades', amount: 10, dueDate: new Date('2026-10-05T00:00:00Z') },
+  { id: 'out-antonio-10', date: new Date('2026-10-10T00:00:00Z'), personId: 'm1', personName: 'Antônio', description: 'Mensalidades', category: 'Mensalidades', amount: 20, dueDate: new Date('2026-10-10T00:00:00Z') },
+  { id: 'set-bruno-20', date: new Date('2026-09-20T00:00:00Z'), personId: 'm2', personName: 'Bruno', description: 'Mensalidades', category: 'Mensalidades', amount: 30, dueDate: new Date('2026-09-20T00:00:00Z') },
+  { id: 'out-semnome-01', date: new Date('2026-10-01T00:00:00Z'), personId: null, personName: null, description: 'Aluguel', category: 'Despesas', amount: 40, dueDate: new Date('2026-10-01T00:00:00Z') },
+];
+const year = { from: new Date('2026-01-01'), to: new Date('2026-12-31') };
+
+test('ordem Referência (padrão): mês, depois nome; subtotal por mês', () => {
+  const r = buildAccountsReport(sortRows, year);
+  assert.deepEqual(r.rows.map((x) => x.id), ['set-bruno-20', 'out-antonio-10', 'out-bruno-05', 'out-semnome-01']);
+  assert.deepEqual(r.groups?.map((g) => [g.label, g.rows.length, g.total]), [['setembro/2026', 1, 30], ['outubro/2026', 3, 70]]);
+});
+
+test('ordem Data: dia a dia, sem subtotais', () => {
+  const r = buildAccountsReport(sortRows, { ...year, sort: 'data' });
+  assert.deepEqual(r.rows.map((x) => x.id), ['set-bruno-20', 'out-semnome-01', 'out-bruno-05', 'out-antonio-10']);
+  assert.equal(r.groups, null);
+});
+
+test('ordem Nome: pessoa a pessoa (sem nome no fim), mês a mês; subtotal por pessoa', () => {
+  const r = buildAccountsReport(sortRows, { ...year, sort: 'nome' });
+  assert.deepEqual(r.rows.map((x) => x.id), ['out-antonio-10', 'set-bruno-20', 'out-bruno-05', 'out-semnome-01']);
+  assert.deepEqual(r.groups?.map((g) => [g.label, g.total]), [['Antônio', 20], ['Bruno', 40], ['Sem nome', 40]]);
+  assert.equal(r.groups?.reduce((s, g) => s + g.total, 0), r.total);
+});
+
+test('ordem Referência: pagamento sem vencimento vai pro fim, num bloco só', () => {
+  const r = buildAccountsReport([
+    { id: 'sem-1', date: new Date('2026-03-01'), personId: null, personName: 'X', description: 'Pagamento', category: null, amount: 1 },
+    { id: 'out', date: new Date('2026-10-01'), personId: null, personName: 'Y', description: 'Pagamento', category: null, amount: 1, dueDate: new Date('2026-10-01T00:00:00Z') },
+    { id: 'sem-2', date: new Date('2026-12-01'), personId: null, personName: 'Z', description: 'Pagamento', category: null, amount: 1 },
+  ], year);
+  assert.deepEqual(r.groups?.map((g) => g.label), ['outubro/2026', 'Sem referência']);
 });

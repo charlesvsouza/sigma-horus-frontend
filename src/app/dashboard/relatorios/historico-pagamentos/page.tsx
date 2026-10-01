@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { buildPaymentHistory, canSeePaymentHistory, defaultPeriod, periodBounds } from '@/lib/payment-history';
+import { buildPaymentHistory, parsePaymentHistorySort, canSeePaymentHistory, defaultPeriod, periodBounds } from '@/lib/payment-history';
 import { loadPaymentHistory } from '@/lib/payment-history-server';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -7,7 +7,7 @@ import HistoricoPagamentosClient from './HistoricoPagamentosClient';
 
 // Histórico de pagamentos de todos os irmãos — só Tesoureiro, Administrador e Venerável
 // (o Secretário fica de fora por decisão do dono). O irmão vê o dele em Meu portal.
-export default async function Page({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; memberId?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; memberId?: string; sort?: string }> }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
   const role = session?.user?.role;
@@ -36,7 +36,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ f
     return { lodge, members, rows };
   });
 
-  const report = buildPaymentHistory(data.rows, { ...periodBounds(from, to), memberId });
+  const sort = parsePaymentHistorySort(sp.sort);
+  const report = buildPaymentHistory(data.rows, { ...periodBounds(from, to), memberId, sort });
 
   return (
     <HistoricoPagamentosClient
@@ -50,6 +51,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ f
       to={to}
       memberId={memberId ?? ''}
       memberName={memberId ? data.members.find((m) => m.id === memberId)?.name ?? null : null}
+      sort={sort}
       report={report}
     />
   );

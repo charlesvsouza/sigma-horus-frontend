@@ -15,6 +15,8 @@ import { downloadCsv } from '@/lib/csv';
 //   rpt-section   bloco que não quebra no meio da página
 //   rpt-pagebreak começa numa página nova
 //   rpt-total     linha de total (negrito + fio)
+//   rpt-group     linha-título de um bloco (mês, pessoa)
+//   rpt-subtotal  subtotal de um bloco (fio fino, itálico)
 //   rpt-flat      cartão da tela que vira seção sem moldura no papel
 //   rpt-card      caixa com borda fina no papel (resumos/indicadores)
 //   num           célula numérica (alinhada à direita)
@@ -87,6 +89,8 @@ export function printCss({ orientation = 'portrait', paper = 'A4', footer, foote
   .rpt-doc .num { text-align: right !important; font-variant-numeric: tabular-nums; }
   .rpt-doc tr { break-inside: avoid; page-break-inside: avoid; }
   .rpt-doc .rpt-total td { font-weight: bold; border-top: 1.5px solid #333 !important; }
+  .rpt-doc .rpt-group td { font-weight: bold; padding-top: 8px !important; border-bottom: 1px solid #888 !important; break-after: avoid; page-break-after: avoid; }
+  .rpt-doc .rpt-subtotal td { font-style: italic; border-top: 1px solid #888 !important; border-bottom: 0 !important; padding-bottom: 6px !important; }
   .rpt-doc .rpt-section { break-inside: avoid; page-break-inside: avoid; }
   .rpt-doc .rpt-pagebreak { break-before: page; page-break-before: always; }
   .rpt-doc .rpt-flat { border: none !important; border-radius: 0 !important; padding: 0 !important; margin-top: 14px !important; }

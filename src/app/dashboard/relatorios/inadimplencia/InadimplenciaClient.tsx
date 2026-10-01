@@ -73,6 +73,16 @@ function RenegotiateForm({ memberId, onDone }: { memberId: string; onDone: () =>
 type AgingBucket = '1-30' | '31-60' | '61-90' | '90+';
 const AGING_LABEL: Record<AgingBucket, string> = { '1-30': '1 a 30 dias', '31-60': '31 a 60 dias', '61-90': '61 a 90 dias', '90+': 'Mais de 90 dias' };
 
+// Ordem da lista (tela, CSV e PDF): maior atraso primeiro (padrão — prioriza a cobrança),
+// alfabética (conferência/leitura em sessão) ou maior valor em aberto.
+type OverdueSort = 'atraso' | 'nome' | 'valor';
+const SORT_LABEL: Record<OverdueSort, string> = { atraso: 'Dias de atraso', nome: 'Nome', valor: 'Valor em aberto' };
+const COMPARE: Record<OverdueSort, (a: Row, b: Row) => number> = {
+  atraso: (a, b) => b.daysOverdue - a.daysOverdue || a.memberName.localeCompare(b.memberName, 'pt-BR'),
+  nome: (a, b) => a.memberName.localeCompare(b.memberName, 'pt-BR'),
+  valor: (a, b) => b.totalAmount - a.totalAmount || a.memberName.localeCompare(b.memberName, 'pt-BR'),
+};
+
 function agingBucketOf(daysOverdue: number): AgingBucket {
   if (daysOverdue <= 30) return '1-30';
   if (daysOverdue <= 60) return '31-60';
@@ -102,6 +112,7 @@ export default function InadimplenciaClient({
   const [search, setSearch] = useState('');
   const [enquadramento, setEnquadramento] = useState<Enquadramento>('all');
   const [statusFilter, setStatusFilter] = useState('');
+  const [sort, setSort] = useState<OverdueSort>('atraso');
 
   const buckets: AgingBucket[] = ['1-30', '31-60', '61-90', '90+'];
   const aging = buckets.map((bucket) => {
@@ -118,7 +129,7 @@ export default function InadimplenciaClient({
     && (enquadramento === 'all' || (enquadramento === 'art002' ? r.art002 : !r.art002))
     && (!statusFilter || r.memberStatus === statusFilter)
     && (!q || r.memberName.toLocaleLowerCase('pt-BR').includes(q)),
-  );
+  ).sort(COMPARE[sort]);
   const visibleTotal = visibleRows.reduce((s, r) => s + r.totalAmount, 0);
   const visibleWithCharges = visibleRows.reduce((s, r) => s + r.lateCharge.total, 0);
   const hasFilter = agingFilter !== 'all' || enquadramento !== 'all' || !!statusFilter || !!q;
@@ -207,7 +218,7 @@ export default function InadimplenciaClient({
           </div>
 
           {rows.length > 0 ? (
-            <div className="mt-4 grid gap-3 md:grid-cols-[2fr_1fr_1fr]">
+            <div className="mt-4 grid gap-3 md:grid-cols-[2fr_1fr_1fr_1fr]">
               <label className="text-xs text-sand-dark">Buscar membro
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nome do irmão…" className={`mt-1 ${inputClass}`} />
               </label>
@@ -220,6 +231,11 @@ export default function InadimplenciaClient({
                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`mt-1 ${inputClass}`}>
                   <option value="">Todas</option>
                   {statusesPresent.map((s) => <option key={s.value} value={s.value}>{s.short}</option>)}
+                </select>
+              </label>
+              <label className="text-xs text-sand-dark">Ordenar por
+                <select value={sort} onChange={(e) => setSort(e.target.value as OverdueSort)} className={`mt-1 ${inputClass}`}>
+                  {(Object.keys(SORT_LABEL) as OverdueSort[]).map((k) => <option key={k} value={k}>{SORT_LABEL[k]}</option>)}
                 </select>
               </label>
             </div>
@@ -284,7 +300,7 @@ export default function InadimplenciaClient({
         lodgeName={lodgeName}
         crestUrl={crestUrl}
         title="Relatório de inadimplência — mensalidades (Art. 002)"
-        details={[`Posição em ${todayLabel()}`, filterSummary]}
+        details={[`Posição em ${todayLabel()}`, filterSummary, `Ordenado por: ${SORT_LABEL[sort]}`]}
         issuedBy={issuedBy}
       >
         <table>

@@ -324,7 +324,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.66 — 29 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.67 — 30 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1131,7 +1131,7 @@ export function ManualBook() {
                 </p>
                 <p>
                   Quatro relatórios listam as contas em uma só tela, cada um com filtros de <UI>De</UI>/<UI>Até</UI>, <UI>Pessoa</UI> (membro ou cliente/fornecedor) e busca por categoria, descrição ou referência (ex.: <em>maio</em>), e os botões <UI>Imprimir / PDF</UI> e <UI>Exportar CSV</UI>.
-                  As colunas são data, nome, <strong>Referência</strong>, categoria e valor. A referência é o <strong>mês/ano do vencimento</strong> da conta (vence em 05/10/2026 → <em>outubro/2026</em>) — nas contas recebidas e pagas também, então a mensalidade de maio paga em julho aparece com recebimento em julho e referência <em>maio/2026</em>. O título da conta só aparece, em letra menor sob a categoria, quando diz algo além dela (ex.: <em>Venda de Materiais e Paramentos — Ritual de Aprendiz</em>); <em>Mensalidades</em> na categoria Mensalidades não se repete. No CSV e no Excel ele vai na coluna <strong>Detalhe</strong>. As linhas vêm <strong>ordenadas pelo mês de referência</strong> e, dentro de cada mês, pelo nome em ordem alfabética — o filtro <UI>De</UI>/<UI>Até</UI> continua sendo pela data da coluna (vencimento ou recebimento).
+                  As colunas são data, nome, <strong>Referência</strong>, categoria e valor. A referência é o <strong>mês/ano do vencimento</strong> da conta (vence em 05/10/2026 → <em>outubro/2026</em>) — nas contas recebidas e pagas também, então a mensalidade de maio paga em julho aparece com recebimento em julho e referência <em>maio/2026</em>. O título da conta só aparece, em letra menor sob a categoria, quando diz algo além dela (ex.: <em>Venda de Materiais e Paramentos — Ritual de Aprendiz</em>); <em>Mensalidades</em> na categoria Mensalidades não se repete. No CSV e no Excel ele vai na coluna <strong>Detalhe</strong>. Em <UI>Ordenar por</UI> escolha a ordem da lista: <strong>Referência</strong> (padrão — mês a mês e, dentro de cada mês, pelo nome em ordem alfabética, com o <strong>subtotal de cada mês</strong>), <strong>Nome</strong> (pessoa a pessoa, mês a mês, com o <strong>subtotal de cada pessoa</strong> — um extrato de quanto cada um deve ou pagou) ou a data da coluna (<strong>Vencimento</strong>, <strong>Recebimento</strong> ou <strong>Pagamento</strong> — lista corrida, dia a dia, sem subtotais). A ordem e os subtotais saem iguais no PDF, no CSV e no Excel. O filtro <UI>De</UI>/<UI>Até</UI> continua sendo pela data da coluna (vencimento ou recebimento).
                   <UI> Contas a receber</UI> e <UI>Contas a pagar</UI> mostram o que está <strong>em aberto</strong>, por data de vencimento;
                   <UI> Contas recebidas</UI> e <UI>Contas pagas</UI> mostram o que <strong>já foi liquidado</strong>, por data de recebimento ou de pagamento. Ficam em <UI>Tesouraria → Relatórios</UI>.
                   Para olhar <strong>um irmão</strong>: o <UI>Histórico de pagamentos</UI> (7.19) mostra tudo o que ele pagou, com a forma
@@ -1227,7 +1227,9 @@ export function ManualBook() {
                     Em <UI>Tesouraria → Relatórios → Inadimplência (Art. 002)</UI>, veja todos os membros com
                     mensalidade em aberto: quantidade de parcelas, valor total, vencimento mais antigo, dias de
                     atraso e, se configurada (7.9), a <strong>multa/juros estimados</strong>. Os enquadrados no
-                    Art. 002 aparecem destacados.
+                    Art. 002 aparecem destacados. Em <UI>Ordenar por</UI>, a lista (e o PDF/CSV) pode vir por
+                    <strong> dias de atraso</strong> (padrão, o maior primeiro), por <strong>nome</strong> (para conferir ou ler em
+                    sessão) ou pelo <strong>valor em aberto</strong> (o maior primeiro, para priorizar a cobrança).
                   </li>
                   <li>
                     O critério é o <strong>vencimento em aberto mais antigo</strong>: se ele já passou de 60 dias, o
@@ -1535,6 +1537,7 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li><strong>Filtros:</strong> período (padrão: de 1º de janeiro até hoje) e irmão, ou todos.</li>
+                  <li><strong>Ordenar por:</strong> <strong>Data do pagamento</strong> (padrão, lista corrida), <strong>Referência</strong> (mês do vencimento da conta paga, com subtotal por mês) ou, com &quot;Todos os irmãos&quot;, <strong>Nome</strong> (irmão a irmão, com subtotal de cada um). Vale para a tela, o PDF e o CSV — e também no portal do irmão (data ou referência).</li>
                   <li><strong>Colunas:</strong> data do pagamento, irmão, a que se refere (título e categoria), vencimento da conta, forma de pagamento (Pix, dinheiro, Asaas…) e valor, com o link <UI>Recibo</UI> de cada linha.</li>
                   <li><strong>Por irmão:</strong> com &quot;Todos os irmãos&quot;, um quadro soma a quantidade e o total pago por irmão; clique no nome para ver só o histórico dele.</li>
                   <li>Pagamento registrado sem &quot;vincular a um membro&quot; conta para o dono da conta — nenhuma baixa antiga some do histórico do irmão. O relatório <UI>Contas recebidas</UI> passou a seguir a mesma regra no filtro por pessoa.</li>
