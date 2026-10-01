@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { lodgeArtOf } from '@/lib/certificate-server';
+import { normalizeRole, requireLodgeAccess } from '@/lib/rbac';
 import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
 import CertificadosClient, { type CertSession, type CertVisit } from './CertificadosClient';
 
@@ -38,8 +39,11 @@ export default async function CertificadosPage({ searchParams }: { searchParams:
           orderBy: { createdAt: 'asc' },
         })
       : [];
-    return { sessions, selected, visits };
+    const lodge = await db.lodge.findUnique({ where: { id: lodgeId }, select: { certificateArtKey: true, certificateArtType: true, certificateLayout: true } });
+    return { sessions, selected, visits, lodge };
   });
+  // Arte enviada × pronta: pronta = arquivo + posições dos campos configuradas.
+  const art = { uploaded: Boolean(data.lodge?.certificateArtKey), ready: lodgeArtOf(data.lodge) !== null };
 
   const sessions: CertSession[] = data.sessions.map((s) => ({
     id: s.id,
@@ -62,5 +66,13 @@ export default async function CertificadosPage({ searchParams }: { searchParams:
     status: v.certificateStatus,
   }));
 
-  return <CertificadosClient sessions={sessions} selectedId={data.selected?.id ?? null} visits={visits} />;
+  return (
+    <CertificadosClient
+      sessions={sessions}
+      selectedId={data.selected?.id ?? null}
+      visits={visits}
+      art={art}
+      canManageArt={normalizeRole(session?.user?.role) === 'admin'}
+    />
+  );
 }

@@ -5,11 +5,15 @@ import QRCode from 'qrcode';
 import {
   attendedDegrees, certificateText, nextCertificateNumber, verificationCode, verificationUrl, type CertificateTemplate,
 } from '@/lib/certificate';
-import { renderCertificatePdf, type CertificateFonts } from '@/lib/certificate-pdf';
+import {
+  artDateParts, artLodgeLine, normalizeArtType, parseCertificateArtLayout, signatureRoleOf, type ArtSignatureRole,
+} from '@/lib/certificate-art';
+import { renderArtCertificatePdf, renderCertificatePdf, type CertificateFonts } from '@/lib/certificate-pdf';
 import { getLetterhead, longDateBR, orientOf } from '@/lib/letterhead';
 import { lockKey } from '@/lib/locks';
 import { withTenant } from '@/lib/prisma';
 import { getReportSignatories } from '@/lib/report-signatories';
+import { getObjectBuffer } from '@/lib/storage';
 import { sessionDegrees } from '@/lib/session-convocation';
 import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
 
@@ -42,6 +46,28 @@ async function fetchCrest(url: string | null): Promise<{ bytes: Uint8Array; type
   }
 }
 
+/** Arte da loja pronta para uso (arquivo + layout válidos), ou null — aí o modelo da loja não aparece. */
+export function lodgeArtOf(lodge: { certificateArtKey: string | null; certificateArtType: string | null; certificateLayout: unknown } | null) {
+  const type = normalizeArtType(lodge?.certificateArtType);
+  const layout = parseCertificateArtLayout(lodge?.certificateLayout);
+  return lodge?.certificateArtKey && type && layout ? { key: lodge.certificateArtKey, type, layout } : null;
+}
+
+// A arte não muda entre um certificado e outro (trocar a arte gera chave nova): fica em memória
+// enquanto a função estiver quente, para "Enviar pendentes" não baixar o arquivo a cada visitante.
+const artCache = new Map<string, Promise<Uint8Array | null>>();
+function loadArt(key: string): Promise<Uint8Array | null> {
+  let p = artCache.get(key);
+  if (!p) {
+    p = getObjectBuffer(key).then((b) => (b ? new Uint8Array(b) : null)).catch(() => null);
+    artCache.set(key, p);
+    p.then((b) => { if (!b) artCache.delete(key); });
+  }
+  return p;
+}
+
+export class CertificateArtUnavailable extends Error {}
+
 export async function loadCertificateContext(lodgeId: string, visitId: string) {
   return withTenant(lodgeId, async (db) => {
     const visit = await db.sessionVisitor.findFirst({
@@ -57,11 +83,12 @@ export async function loadCertificateContext(lodgeId: string, visitId: string) {
       },
     });
     if (!visit) return null;
-    const [letterhead, signatures] = await Promise.all([
+    const [letterhead, signatures, lodge] = await Promise.all([
       getLetterhead(db, lodgeId),
       getReportSignatories(db, lodgeId, { at: visit.session.date, by: 'secretary' }),
+      db.lodge.findUnique({ where: { id: lodgeId }, select: { certificateArtKey: true, certificateArtType: true, certificateLayout: true } }),
     ]);
-    return { visit, letterhead, signatures };
+    return { visit, letterhead, signatures, art: lodgeArtOf(lodge) };
   });
 }
 
@@ -104,6 +131,25 @@ export async function buildCertificatePdf(
 ): Promise<Uint8Array> {
   const { visit, letterhead } = ctx;
   const v = visit.visitor;
+
+  // Modelo da loja: só os campos das linhas em branco, sem número nem QR impressos.
+  if (template === 'loja') {
+    if (!ctx.art) throw new CertificateArtUnavailable('A loja ainda não tem a arte do certificado configurada.');
+    const [fonts, bytes] = await Promise.all([loadFonts(), loadArt(ctx.art.key)]);
+    if (!bytes) throw new CertificateArtUnavailable('Não foi possível carregar a arte do certificado. Tente de novo.');
+    return renderArtCertificatePdf({
+      art: { bytes, type: ctx.art.type },
+      layout: ctx.art.layout,
+      values: { name: v.name, lodge: artLodgeLine(v.lodgeName, v.lodgeNumber), ...artDateParts(visit.session.date) },
+      signatures: ctx.signatures.flatMap((s) => {
+        const role = signatureRoleOf(s.role);
+        return role ? [{ role: role as ArtSignatureRole, name: s.name ?? null }] : [];
+      }),
+      number: issued?.number ?? null,
+      preview: !issued,
+    }, fonts);
+  }
+
   const text = certificateText({
     lodgeName: letterhead.name,
     lodgeOrient: orientOf(letterhead),

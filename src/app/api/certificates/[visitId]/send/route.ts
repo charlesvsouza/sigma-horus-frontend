@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { certificateEmail, normalizeTemplate, verificationUrl } from '@/lib/certificate';
-import { buildCertificatePdf, ensureIssued, loadCertificateContext, sessionEnded } from '@/lib/certificate-server';
+import { buildCertificatePdf, CertificateArtUnavailable, ensureIssued, loadCertificateContext, sessionEnded } from '@/lib/certificate-server';
 import { longDateBR } from '@/lib/letterhead';
 import { buildLodgeChannels } from '@/lib/lodge-channels';
 import { dispatch } from '@/lib/messaging';
@@ -29,6 +29,7 @@ export async function POST(request: Request, { params }: Ctx) {
   if (!ctx) return NextResponse.json({ error: 'Visita não encontrada.' }, { status: 404 });
   const v = ctx.visit.visitor;
   if (v.anonymizedAt) return NextResponse.json({ error: 'Os dados deste visitante foram excluídos (LGPD).' }, { status: 409 });
+  if (template === 'loja' && !ctx.art) return NextResponse.json({ error: 'A loja ainda não tem a arte do certificado configurada.' }, { status: 409 });
   if (!sessionEnded(ctx)) return NextResponse.json({ error: 'O certificado só é enviado depois do término da sessão.' }, { status: 409 });
   if (!v.email) return NextResponse.json({ error: 'Visitante sem e-mail: baixe o PDF e entregue em mãos.' }, { status: 409 });
   if (!v.consentAt) return NextResponse.json({ error: 'Sem consentimento registrado para o envio. Confirme na lista de presença e marque na sessão.' }, { status: 409 });
@@ -37,14 +38,22 @@ export async function POST(request: Request, { params }: Ctx) {
   }
 
   const issued = await ensureIssued(lodgeId, visitId);
-  const pdf = await buildCertificatePdf(ctx, template, issued);
+  let pdf: Uint8Array;
+  try {
+    pdf = await buildCertificatePdf(ctx, template, issued);
+  } catch (error) {
+    if (error instanceof CertificateArtUnavailable) return NextResponse.json({ error: error.message }, { status: 409 });
+    throw error;
+  }
+  // O modelo da loja não imprime número nem QR: o e-mail também não fala deles.
+  const lodgeArt = template === 'loja';
   const mail = certificateEmail({
     visitorName: v.name,
     lodgeName: ctx.letterhead.name,
     sessionTypeLabel: SESSION_TYPE_LABEL[ctx.visit.session.type] ?? ctx.visit.session.type,
     sessionDate: longDateBR(ctx.visit.session.date),
-    number: issued.number,
-    url: verificationUrl(issued.code),
+    number: lodgeArt ? null : issued.number,
+    url: lodgeArt ? null : verificationUrl(issued.code),
   });
   const result = await dispatch('email', v.email, mail.subject, mail.text, buildLodgeChannels({ name: ctx.letterhead.name, crestUrl: ctx.letterhead.crestUrl }), {
     attachments: [{ filename: `certificado-${issued.number}.pdf`, content: Buffer.from(pdf).toString('base64') }],

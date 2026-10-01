@@ -324,7 +324,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.68 — 30 de setembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.69 — 30 de setembro de 2026</p>
               </div>
             </div>
 
@@ -1941,13 +1941,14 @@ export function ManualBook() {
                 </p>
                 <Steps>
                   <li>Escolha a sessão à esquerda — aparecem só as sessões já realizadas com visitantes, com quantos certificados já foram enviados.</li>
-                  <li>Escolha o <UI>Modelo</UI>: <strong>Clássico</strong> (fundo marfim, moldura dourada dupla) ou <strong>Pergaminho</strong> (fundo papiro, moldura sépia). O navegador lembra a escolha.</li>
+                  <li>Escolha o <UI>Modelo</UI>: <strong>Clássico</strong> (fundo marfim, moldura dourada dupla), <strong>Pergaminho</strong> (fundo papiro, moldura sépia) ou, se a loja configurou a arte dela, <strong>Modelo da loja</strong> (que passa a ser o padrão). O navegador lembra a escolha.</li>
                   <li>Clique em <UI>Prévia</UI> para ver o certificado de cada irmão — é o próprio PDF, com a marca d&apos;água &quot;PRÉVIA&quot; no lugar do número e do QR Code. Confira o nome, a loja e o grau: o texto sai exatamente do cadastro da visita (corrija em <UI>Secretaria → Visitantes</UI> se preciso).</li>
                   <li><UI>Enviar por e-mail</UI> (um) ou <UI>Enviar pendentes</UI> (todos de uma vez): cada irmão recebe o certificado em PDF anexo, com o link de verificação. Irmão sem e-mail: use <UI>Baixar PDF</UI> e entregue em mãos.</li>
                 </Steps>
                 <Bullets>
                   <li><strong>O texto:</strong> a loja (com a Potência e o Oriente) certifica que o Ir∴ visitante — com o grau e a loja dele — esteve presente à sessão, na data, <strong>nos graus em que ele pôde estar</strong>: um Aprendiz numa sessão de 1º e 2º grau aparece só &quot;nos trabalhos em Grau de Aprendiz&quot;. Assinam o Secretário e o Venerável do veneralato da data da sessão; o brasão da loja (Configurações) vai no topo.</li>
                   <li><strong>Número e verificação:</strong> na primeira emissão (envio ou download), o certificado recebe um número sequencial por ano (<strong>CP-2026-0001</strong>) e um código de verificação. O QR Code e o endereço impressos levam à página pública <strong>sigmahorus.com.br/verificar/código</strong>, que confirma a autenticidade (número, irmão, loja e sessão — sem e-mail nem telefone). Reenviar mantém o mesmo número.</li>
+                  <li><strong>Modelo da loja:</strong> a loja usa o diploma que já tem. O Administrador envia a arte em <UI>Arte da loja</UI>, no topo da tela (A4 paisagem; JPG de cerca de 200 dpi, PNG ou PDF, até 4 MB), e o suporte do Sigma Horus configura onde o sistema escreve. Nesse modelo vale o texto da própria arte: o sistema preenche só as linhas em branco — o <strong>nome do Irmão</strong>, a <strong>Loja dele</strong> (sem repetir &quot;A∴R∴L∴S∴&quot;, que a arte já traz) e o <strong>dia, mês e ano da sessão</strong>. <strong>Não saem número nem QR Code</strong> (o número continua registrado na tela, para controle), e o e-mail também não fala deles. Se a arte vier sem os nomes dos signatários, o sistema escreve o do <strong>Venerável</strong> e o do <strong>Secretário</strong> do veneralato da sessão. Para trocar a arte (ex.: novo veneralato), use <UI>Trocar arte</UI> com o mesmo desenho.</li>
                   <li><strong>Travas:</strong> só depois do término da sessão; só com e-mail e com o consentimento registrado na visita (a caixa &quot;Autorizou o envio do certificado&quot;); reenviar pede confirmação; visitante com dados excluídos (LGPD) não recebe.</li>
                   <li>Cada envio fica registrado em <UI>Comunicação</UI> e na auditoria; falha de envio aparece como &quot;falhou — tente de novo&quot;.</li>
                 </Bullets>

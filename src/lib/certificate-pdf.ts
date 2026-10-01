@@ -1,6 +1,7 @@
 import fontkit from '@pdf-lib/fontkit';
 import { degrees, PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from 'pdf-lib';
-import type { CertificateTemplate } from '@/lib/certificate';
+import type { BuiltinTemplate } from '@/lib/certificate';
+import type { ArtField, ArtSignatureRole, CertificateArtLayout, CertificateArtType } from '@/lib/certificate-art';
 
 // Diploma do certificado de presença em A4 paisagem, montado no servidor (vai anexo no e-mail).
 // Dois modelos com o mesmo layout: Clássico (fundo marfim, moldura dourada dupla) e Pergaminho
@@ -9,7 +10,7 @@ import type { CertificateTemplate } from '@/lib/certificate';
 export interface CertificateFonts { title: Uint8Array; regular: Uint8Array; bold: Uint8Array; italic: Uint8Array }
 
 export interface CertificatePdfInput {
-  template: CertificateTemplate;
+  template: BuiltinTemplate;
   text: { before: string; name: string; after: string };
   openingFormula: string | null;
   /** "Oriente de Rio de Janeiro/RJ, 2 de outubro de 2026." */
@@ -27,7 +28,7 @@ const H = 595.28;
 
 const hex = (h: string): RGB => rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
 
-const PALETTE: Record<CertificateTemplate, { page: RGB; panel: RGB | null; frame: RGB; ink: RGB; accent: RGB; soft: RGB }> = {
+const PALETTE: Record<BuiltinTemplate, { page: RGB; panel: RGB | null; frame: RGB; ink: RGB; accent: RGB; soft: RGB }> = {
   classico: { page: hex('#FFFDF7'), panel: null, frame: hex('#B8962E'), ink: hex('#1E1B16'), accent: hex('#8A6D1E'), soft: hex('#6B6152') },
   pergaminho: { page: hex('#E6D3A3'), panel: hex('#F4E8C8'), frame: hex('#7A5A1E'), ink: hex('#3B2F1E'), accent: hex('#7A5A1E'), soft: hex('#6A5A40') },
 };
@@ -116,7 +117,7 @@ function drawCentered(page: PDFPage, text: string, s: Style, top: number, maxWid
   return y;
 }
 
-function drawFrame(page: PDFPage, template: CertificateTemplate): void {
+function drawFrame(page: PDFPage, template: BuiltinTemplate): void {
   const p = PALETTE[template];
   page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: p.page });
   if (p.panel) page.drawRectangle({ x: 16, y: 16, width: W - 32, height: H - 32, color: p.panel });
@@ -212,5 +213,69 @@ export async function renderCertificatePdf(input: CertificatePdfInput, fonts: Ce
     page.drawText('PRÉVIA', { x: W / 2 - 190, y: H / 2 - 90, font: fTitle, size: 110, color: p.accent, opacity: 0.09, rotate: degrees(18) });
   }
 
+  return doc.save();
+}
+
+export interface ArtCertificatePdfInput {
+  art: { bytes: Uint8Array; type: CertificateArtType };
+  layout: CertificateArtLayout;
+  values: { name: string; lodge: string | null; day: string; month: string; year: string };
+  /** Quem assina (só sai se o layout tiver a linha do cargo — arte sem os nomes impressos). */
+  signatures: { role: ArtSignatureRole; name: string | null }[];
+  number: string | null;
+  preview: boolean;
+}
+
+/**
+ * Certificado no modelo da loja: a arte ocupa a página inteira e os campos são escritos nas
+ * linhas em branco dela, centrados, em letra serifada na cor do layout (imita o preenchimento).
+ * PDF de arte entra vetorial (embedPdf); JPG/PNG, como imagem.
+ */
+export async function renderArtCertificatePdf(input: ArtCertificatePdfInput, fonts: CertificateFonts): Promise<Uint8Array> {
+  const { layout } = input;
+  const doc = await PDFDocument.create();
+  doc.registerFontkit(fontkit);
+  doc.setTitle(`Certificado de presença${input.number ? ` ${input.number}` : ''}`);
+  doc.setCreator('Sigma Horus');
+  const [fTitle, fBold] = await Promise.all([
+    doc.embedFont(fonts.title, { subset: true }),
+    doc.embedFont(fonts.bold, { subset: true }),
+  ]);
+  const page = doc.addPage([layout.width, layout.height]);
+
+  if (input.art.type === 'pdf') {
+    const [bg] = await doc.embedPdf(input.art.bytes, [0]);
+    page.drawPage(bg, { x: 0, y: 0, width: layout.width, height: layout.height });
+  } else {
+    const img = input.art.type === 'png' ? await doc.embedPng(input.art.bytes) : await doc.embedJpg(input.art.bytes);
+    page.drawImage(img, { x: 0, y: 0, width: layout.width, height: layout.height });
+  }
+
+  const ink = hex(layout.ink);
+  // As fontes não têm o "∴": vira ponto (só aparece se a loja do visitante o tiver no meio do nome).
+  const clean = (t: string) => t.replace(/∴/g, '.').replace(/\s+/g, ' ').trim();
+  function onLine(text: string | null, f: ArtField | undefined) {
+    if (!f || !text) return;
+    const t = clean(text);
+    let size = f.size;
+    while (fBold.widthOfTextAtSize(t, size) > f.x1 - f.x0 - 8 && size > 7) size -= 0.5;
+    const w = fBold.widthOfTextAtSize(t, size);
+    page.drawText(t, { x: f.x0 + (f.x1 - f.x0 - w) / 2, y: layout.height - f.y + size * 0.15, font: fBold, size, color: ink });
+  }
+
+  onLine(input.values.name, layout.fields.name);
+  onLine(input.values.lodge, layout.fields.lodge);
+  onLine(input.values.day, layout.fields.day);
+  onLine(input.values.month, layout.fields.month);
+  onLine(input.values.year, layout.fields.year);
+  for (const slot of layout.signatures ?? []) {
+    onLine(input.signatures.find((s) => s.role === slot.role)?.name ?? null, slot);
+  }
+
+  if (input.preview) {
+    page.drawText('PRÉVIA', {
+      x: layout.width / 2 - 190, y: layout.height / 2 - 90, font: fTitle, size: 110, color: ink, opacity: 0.08, rotate: degrees(18),
+    });
+  }
   return doc.save();
 }

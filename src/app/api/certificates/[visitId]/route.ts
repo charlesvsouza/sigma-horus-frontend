@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { normalizeTemplate } from '@/lib/certificate';
-import { buildCertificatePdf, ensureIssued, loadCertificateContext, sessionEnded } from '@/lib/certificate-server';
+import { buildCertificatePdf, CertificateArtUnavailable, ensureIssued, loadCertificateContext, sessionEnded } from '@/lib/certificate-server';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
@@ -10,7 +10,7 @@ type Ctx = { params: Promise<{ visitId: string }> };
 //  ?preview=1 → prévia (marca d'água, sem número nem QR) — não emite nada.
 //  sem preview → emite (número + código, se ainda não tem) e devolve o certificado para baixar
 //                (ex.: visitante sem e-mail recebe em mãos).
-// ?modelo=classico|pergaminho.
+// ?modelo=classico|pergaminho|loja (loja = arte própria, sem número nem QR impressos).
 export async function GET(request: Request, { params }: Ctx) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
@@ -26,10 +26,17 @@ export async function GET(request: Request, { params }: Ctx) {
   const ctx = await loadCertificateContext(lodgeId, visitId);
   if (!ctx) return NextResponse.json({ error: 'Visita não encontrada.' }, { status: 404 });
   if (ctx.visit.visitor.anonymizedAt) return NextResponse.json({ error: 'Os dados deste visitante foram excluídos (LGPD).' }, { status: 409 });
+  if (template === 'loja' && !ctx.art) return NextResponse.json({ error: 'A loja ainda não tem a arte do certificado configurada.' }, { status: 409 });
   if (!preview && !sessionEnded(ctx)) return NextResponse.json({ error: 'O certificado só é emitido depois do término da sessão.' }, { status: 409 });
 
   const issued = preview ? null : await ensureIssued(lodgeId, visitId);
-  const pdf = await buildCertificatePdf(ctx, template, issued);
+  let pdf: Uint8Array;
+  try {
+    pdf = await buildCertificatePdf(ctx, template, issued);
+  } catch (error) {
+    if (error instanceof CertificateArtUnavailable) return NextResponse.json({ error: error.message }, { status: 409 });
+    throw error;
+  }
   const name = issued ? `certificado-${issued.number}.pdf` : 'certificado-previa.pdf';
   return new NextResponse(Buffer.from(pdf), {
     headers: {

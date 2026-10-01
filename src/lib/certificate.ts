@@ -3,13 +3,17 @@ import { DEGREE_NAME, normalizeDegrees } from '@/lib/session-convocation';
 // Certificado de presença do irmão visitante: texto, graus em que ele esteve, numeração e
 // código de verificação pública. Lógica pura (o PDF é montado em lib/certificate-pdf).
 
-export type CertificateTemplate = 'classico' | 'pergaminho';
-export const CERTIFICATE_TEMPLATES: { id: CertificateTemplate; label: string }[] = [
+/** Modelos desenhados pelo sistema. */
+export type BuiltinTemplate = 'classico' | 'pergaminho';
+/** 'loja' = a arte da própria loja como fundo (lib/certificate-art), quando configurada. */
+export type CertificateTemplate = BuiltinTemplate | 'loja';
+export const CERTIFICATE_TEMPLATES: { id: BuiltinTemplate; label: string }[] = [
   { id: 'classico', label: 'Clássico (moldura dourada)' },
   { id: 'pergaminho', label: 'Pergaminho' },
 ];
+export const LODGE_TEMPLATE_LABEL = 'Modelo da loja';
 export function normalizeTemplate(v: unknown): CertificateTemplate {
-  return v === 'pergaminho' ? 'pergaminho' : 'classico';
+  return v === 'pergaminho' || v === 'loja' ? v : 'classico';
 }
 
 const RANK: Record<string, number> = { aprendiz: 1, companheiro: 2, mestre: 3, 'mestre instalado': 3 };
@@ -116,15 +120,18 @@ export function verificationUrl(code: string, appUrl: string | undefined = proce
   return `${(appUrl || 'https://sigmahorus.com.br').replace(/\/+$/, '')}/verificar/${code}`;
 }
 
-/** E-mail que leva o certificado anexo. */
-export function certificateEmail(i: { visitorName: string; lodgeName: string; sessionTypeLabel: string; sessionDate: string; number: string; url: string }): { subject: string; text: string } {
+/**
+ * E-mail que leva o certificado anexo. Sem `number`/`url` (modelo da loja, que não imprime número
+ * nem QR), o texto não fala de número nem de verificação.
+ */
+export function certificateEmail(i: { visitorName: string; lodgeName: string; sessionTypeLabel: string; sessionDate: string; number?: string | null; url?: string | null }): { subject: string; text: string } {
   return {
     subject: `Certificado de presença — ${i.lodgeName}`,
     text: [
       `Caro Ir.·. ${i.visitorName},`,
-      `A ${i.lodgeName} agradece a sua visita à Sessão ${i.sessionTypeLabel} de ${i.sessionDate}. Segue em anexo o seu certificado de presença, nº ${i.number}.`,
-      `A autenticidade do certificado pode ser verificada em: ${i.url}`,
+      `A ${i.lodgeName} agradece a sua visita à Sessão ${i.sessionTypeLabel} de ${i.sessionDate}. Segue em anexo o seu certificado de presença${i.number ? `, nº ${i.number}` : ''}.`,
+      i.url ? `A autenticidade do certificado pode ser verificada em: ${i.url}` : null,
       `Fraternalmente,\nSecretaria — ${i.lodgeName}`,
-    ].join('\n\n'),
+    ].filter(Boolean).join('\n\n'),
   };
 }

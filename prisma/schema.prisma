@@ -20,6 +20,11 @@ model Lodge {
   // demais documentos gerados/enviados (e no cabeçalho HTML dos e-mails).
   crestUrl        String?
   crestStorageKey String?
+  // Certificado de presença no modelo da própria loja: arte de fundo (bucket privado do R2,
+  // jpg/png/pdf) e onde escrever cada campo por cima (ver lib/certificate-art.ts).
+  certificateArtKey  String?
+  certificateArtType String?
+  certificateLayout  Json?
   email        String?
   phone        String?
   addressLine  String?

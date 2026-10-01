@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, EmptyState, inputClass, useConfirm } from '@/components/ui';
-import { CERTIFICATE_TEMPLATES, normalizeTemplate, type CertificateTemplate } from '@/lib/certificate';
+import { CERTIFICATE_TEMPLATES, LODGE_TEMPLATE_LABEL, normalizeTemplate, type CertificateTemplate } from '@/lib/certificate';
 
 export interface CertSession { id: string; title: string; date: string; typeLabel: string; ended: boolean; visitors: number; sent: number }
 export interface CertVisit {
@@ -25,20 +25,35 @@ function blockReason(v: CertVisit, ended: boolean): string | null {
   return null;
 }
 
-export default function CertificadosClient({ sessions, selectedId, visits }: { sessions: CertSession[]; selectedId: string | null; visits: CertVisit[] }) {
+export default function CertificadosClient({
+  sessions, selectedId, visits, art, canManageArt,
+}: {
+  sessions: CertSession[];
+  selectedId: string | null;
+  visits: CertVisit[];
+  /** Arte própria da loja: enviada e pronta (com as posições dos campos configuradas). */
+  art: { uploaded: boolean; ready: boolean };
+  canManageArt: boolean;
+}) {
   const router = useRouter();
   const askConfirm = useConfirm();
-  const [template, setTemplate] = useState<CertificateTemplate>('classico');
+  // Com a arte da loja pronta, ela é o modelo padrão.
+  const defaultTemplate: CertificateTemplate = art.ready ? 'loja' : 'classico';
+  const [template, setTemplate] = useState<CertificateTemplate>(defaultTemplate);
+  const templates = [...(art.ready ? [{ id: 'loja' as const, label: LODGE_TEMPLATE_LABEL }] : []), ...CERTIFICATE_TEMPLATES];
+  const lodgeArt = template === 'loja';
 
   // Modelo preferido deste navegador (localStorage só existe no cliente; ler no render daria
-  // diferença entre o HTML do servidor e o do navegador).
+  // diferença entre o HTML do servidor e o do navegador). "loja" sem arte pronta não vale.
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(TEMPLATE_KEY);
+      const t = saved ? normalizeTemplate(saved) : null;
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (saved) setTemplate(normalizeTemplate(saved));
+      if (t && (t !== 'loja' || art.ready)) setTemplate(t);
     } catch { /* sem storage: fica o padrão */ }
-  }, []);
+  }, [art.ready]);
+  const [artBusy, setArtBusy] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -49,6 +64,29 @@ export default function CertificadosClient({ sessions, selectedId, visits }: { s
   function chooseTemplate(t: CertificateTemplate) {
     setTemplate(t);
     try { window.localStorage.setItem(TEMPLATE_KEY, t); } catch { /* preferência só deste navegador */ }
+  }
+
+  async function uploadArt(file: File) {
+    setArtBusy(true);
+    setMessage(null);
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch('/api/certificates/art', { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    setArtBusy(false);
+    if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Erro ao enviar a arte.' }); return; }
+    setMessage({ kind: 'ok', text: 'Arte do certificado atualizada. Confira na prévia.' });
+    router.refresh();
+  }
+
+  async function removeArt() {
+    if (!(await askConfirm({ title: 'Remover arte', message: 'Remover a arte do certificado da loja? Os certificados voltam aos modelos do sistema até você enviar outra.', confirmLabel: 'Remover', intent: 'danger' }))) return;
+    setArtBusy(true);
+    const res = await fetch('/api/certificates/art', { method: 'DELETE' });
+    setArtBusy(false);
+    if (!res.ok) { setMessage({ kind: 'error', text: 'Erro ao remover a arte.' }); return; }
+    if (template === 'loja') chooseTemplate('classico');
+    router.refresh();
   }
 
   async function send(v: CertVisit, resend: boolean): Promise<boolean> {
@@ -71,7 +109,7 @@ export default function CertificadosClient({ sessions, selectedId, visits }: { s
   async function sendAll() {
     if (!(await askConfirm({
       title: 'Enviar certificados',
-      message: `Enviar o certificado (modelo ${CERTIFICATE_TEMPLATES.find((t) => t.id === template)?.label}) para ${pending.length} visitante(s): ${pending.map((p) => p.name).join(', ')}?`,
+      message: `Enviar o certificado (modelo ${templates.find((t) => t.id === template)?.label}) para ${pending.length} visitante(s): ${pending.map((p) => p.name).join(', ')}?`,
       confirmLabel: `Enviar ${pending.length}`,
     }))) return;
     setBusy('all');
@@ -89,12 +127,40 @@ export default function CertificadosClient({ sessions, selectedId, visits }: { s
         <div>
           <h1 className="font-display text-2xl font-bold text-sand-light">Certificados de presença</h1>
           <p className="mt-1 max-w-3xl text-sm text-sand-dark">
-            Para os irmãos visitantes de cada sessão, no modelo de diploma, com número e QR Code de verificação. Revise a prévia antes de enviar:
-            o PDF enviado é exatamente o da prévia, com o número e o QR no lugar da marca d&apos;água.
+            Para os irmãos visitantes de cada sessão, no modelo de diploma. Revise a prévia antes de enviar: o PDF enviado é exatamente o
+            da prévia, sem a marca d&apos;água{lodgeArt ? '' : ' e com o número e o QR Code de verificação'}.
+            {lodgeArt ? ' No modelo da loja saem só o nome do Irmão, a Loja dele e a data da sessão, nas linhas da arte — sem número nem QR.' : ''}
           </p>
         </div>
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+
+        {canManageArt ? (
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/6 bg-sigma-card px-5 py-4">
+            <div className="max-w-2xl">
+              <h2 className="text-sm font-semibold text-sand-light">Arte da loja</h2>
+              <p className="mt-0.5 text-xs text-sand-dark">
+                {art.ready
+                  ? 'O certificado no modelo da loja usa esta arte. Para trocar (ex.: nova versão para o novo veneralato), envie o arquivo novo no mesmo desenho — as posições dos campos continuam valendo.'
+                  : art.uploaded
+                    ? 'Arte enviada. Falta configurar onde o sistema escreve cada campo — fale com o suporte do Sigma Horus.'
+                    : 'Use o diploma que a loja já tem: envie a arte (A4 paisagem, JPG de cerca de 200 dpi, PNG ou PDF, até 4 MB) e o suporte configura onde o sistema escreve o nome, a Loja e a data.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <label className={`cursor-pointer rounded-full border border-gold/40 px-3 py-1.5 font-medium text-gold/80 transition hover:border-gold/60 hover:text-gold ${artBusy ? 'pointer-events-none opacity-40' : ''}`}>
+                {artBusy ? 'Enviando…' : art.uploaded ? 'Trocar arte' : 'Enviar arte'}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,application/pdf"
+                  className="sr-only"
+                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void uploadArt(f); }}
+                />
+              </label>
+              {art.uploaded ? <button type="button" onClick={() => void removeArt()} disabled={artBusy} className="text-sand-dark transition hover:text-rose-300 disabled:opacity-40">Remover</button> : null}
+            </div>
+          </section>
+        ) : null}
 
         {sessions.length === 0 ? (
           <EmptyState title="Nenhuma sessão com visitantes." description="Cadastre os visitantes na sessão (Sessões → abrir a sessão → Visitantes da sessão) e volte aqui depois dela." />
@@ -125,7 +191,7 @@ export default function CertificadosClient({ sessions, selectedId, visits }: { s
                     <label className="text-xs text-sand-dark">
                       Modelo{' '}
                       <select value={template} onChange={(e) => chooseTemplate(normalizeTemplate(e.target.value))} className={`${inputClass} ml-1 inline-block w-auto py-1.5 text-xs`}>
-                        {CERTIFICATE_TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                        {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
                       </select>
                     </label>
                     <Button type="button" size="sm" onClick={() => void sendAll()} disabled={busy !== null || pending.length === 0}>
