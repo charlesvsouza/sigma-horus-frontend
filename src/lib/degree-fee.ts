@@ -1,11 +1,12 @@
-// Taxas de grau (iniciação, elevação, exaltação) — regras puras, testáveis sem Prisma.
+// Taxas de grau (iniciação, elevação, exaltação, filiação/regularização) — regras puras, testáveis sem Prisma.
 //
 // Decisões do dono (2026-10-02):
 //  - valor configurado em Configurações da loja; o plano TRAVA o valor do dia
 //    (reajuste depois não cobra diferença);
 //  - até 6 cotas (1 = à vista); cada cota é uma cobrança comum do irmão;
 //  - elevação/exaltação antecipadas a partir da 4ª instrução do grau atual
-//    (Aprendiz → elevação; Companheiro → exaltação). Iniciação: o candidato;
+//    (Aprendiz → elevação; Companheiro → exaltação). Iniciação: o candidato.
+//    Filiação/regularização: qualquer obreiro cadastrado, sem a regra da instrução;
 //  - a taxa deve estar quitada até a data prevista do evento; quitada antes da
 //    data, fica "quitada antecipadamente" (o "crédito" que o irmão vê no portal);
 //  - evento que não acontece: a loja devolve o que foi pago;
@@ -14,14 +15,15 @@
 
 import { symbolicSituation, type DegreeSource } from './masonic-degree';
 
-export type DegreeFeeKind = 'initiation' | 'elevation' | 'exaltation';
+export type DegreeFeeKind = 'initiation' | 'elevation' | 'exaltation' | 'affiliation';
 
 export interface DegreeFeeKindDef {
   kind: DegreeFeeKind;
   label: string;          // "Taxa de Exaltação"
   event: string;          // "exaltação"
-  lodgeField: 'initiationFee' | 'elevationFee' | 'exaltationFee';
-  memberDateField: 'initiationDate' | 'elevationDate' | 'exaltationDate';
+  lodgeField: 'initiationFee' | 'elevationFee' | 'exaltationFee' | 'affiliationFee';
+  /** Data do cadastro que marca o evento realizado; null = o sistema não tem como saber (filiação). */
+  memberDateField: 'initiationDate' | 'elevationDate' | 'exaltationDate' | null;
   chart: { code: string; name: string; type: 'REVENUE'; category: string };
 }
 
@@ -29,6 +31,7 @@ export const DEGREE_FEE_KINDS: DegreeFeeKindDef[] = [
   { kind: 'initiation', label: 'Taxa de Iniciação', event: 'iniciação', lodgeField: 'initiationFee', memberDateField: 'initiationDate', chart: { code: '1.1.02', name: 'Taxa de Iniciação', type: 'REVENUE', category: 'Receitas Próprias' } },
   { kind: 'elevation', label: 'Taxa de Elevação', event: 'elevação', lodgeField: 'elevationFee', memberDateField: 'elevationDate', chart: { code: '1.1.08', name: 'Taxa de Elevação', type: 'REVENUE', category: 'Receitas Próprias' } },
   { kind: 'exaltation', label: 'Taxa de Exaltação', event: 'exaltação', lodgeField: 'exaltationFee', memberDateField: 'exaltationDate', chart: { code: '1.1.09', name: 'Taxa de Exaltação', type: 'REVENUE', category: 'Receitas Próprias' } },
+  { kind: 'affiliation', label: 'Taxa de Filiação / Regularização', event: 'filiação / regularização', lodgeField: 'affiliationFee', memberDateField: null, chart: { code: '1.1.03', name: 'Taxa de Filiação / Regularização', type: 'REVENUE', category: 'Receitas Próprias' } },
 ];
 
 export const degreeFeeKind = (kind: string | null | undefined) => DEGREE_FEE_KINDS.find((k) => k.kind === kind) ?? null;
@@ -90,6 +93,10 @@ export function checkEligibility(
     if (member.status !== 'candidate') return { ok: false, error: 'A taxa de iniciação é do candidato: cadastre-o em Secretaria → Candidatos.' };
     return { ok: true };
   }
+  if (kind === 'affiliation') {
+    if (member.status === 'candidate') return { ok: false, error: 'Filiação/regularização é de quem já é maçom: cadastre o irmão em Membros.' };
+    return { ok: true };
+  }
   const situation = symbolicSituation(member);
   const needed = kind === 'elevation' ? 'Aprendiz' : 'Companheiro';
   if (member.status === 'candidate' || situation !== needed) {
@@ -114,7 +121,7 @@ export function checkEligibility(
 
 export interface PlanCota { amount: number; dueDate: DateLike; status: string; paid: number }
 
-export type PlanSituation = 'canceled' | 'event_done' | 'paid_waiting' | 'open';
+export type PlanSituation = 'canceled' | 'event_done' | 'paid_waiting' | 'paid' | 'open';
 
 export interface PlanSummary {
   situation: PlanSituation;
@@ -130,6 +137,8 @@ export function summarizePlan(
   cotas: PlanCota[],
   eventDone: boolean,
   today: Date = new Date(),
+  /** false quando o sistema não detecta o evento (filiação): quitado = "Quitado", sem "aguardando". */
+  tracksEvent = true,
 ): PlanSummary {
   const cents = (n: number) => Math.round(n * 100);
   let paid = 0, open = 0, overdue = 0, cotasAfterEvent = 0;
@@ -145,7 +154,7 @@ export function summarizePlan(
       if (due && event && due.getTime() > event.getTime()) cotasAfterEvent++;
     }
   }
-  const situation: PlanSituation = plan.status === 'canceled' ? 'canceled' : eventDone ? 'event_done' : open === 0 ? 'paid_waiting' : 'open';
+  const situation: PlanSituation = plan.status === 'canceled' ? 'canceled' : eventDone ? 'event_done' : open === 0 ? (tracksEvent ? 'paid_waiting' : 'paid') : 'open';
   return { situation, paid: paid / 100, open: open / 100, overdue, cotasAfterEvent, eventDoneWithBalance: eventDone && open > 0 && plan.status !== 'canceled' };
 }
 
@@ -153,5 +162,6 @@ export const PLAN_SITUATION_LABEL: Record<PlanSituation, string> = {
   canceled: 'Cancelado',
   event_done: 'Evento realizado',
   paid_waiting: 'Quitado — aguardando o evento',
+  paid: 'Quitado',
   open: 'Em pagamento',
 };

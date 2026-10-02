@@ -1,8 +1,9 @@
--- Tesouraria: taxas de grau (iniciação/elevação/exaltação) — valores na loja e planos de pagamento em cotas.
+-- Tesouraria: taxas de grau (iniciação/elevação/exaltação/filiação-regularização) — valores na loja e planos de pagamento em cotas.
 -- AlterTable
 ALTER TABLE "Lodge" ADD COLUMN     "elevationFee" DOUBLE PRECISION,
 ADD COLUMN     "exaltationFee" DOUBLE PRECISION,
-ADD COLUMN     "initiationFee" DOUBLE PRECISION;
+ADD COLUMN     "initiationFee" DOUBLE PRECISION,
+ADD COLUMN     "affiliationFee" DOUBLE PRECISION;
 
 -- AlterTable
 ALTER TABLE "Account" ADD COLUMN     "degreeFeePlanId" TEXT;

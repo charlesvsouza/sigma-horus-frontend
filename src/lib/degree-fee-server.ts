@@ -50,7 +50,7 @@ export async function createDegreeFeePlan(db: Db, input: CreatePlanInput): Promi
   if (!(n >= 1 && n <= MAX_INSTALLMENTS)) return { ok: false, status: 400, error: `Parcelamento de 1 a ${MAX_INSTALLMENTS} cotas.` };
   if (Number.isNaN(input.firstDueDate.getTime())) return { ok: false, status: 400, error: 'Informe o vencimento da 1ª cota.' };
 
-  const lodge = await db.lodge.findUnique({ where: { id: input.lodgeId }, select: { initiationFee: true, elevationFee: true, exaltationFee: true } });
+  const lodge = await db.lodge.findUnique({ where: { id: input.lodgeId }, select: { initiationFee: true, elevationFee: true, exaltationFee: true, affiliationFee: true } });
   const total = lodge?.[def.lodgeField] ?? null;
   if (total == null || !isValidMoney(total)) {
     return { ok: false, status: 400, error: `Configure o valor da ${def.label.toLowerCase()} em Configurações da loja → Financeiro.` };
@@ -81,7 +81,7 @@ export async function createDegreeFeePlan(db: Db, input: CreatePlanInput): Promi
       totalAmount: total,
       installments: n,
       firstDueDate: input.firstDueDate,
-      fourthInstructionDate: def.kind === 'initiation' ? null : input.fourthInstructionDate,
+      fourthInstructionDate: def.kind === 'elevation' || def.kind === 'exaltation' ? input.fourthInstructionDate : null,
       notes: input.notes?.trim() || null,
       createdById: input.userId,
     },
@@ -130,8 +130,8 @@ export function presentPlan(p: PlanRow, today: Date = new Date()) {
       invoiceNumber: a.invoices[0]?.number ?? null, emitted: a.invoices.some((i) => Boolean(i.asaasPaymentId)),
     };
   });
-  const eventDone = Boolean(p.member[def.memberDateField]);
-  const summary = summarizePlan(p, cotas, eventDone, today);
+  const eventDone = def.memberDateField ? Boolean(p.member[def.memberDateField]) : false;
+  const summary = summarizePlan(p, cotas, eventDone, today, def.memberDateField !== null);
   return {
     id: p.id, kind: p.kind, label: def.label, event: def.event,
     member: { id: p.member.id, name: p.member.name },
@@ -232,4 +232,4 @@ export async function cancelPlan(db: Db, input: { lodgeId: string; planId: strin
   return { ok: true, refund };
 }
 
-export const DEGREE_FEE_KINDS_ORDER: DegreeFeeKind[] = ['initiation', 'elevation', 'exaltation'];
+export const DEGREE_FEE_KINDS_ORDER: DegreeFeeKind[] = ['initiation', 'elevation', 'exaltation', 'affiliation'];

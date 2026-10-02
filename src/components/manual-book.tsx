@@ -64,7 +64,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-razao', label: '7.18 Razão por categoria (Tronco e qualquer outra)' },
       { id: 'tes-historico', label: '7.19 Histórico de pagamentos dos irmãos' },
       { id: 'tes-declaracao', label: '7.20 Declaração de regularidade financeira' },
-      { id: 'tes-taxas-grau', label: '7.21 Taxas de grau (iniciação, elevação e exaltação)' },
+      { id: 'tes-taxas-grau', label: '7.21 Taxas de grau (iniciação, elevação, exaltação e filiação)' },
     ],
   },
   {
@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.74</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.75</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.74 — 2 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.75 — 2 de outubro de 2026</p>
               </div>
             </div>
 
@@ -1565,18 +1565,18 @@ export function ManualBook() {
                   <li><strong>O próprio irmão</strong> emite a dele em <UI>Meu portal → Declaração de regularidade</UI> (capítulo 10), nas mesmas regras.</li>
                 </Bullets>
               </Sub>
-              <Sub id="tes-taxas-grau" title="7.21 Taxas de grau (iniciação, elevação e exaltação)">
+              <Sub id="tes-taxas-grau" title="7.21 Taxas de grau (iniciação, elevação, exaltação e filiação)">
                 <p>
-                  <UI>Tesouraria → Taxas de grau</UI> organiza o pagamento das taxas de iniciação, elevação e exaltação — à vista ou em até
+                  <UI>Tesouraria → Taxas de grau</UI> organiza o pagamento das taxas de iniciação, elevação, exaltação e filiação/regularização — à vista ou em até
                   <strong>6 cotas</strong>. Criam e gerenciam os planos: <strong>Administrador, Venerável e Tesoureiro</strong>.
                 </p>
                 <Bullets>
                   <li><strong>Valores:</strong> em <UI>Configurações da loja → Financeiro → Taxas de grau</UI>. O plano guarda o valor do dia em que é criado: um reajuste depois não muda planos já feitos (o irmão não paga diferença).</li>
-                  <li><strong>Quem pode contratar:</strong> iniciação — o candidato (também pelo atalho na ficha dele em Candidatos); elevação — o Aprendiz; exaltação — o Companheiro. Elevação e exaltação antecipadas só a partir da <strong>4ª instrução</strong> do grau atual: informe a data dela ao criar o plano.</li>
+                  <li><strong>Quem pode contratar:</strong> iniciação — o candidato (também pelo atalho na ficha dele em Candidatos); elevação — o Aprendiz; exaltação — o Companheiro; filiação/regularização — qualquer obreiro cadastrado (já é maçom, de qualquer grau). Elevação e exaltação antecipadas só a partir da <strong>4ª instrução</strong> do grau atual: informe a data dela ao criar o plano.</li>
                   <li><strong>Novo plano:</strong> taxa, irmão, data da 4ª instrução, número de cotas (1 = à vista) e o 1º vencimento; a prévia mostra cada cota. Cada cota vira uma cobrança comum do irmão: aparece no portal dele, entra nos lembretes e, no Modo Asaas, é emitida (Pix ou boleto) perto do vencimento. Cartão não é aceito no Modo Loja.</li>
                   <li><strong>Contrato:</strong> <UI>Contrato (imprimir)</UI> gera o termo de compromisso no papel timbrado, com as cotas e as cláusulas (valor fixo, quitação até o evento, antecipação sem acréscimo, devolução se o evento não acontecer), para o irmão, o Tesoureiro e o Venerável assinarem. O irmão também abre o termo pelo portal.</li>
                   <li><strong>Data do evento:</strong> quando a loja marcar a cerimônia, informe a <UI>Data prevista</UI> no plano. Se houver cotas vencendo depois dela, aparece o aviso e o botão <UI>Antecipar cotas para a data</UI> (cotas já emitidas no Asaas ficam como estão — vencem em poucos dias).</li>
-                  <li><strong>Quitado antes do evento:</strong> o plano fica <strong>Quitado — aguardando o evento</strong>, e o irmão vê no portal &quot;Crédito referente à taxa de …&quot;, reservado para a cerimônia. Registrada a elevação/exaltação/iniciação no cadastro, o plano passa a <strong>Evento realizado</strong> (com aviso se ainda houver saldo).</li>
+                  <li><strong>Quitado antes do evento:</strong> o plano fica <strong>Quitado — aguardando o evento</strong>, e o irmão vê no portal &quot;Crédito referente à taxa de …&quot;, reservado para a cerimônia. Registrada a elevação/exaltação/iniciação no cadastro, o plano passa a <strong>Evento realizado</strong> (com aviso se ainda houver saldo). A filiação/regularização não tem data no cadastro: quitada, o plano fica simplesmente <strong>Quitado</strong>.</li>
                   <li><strong>Cancelar plano:</strong> se o evento não for acontecer (desligamento, desistência, candidato reprovado), <UI>Cancelar plano</UI> com o motivo: as cotas em aberto saem (e são canceladas no Asaas, se emitidas) e o que já foi pago vira uma <strong>conta a pagar ao irmão</strong> em Contas (categoria 2.1.17 Devolução de Taxas de Grau), com o visto do Venerável se passar do limite. Cota com pagamento parcial precisa ser acertada antes.</li>
                 </Bullets>
               </Sub>

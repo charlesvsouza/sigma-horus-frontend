@@ -26,7 +26,7 @@ export async function GET() {
         bankName: true, bankAgency: true, bankAccount: true, pixKey: true,
         riteName: true, powerName: true, openingFormula: true, foundationDate: true, sessionWeekdays: true, sessionFrequency: true,
         expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
-        initiationFee: true, elevationFee: true, exaltationFee: true,
+        initiationFee: true, elevationFee: true, exaltationFee: true, affiliationFee: true,
         autoBalanceteEnabled: true, art002Enabled: true, chargeLateFeesOnPix: true,
         notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
         notifyFoundationAnniversaryEnabled: true,
@@ -81,7 +81,7 @@ export async function PUT(request: Request) {
       data[field] = value || null;
     }
   }
-  for (const numField of ['expenseApprovalThreshold', 'lateFeePercent', 'lateInterestPercentMonth', 'initiationFee', 'elevationFee', 'exaltationFee'] as const) {
+  for (const numField of ['expenseApprovalThreshold', 'lateFeePercent', 'lateInterestPercentMonth', 'initiationFee', 'elevationFee', 'exaltationFee', 'affiliationFee'] as const) {
     if (numField in body) {
       const raw = String(body[numField] ?? '').trim();
       const n = raw ? Number(raw) : null;

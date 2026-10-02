@@ -20,7 +20,9 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'canceled', label: 'Cancelados' },
   { key: 'all', label: 'Todos' },
 ];
-const SITUATION_BADGE: Record<PlanSituation, BadgeVariant> = { open: 'pending', paid_waiting: 'success', event_done: 'info', canceled: 'canceled' };
+const SITUATION_BADGE: Record<PlanSituation, BadgeVariant> = { open: 'pending', paid_waiting: 'success', paid: 'success', event_done: 'info', canceled: 'canceled' };
+// A aba "Quitados" junta os dois quitados: aguardando o evento e o quitado sem evento a detectar (filiação).
+const tabOf = (s: PlanSituation): Exclude<Tab, 'all'> => (s === 'paid' ? 'paid_waiting' : s);
 
 const today = () => new Date().toISOString().slice(0, 10);
 const nextMonthDay10 = () => {
@@ -53,10 +55,10 @@ export default function TaxasDeGrauClient({
 
   const counts = useMemo(() => {
     const c: Record<Tab, number> = { open: 0, paid_waiting: 0, event_done: 0, canceled: 0, all: plans.length };
-    for (const p of plans) c[p.summary.situation]++;
+    for (const p of plans) c[tabOf(p.summary.situation)]++;
     return c;
   }, [plans]);
-  const visible = plans.filter((p) => tab === 'all' || p.summary.situation === tab);
+  const visible = plans.filter((p) => tab === 'all' || tabOf(p.summary.situation) === tab);
 
   const total = form.kind ? fees[form.kind] : null;
   const n = Number(form.installments);
@@ -87,7 +89,7 @@ export default function TaxasDeGrauClient({
       confirmLabel: 'Criar plano',
     }))) return;
     const data = await call('create', '/api/degree-fees', 'POST', {
-      kind: form.kind, memberId: form.memberId, installments: n, firstDueDate: form.firstDue, fourthInstructionDate: form.kind === 'initiation' ? '' : form.fourth,
+      kind: form.kind, memberId: form.memberId, installments: n, firstDueDate: form.firstDue, fourthInstructionDate: form.kind === 'elevation' || form.kind === 'exaltation' ? form.fourth : '',
     });
     if (data) {
       setCreating(false);
@@ -127,7 +129,7 @@ export default function TaxasDeGrauClient({
           <div>
             <h1 className="font-display text-2xl font-bold text-sand-light">Taxas de grau</h1>
             <p className="mt-1 max-w-3xl text-sm text-sand-dark">
-              Iniciação, elevação e exaltação à vista ou em até {MAX_INSTALLMENTS} cotas. O valor fica travado no plano; a taxa deve estar quitada até a data
+              Iniciação, elevação, exaltação e filiação/regularização à vista ou em até {MAX_INSTALLMENTS} cotas. O valor fica travado no plano; a taxa deve estar quitada até a data
               do evento. Elevação e exaltação antecipadas a partir da 4ª instrução do grau atual.
             </p>
           </div>
@@ -158,13 +160,13 @@ export default function TaxasDeGrauClient({
                   {DEGREE_FEE_KINDS.map((k) => <option key={k.kind} value={k.kind} disabled={fees[k.kind] == null}>{k.label}{fees[k.kind] == null ? ' (sem valor)' : ''}</option>)}
                 </select>
               </Field>
-              <Field label={form.kind === 'initiation' ? 'Candidato' : form.kind === 'elevation' ? 'Aprendiz' : form.kind === 'exaltation' ? 'Companheiro' : 'Irmão'}>
+              <Field label={form.kind === 'initiation' ? 'Candidato' : form.kind === 'elevation' ? 'Aprendiz' : form.kind === 'exaltation' ? 'Companheiro' : 'Obreiro'}>
                 <select required disabled={!form.kind} value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })} className={inputClass}>
                   <option value="">{form.kind ? (choices.length ? 'Escolha…' : 'Ninguém nessa situação') : 'Escolha a taxa primeiro'}</option>
                   {choices.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </Field>
-              {form.kind && form.kind !== 'initiation' ? (
+              {form.kind === 'elevation' || form.kind === 'exaltation' ? (
                 <Field label={`4ª instrução de ${form.kind === 'elevation' ? 'Aprendiz' : 'Companheiro'} em`}>
                   <input type="date" required max={today()} value={form.fourth} onChange={(e) => setForm({ ...form, fourth: clampDateYear(e.target.value, form.fourth) })} className={inputClass} />
                 </Field>

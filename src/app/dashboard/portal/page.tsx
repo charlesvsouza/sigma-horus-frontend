@@ -65,7 +65,7 @@ interface DegreeFeePlanItem {
   expectedEventDate: string | null;
   paid: number;
   open: number;
-  situation: 'open' | 'paid_waiting' | 'event_done' | 'canceled';
+  situation: 'open' | 'paid_waiting' | 'paid' | 'event_done' | 'canceled';
 }
 
 interface DocumentItem {
@@ -375,6 +375,8 @@ export default function PortalPage() {
                     <p className="mt-1 text-emerald-300">
                       Crédito referente à {p.label.toLowerCase()}: {brl(p.totalAmount)} quitados antecipadamente, reservados para a sua {p.event}.
                     </p>
+                  ) : p.situation === 'paid' ? (
+                    <p className="mt-1 text-emerald-300">{p.label}: {brl(p.totalAmount)} quitados.</p>
                   ) : p.situation === 'event_done' ? (
                     <p className="mt-1 text-sand-dark">{p.open > 0 ? `${p.event[0].toUpperCase()}${p.event.slice(1)} realizada — falta pagar ${brl(p.open)}.` : `${p.event[0].toUpperCase()}${p.event.slice(1)} realizada e taxa quitada.`}</p>
                   ) : (

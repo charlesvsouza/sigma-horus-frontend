@@ -61,6 +61,7 @@ model Lodge {
   initiationFee            Float?
   elevationFee             Float?
   exaltationFee            Float?
+  affiliationFee           Float?  // filiação / regularização
   // Emite automaticamente o balancete do mês anterior no dia 1 (cron mensal).
   autoBalanceteEnabled     Boolean @default(false)
   // Aplica a régua automática do Art. 002 (afastamento por mensalidade em
@@ -1168,7 +1169,7 @@ model RateLimit {
   @@index([resetAt])
 }
 
-// Plano de taxa de grau (iniciação, elevação, exaltação): o valor travado no dia
+// Plano de taxa de grau (iniciação, elevação, exaltação, filiação/regularização): o valor travado no dia
 // da contratação, dividido em 1 a 6 cotas — cada cota é uma cobrança comum do
 // irmão (Account + Invoice), então portal, Pix, Asaas, recibo e lembretes valem
 // iguais. Elevação/exaltação antecipadas só a partir da 4ª instrução do grau
@@ -1179,7 +1180,7 @@ model DegreeFeePlan {
   id                    String    @id @default(cuid())
   lodgeId               String
   memberId              String
-  kind                  String    // initiation | elevation | exaltation
+  kind                  String    // initiation | elevation | exaltation | affiliation
   totalAmount           Float     // valor travado na contratação
   installments          Int
   firstDueDate          DateTime

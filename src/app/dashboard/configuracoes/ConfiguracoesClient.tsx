@@ -382,10 +382,11 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
                 Valor vigente de cada taxa. Em Tesouraria → Taxas de grau o irmão contrata o pagamento à vista ou em até 6 cotas; o plano
                 guarda o valor do dia — um reajuste aqui não muda planos já feitos.
               </p>
-              <div className="mt-3 grid gap-4 md:grid-cols-3">
+              <div className="mt-3 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Field label="Taxa de Iniciação (R$)" value={form.initiationFee} onChange={(v) => set('initiationFee', v)} type="number" step="0.01" min="0" placeholder="Ex.: 1500" />
                 <Field label="Taxa de Elevação (R$)" value={form.elevationFee} onChange={(v) => set('elevationFee', v)} type="number" step="0.01" min="0" placeholder="Ex.: 600" />
                 <Field label="Taxa de Exaltação (R$)" value={form.exaltationFee} onChange={(v) => set('exaltationFee', v)} type="number" step="0.01" min="0" placeholder="Ex.: 800" />
+                <Field label="Taxa de Filiação / Regularização (R$)" value={form.affiliationFee} onChange={(v) => set('affiliationFee', v)} type="number" step="0.01" min="0" placeholder="Ex.: 500" />
               </div>
             </div>
             <label className="mt-4 flex items-start gap-2 text-sm text-sand">

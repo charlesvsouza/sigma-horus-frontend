@@ -77,3 +77,16 @@ test('quem gerencia: Administrador, Venerável e Tesoureiro', () => {
   assert.equal(canManageDegreeFees('secretary'), false);
   assert.equal(canManageDegreeFees('member'), false);
 });
+
+test('filiação/regularização: qualquer obreiro, sem 4ª instrução; candidato não', () => {
+  assert.equal(checkEligibility('affiliation', { status: 'active', initiationDate: d('2010-01-01'), elevationDate: d('2011-01-01'), exaltationDate: d('2012-01-01') }, null, TODAY).ok, true);
+  assert.equal(checkEligibility('affiliation', { status: 'active' }, null, TODAY).ok, true);
+  assert.equal(checkEligibility('affiliation', { status: 'candidate' }, null, TODAY).ok, false);
+  assert.equal(degreeFeeKind('affiliation')!.chart.code, '1.1.03');
+});
+
+test('filiação quitada = "Quitado" (o sistema não detecta a cerimônia)', () => {
+  const paid = [{ amount: 100, dueDate: d('2026-09-10'), status: 'paid', paid: 100 }];
+  assert.equal(summarizePlan({ status: 'active' }, paid, false, TODAY, false).situation, 'paid');
+  assert.equal(summarizePlan({ status: 'active' }, paid, false, TODAY).situation, 'paid_waiting');
+});
