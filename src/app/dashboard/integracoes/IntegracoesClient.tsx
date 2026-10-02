@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Field, inputClass, useConfirm } from '@/components/ui';
 
@@ -27,6 +27,27 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [reconciling, setReconciling] = useState(false);
+  const [hook, setHook] = useState<{ registered: boolean; enabled: boolean; interrupted: boolean; tokenOk: boolean } | null>(null);
+  const [hookBusy, setHookBusy] = useState(false);
+
+  useEffect(() => {
+    if (!asaas.configured) return;
+    let active = true;
+    fetch('/api/integrations/asaas/webhook').then((r) => (r.ok ? r.json() : null)).then((d) => { if (active) setHook(d); }).catch(() => {});
+    return () => { active = false; };
+  }, [asaas.configured]);
+
+  async function registerWebhook() {
+    setHookBusy(true);
+    setMessage(null);
+    const res = await fetch('/api/integrations/asaas/webhook', { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    setHookBusy(false);
+    if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Não foi possível registrar o webhook.' }); return; }
+    setMessage({ kind: 'ok', text: 'Webhook registrado no Asaas com um token novo. As baixas passam a ser automáticas.' });
+    const st = await fetch('/api/integrations/asaas/webhook').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    setHook(st);
+  }
 
   async function reconcile() {
     setReconciling(true);
@@ -150,9 +171,22 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
 
           <div className="mt-6 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3 text-xs text-sand-dark">
             <p className="font-medium text-sand">Webhook de baixa automática</p>
-            <p className="mt-1">No painel do Asaas, cadastre esta URL para receber as confirmações de pagamento:</p>
+            {asaas.configured ? (
+              <>
+                <p className="mt-1">
+                  {hook == null ? 'Consultando o Asaas…'
+                    : hook.registered && hook.enabled && !hook.interrupted && hook.tokenOk ? <span className="text-emerald-300">Ativo: o Asaas avisa o sistema a cada pagamento.</span>
+                    : hook.registered && hook.interrupted ? <span className="text-amber-300">Cadastrado, mas a fila está interrompida no Asaas — registre de novo para reativar.</span>
+                    : hook.registered && !hook.tokenOk ? <span className="text-amber-300">Cadastrado, mas o token salvo aqui é curto (o Asaas exige 32+ caracteres) — registre de novo.</span>
+                    : <span className="text-amber-300">Não cadastrado no Asaas: os pagamentos não dão baixa sozinhos.</span>}
+                </p>
+                <button type="button" onClick={() => void registerWebhook()} disabled={hookBusy} className="mt-2 rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 transition-all duration-200 ease-out hover:border-gold/60 hover:text-gold disabled:opacity-40">
+                  {hookBusy ? 'Registrando…' : hook?.registered ? 'Registrar de novo (token novo)' : 'Registrar webhook no Asaas'}
+                </button>
+                <p className="mt-2">O sistema gera um token seguro e cadastra no Asaas esta URL, com os eventos de pagamento:</p>
+              </>
+            ) : <p className="mt-1">Depois de conectar, o botão aqui cadastra no Asaas esta URL de confirmações de pagamento:</p>}
             <code className="mt-2 block break-all text-gold">{webhookFullUrl}</code>
-            <p className="mt-2">Use o mesmo token acima no campo de autenticação do webhook (header <code className="text-gold">asaas-access-token</code>).</p>
           </div>
 
           {asaas.configured ? (

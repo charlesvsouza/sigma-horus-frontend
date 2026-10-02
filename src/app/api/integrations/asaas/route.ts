@@ -6,6 +6,7 @@ import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
+import { MIN_WEBHOOK_TOKEN } from '@/lib/asaas-webhook-setup';
 
 export async function GET() {
   const session = await auth();
@@ -48,6 +49,10 @@ export async function POST(request: Request) {
 
   if (!apiKey) {
     return NextResponse.json({ error: 'A chave da API do Asaas é obrigatória.' }, { status: 400 });
+  }
+  // O Asaas só aceita token de webhook com 32+ caracteres; o botão "Registrar webhook no Asaas" gera um.
+  if (webhookToken && webhookToken.length < MIN_WEBHOOK_TOKEN) {
+    return NextResponse.json({ error: `O token do webhook precisa de pelo menos ${MIN_WEBHOOK_TOKEN} caracteres (exigência do Asaas). Deixe em branco e use "Registrar webhook no Asaas".` }, { status: 400 });
   }
 
   // Valida a chave contra o Asaas antes de salvar — feedback imediato.

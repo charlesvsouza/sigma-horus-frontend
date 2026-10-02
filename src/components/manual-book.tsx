@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.77</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.78</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.77 — 2 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.78 — 2 de outubro de 2026</p>
               </div>
             </div>
 
@@ -636,14 +636,12 @@ export function ManualBook() {
                   <li>No Sigma Horus, vá em <UI>Administração → Integrações</UI>.</li>
                   <li>No cartão <strong>Asaas</strong>, cole a chave no campo <UI>Chave da API do Asaas</UI>.</li>
                   <li>Em <UI>Ambiente</UI>, escolha <strong>Sandbox (testes)</strong> ou <strong>Produção</strong> — o mesmo da chave que você gerou.</li>
-                  <li>(Recomendado) Defina um <UI>Token do webhook</UI> — um texto secreto de sua escolha.</li>
                   <li>Clique em <UI>Conectar Asaas</UI>. Se a chave for válida, o status muda para <strong>Conectado</strong> e mostra o ambiente e a chave mascarada.</li>
                 </Steps>
                 <p><strong>Parte C — Configurar a baixa automática (webhook) no Asaas:</strong></p>
                 <Steps>
-                  <li>Ainda em <UI>Integrações</UI>, copie a <strong>URL do webhook</strong> exibida no cartão do Asaas.</li>
-                  <li>No painel do Asaas, em <strong>Integrações → Webhooks (Notificações)</strong>, cadastre essa URL e ative os eventos de <strong>cobrança/pagamento</strong>.</li>
-                  <li>No campo de autenticação do webhook do Asaas, informe o <strong>mesmo token</strong> do passo B (cabeçalho <code>asaas-access-token</code>).</li>
+                  <li>Ainda em <UI>Integrações</UI>, no cartão do Asaas, clique em <UI>Registrar webhook no Asaas</UI>. O sistema gera um token seguro (o Asaas exige 32 caracteres ou mais) e cadastra no Asaas a URL de confirmações com os eventos de pagamento — não é preciso ir ao painel do Asaas.</li>
+                  <li>Confira a linha de situação logo acima do botão: <strong>Ativo</strong> significa que tudo está certo. Se aparecer &quot;não cadastrado&quot;, &quot;fila interrompida&quot; ou &quot;token curto&quot;, clique em <UI>Registrar de novo</UI>. É preciso ter o e-mail da loja cadastrado em Configurações (o Asaas avisa nele se o webhook falhar).</li>
                 </Steps>
                 <Note>
                   Com o webhook configurado, quando o membro pagar, a cobrança é <strong>baixada automaticamente</strong> no
@@ -2322,7 +2320,7 @@ export function ManualBook() {
                 <li><strong>Digitei a senha certa e a conta não abre.</strong> Depois de 8 senhas erradas seguidas, a conta fica bloqueada por 15 minutos (proteção contra tentativas de invasão) — aguarde ou redefina a senha. Também não entra o usuário <strong>desativado</strong> pelo Administrador (6.3) ou de loja encerrada. Mudanças de papel ou de situação do usuário passam a valer em até cerca de 30 segundos, sem ele precisar sair e entrar de novo.</li>
                 <li><strong>O sistema recusou o valor de uma conta ou pagamento.</strong> O valor precisa ser maior que zero, com até 2 casas decimais. Um pagamento também não pode ultrapassar o <strong>saldo em aberto</strong> da conta (ele mostra o quanto falta) — isso evita baixar a mesma conta duas vezes por clique duplicado.</li>
                 <li><strong>Não consigo emitir boleto.</strong> Verifique se o Asaas está conectado (6.2) e se o membro tem CPF (7.4).</li>
-                <li><strong>O pagamento não baixou sozinho.</strong> Confirme o webhook e o token no painel do Asaas (6.2-C).</li>
+                <li><strong>O pagamento não baixou sozinho.</strong> Veja a situação do webhook em <UI>Integrações</UI> e, se não estiver <strong>Ativo</strong>, clique em <UI>Registrar webhook no Asaas</UI> (6.2-C); enquanto isso, <UI>Verificar pagamentos no Asaas</UI> baixa o que já foi pago.</li>
                 <li><strong>O irmão avisou que pagou (&quot;Já paguei&quot;). Onde dou a baixa?</strong> No topo de <UI>Pagamentos</UI>, em <UI>Avisos de pagamento dos irmãos</UI> — ou pelo link do e-mail do aviso. Confira o crédito no extrato e clique em <UI>Dar baixa</UI>: o formulário vem preenchido (7.5).</li>
                 <li><strong>O irmão mandou o comprovante pelo WhatsApp. Como registro?</strong> Em <UI>Cobranças</UI>, na cobrança dele, clique em <UI>Registrar comprovante</UI> (ou <UI>Comprovante</UI> na página <UI>Envio pelo WhatsApp</UI>) e anexe o PDF ou a foto. O sistema confere como se o irmão tivesse avisado pelo portal e o aviso vai para <UI>Pagamentos</UI> (7.3).</li>
                 <li><strong>O comprovante ficou &quot;com divergência&quot;, mas parece certo.</strong> Abra <UI>Ver comprovante</UI> e confira o que o aviso diz que não bateu. Se o PDF está certo, clique em <UI>Conferir de novo</UI> — a conferência é melhorada com o tempo (ex.: bancos que quebram o número de controle em duas linhas). Persistindo, confira o crédito no extrato e dê a baixa por <UI>Dar baixa</UI>. Foto não é conferida automaticamente: confira pela imagem e pelo extrato.</li>
