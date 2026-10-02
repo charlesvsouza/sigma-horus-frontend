@@ -91,6 +91,8 @@ const NAV: NavGroupDef[] = [
           // Sub-item de Contas (recuado no menu): abre a mesma tela com o formulário de lançamento aberto.
           { href: '/dashboard/contas/lancamento', label: 'Lançamento', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/cobrancas', label: 'Cobranças', roles: ['admin', 'treasurer'] },
+          // Planos de pagamento das taxas de iniciação/elevação/exaltação (decisão do dono: os três). Ver lib/degree-fee.ts.
+          { href: '/dashboard/taxas-de-grau', label: 'Taxas de grau', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
           { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/extratos', label: 'Extratos de contas', roles: ['admin', 'venerable', 'treasurer'] },

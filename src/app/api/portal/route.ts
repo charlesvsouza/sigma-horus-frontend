@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { PLAN_INCLUDE, presentPlan } from '@/lib/degree-fee-server';
 import { isCandidateRole } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -140,6 +141,15 @@ export async function GET() {
 
   const summary = portalSummary(items);
 
+  // Planos de taxa de grau do irmão (iniciação/elevação/exaltação): andamento e,
+  // quitado antes do evento, o "crédito" reservado à cerimônia.
+  const degreeFeePlans = (await withTenant(String(lodgeId), (db) =>
+    db.degreeFeePlan.findMany({ where: { lodgeId: String(lodgeId), memberId: String(memberId), status: 'active' }, include: PLAN_INCLUDE, orderBy: { createdAt: 'desc' } }),
+  )).map((p) => {
+    const v = presentPlan(p, now);
+    return { id: v.id, label: v.label, event: v.event, totalAmount: v.totalAmount, installments: v.installments, expectedEventDate: v.expectedEventDate, paid: v.summary.paid, open: v.summary.open, situation: v.summary.situation };
+  });
+
   const collection = lodge
     ? { mode: normalizeCollectionMode(lodge.collectionMode), hasPixKey: Boolean(lodge.pixKey?.trim()) }
     : null;
@@ -152,6 +162,7 @@ export async function GET() {
     documents,
     institutionalDocuments,
     summary,
+    degreeFeePlans,
     isCandidate: candidate,
   });
 }

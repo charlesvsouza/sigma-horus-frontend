@@ -14,8 +14,9 @@ export const NOT_CANDIDATE = { status: { not: CANDIDATE_STATUS } };
 export const isCandidateRole = (role: string | null | undefined) => (role ?? '').toLowerCase().trim() === CANDIDATE_ROLE;
 
 // Telas do painel que o candidato pode abrir: o portal (débitos, cadastro,
-// pagar), o histórico dos próprios pagamentos, o recibo e Minha conta (senha).
-const CANDIDATE_PATHS = [/^\/dashboard\/portal\/?$/, /^\/dashboard\/portal\/historico\/?$/, /^\/dashboard\/pagamentos\/[^/]+\/recibo\/?$/, /^\/dashboard\/minha-conta\/?$/];
+// pagar), o histórico dos próprios pagamentos, o recibo, Minha conta (senha) e o
+// contrato do próprio plano de taxa (a página confere que o plano é dele).
+const CANDIDATE_PATHS = [/^\/dashboard\/portal\/?$/, /^\/dashboard\/portal\/historico\/?$/, /^\/dashboard\/pagamentos\/[^/]+\/recibo\/?$/, /^\/dashboard\/minha-conta\/?$/, /^\/dashboard\/taxas-de-grau\/[^/]+\/contrato\/?$/];
 export const candidateMayVisit = (pathname: string) => CANDIDATE_PATHS.some((re) => re.test(pathname));
 
 export type CandidateStage = 'pre_proposal' | 'reading' | 'inquiry' | 'ballot' | 'potency' | 'initiation' | 'initiated' | 'closed';

@@ -46,7 +46,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 type Msg = { kind: 'ok' | 'error'; text: string } | null;
 type Refresh = 'all' | { proc?: ProcKey[]; personal?: boolean; inquirers?: boolean };
 
-export default function FichaCandidatoClient({ id, brothers, lodgeName }: { id: string; brothers: { id: string; name: string }[]; lodgeName: string }) {
+export default function FichaCandidatoClient({ id, brothers, lodgeName, canManageFees }: { id: string; brothers: { id: string; name: string }[]; lodgeName: string; canManageFees: boolean }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [item, setItem] = useState<Candidate | null>(null);
@@ -496,9 +496,18 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName }: { id: 
             <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
               <h2 className="text-base font-semibold text-sand-light">Financeiro</h2>
               <p className="mt-1 text-xs text-sand-dark">
-                Taxa de iniciação e demais valores: a Tesouraria lança em <strong className="text-sand">Contas</strong> (ou emite em Cobranças) escolhendo
+                Demais valores: a Tesouraria lança em <strong className="text-sand">Contas</strong> (ou emite em Cobranças) escolhendo
                 {' '}<strong className="text-sand">{item.name}</strong> como sacado — igual a qualquer obreiro. Com o acesso liberado, o candidato vê e paga pelo portal.
               </p>
+              {item.status === 'candidate' && info.stage !== 'closed' ? (
+                canManageFees ? (
+                  <Link href={`/dashboard/taxas-de-grau?membro=${id}&taxa=initiation`} className="mt-3 inline-flex rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 hover:text-gold">
+                    Plano da taxa de iniciação (à vista ou em até 6 cotas)
+                  </Link>
+                ) : (
+                  <p className="mt-2 text-xs text-sand-dark">O plano da taxa de iniciação (à vista ou em até 6 cotas) é criado pela Tesouraria em Taxas de grau.</p>
+                )
+              ) : null}
             </section>
           </div>
         </div>

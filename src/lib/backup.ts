@@ -26,6 +26,7 @@ export const BACKUP_MODELS = [
   'relative',
   'candidateProcess', // depois de member (candidato e proponente)
   'candidateInquirer', // depois de candidateProcess
+  'degreeFeePlan', // depois de member; antes de account (a cota aponta para o plano)
   'user',
   'financialAccount',
   'accountTransfer',

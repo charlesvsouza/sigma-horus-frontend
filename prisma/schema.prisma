@@ -56,6 +56,11 @@ model Lodge {
   // Modo Loja: cobrar a multa/juros acima no Pix de cobrança vencida (portal e WhatsApp). Desligado,
   // os percentuais seguem só informativos. O acréscimo recebido é lançado em 1.2.06 (lib/late-charge).
   chargeLateFeesOnPix      Boolean @default(false)
+  // Taxas de grau (Tesouraria → Taxas de grau): valor vigente de cada uma. O plano
+  // trava o valor do dia da contratação — reajuste depois não muda plano já feito.
+  initiationFee            Float?
+  elevationFee             Float?
+  exaltationFee            Float?
   // Emite automaticamente o balancete do mês anterior no dia 1 (cron mensal).
   autoBalanceteEnabled     Boolean @default(false)
   // Aplica a régua automática do Art. 002 (afastamento por mensalidade em
@@ -127,6 +132,7 @@ model Lodge {
   visitors       Visitor[]
   sessionVisitors SessionVisitor[]
   candidateProcesses CandidateProcess[]
+  degreeFeePlans DegreeFeePlan[]
   candidateInquirers CandidateInquirer[]
   hospitalityRequests HospitalityRequest[]
   financialAccounts FinancialAccount[]
@@ -228,6 +234,7 @@ model Member {
   candidateProcess   CandidateProcess? @relation("CandidateProcessMember")
   proposedCandidates CandidateProcess[] @relation("CandidateProposer")
   candidateInquiries CandidateInquirer[]
+  degreeFeePlans     DegreeFeePlan[]
   @@index([lodgeId])
 }
 
@@ -366,6 +373,7 @@ model Account {
   counterpartyId String?  // vínculo ao cadastro de cliente/fornecedor (quando não é membro)
   bankAccountId  String?  // conta bancária/caixa PREVISTA (só pré-preenche o pagamento; não é obrigatória)
   sessionId      String?  // sessão do dia em que o lançamento ocorreu (ex.: doação ao Tronco na sessão em curso)
+  degreeFeePlanId String? // cota de um plano de taxa de grau (iniciação/elevação/exaltação)
   type           String   // RECEIVABLE | PAYABLE
   title          String
   amount         Float
@@ -388,6 +396,7 @@ model Account {
   counterparty Counterparty? @relation(fields: [counterpartyId], references: [id], onDelete: SetNull)
   bankAccount  FinancialAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   session      Session?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  degreeFeePlan DegreeFeePlan? @relation(fields: [degreeFeePlanId], references: [id], onDelete: SetNull)
   payments     Payment[]
   invoices     Invoice[]
   materialLoans MaterialLoan[]
@@ -396,6 +405,7 @@ model Account {
   @@index([counterpartyId])
   @@index([bankAccountId])
   @@index([sessionId])
+  @@index([degreeFeePlanId])
   @@index([lodgeId, dueDate])
   @@index([memberId])
 }
@@ -1156,4 +1166,37 @@ model RateLimit {
   resetAt DateTime @db.Timestamptz(3)
 
   @@index([resetAt])
+}
+
+// Plano de taxa de grau (iniciação, elevação, exaltação): o valor travado no dia
+// da contratação, dividido em 1 a 6 cotas — cada cota é uma cobrança comum do
+// irmão (Account + Invoice), então portal, Pix, Asaas, recibo e lembretes valem
+// iguais. Elevação/exaltação antecipadas só a partir da 4ª instrução do grau
+// atual (data informada aqui). A taxa deve estar quitada até a data prevista do
+// evento; se o evento não acontecer, a loja devolve o que foi pago (cancelamento
+// gera uma conta a pagar ao irmão). Ver lib/degree-fee.ts.
+model DegreeFeePlan {
+  id                    String    @id @default(cuid())
+  lodgeId               String
+  memberId              String
+  kind                  String    // initiation | elevation | exaltation
+  totalAmount           Float     // valor travado na contratação
+  installments          Int
+  firstDueDate          DateTime
+  fourthInstructionDate DateTime? // obrigatória para elevação/exaltação
+  expectedEventDate     DateTime? // data prevista do evento (quando a loja marcar)
+  status                String    @default("active") // active | canceled
+  canceledAt            DateTime?
+  cancelReason          String?
+  refundAccountId       String?   // conta a pagar da devolução, quando houve valor pago
+  notes                 String?
+  createdById           String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  lodge    Lodge     @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  accounts Account[]
+  @@index([lodgeId])
+  @@index([memberId])
 }

@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess } from '@/lib/rbac';
+import { canManageDegreeFees } from '@/lib/degree-fee';
 import FichaCandidatoClient from './FichaCandidatoClient';
 
 // Ficha do candidato: dados pessoais, etapas do processo, sindicantes, pasta de
@@ -22,5 +23,5 @@ export default async function FichaCandidatoPage({ params }: { params: Promise<{
     lodgeName: (await db.lodge.findUnique({ where: { id: lodgeId }, select: { name: true } }))?.name ?? '',
   }));
 
-  return <FichaCandidatoClient id={id} brothers={brothers} lodgeName={lodgeName} />;
+  return <FichaCandidatoClient id={id} brothers={brothers} lodgeName={lodgeName} canManageFees={canManageDegreeFees(session?.user?.role)} />;
 }

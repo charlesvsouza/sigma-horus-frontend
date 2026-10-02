@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canInitiate, deriveStage, greeting, isCandidateRole, parseProcessPatch } from './candidate.ts';
+import { canInitiate, candidateMayVisit, deriveStage, greeting, isCandidateRole, parseProcessPatch } from './candidate.ts';
 
 const d = (s: string) => new Date(s);
 
@@ -58,4 +58,11 @@ test('papel e saudação do candidato', () => {
   assert.equal(isCandidateRole('member'), false);
   assert.equal(greeting('candidate', 'João'), 'Prezado(a) João,');
   assert.equal(greeting('member', 'João'), 'Prezado Ir∴ João,');
+});
+
+test('candidato abre só o portal, recibo, Minha conta e o contrato da taxa', () => {
+  assert.equal(candidateMayVisit('/dashboard/portal'), true);
+  assert.equal(candidateMayVisit('/dashboard/taxas-de-grau/abc123/contrato'), true);
+  assert.equal(candidateMayVisit('/dashboard/taxas-de-grau'), false);
+  assert.equal(candidateMayVisit('/dashboard/membros'), false);
 });

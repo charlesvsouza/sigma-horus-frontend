@@ -56,6 +56,18 @@ interface AccountItem {
   chartAccount?: { name: string; category: string | null } | null;
 }
 
+interface DegreeFeePlanItem {
+  id: string;
+  label: string;
+  event: string;
+  totalAmount: number;
+  installments: number;
+  expectedEventDate: string | null;
+  paid: number;
+  open: number;
+  situation: 'open' | 'paid_waiting' | 'event_done' | 'canceled';
+}
+
 interface DocumentItem {
   id: string;
   title: string;
@@ -261,6 +273,7 @@ export default function PortalPage() {
   const [photoBusy, setPhotoBusy] = useState(false);
   // Candidato (profano em admissão): só débitos e cadastro — sem grau, declaração e documentos.
   const [isCandidate, setIsCandidate] = useState(false);
+  const [degreeFeePlans, setDegreeFeePlans] = useState<DegreeFeePlanItem[]>([]);
 
   const filteredAccounts = accounts
     .filter((a) => typeFilter === 'all' || a.type === typeFilter)
@@ -282,6 +295,7 @@ export default function PortalPage() {
       setCollection(data.collection ?? null);
       setCanLookupCpf(Boolean(data.canLookupCpf));
       setIsCandidate(Boolean(data.isCandidate));
+      setDegreeFeePlans(data.degreeFeePlans ?? []);
       setSummary(data.summary ?? { totalReceivables: 0, totalPayables: 0, overdue: 0 });
     } catch {
       setLoadError('Não foi possível carregar seus dados. Verifique sua conexão e tente novamente.');
@@ -349,6 +363,34 @@ export default function PortalPage() {
           <PendenciasCard accounts={payableAccounts} collection={collection} onChanged={() => void load()} />
         ) : null}
         {!loading && !member && !loadError && canLookupCpf ? <CpfLookupCard /> : null}
+
+        {degreeFeePlans.length > 0 ? (
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
+            <h2 className="text-base font-semibold text-sand-light">Minhas taxas de grau</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {degreeFeePlans.map((p) => (
+                <div key={p.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4 text-sm text-sand">
+                  <p className="font-medium text-sand-light">{p.label}</p>
+                  {p.situation === 'paid_waiting' ? (
+                    <p className="mt-1 text-emerald-300">
+                      Crédito referente à {p.label.toLowerCase()}: {brl(p.totalAmount)} quitados antecipadamente, reservados para a sua {p.event}.
+                    </p>
+                  ) : p.situation === 'event_done' ? (
+                    <p className="mt-1 text-sand-dark">{p.open > 0 ? `${p.event[0].toUpperCase()}${p.event.slice(1)} realizada — falta pagar ${brl(p.open)}.` : `${p.event[0].toUpperCase()}${p.event.slice(1)} realizada e taxa quitada.`}</p>
+                  ) : (
+                    <p className="mt-1 text-sand-dark">
+                      {brl(p.totalAmount)} em {p.installments === 1 ? '1 cota' : `${p.installments} cotas`} · pago {brl(p.paid)} · falta {brl(p.open)}
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-sand-dark">
+                    {p.expectedEventDate ? `${p.event[0].toUpperCase()}${p.event.slice(1)} prevista para ${formatDateOnly(p.expectedEventDate)} — a taxa deve estar quitada até lá.` : `Deve estar quitada até a data da ${p.event}. Pode antecipar as cotas sem acréscimo.`}
+                  </p>
+                  <a href={`/dashboard/taxas-de-grau/${p.id}/contrato`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-gold hover:text-gold-light">Ver o termo de compromisso</a>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
