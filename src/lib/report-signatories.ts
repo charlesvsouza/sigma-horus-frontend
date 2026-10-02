@@ -65,3 +65,12 @@ export async function getMaterialsSignatories(db: Prisma.TransactionClient, lodg
     { role: 'Arquiteto', name: architect },
   ];
 }
+
+/**
+ * Chanceler do veneralato que cobre `at` — assina o certificado de presença quando a arte da loja
+ * traz a linha "Chanceler". Cargo vago = linha em branco.
+ */
+export async function getChancellorSignatory(db: Prisma.TransactionClient, lodgeId: string, at?: Date): Promise<Signatory> {
+  const holders = await termHolders(db, lodgeId, at);
+  return { role: 'Chanceler', name: holders.find((h) => plain(h.office.name).includes('chanceler'))?.member.name ?? null };
+}

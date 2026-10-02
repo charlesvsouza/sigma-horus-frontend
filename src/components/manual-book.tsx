@@ -262,7 +262,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 1º de outubro de 2026 · versão 1.71</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.72</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -324,7 +324,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.71 — 1º de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.72 — 2 de outubro de 2026</p>
               </div>
             </div>
 
@@ -1951,7 +1951,7 @@ export function ManualBook() {
                 <Bullets>
                   <li><strong>O texto:</strong> a loja (com a Potência e o Oriente) certifica que o Ir∴ visitante — com o grau e a loja dele — esteve presente à sessão, na data, <strong>nos graus em que ele pôde estar</strong>: um Aprendiz numa sessão de 1º e 2º grau aparece só &quot;nos trabalhos em Grau de Aprendiz&quot;. Assinam o Secretário e o Venerável do veneralato da data da sessão; o brasão da loja (Configurações) vai no topo.</li>
                   <li><strong>Número e verificação:</strong> na primeira emissão (envio ou download), o certificado recebe um número sequencial por ano (<strong>CP-2026-0001</strong>) e um código de verificação. O QR Code e o endereço impressos levam à página pública <strong>sigmahorus.com.br/verificar/código</strong>, que confirma a autenticidade (número, irmão, loja e sessão — sem e-mail nem telefone). Reenviar mantém o mesmo número.</li>
-                  <li><strong>Modelo da loja:</strong> a loja usa o diploma que já tem. O Administrador envia a arte em <UI>Arte da loja</UI>, no topo da tela (A4 paisagem; JPG de cerca de 200 dpi, PNG ou PDF, até 4 MB), e o suporte do Sigma Horus configura onde o sistema escreve. O jeito recomendado é a arte <strong>sem o texto do meio</strong> (só moldura, título, selos e assinaturas): o sistema escreve no espaço livre o <strong>mesmo texto do Clássico</strong> — que muda com a sessão e o grau do visitante —, com o nome em destaque e o local e a data, ajustando o tamanho para caber. Se a arte tiver linhas em branco para preencher, o sistema escreve só nelas (nome do Irmão, Loja e data). <strong>Não saem número nem QR Code</strong> (o número continua registrado na tela, para controle), e o e-mail também não fala deles. Se a arte vier sem os nomes dos signatários, o sistema escreve o do <strong>Venerável</strong> e o do <strong>Secretário</strong> do veneralato da sessão. Para trocar a arte (ex.: novo veneralato), use <UI>Trocar arte</UI> com o mesmo desenho.</li>
+                  <li><strong>Modelo da loja:</strong> a loja usa o diploma que já tem. O Administrador envia a arte em <UI>Arte da loja</UI>, no topo da tela (A4 paisagem; JPG de cerca de 200 dpi, PNG ou PDF, até 4 MB), e o suporte do Sigma Horus configura onde o sistema escreve. O jeito recomendado é a arte <strong>sem o texto do meio</strong> (só moldura, título, selos e assinaturas): o sistema escreve no espaço livre o <strong>mesmo texto do Clássico</strong> — que muda com a sessão e o grau do visitante —, com o nome em destaque e o local e a data, ajustando o tamanho para caber. Se a arte tiver linhas em branco para preencher, o sistema escreve só nelas (nome do Irmão, Loja e data). <strong>Não saem número nem QR Code</strong> (o número continua registrado na tela, para controle), e o e-mail também não fala deles. Se a arte vier sem os nomes dos signatários, o sistema escreve, em cima de cada linha, o nome de quem ocupava o cargo impresso nela (<strong>Venerável</strong>, <strong>Secretário</strong> ou <strong>Chanceler</strong>) no veneralato da sessão; cargo vago deixa a linha em branco. Para trocar a arte (ex.: novo veneralato), use <UI>Trocar arte</UI> com o mesmo desenho.</li>
                   <li><strong>Travas:</strong> só depois do término da sessão; só com e-mail e com o consentimento registrado na visita (a caixa &quot;Autorizou o envio do certificado&quot;); reenviar pede confirmação; visitante com dados excluídos (LGPD) não recebe.</li>
                   <li>Cada envio fica registrado em <UI>Comunicação</UI> e na auditoria; falha de envio aparece como &quot;falhou — tente de novo&quot;.</li>
                 </Bullets>

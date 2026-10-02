@@ -12,7 +12,7 @@ import { renderArtCertificatePdf, renderCertificatePdf, type CertificateFonts } 
 import { getLetterhead, longDateBR, orientOf } from '@/lib/letterhead';
 import { lockKey } from '@/lib/locks';
 import { withTenant } from '@/lib/prisma';
-import { getReportSignatories } from '@/lib/report-signatories';
+import { getChancellorSignatory, getReportSignatories } from '@/lib/report-signatories';
 import { getObjectBuffer } from '@/lib/storage';
 import { sessionDegrees } from '@/lib/session-convocation';
 import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
@@ -83,12 +83,13 @@ export async function loadCertificateContext(lodgeId: string, visitId: string) {
       },
     });
     if (!visit) return null;
-    const [letterhead, signatures, lodge] = await Promise.all([
+    const [letterhead, signatures, chancellor, lodge] = await Promise.all([
       getLetterhead(db, lodgeId),
       getReportSignatories(db, lodgeId, { at: visit.session.date, by: 'secretary' }),
+      getChancellorSignatory(db, lodgeId, visit.session.date),
       db.lodge.findUnique({ where: { id: lodgeId }, select: { certificateArtKey: true, certificateArtType: true, certificateLayout: true } }),
     ]);
-    return { visit, letterhead, signatures, art: lodgeArtOf(lodge) };
+    return { visit, letterhead, signatures, chancellor, art: lodgeArtOf(lodge) };
   });
 }
 
@@ -161,7 +162,8 @@ export async function buildCertificatePdf(
       values: { name: v.name, lodge: artLodgeLine(v.lodgeName, v.lodgeNumber), ...artDateParts(visit.session.date) },
       text,
       placeDate,
-      signatures: ctx.signatures.flatMap((s) => {
+      // O Chanceler só entra aqui: a arte diz qual cargo assina em cada linha.
+      signatures: [...ctx.signatures, ctx.chancellor].flatMap((s) => {
         const role = signatureRoleOf(s.role);
         return role ? [{ role: role as ArtSignatureRole, name: s.name ?? null }] : [];
       }),

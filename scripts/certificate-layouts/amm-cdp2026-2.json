@@ -1,0 +1,11 @@
+{
+  "width": 842,
+  "height": 596,
+  "ink": "#142848",
+  "textBox": { "x0": 165, "x1": 680, "y0": 214, "y1": 424 },
+  "fields": {},
+  "signatures": [
+    { "role": "venerable", "x0": 202, "x1": 346.5, "y": 471, "size": 12 },
+    { "role": "chancellor", "x0": 495.5, "x1": 640, "y": 472.5, "size": 12 }
+  ]
+}

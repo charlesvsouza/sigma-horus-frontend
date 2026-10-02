@@ -16,7 +16,8 @@ export interface ArtField {
   size: number;
 }
 
-export type ArtSignatureRole = 'venerable' | 'secretary';
+export type ArtSignatureRole = 'venerable' | 'secretary' | 'chancellor';
+const SIGNATURE_ROLES: readonly string[] = ['venerable', 'secretary', 'chancellor'];
 
 /** Área livre da arte (pontos, a partir do topo) onde o sistema escreve o texto completo. */
 export interface ArtTextBox {
@@ -47,7 +48,8 @@ export interface CertificateArtLayout {
   };
   /**
    * Nome de quem assina, em cima da linha de assinatura — só para arte SEM os nomes impressos.
-   * Assinam o Venerável e o Secretário do veneralato da data da sessão.
+   * Assinam os titulares do veneralato da data da sessão: Venerável, Secretário ou Chanceler,
+   * conforme o cargo impresso embaixo de cada linha da arte.
    */
   signatures?: (ArtField & { role: ArtSignatureRole })[];
 }
@@ -88,7 +90,7 @@ export function parseCertificateArtLayout(raw: unknown): CertificateArtLayout | 
     ? r.signatures.flatMap((s) => {
         const f = parseField(s, r.width as number, r.height as number);
         const role = (s as Record<string, unknown>)?.role;
-        return f && (role === 'venerable' || role === 'secretary') ? [{ ...f, role: role as ArtSignatureRole }] : [];
+        return f && typeof role === 'string' && SIGNATURE_ROLES.includes(role) ? [{ ...f, role: role as ArtSignatureRole }] : [];
       })
     : [];
   return { width: r.width, height: r.height, ink, ...(textBox ? { textBox } : {}), fields, ...(signatures.length ? { signatures } : {}) };
@@ -129,6 +131,7 @@ export function signatureRoleOf(role: string): ArtSignatureRole | null {
   const r = role.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
   if (r.includes('veneravel')) return 'venerable';
   if (r.includes('secretari')) return 'secretary';
+  if (r.includes('chanceler')) return 'chancellor';
   return null;
 }
 

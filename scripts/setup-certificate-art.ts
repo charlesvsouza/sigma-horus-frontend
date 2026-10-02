@@ -80,7 +80,7 @@ async function main() {
         attended: [1, 2],
       }),
       placeDate: 'Oriente da Barra da Tijuca, 16 de outubro de 2026.',
-      signatures: [{ role: 'venerable', name: 'Nome do Venerável' }, { role: 'secretary', name: 'Nome do Secretário' }],
+      signatures: [{ role: 'venerable', name: 'Nome do Venerável' }, { role: 'secretary', name: 'Nome do Secretário' }, { role: 'chancellor', name: 'Nome do Chanceler' }],
       number: null,
       preview: false,
     }, { title, regular, bold, italic });

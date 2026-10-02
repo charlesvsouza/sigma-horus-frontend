@@ -48,6 +48,7 @@ test('linha da Loja: tira o título que a arte já traz', () => {
 test('cargo do signatário → papel no layout', () => {
   assert.equal(signatureRoleOf('Venerável Mestre'), 'venerable');
   assert.equal(signatureRoleOf('Secretário'), 'secretary');
+  assert.equal(signatureRoleOf('Chanceler'), 'chancellor');
   assert.equal(signatureRoleOf('Tesoureiro'), null);
 });
 
