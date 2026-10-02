@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isInternalCategory, memberCanAccessDocument, DOCUMENT_CATEGORY_SUGGESTIONS } from './documents.ts';
+import { isCandidacyCategory, isInternalCategory, memberCanAccessDocument, DOCUMENT_CATEGORY_SUGGESTIONS } from './documents.ts';
 
 test('"Interno Loja" está entre as categorias sugeridas', () => {
   assert.ok(DOCUMENT_CATEGORY_SUGGESTIONS.includes('Interno Loja'));
@@ -21,4 +21,15 @@ test('irmão: vê institucional e os próprios, nunca o interno nem o de outro i
   assert.equal(memberCanAccessDocument({ memberId: null, category: 'Interno Loja' }, 'm1'), false);
   assert.equal(memberCanAccessDocument({ memberId: 'm1', category: 'interno loja' }, 'm1'), false);
   assert.equal(memberCanAccessDocument({ memberId: 'm1', category: 'Geral' }, null), false);
+});
+
+test('pasta do candidato ("Processo de admissão") é sigilosa como "Interno Loja"', () => {
+  assert.equal(isInternalCategory('Processo de admissão'), true);
+  assert.equal(memberCanAccessDocument({ memberId: 'm1', category: 'processo de admissão' }, 'm1'), false);
+});
+
+test('pasta do candidato sai da lista geral de Documentos', () => {
+  assert.equal(isCandidacyCategory(' processo de admissão '), true);
+  assert.equal(isCandidacyCategory('Interno Loja'), false);
+  assert.equal(isCandidacyCategory(null), false);
 });

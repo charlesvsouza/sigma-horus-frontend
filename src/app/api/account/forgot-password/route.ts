@@ -1,4 +1,5 @@
 import { prismaAdmin } from '@/lib/prisma';
+import { greeting } from '@/lib/candidate';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { signResetToken } from '@/lib/reset-token';
 import { NextResponse } from 'next/server';
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
 
   const user = await prismaAdmin.user.findUnique({
     where: { email },
-    select: { id: true, name: true, lodgeId: true, memberId: true, status: true, passwordHash: true, lodge: { select: { status: true } } },
+    select: { id: true, name: true, role: true, lodgeId: true, memberId: true, status: true, passwordHash: true, lodge: { select: { status: true } } },
   });
   if (!user || user.status !== 'active' || user.lodge?.status !== 'active') return generic;
 
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
   const link = `${appUrl}/redefinir-senha?token=${encodeURIComponent(signResetToken(user.id, user.passwordHash))}`;
   const subject = 'Redefinição de senha — Sigma Horus';
   const message = [
-    `Prezado Ir∴ ${user.name},`,
+    greeting(user.role, user.name),
     '',
     'Recebemos um pedido de redefinição de senha da sua conta.',
     '',

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { isCandidateRole } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -13,6 +14,8 @@ export async function GET() {
   const role = session?.user?.role;
   if (!lodgeId) return NextResponse.json({ items: [] });
 
+  // Agenda e atas são do obreiro: o candidato (profano) não as vê.
+  if (isCandidateRole(role)) return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
   const access = await requireLodgeAccess(String(lodgeId), role, 'portal', 'read');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 

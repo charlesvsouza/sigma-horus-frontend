@@ -2,12 +2,13 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import CommandPalette, { type Command } from '@/components/command-palette';
 import { ConfirmProvider } from '@/components/ui';
 import Art002Alert from '@/components/art002-alert';
+import { candidateMayVisit, isCandidateRole } from '@/lib/candidate';
 import {
   LayoutDashboard, CircleUser, BookOpen, Users, Database, Briefcase, Crown, Wallet,
   ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
@@ -16,7 +17,7 @@ import {
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
   Scale, ListTree, Users2, Images, LayoutGrid, UsersRound, PencilLine,
   ArrowDownToLine, ArrowUpFromLine, HandCoins, Banknote, Percent, type LucideIcon,
-  History, BadgeCheck, UserPlus, Award,
+  History, BadgeCheck, UserPlus, Award, UserRoundSearch,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -37,6 +38,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/portal': CircleUser,
   '/manual': BookOpen,
   '/dashboard/membros': Users,
+  '/dashboard/candidatos': UserRoundSearch,
   '/dashboard/membros/quadro-social': Users2,
   '/dashboard/galeria-veneraveis': Images,
   '/dashboard/quadro-gestao': LayoutGrid,
@@ -108,6 +110,7 @@ const ROLE_LABEL: Record<string, string> = {
   treasurer: 'Tesoureiro',
   secretary: 'Secretário',
   member: 'Obreiro',
+  candidate: 'Candidato',
 };
 
 // Rótulos de segmentos de rota para a trilha (breadcrumb) que não vêm do menu.
@@ -125,7 +128,15 @@ const SEGMENT_LABELS: Record<string, string> = {
 
 export default function DashboardShell({ groups, lodgeName, userName, role, children, art002DaysOverdue }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  // Candidato só tem o portal: qualquer outra tela do painel volta para ele. As
+  // APIs já recusam o papel no servidor; isto evita a tela vazia/"acesso negado".
+  const candidateBlocked = isCandidateRole(role) && !candidateMayVisit(pathname ?? '');
+  useEffect(() => {
+    if (candidateBlocked) router.replace('/dashboard/portal');
+  }, [candidateBlocked, router]);
   const [rail, setRail] = useState(false); // sidebar só-ícone no desktop
 
   // Categoria da rota atual: abre por padrão no acordeão.
@@ -426,7 +437,7 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
           ) : null}
 
           <div className="fio-de-prumo mx-5 lg:mx-8" />
-          <div id="conteudo" tabIndex={-1} className="flex-1 bg-sigma-app outline-none"><ConfirmProvider>{children}</ConfirmProvider></div>
+          <div id="conteudo" tabIndex={-1} className="flex-1 bg-sigma-app outline-none"><ConfirmProvider>{candidateBlocked ? null : children}</ConfirmProvider></div>
         </div>
       </div>
       <CommandPalette commands={commands} />

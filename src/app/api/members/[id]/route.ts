@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { CANDIDATE_STATUS } from '@/lib/candidate';
 import { logAudit } from '@/lib/audit';
 import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, parseSelfEditFields, validateMemberFields, validateRelatives } from '@/lib/member-fields';
 import { withTenant, prismaAdmin } from '@/lib/prisma';
@@ -23,11 +24,13 @@ export async function PUT(request: Request, { params }: Ctx) {
   // rito/potência, grau e status do próprio membro — ou pior, um body
   // malicioso poderia setar esses campos de propósito. O papel/cargo de
   // permissão e o cargo maçônico só são definidos pelo Administrador.
-  const isSelf = session?.user?.memberId === id;
-  if (!isSelf) {
-    const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'write');
-    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
-  }
+  // Quem TEM members:write (Venerável, Secretário…) edita o próprio cadastro
+  // completo pela tela de Membros: antes o ramo self-edit valia para qualquer
+  // um editando a si mesmo e descartava em silêncio nascimento, RG, profissão
+  // etc. — o form respondia "Membro atualizado" e os campos voltavam vazios.
+  const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'write');
+  const isSelf = !access.ok && session?.user?.memberId === id;
+  if (!access.ok && !isSelf) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const body = await request.json();
   const relatives = parseRelatives(body);
@@ -73,8 +76,10 @@ export async function PUT(request: Request, { params }: Ctx) {
   }
 
   const item = await withTenant(String(lodgeId), async (db) => {
-    const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true } });
+    const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, status: true } });
     if (!existing) return null;
+    // Candidato se edita na ficha dele (Secretaria → Candidatos) e só vira obreiro pela iniciação.
+    if (existing.status === CANDIDATE_STATUS) return 'candidate' as const;
 
     // Replace-all dos familiares: apaga os atuais e recria a partir do form.
     const updated = await db.member.update({
@@ -93,6 +98,7 @@ export async function PUT(request: Request, { params }: Ctx) {
   });
 
   if (!item) return NextResponse.json({ error: 'Membro não encontrado.' }, { status: 404 });
+  if (item === 'candidate') return NextResponse.json({ error: 'Este cadastro é de um candidato: edite-o em Secretaria → Candidatos.' }, { status: 409 });
   return NextResponse.json({ item });
 }
 

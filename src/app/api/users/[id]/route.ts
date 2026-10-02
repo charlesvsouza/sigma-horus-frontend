@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { greeting } from '@/lib/candidate';
 import { invalidateSessionUser } from '@/app/api/auth/[...nextauth]/auth';
 import { prismaAdmin } from '@/lib/prisma';
 import { normalizeRole, ROLES } from '@/lib/rbac';
@@ -45,7 +46,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
       'email',
       target.email,
       'Sua senha do Sigma Horus foi redefinida',
-      `Prezado Ir∴ ${target.name},\n\nUma nova senha provisória foi gerada.\n\nEndereço: ${appUrl}/login\nUsuário: ${target.email}\nSenha provisória: ${tempPassword}\n\nVocê deverá definir uma nova senha no próximo acesso.`,
+      `${greeting(target.role, target.name)}\n\nUma nova senha provisória foi gerada.\n\nEndereço: ${appUrl}/login\nUsuário: ${target.email}\nSenha provisória: ${tempPassword}\n\nVocê deverá definir uma nova senha no próximo acesso.`,
       EMPTY_CHANNELS,
     );
     await prismaAdmin.auditLog.create({

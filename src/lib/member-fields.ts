@@ -2,6 +2,7 @@
 // Mantém a paridade de campos entre criação e edição num só lugar.
 
 import { parsePhilosophicalDegree } from './masonic-degree';
+import { MEMBER_STATUSES } from './member-status';
 
 type Body = Record<string, unknown>;
 
@@ -161,6 +162,8 @@ const DATE_FIELD_LABEL: Record<string, string> = {
 // chamada direta à API ou pela importação de CSV).
 export function validateMemberFields(fields: MemberFields): string | null {
   if (!fields.name) return 'Nome do membro é obrigatório.';
+  // Situação de obreiro só: o candidato nasce e muda em Secretaria → Candidatos (api/candidates).
+  if (!MEMBER_STATUSES.some((s) => s.value === fields.status)) return 'Situação do membro inválida.';
   if (fields.currentDegree && parsePhilosophicalDegree(fields.currentDegree) == null) {
     return 'Grau filosófico inválido — deve ser um número entre 4 e 33.';
   }

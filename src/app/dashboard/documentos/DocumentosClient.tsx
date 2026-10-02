@@ -164,7 +164,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
                 {DOCUMENT_CATEGORIES.map((c) => <option key={c} value={c} />)}
               </datalist>
               {isInternalCategory(category) ? (
-                <p className="text-xs text-amber-300 md:col-span-2">Categoria <strong>Interno Loja</strong>: o documento fica só com a gestão da loja — não aparece no portal dos irmãos nem pode ser baixado por eles.</p>
+                <p className="text-xs text-amber-300 md:col-span-2">Categoria <strong>{category.trim()}</strong>: o documento fica só com a gestão da loja — não aparece no portal dos irmãos nem pode ser baixado por eles.</p>
               ) : null}
               <Field label="Vínculo com membro">
                 <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className={INPUT}>

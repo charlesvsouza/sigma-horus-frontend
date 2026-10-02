@@ -29,6 +29,10 @@ export function checkRoleChange(currentRole: string, newRole: string): { ok: tru
   if (currentRole === 'admin') {
     return { ok: false, error: 'O papel de Administrador é fixo e não pode ser rebaixado. Crie outro usuário para a função desejada, com outro e-mail.' };
   }
+  // Candidato vira obreiro só pelo "Registrar iniciação" (Secretaria → Candidatos).
+  if (currentRole === 'candidate') {
+    return { ok: false, error: 'O acesso de candidato muda sozinho quando a iniciação é registrada em Secretaria → Candidatos.' };
+  }
   return { ok: true };
 }
 

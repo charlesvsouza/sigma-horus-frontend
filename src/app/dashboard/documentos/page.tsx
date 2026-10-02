@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { NOT_CANDIDACY_DOCUMENT } from '@/lib/documents';
 import { withTenant } from '@/lib/prisma';
 import DocumentosClient from './DocumentosClient';
 
@@ -9,7 +10,8 @@ export default async function DocumentosPage() {
   const { items, members } = lodgeId
     ? await withTenant(String(lodgeId), async (db) => ({
         items: await db.document.findMany({
-          where: { lodgeId: String(lodgeId) },
+          // A pasta do candidato (sindicância etc.) só abre na ficha dele — nem o Tesoureiro a vê aqui.
+          where: { lodgeId: String(lodgeId), ...NOT_CANDIDACY_DOCUMENT },
           include: { member: { select: { name: true } } },
           orderBy: { createdAt: 'desc' },
         }),

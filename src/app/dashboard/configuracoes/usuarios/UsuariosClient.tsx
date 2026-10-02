@@ -22,10 +22,11 @@ const ROLE_LABELS: Record<string, string> = {
   treasurer: 'Tesoureiro',
   secretary: 'Secretário',
   hospitaller: 'Hospitaleiro',
-  member: 'Membro',
+  member: 'Membro', candidate: 'Candidato',
 };
 // Administrador não é opção de promoção: quem precisa de outro Administrador usa "Novo administrador".
-const ROLE_OPTIONS = Object.entries(ROLE_LABELS).filter(([value]) => value !== 'admin');
+// Candidato também não: o papel nasce no acesso do candidato e muda só na iniciação.
+const ROLE_OPTIONS = Object.entries(ROLE_LABELS).filter(([value]) => value !== 'admin' && value !== 'candidate');
 const MAX_ADMINS = 2;
 
 export default function UsuariosClient({ users, denied }: { users: AppUser[]; denied: boolean }) {
@@ -163,6 +164,10 @@ export default function UsuariosClient({ users, denied }: { users: AppUser[]; de
                   {u.role === 'admin' ? (
                     <span className="flex items-center gap-2 text-xs text-sand-dark">
                       Papel <span className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-gold">Administrador (fixo)</span>
+                    </span>
+                  ) : u.role === 'candidate' ? (
+                    <span className="flex items-center gap-2 text-xs text-sand-dark">
+                      Papel <span className="rounded-full border border-white/10 px-3 py-1 text-sand" title="Muda para Membro quando a iniciação é registrada em Secretaria → Candidatos">Candidato</span>
                     </span>
                   ) : (
                     <label className="flex items-center gap-2 text-xs text-sand-dark">

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { greeting } from '@/lib/candidate';
 import { prismaAdmin } from '@/lib/prisma';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { signEmailChangeToken } from '@/lib/email-change-token';
@@ -54,7 +55,7 @@ export async function PATCH(request: Request) {
       newEmail,
       'Confirme o novo e-mail de acesso ao Sigma Horus',
       [
-        `Prezado Ir∴ ${user.name},`,
+        greeting(user.role, user.name),
         '',
         'Recebemos o pedido para trocar o e-mail de acesso da sua conta para este endereço.',
         `Para confirmar, abra o link (vale por 1 hora): ${appUrl}/api/account/confirm-email?token=${encodeURIComponent(token)}`,

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { NOT_CANDIDATE } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole, requireLodgeAccess } from '@/lib/rbac';
 import { getLetterhead } from '@/lib/letterhead';
@@ -49,7 +50,7 @@ export default async function GaleriaVeneraveisPage() {
         include: { member: { select: { id: true, name: true, photoUrl: true } } },
         orderBy: { sortDate: 'asc' },
       }),
-      canManage ? db.member.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, name: true }, orderBy: { name: 'asc' } }) : Promise.resolve([]),
+      canManage ? db.member.findMany({ where: { lodgeId: String(lodgeId), ...NOT_CANDIDATE }, select: { id: true, name: true }, orderBy: { name: 'asc' } }) : Promise.resolve([]),
     ]);
     return { lodge, memberOffices, manualEntries, members };
   });

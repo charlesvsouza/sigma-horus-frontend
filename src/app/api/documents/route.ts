@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { NOT_CANDIDACY_DOCUMENT } from '@/lib/documents';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { normalizeStoragePayload } from '@/lib/storage';
@@ -20,7 +21,7 @@ export async function GET() {
 
   const items = await withTenant(String(lodgeId), (db) =>
     db.document.findMany({
-      where: { lodgeId: String(lodgeId) },
+      where: { lodgeId: String(lodgeId), ...NOT_CANDIDACY_DOCUMENT },
       include: { member: { select: { id: true, name: true } } },
       orderBy: { createdAt: 'desc' },
     }),

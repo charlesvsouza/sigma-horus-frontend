@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { NOT_CANDIDATE } from '@/lib/candidate';
 import { logAudit } from '@/lib/audit';
 import { createChargesWithAccounts } from '@/lib/charges';
 import { withTenant } from '@/lib/prisma';
@@ -33,7 +34,8 @@ export async function POST(request: Request) {
       where: {
         lodgeId: String(lodgeId),
         ...(chart?.isDues ? { duesExempt: false } : {}),
-        ...(scope === 'active' ? { status: 'active' } : {}),
+        // "Todos" = todos os obreiros; candidato é cobrado um a um (taxa de iniciação etc.).
+        ...(scope === 'active' ? { status: 'active' } : NOT_CANDIDATE),
       },
       select: { id: true },
       orderBy: { name: 'asc' },

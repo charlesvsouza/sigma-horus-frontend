@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Alert, Button, Card, CardDescription, CardTitle, Field, inputClass } from '@/components/ui';
 
 const ROLE_LABEL: Record<string, string> = {
-  admin: 'Administrador', venerable: 'Venerável', treasurer: 'Tesoureiro', secretary: 'Secretário', hospitaller: 'Hospitaleiro', member: 'Membro',
+  admin: 'Administrador', venerable: 'Venerável', treasurer: 'Tesoureiro', secretary: 'Secretário', hospitaller: 'Hospitaleiro', member: 'Membro', candidate: 'Candidato',
 };
 
 type Msg = { kind: 'ok' | 'error'; text: string } | null;

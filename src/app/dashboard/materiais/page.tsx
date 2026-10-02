@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { NOT_CANDIDATE } from '@/lib/candidate';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccessFor } from '@/lib/rbac';
@@ -55,7 +56,7 @@ export default async function MateriaisPage() {
         }),
         quarantine: (await quarantineByMaterial(db, String(lodgeId))).byMaterial,
         members: canOperate ? await db.member.findMany({
-          where: { lodgeId: String(lodgeId) },
+          where: { lodgeId: String(lodgeId), ...NOT_CANDIDATE },
           select: { id: true, name: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
           orderBy: { name: 'asc' },
         }) : [],

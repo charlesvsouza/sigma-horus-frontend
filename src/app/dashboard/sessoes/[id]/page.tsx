@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { NOT_CANDIDATE } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
 import { sessionDegrees } from '@/lib/session-convocation';
 import { loadConvocation } from '@/lib/session-convocation-server';
@@ -27,7 +28,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
           orderBy: { createdAt: 'asc' },
         });
         const members = await db.member.findMany({
-          where: { lodgeId: String(lodgeId) },
+          where: { lodgeId: String(lodgeId), ...NOT_CANDIDATE },
           select: { id: true, name: true },
           orderBy: { name: 'asc' },
         });

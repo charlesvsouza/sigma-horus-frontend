@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { isCandidateRole } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NOT_INTERNAL_DOCUMENT } from '@/lib/documents';
@@ -28,6 +29,11 @@ export async function GET() {
     // canLookupCpf: o Administrador (sem cadastro ligado) consulta os lançamentos no próprio CPF.
     return NextResponse.json({ member: null, lodge: null, accounts: [], documents: [], institutionalDocuments: [], summary: { totalReceivables: 0, totalPayables: 0, overdue: 0 }, canLookupCpf: canSeePaymentHistory(role) });
   }
+
+  // Candidato (profano em admissão): o portal mostra só débitos e cadastro —
+  // nem os documentos da loja, nem a pasta dele (sigilosa).
+  const candidate = isCandidateRole(role);
+  const noDocuments = async () => [] as { id: string; title: string; kind: string; category?: string | null; createdAt: Date }[];
 
   const [member, lodge, accounts, documents, institutionalDocuments] = await Promise.all([
     withTenant(String(lodgeId), (db) =>
@@ -73,7 +79,7 @@ export async function GET() {
         orderBy: { dueDate: 'asc' },
       }),
     ),
-    withTenant(String(lodgeId), (db) =>
+    candidate ? noDocuments() : withTenant(String(lodgeId), (db) =>
       db.document.findMany({
         where: { lodgeId: String(lodgeId), memberId: String(memberId), ...NOT_INTERNAL_DOCUMENT },
         select: { id: true, title: true, kind: true, createdAt: true },
@@ -81,7 +87,7 @@ export async function GET() {
         take: 5,
       }),
     ),
-    withTenant(String(lodgeId), (db) =>
+    candidate ? noDocuments() : withTenant(String(lodgeId), (db) =>
       db.document.findMany({
         where: { lodgeId: String(lodgeId), memberId: null, ...NOT_INTERNAL_DOCUMENT },
         select: { id: true, title: true, kind: true, category: true, createdAt: true },
@@ -146,5 +152,6 @@ export async function GET() {
     documents,
     institutionalDocuments,
     summary,
+    isCandidate: candidate,
   });
 }

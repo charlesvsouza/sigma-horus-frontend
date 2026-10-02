@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { NOT_CANDIDATE } from '@/lib/candidate';
 import { logAudit } from '@/lib/audit';
 import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
 import { dispatch, sleep, DISPATCH_THROTTLE_MS, type Channel } from '@/lib/messaging';
@@ -41,7 +42,7 @@ export async function POST(request: Request, { params }: Ctx) {
     if (!campaign) return null;
     const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: LODGE_MESSAGING_SELECT });
     const members = await db.member.findMany({
-      where: { lodgeId: String(lodgeId), ...(scope === 'active' ? { status: 'active' } : {}) },
+      where: { lodgeId: String(lodgeId), ...(scope === 'active' ? { status: 'active' } : NOT_CANDIDATE) },
       select: { id: true, name: true, email: true, phone: true },
     });
     return { campaign, lodge, members };

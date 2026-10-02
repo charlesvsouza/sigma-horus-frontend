@@ -53,3 +53,8 @@ test('token de troca de e-mail: válido, expira, e é invalidado por troca de se
   const forged = token.replace(/.$/, (c) => (c === 'a' ? 'b' : 'a'));
   assert.equal(verifyEmailChangeToken(forged, 'hash-antigo', t0 + 1000), false);
 });
+
+test('candidato não muda de papel por Usuários & acessos (só pela iniciação)', () => {
+  assert.equal(checkRoleChange('candidate', 'member').ok, false);
+  assert.equal(checkRoleChange('candidate', 'candidate').ok, true);
+});

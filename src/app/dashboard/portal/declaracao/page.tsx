@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { isCandidateRole } from '@/lib/candidate';
 import { declarationNumber, evaluateGoodStanding } from '@/lib/good-standing';
 import { loadMemberOpenDebts } from '@/lib/good-standing-server';
 import { getLetterhead } from '@/lib/letterhead';
@@ -20,6 +21,7 @@ export default async function Page() {
     </main>
   );
   if (!lodgeId) return blocked('Sessão expirada.');
+  if (isCandidateRole(session?.user?.role)) return blocked('A declaração de regularidade é emitida para obreiros.');
   const access = await requireLodgeAccess(lodgeId, session?.user?.role, 'portal', 'read');
   if (!access.ok) return blocked('Acesso negado.');
   if (!memberId) return blocked('Este login não está ligado a um cadastro de membro. Entre com o seu login de obreiro para emitir a sua declaração.');

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { NOT_CANDIDATE } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
 import { getReportSignatories } from '@/lib/report-signatories';
@@ -34,7 +35,7 @@ export default async function QuadroSocialPage() {
     const [lodge, members] = await Promise.all([
       db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
       db.member.findMany({
-        where: { lodgeId: String(lodgeId), ...(canSeeAllStatuses ? {} : { status: 'active' }) },
+        where: { lodgeId: String(lodgeId), ...(canSeeAllStatuses ? NOT_CANDIDATE : { status: 'active' }) },
         select: {
           id: true, name: true, status: true, photoUrl: true,
           initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true,

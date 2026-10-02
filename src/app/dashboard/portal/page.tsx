@@ -259,6 +259,8 @@ export default function PortalPage() {
   const [extratoOpen, setExtratoOpen] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [photoBusy, setPhotoBusy] = useState(false);
+  // Candidato (profano em admissão): só débitos e cadastro — sem grau, declaração e documentos.
+  const [isCandidate, setIsCandidate] = useState(false);
 
   const filteredAccounts = accounts
     .filter((a) => typeFilter === 'all' || a.type === typeFilter)
@@ -279,6 +281,7 @@ export default function PortalPage() {
       setLodge(data.lodge ?? null);
       setCollection(data.collection ?? null);
       setCanLookupCpf(Boolean(data.canLookupCpf));
+      setIsCandidate(Boolean(data.isCandidate));
       setSummary(data.summary ?? { totalReceivables: 0, totalPayables: 0, overdue: 0 });
     } catch {
       setLoadError('Não foi possível carregar seus dados. Verifique sua conexão e tente novamente.');
@@ -327,7 +330,11 @@ export default function PortalPage() {
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-sand-light">Meu portal</h1>
-          <p className="mt-1 text-sm text-sand-dark">Área de visão do obreiro com resumo de cadastro, situação financeira e documentos recentes.</p>
+          <p className="mt-1 text-sm text-sand-dark">
+            {isCandidate
+              ? 'Área do candidato: seus dados cadastrais e os valores devidos à Loja, que você pode pagar por aqui.'
+              : 'Área de visão do obreiro com resumo de cadastro, situação financeira e documentos recentes.'}
+          </p>
         </div>
 
         {savedMessage ? <Alert intent="ok">{savedMessage}</Alert> : null}
@@ -346,7 +353,7 @@ export default function PortalPage() {
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-sand-light">Resumo do obreiro</h2>
+              <h2 className="text-base font-semibold text-sand-light">{isCandidate ? 'Meu cadastro' : 'Resumo do obreiro'}</h2>
               {!loading && member && !editing ? (
                 <button onClick={() => setEditing(true)} className="text-xs text-gold hover:text-gold-light">Editar meus dados</button>
               ) : null}
@@ -383,7 +390,7 @@ export default function PortalPage() {
               ) : (
                 <div className="mt-5 space-y-4 text-sm text-sand">
                   <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
-                    <p className="text-xs uppercase tracking-[0.25em] text-gold">Membro</p>
+                    <p className="text-xs uppercase tracking-[0.25em] text-gold">{isCandidate ? 'Candidato' : 'Membro'}</p>
                     <p className="mt-2 text-lg font-semibold text-sand-light">{member.name}</p>
                     <p className="mt-1">{member.email ?? 'E-mail não informado'}</p>
                     <p>{member.phone ?? 'Telefone não informado'}</p>
@@ -397,7 +404,7 @@ export default function PortalPage() {
                     <p>{[member.neighborhood, member.city, member.state].filter(Boolean).join(' — ')}</p>
                     <p>{[member.zipCode, member.country].filter(Boolean).join(' · ')}</p>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2">
+                  {isCandidate ? null : <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                       <p className="text-xs uppercase tracking-[0.25em] text-gold">Grau atual</p>
                       <p className="mt-2 font-medium text-sand-light">{degreeShort(member)}</p>
@@ -406,7 +413,7 @@ export default function PortalPage() {
                       <p className="text-xs uppercase tracking-[0.25em] text-gold">Loja de origem</p>
                       <p className="mt-2 font-medium text-sand-light">{member.originLodge ?? 'Não informada'}</p>
                     </div>
-                  </div>
+                  </div>}
                 </div>
               )}
               </>
@@ -439,7 +446,7 @@ export default function PortalPage() {
                     <span aria-hidden="true">→</span>
                   </Link>
                 ) : null}
-                {member ? (
+                {member && !isCandidate ? (
                   <Link href="/dashboard/portal/declaracao" className="flex items-center justify-between rounded-lg border border-gold/25 px-4 py-3 text-sm font-medium text-gold transition-colors hover:border-gold/50 hover:text-gold-light">
                     Declaração de regularidade
                     <span aria-hidden="true">→</span>
@@ -450,7 +457,7 @@ export default function PortalPage() {
           </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-2">
+        <section className={isCandidate ? 'grid gap-6' : 'grid gap-6 lg:grid-cols-2'}>
           <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <button
               type="button"
@@ -531,6 +538,7 @@ export default function PortalPage() {
             ) : null}
           </div>
 
+          {isCandidate ? null : <>
           <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Documentos recentes</h2>
             <div className="mt-5 space-y-3">
@@ -557,6 +565,7 @@ export default function PortalPage() {
               ))}
             </div>
           </div>
+          </>}
         </section>
       </div>
 
@@ -565,7 +574,7 @@ export default function PortalPage() {
         printOnly
         lodgeName={lodge?.name ?? 'Loja'}
         crestUrl={lodge?.crestUrl ?? null}
-        title={`Extrato do irmão — ${member?.name ?? ''}`}
+        title={`${isCandidate ? 'Extrato' : 'Extrato do irmão'} — ${member?.name ?? ''}`}
         details={[TYPE_FILTER_LABEL[typeFilter], STATUS_FILTER_LABEL[statusFilter], `${filteredAccounts.length} lançamento(s)`]}
         issuedBy={member?.name ?? null}
       >
@@ -590,7 +599,7 @@ export default function PortalPage() {
             </tr>
           </tbody>
         </table>
-        <p className="mt-4 text-xs text-sand-dark">Documento informativo, gerado pelo próprio irmão no portal. Não substitui o recibo de pagamento emitido pela Tesouraria.</p>
+        <p className="mt-4 text-xs text-sand-dark">Documento informativo, gerado pelo próprio {isCandidate ? 'candidato' : 'irmão'} no portal. Não substitui o recibo de pagamento emitido pela Tesouraria.</p>
       </ReportDocument>
     </main>
   );

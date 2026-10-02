@@ -82,6 +82,7 @@ const INDEX: IndexEntry[] = [
       { id: 'sec-materiais', label: '8.9 Materiais e patrimônio' },
       { id: 'sec-documentos', label: '8.10 Documentos e comunicação' },
       { id: 'sec-certificados', label: '8.11 Visitantes e certificados de presença' },
+      { id: 'sec-candidatos', label: '8.12 Candidatos — processo de admissão' },
     ],
   },
   { id: 'veneravel', num: '9', label: 'Guia do Venerável' },
@@ -262,7 +263,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.72</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.73</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -324,7 +325,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.72 — 2 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.73 — 2 de outubro de 2026</p>
               </div>
             </div>
 
@@ -1955,6 +1956,26 @@ export function ManualBook() {
                   <li><strong>Travas:</strong> só depois do término da sessão; só com e-mail e com o consentimento registrado na visita (a caixa &quot;Autorizou o envio do certificado&quot;); reenviar pede confirmação; visitante com dados excluídos (LGPD) não recebe.</li>
                   <li>Cada envio fica registrado em <UI>Comunicação</UI> e na auditoria; falha de envio aparece como &quot;falhou — tente de novo&quot;.</li>
                 </Bullets>
+              </Sub>
+              <Sub id="sec-candidatos" title="8.12 Candidatos — processo de admissão">
+                <p>
+                  <UI>Secretaria → Candidatos</UI> acompanha o profano da pré-proposta à iniciação. Quem cadastra, conduz o processo e registra a
+                  iniciação: <strong>Administrador, Venerável e Secretário</strong>. A ficha é sigilosa — o Tesoureiro não a vê.
+                </p>
+                <Bullets>
+                  <li><strong>Cadastrar:</strong> <UI>+ Novo candidato</UI> com nome, e-mail, telefone, CPF, proponente (padrinho) e a data da pré-proposta. Ao salvar, abre a ficha.</li>
+                  <li><strong>Etapas:</strong> 1. Pré-proposta · 2. Leitura da proposta · 3. Sindicância · 4. Escrutínio · 5. Autorização da Potência · 6. Iniciação. Cada etapa tem as suas datas e o seu botão <UI>Salvar</UI>; a etapa atual é calculada pelas datas preenchidas.</li>
+                  <li><strong>Sindicância:</strong> datas de abertura, prazo e conclusão, os <strong>sindicantes</strong> (obreiros da loja — o proponente não pode ser sindicante) com o parecer e a data de cada um, e o resultado. Parecer desfavorável ou escrutínio reprovado mostram um aviso para a loja decidir se encerra o processo.</li>
+                  <li><strong>Pasta do candidato:</strong> guarde ali a pré-proposta, a proposta, os pareceres, as certidões e os demais documentos, nos modelos da sua Potência. A pasta é sigilosa: não aparece em Documentos nem no portal, nem depois da iniciação.</li>
+                  <li><strong>Financeiro:</strong> a taxa de iniciação e outros valores são lançados pela Tesouraria em <UI>Contas</UI> (ou em Cobranças), escolhendo o candidato como sacado — igual a qualquer obreiro. A cobrança em massa não inclui candidatos.</li>
+                  <li><strong>Portal do candidato:</strong> <UI>Liberar acesso ao portal</UI> envia por e-mail uma senha provisória. O candidato vê apenas <strong>Meu portal</strong>: os próprios débitos (e paga por ali), o extrato, o histórico de pagamentos e o próprio cadastro (contato, endereço e família). Não vê sessões, atas, quadros, documentos nem o processo.</li>
+                  <li><strong>Registrar iniciação:</strong> depois do escrutínio aprovado, informe a data e a loja e confirme. O candidato vira obreiro <strong>ativo</strong> (Aprendiz) e passa para <UI>Membros</UI>; o acesso dele muda sozinho de candidato para obreiro (em até 30 segundos, sem precisar sair). Cobranças e pagamentos continuam no mesmo cadastro.</li>
+                  <li><strong>Encerrar processo:</strong> reprovado, desistência ou arquivado. A ficha, a pasta e o financeiro ficam guardados e o acesso ao portal é desativado; <UI>Reabrir processo</UI> desfaz. <UI>Excluir</UI> só funciona para candidato sem lançamentos, pagamentos ou documentos.</li>
+                </Bullets>
+                <Note>
+                  O candidato não aparece em Membros, Quadro social, presença, convocações nem aniversários — só depois de iniciado.
+                  Na lista de Candidatos, as abas <UI>Em andamento</UI>, <UI>Iniciados</UI> e <UI>Encerrados</UI> guardam o histórico de cada processo.
+                </Note>
               </Sub>
             </Chapter>
 

@@ -25,7 +25,8 @@ const NAV: NavGroupDef[] = [
     items: [
       // Visão geral = posição financeira (exige ler Contas): sem o Secretário, que não acessa a Tesouraria.
       { href: '/dashboard', label: 'Visão geral', roles: ['admin', 'venerable', 'treasurer', 'member', 'hospitaller'] },
-      { href: '/dashboard/portal', label: 'Meu portal', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
+      // Candidato (profano em admissão) só tem o portal: meus débitos, meu cadastro, pagar.
+      { href: '/dashboard/portal', label: 'Meu portal', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller', 'candidate'] },
       // Todo oficial também é obreiro — o calendário de sessões vale pra
       // todos, não só pra quem tem papel "member".
       { href: '/dashboard/portal/secretaria', label: 'Calendário de sessões', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
@@ -55,6 +56,8 @@ const NAV: NavGroupDef[] = [
         label: 'Membros & Cadastros',
         items: [
           { href: '/dashboard/membros', label: 'Membros', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
+          // Processo de admissão (pré-proposta → iniciação): quem edita membros. Ver api/candidates/shared.ts.
+          { href: '/dashboard/candidatos', label: 'Candidatos', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/cadastros', label: 'Cadastros mestre', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: [], resources: ['materials', 'inventory'] },
           { href: '/dashboard/cargos', label: 'Cargos', roles: ['admin', 'venerable', 'secretary'] },

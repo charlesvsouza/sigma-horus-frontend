@@ -5,10 +5,26 @@
 
 export const INTERNAL_DOCUMENT_CATEGORY = 'Interno Loja';
 
+// Pasta do candidato (processo de admissão: pré-proposta, sindicância, pareceres…).
+// Sigilosa como "Interno Loja": nunca aparece no portal — nem para o candidato, nem
+// para ele depois de iniciado, quando a pasta continua ligada ao mesmo cadastro.
+export const CANDIDACY_DOCUMENT_CATEGORY = 'Processo de admissão';
+
 export const DOCUMENT_CATEGORY_SUGGESTIONS = ['Institucional', 'Ata', 'Financeiro', 'Geral', INTERNAL_DOCUMENT_CATEGORY];
 
+const RESTRICTED_CATEGORIES = [INTERNAL_DOCUMENT_CATEGORY, CANDIDACY_DOCUMENT_CATEGORY].map((c) => c.toLowerCase());
+
+export const isCandidacyCategory = (category: string | null | undefined) =>
+  (category ?? '').trim().toLowerCase() === CANDIDACY_DOCUMENT_CATEGORY.toLowerCase();
+
+/** Fora da lista geral de Documentos: a pasta do candidato só abre na ficha dele (Secretaria → Candidatos). */
+export const NOT_CANDIDACY_DOCUMENT = {
+  OR: [{ category: null }, { category: { not: CANDIDACY_DOCUMENT_CATEGORY, mode: 'insensitive' as const } }],
+};
+
+/** Documento de uso da gestão, fora do portal ("Interno Loja" ou "Processo de admissão"). */
 export function isInternalCategory(category: string | null | undefined): boolean {
-  return (category ?? '').trim().toLowerCase() === INTERNAL_DOCUMENT_CATEGORY.toLowerCase();
+  return RESTRICTED_CATEGORIES.includes((category ?? '').trim().toLowerCase());
 }
 
 /**
@@ -23,5 +39,8 @@ export function memberCanAccessDocument(doc: { memberId: string | null; category
 
 /** Filtro Prisma que exclui os documentos internos (categoria nula continua valendo). */
 export const NOT_INTERNAL_DOCUMENT = {
-  OR: [{ category: null }, { category: { not: INTERNAL_DOCUMENT_CATEGORY, mode: 'insensitive' as const } }],
+  OR: [
+    { category: null },
+    { AND: [INTERNAL_DOCUMENT_CATEGORY, CANDIDACY_DOCUMENT_CATEGORY].map((c) => ({ category: { not: c, mode: 'insensitive' as const } })) },
+  ],
 };

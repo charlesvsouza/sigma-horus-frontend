@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
+import { isCandidacyCategory } from '@/lib/documents';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
 import { deleteObject } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
@@ -26,7 +27,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }),
   );
 
-  if (!item) {
+  if (!item || (isCandidacyCategory(item.category) && !(await canLodgeAccess(String(lodgeId), role, 'members', 'write')))) {
     return NextResponse.json({ error: 'Documento não encontrado.' }, { status: 404 });
   }
 
@@ -46,6 +47,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const access = await requireLodgeAccess(String(lodgeId), role, 'documents', 'write');
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
+  // Pasta do candidato: sigilosa, só quem conduz o processo (members:write).
+  const target = await withTenant(String(lodgeId), (db) => db.document.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { category: true } }));
+  if (!target || (isCandidacyCategory(target.category) && !(await canLodgeAccess(String(lodgeId), role, 'members', 'write')))) {
+    return NextResponse.json({ error: 'Documento não encontrado.' }, { status: 404 });
   }
 
   const removed = await withTenant(String(lodgeId), (db) =>

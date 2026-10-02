@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { normalizeRole, requireLodgeAccess } from '@/lib/rbac';
-import { memberCanAccessDocument } from '@/lib/documents';
+import { canLodgeAccess, normalizeRole, requireLodgeAccess } from '@/lib/rbac';
+import { isCandidacyCategory, memberCanAccessDocument } from '@/lib/documents';
 import { getPresignedDownloadUrl } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
@@ -28,6 +28,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   );
 
   if (!item?.storageKey) {
+    return NextResponse.json({ error: 'Arquivo não encontrado.' }, { status: 404 });
+  }
+
+  // Pasta do candidato: sigilosa, só quem conduz o processo (members:write).
+  if (isCandidacyCategory(item.category) && !(await canLodgeAccess(String(lodgeId), role, 'members', 'write'))) {
     return NextResponse.json({ error: 'Arquivo não encontrado.' }, { status: 404 });
   }
 

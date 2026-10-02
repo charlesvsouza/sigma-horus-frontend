@@ -126,6 +126,8 @@ model Lodge {
   counterparties Counterparty[]
   visitors       Visitor[]
   sessionVisitors SessionVisitor[]
+  candidateProcesses CandidateProcess[]
+  candidateInquirers CandidateInquirer[]
   hospitalityRequests HospitalityRequest[]
   financialAccounts FinancialAccount[]
   accountTransfers  AccountTransfer[]
@@ -223,6 +225,65 @@ model Member {
   hospitalityRequests HospitalityRequest[]
   materialLoans      MaterialLoan[]
   venerableGalleryEntries VenerableGalleryEntry[]
+  candidateProcess   CandidateProcess? @relation("CandidateProcessMember")
+  proposedCandidates CandidateProcess[] @relation("CandidateProposer")
+  candidateInquiries CandidateInquirer[]
+  @@index([lodgeId])
+}
+
+// Processo de admissão de um candidato (profano). O candidato é um Member com
+// status 'candidate' — assim cobranças, pagamentos e portal funcionam iguais aos
+// do obreiro — e este registro guarda as etapas: pré-proposta → leitura da
+// proposta → sindicância → escrutínio → autorização da Potência → iniciação.
+// A etapa atual é DERIVADA das datas (lib/candidate.ts), nunca gravada.
+// Os documentos do processo ficam na pasta do candidato (Document com memberId
+// e categoria "Processo de admissão", sigilosa — ver lib/documents.ts).
+model CandidateProcess {
+  id                    String    @id @default(cuid())
+  lodgeId               String
+  memberId              String    @unique
+  proposerId            String?   // padrinho/proponente (obreiro da loja)
+  preProposalDate       DateTime? // pré-proposta recebida
+  proposalReadingDate   DateTime? // proposta lida em sessão
+  inquiryOpenedAt       DateTime? // sindicância aberta (sindicantes nomeados)
+  inquiryDeadline       DateTime?
+  inquiryClosedAt       DateTime?
+  inquiryResult         String?   // favorable | unfavorable
+  ballotDate            DateTime? // escrutínio
+  ballotResult          String?   // approved | rejected
+  potencySentAt         DateTime? // processo enviado à Potência
+  potencyApprovedAt     DateTime? // autorização (placet) recebida
+  potencyReference      String?   // nº do processo/placet na Potência
+  initiationScheduledAt DateTime? // data marcada para a iniciação
+  initiatedAt           DateTime? // iniciação registrada (o membro vira obreiro ativo)
+  closedAt              DateTime? // processo encerrado sem iniciação
+  closedReason          String?   // rejected | withdrawn | archived
+  notes                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  lodge     Lodge               @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member    Member              @relation("CandidateProcessMember", fields: [memberId], references: [id], onDelete: Cascade)
+  proposer  Member?             @relation("CandidateProposer", fields: [proposerId], references: [id], onDelete: SetNull)
+  inquirers CandidateInquirer[]
+  @@index([lodgeId])
+}
+
+// Sindicante nomeado para o processo, com o parecer dele (sigiloso: só quem
+// edita membros vê — Administrador, Venerável, Secretário).
+model CandidateInquirer {
+  id         String    @id @default(cuid())
+  lodgeId    String
+  processId  String
+  memberId   String
+  reportedAt DateTime? // data do parecer
+  opinion    String?   // favorable | unfavorable (vazio = aguardando)
+  createdAt  DateTime  @default(now())
+
+  lodge   Lodge            @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  process CandidateProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  member  Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  @@unique([processId, memberId])
   @@index([lodgeId])
 }
 

@@ -23,7 +23,11 @@ export const MEMBER_STATUSES: MemberStatusDef[] = [
   { value: 'inactive', label: 'Inativo', short: 'Inativo', tone: 'inactive' },
 ];
 
-const byValue = new Map(MEMBER_STATUSES.map((s) => [s.value, s]));
+// Candidato (profano em admissão — lib/candidate.ts) fica FORA de MEMBER_STATUSES:
+// não é opção do formulário de membro nem filtro do cadastro; só ganha rótulo.
+const CANDIDATE_STATUS_DEF: MemberStatusDef = { value: 'candidate', label: 'Candidato (em processo de admissão)', short: 'Candidato', tone: 'inactive' };
+
+const byValue = new Map([...MEMBER_STATUSES, CANDIDATE_STATUS_DEF].map((s) => [s.value, s]));
 
 export const memberStatusLabel = (value?: string | null) => (value ? byValue.get(value)?.short ?? value : '—');
 export const memberStatusFull = (value?: string | null) => (value ? byValue.get(value)?.label ?? value : '—');

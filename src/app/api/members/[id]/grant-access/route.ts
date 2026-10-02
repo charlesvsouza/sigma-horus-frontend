@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { prismaAdmin } from '@/lib/prisma';
-import { normalizeRole } from '@/lib/rbac';
+import { canLodgeAccess, normalizeRole } from '@/lib/rbac';
+import { CANDIDATE_ROLE, CANDIDATE_STATUS, greeting } from '@/lib/candidate';
 import { generateTempPassword } from '@/lib/password';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import bcrypt from 'bcryptjs';
@@ -12,7 +13,7 @@ type Ctx = { params: Promise<{ id: string }> };
 // Concede acesso ao sistema a um membro: cria (ou recria a senha de) um User
 // vinculado ao membro, com login = e-mail do cadastro e senha provisória enviada
 // por e-mail (Resend). O obreiro troca a senha no 1º acesso (mustChangePassword).
-// Apenas o Administrador da loja executa.
+// Apenas o Administrador da loja executa — exceto para candidato (ver abaixo).
 export async function POST(_request: Request, { params }: Ctx) {
   const { id } = await params;
   const session = await auth();
@@ -20,15 +21,21 @@ export async function POST(_request: Request, { params }: Ctx) {
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const subscription = await requireActiveSubscription(String(lodgeId));
   if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
-  if (normalizeRole(session?.user?.role) !== 'admin') {
-    return NextResponse.json({ error: 'Apenas o Administrador pode conceder acesso.' }, { status: 403 });
-  }
-
   const member = await prismaAdmin.member.findFirst({
     where: { id, lodgeId: String(lodgeId) },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true, status: true, candidateProcess: { select: { closedAt: true } } },
   });
+  // Candidato: quem conduz o processo (members:write — Administrador, Venerável,
+  // Secretário) libera o acesso dele, que é só o portal (papel 'candidate').
+  const isCandidate = member?.status === CANDIDATE_STATUS;
+  const isAdmin = normalizeRole(session?.user?.role) === 'admin';
+  if (!isAdmin && !(isCandidate && (await canLodgeAccess(String(lodgeId), session?.user?.role, 'members', 'write')))) {
+    return NextResponse.json({ error: 'Apenas o Administrador pode conceder acesso.' }, { status: 403 });
+  }
   if (!member) return NextResponse.json({ error: 'Membro não encontrado.' }, { status: 404 });
+  if (isCandidate && member.candidateProcess?.closedAt) {
+    return NextResponse.json({ error: 'O processo deste candidato está encerrado. Reabra-o antes de liberar o acesso.' }, { status: 409 });
+  }
 
   const email = (member.email || '').trim().toLowerCase();
   if (!email) {
@@ -71,7 +78,7 @@ export async function POST(_request: Request, { params }: Ctx) {
         name: member.name,
         email,
         passwordHash,
-        role: 'member',
+        role: isCandidate ? CANDIDATE_ROLE : 'member',
         lodgeId: String(lodgeId),
         memberId: member.id,
         mustChangePassword: true,
@@ -82,9 +89,11 @@ export async function POST(_request: Request, { params }: Ctx) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sigmahorus.com.br';
   const subject = 'Seu acesso ao Sigma Horus';
   const body = [
-    `Prezado Ir∴ ${member.name},`,
+    greeting(isCandidate ? CANDIDATE_ROLE : 'member', member.name),
     '',
-    'Seu acesso ao sistema da loja foi liberado.',
+    isCandidate
+      ? 'Seu acesso à área do candidato no sistema da loja foi liberado. Nela você mantém seus dados atualizados e acompanha e paga os valores devidos à Loja.'
+      : 'Seu acesso ao sistema da loja foi liberado.',
     '',
     `Endereço: ${appUrl}/login`,
     `Usuário (e-mail): ${email}`,
@@ -92,7 +101,7 @@ export async function POST(_request: Request, { params }: Ctx) {
     '',
     'Por segurança, você deverá definir uma nova senha no primeiro acesso.',
     '',
-    'T∴F∴A∴',
+    isCandidate ? 'Atenciosamente,' : 'T∴F∴A∴',
   ].join('\n');
 
   const result = await dispatch('email', email, subject, body, EMPTY_CHANNELS);

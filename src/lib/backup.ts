@@ -24,6 +24,8 @@ export const BACKUP_MODELS = [
   'office',
   'member',
   'relative',
+  'candidateProcess', // depois de member (candidato e proponente)
+  'candidateInquirer', // depois de candidateProcess
   'user',
   'financialAccount',
   'accountTransfer',

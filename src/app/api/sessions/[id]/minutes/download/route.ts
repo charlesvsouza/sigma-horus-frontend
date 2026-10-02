@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { isCandidateRole } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { getPresignedDownloadUrl } from '@/lib/storage';
@@ -14,6 +15,8 @@ export async function GET(_request: Request, { params }: Ctx) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Ata é do obreiro: o candidato (profano) não a baixa.
+  if (isCandidateRole(session?.user?.role)) return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
   const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'portal', 'read');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 

@@ -79,6 +79,15 @@ const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = 
     read: ['materials', 'inventory'],
     write: ['inventory'],
   },
+  // Candidato (profano em processo de admissão — lib/candidate.ts): só o portal,
+  // onde vê os próprios débitos, o próprio cadastro e paga. Papel FIXO: fica fora
+  // de ROLES/MATRIX_ROLES, então não aparece na matriz de Permissões nem em
+  // Usuários & acessos — nasce no "Conceder acesso" do candidato e vira 'member'
+  // na iniciação. O que o portal mostra a ele é recortado em api/portal.
+  candidate: {
+    read: ['portal'],
+    write: ['portal'],
+  },
 };
 
 export function normalizeRole(role?: string | null) {

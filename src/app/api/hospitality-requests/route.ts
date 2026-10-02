@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { isCandidateRole } from '@/lib/candidate';
 import { logAudit } from '@/lib/audit';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { withTenant } from '@/lib/prisma';
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!memberId) return NextResponse.json({ error: 'Seu usuário não está vinculado a um cadastro de membro.' }, { status: 400 });
 
+  if (isCandidateRole(role)) return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
   const access = await requireLodgeAccess(String(lodgeId), role, 'portal', 'write');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 

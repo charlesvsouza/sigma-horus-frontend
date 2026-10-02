@@ -45,9 +45,9 @@ function handlers(src: string): { method: string; body: string }[] {
 // O `write` pode vir seguido do memberId da sessão (papéis por cargo, ex.: Arquiteto).
 const DIRECT_GUARD = /requireLodgeAccess\((?:[^()]|\([^()]*\))*['"]write['"](?:\s*,\s*[\w?.]+)?\s*\)|requireActiveSubscription\(/;
 
-/** Funções locais do arquivo (ex.: getSessionAndCheck) que já carregam a guarda. */
+/** Funções do arquivo (ex.: getSessionAndCheck) que já carregam a guarda. */
 function guardedHelpers(src: string): string[] {
-  const re = /(?:^|\n)(?:async\s+)?function\s+(\w+)\s*\(/g;
+  const re = /(?:^|\n)(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(/g;
   const marks = [...src.matchAll(re)].map((m) => ({ name: m[1], at: m.index ?? 0 }));
   return marks
     .filter((m, i) => DIRECT_GUARD.test(src.slice(m.at, marks[i + 1]?.at ?? src.length)))
@@ -60,7 +60,9 @@ test('toda rota de escrita passa pela guarda de assinatura ou está isenta com m
     const rel = path.relative(API_DIR, file).replace(/\\/g, '/');
     if (Object.keys(EXEMPT).some((prefix) => rel.startsWith(prefix) || rel === prefix)) continue;
     const src = fs.readFileSync(file, 'utf8');
-    const helpers = guardedHelpers(src);
+    // + funções de um `shared.ts` importado pela rota (ex.: candidates/shared.ts → candidateAccess).
+    const sharedFiles = [...src.matchAll(/from\s+'((?:\.\.?\/)+shared)'/g)].map((m) => path.join(path.dirname(file), `${m[1]}.ts`));
+    const helpers = [guardedHelpers(src), ...sharedFiles.filter((f) => fs.existsSync(f)).map((f) => guardedHelpers(fs.readFileSync(f, 'utf8')))].flat();
     for (const h of handlers(src)) {
       if (h.method === 'GET') continue;
       const guarded = DIRECT_GUARD.test(h.body) || helpers.some((name) => h.body.includes(`${name}(`));

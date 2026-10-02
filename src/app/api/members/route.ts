@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { NOT_CANDIDATE } from '@/lib/candidate';
 import { logAudit } from '@/lib/audit';
 import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, validateMemberFields, validateRelatives } from '@/lib/member-fields';
 import { withTenant } from '@/lib/prisma';
@@ -22,7 +23,8 @@ export async function GET() {
 
   const items = await withTenant(String(lodgeId), (db) =>
     db.member.findMany({
-      where: { lodgeId: String(lodgeId) },
+      // Candidatos têm tela própria (Secretaria → Candidatos): aqui só obreiros.
+      where: { lodgeId: String(lodgeId), ...NOT_CANDIDATE },
       include: MEMBER_LIST_INCLUDE,
       orderBy: { name: 'asc' },
     }),
