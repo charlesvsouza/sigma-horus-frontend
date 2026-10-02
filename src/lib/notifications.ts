@@ -2,6 +2,7 @@ import { prismaAdmin, withTenant } from '@/lib/prisma';
 import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
 import { channelsAvailable, dispatch, sleep, DISPATCH_THROTTLE_MS, type Channel, type LodgeChannels } from '@/lib/messaging';
 import { TENURE_MILESTONES } from '@/lib/masonic-degree';
+import { isAnniversaryToday, todayBR, yearsCompleted } from '@/lib/anniversary';
 import { AUTO_REMINDER_LOG_TITLE, AUTO_REMINDER_MIN_DAYS_OVERDUE, autoReminderWindowStart, reminderHtml, reminderShortText, reminderText } from '@/lib/charge-reminder';
 import { loadReminderContext } from '@/lib/charge-reminder-server';
 
@@ -22,23 +23,13 @@ const DEGREE_MILESTONES: { field: 'initiationDate' | 'elevationDate' | 'exaltati
   { field: 'exaltationDate', label: 'exaltação (Mestre Maçom)' },
 ];
 
-function partsBR(d: Date): { y: number; m: number; day: number } {
-  const f = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' });
-  const [{ value: y }, , { value: m }, , { value: day }] = f.formatToParts(d);
-  return { y: Number(y), m: Number(m), day: Number(day) };
-}
-const sameDayMonth = (a: Date, ref: { m: number; day: number }) => {
-  const p = partsBR(a);
-  return p.m === ref.m && p.day === ref.day;
-};
-
 interface Stats { birthdays: number; relativesBirthdays: number; jubilees: number; foundationAnniversaries: number; overdue: number; sent: number; queued: number; failed: number; skipped: number }
 
 export async function runDailyNotifications(): Promise<Stats> {
   const stats: Stats = { birthdays: 0, relativesBirthdays: 0, jubilees: 0, foundationAnniversaries: 0, overdue: 0, sent: 0, queued: 0, failed: 0, skipped: 0 };
 
   const now = new Date();
-  const today = partsBR(now);
+  const today = todayBR(now);
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
   // Envia uma vez por (membro, canal, título) por dia (dedup via MessageLog).
@@ -101,7 +92,7 @@ export async function runDailyNotifications(): Promise<Stats> {
 
     for (const m of members) {
       // 1) Aniversário do obreiro
-      if (lodge.notifyBirthdaysEnabled && m.birthDate && sameDayMonth(m.birthDate, today)) {
+      if (lodge.notifyBirthdaysEnabled && m.birthDate && isAnniversaryToday(m.birthDate, today)) {
         stats.birthdays++;
         for (const channel of list) {
           await notify(lodge.id, [channel], lodgeChannels, m.id, contactFor(channel, m.email, m.phone),
@@ -115,7 +106,7 @@ export async function runDailyNotifications(): Promise<Stats> {
       if (lodge.notifyBirthdaysEnabled) {
         for (const r of m.relatives) {
           if (r.deceased) continue;
-          if (r.birthDate && sameDayMonth(r.birthDate, today) && (r.email || r.phone)) {
+          if (r.birthDate && isAnniversaryToday(r.birthDate, today) && (r.email || r.phone)) {
             stats.relativesBirthdays++;
             for (const channel of list) {
               const to = contactFor(channel, r.email, r.phone);
@@ -132,8 +123,8 @@ export async function runDailyNotifications(): Promise<Stats> {
       if (lodge.notifyMilestonesEnabled) {
         for (const milestone of DEGREE_MILESTONES) {
           const d = m[milestone.field];
-          if (!d || !sameDayMonth(d, today)) continue;
-          const years = today.y - partsBR(d).y;
+          if (!d || !isAnniversaryToday(d, today)) continue;
+          const years = yearsCompleted(d, today);
           if (!TENURE_MILESTONES.includes(years)) continue;
           stats.jubilees++;
           for (const channel of list) {
@@ -146,8 +137,8 @@ export async function runDailyNotifications(): Promise<Stats> {
     }
 
     // 4) Aniversário de fundação da loja — mensagem a todos os obreiros ativos
-    if (lodge.notifyFoundationAnniversaryEnabled && lodge.foundationDate && sameDayMonth(lodge.foundationDate, today)) {
-      const years = today.y - partsBR(lodge.foundationDate).y;
+    if (lodge.notifyFoundationAnniversaryEnabled && lodge.foundationDate && isAnniversaryToday(lodge.foundationDate, today)) {
+      const years = yearsCompleted(lodge.foundationDate, today);
       for (const m of members) {
         stats.foundationAnniversaries++;
         for (const channel of list) {
