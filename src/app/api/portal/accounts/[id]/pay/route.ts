@@ -41,7 +41,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     const account = await db.account.findFirst({
       where: { id, lodgeId, memberId },
       select: {
-        id: true, title: true, type: true, amount: true, dueDate: true, status: true, memberId: true, approvalStatus: true,
+        id: true, title: true, type: true, amount: true, dueDate: true, status: true, memberId: true, approvalStatus: true, degreeFeePlan: { select: { paymentMethod: true } },
         payments: { select: { amount: true } },
         invoices: {
           where: { status: { notIn: CLOSED_INVOICE_STATUSES } },

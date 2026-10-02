@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.76</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.77</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.76 — 2 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.77 — 2 de outubro de 2026</p>
               </div>
             </div>
 
@@ -512,8 +512,8 @@ export function ManualBook() {
                 </li>
                 <li>
                   <strong>Tesouraria:</strong> dividida em três grupos — <UI>Entradas e Saídas</UI> (<UI>Contas</UI>,
-                  <UI> Cobranças</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de
-                  contas</UI>; o sub-item <UI>Lançamento</UI> aparece recuado logo abaixo de <UI>Contas</UI>),
+                  <UI> Lançamento</UI>, <UI>Cobranças</UI>, <UI>Taxas de grau</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de
+                  contas</UI>),
                   <UI> Cadastros e Conferência</UI> (<UI>Cadastros financeiros</UI>, <UI>Conciliação
                   bancária</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (<UI>Resumo financeiro</UI>, <UI>Contas a
                   receber</UI>, <UI>Contas a pagar</UI>, <UI>Contas recebidas</UI>, <UI>Contas pagas</UI>, <UI>Histórico de pagamentos</UI>,
@@ -964,7 +964,7 @@ export function ManualBook() {
               </Sub>
 
               <Sub id="tes-contas" title="7.2 Lançar contas a receber e a pagar">
-                <p>Em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, a tela abre pela lista <UI>Contas cadastradas</UI>. Para lançar, use o sub-menu <UI>Lançamento</UI> (logo abaixo de Contas): a mesma tela abre com o formulário <UI>Lançamentos</UI> já aberto, pronto para o próximo lançamento. O botão <UI>Editar</UI> de uma conta da lista também abre o formulário, com os dados dela. Na lista, contas a receber aparecem em verde com <strong>+</strong> e contas a pagar em vermelho com <strong>−</strong>. Preencha:</p>
+                <p>Em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, a tela abre pela lista <UI>Contas cadastradas</UI>. Para lançar, use o item <UI>Lançamento</UI> do menu (logo abaixo de Contas): a mesma tela abre com o formulário <UI>Lançamentos</UI> já aberto, pronto para o próximo lançamento. O botão <UI>Editar</UI> de uma conta da lista também abre o formulário, com os dados dela. Na lista, contas a receber aparecem em verde com <strong>+</strong> e contas a pagar em vermelho com <strong>−</strong>. Preencha:</p>
                 <Steps>
                   <li>Escolha a <UI>Categoria (plano de contas)</UI> — ela já sugere o título e o tipo.</li>
                   <li>Confira o <UI>Título da conta</UI> e o tipo: <strong>Conta a receber</strong> ou <strong>Conta a pagar</strong>.</li>
@@ -1577,7 +1577,8 @@ export function ManualBook() {
                   <li><strong>Contrato:</strong> <UI>Contrato (imprimir)</UI> gera o termo de compromisso no papel timbrado, com as cotas e as cláusulas (valor fixo, quitação até o evento, antecipação sem acréscimo, devolução se o evento não acontecer), para o irmão, o Tesoureiro e o Venerável assinarem. O irmão também abre o termo pelo portal.</li>
                   <li><strong>Data do evento:</strong> quando a loja marcar a cerimônia, informe a <UI>Data prevista</UI> no plano. Se houver cotas vencendo depois dela, aparece o aviso e o botão <UI>Antecipar cotas para a data</UI> (cotas já emitidas no Asaas ficam como estão — vencem em poucos dias).</li>
                   <li><strong>Quitado antes do evento:</strong> o plano fica <strong>Quitado — aguardando o evento</strong>, e o irmão vê no portal &quot;Crédito referente à taxa de …&quot;, reservado para a cerimônia. Registrada a elevação/exaltação/iniciação no cadastro, o plano passa a <strong>Evento realizado</strong> (com aviso se ainda houver saldo). A filiação/regularização não tem data no cadastro: quitada, o plano fica simplesmente <strong>Quitado</strong>.</li>
-                  <li><strong>Cancelar plano:</strong> se o evento não for acontecer (desligamento, desistência, candidato reprovado), <UI>Cancelar plano</UI> com o motivo: as cotas em aberto saem (e são canceladas no Asaas, se emitidas) e o que já foi pago vira uma <strong>conta a pagar ao irmão</strong> em Contas (categoria 2.1.17 Devolução de Taxas de Grau), com o visto do Venerável se passar do limite. Cota com pagamento parcial precisa ser acertada antes.</li>
+                  <li><strong>Cartão de crédito (só Modo Asaas):</strong> com a opção ligada em <UI>Configurações da loja → Financeiro</UI> (e as tarifas do contrato da loja com o Asaas informadas), o plano ganha a <UI>Forma de pagamento</UI> <strong>Cartão de crédito no Asaas</strong>, à vista ou em até 6x. A tarifa do cartão é <strong>repassada</strong> ao irmão: a prévia mostra a taxa, o acréscimo e o total, e o Asaas cria o parcelamento na hora. O sistema mostra o <strong>link para o irmão pagar</strong> (botão <UI>Link do cartão (Asaas)</UI> no plano e <UI>Pagar no cartão</UI> no portal dele). O cartão é cobrado em parcelas; cada parcela dá baixa sozinha e a tarifa real sai como despesa, então a loja recebe a taxa cheia. Pix e boleto continuam sem acréscimo. No Modo Loja não há cartão. As cotas no cartão não são antecipadas nem reemitidas em Pix. No relatório <UI>Tarifas de cobrança</UI>, a tarifa dessas parcelas aparece como <strong>repassada</strong>.</li>
+                    <li><strong>Cancelar plano:</strong> se o evento não for acontecer (desligamento, desistência, candidato reprovado), <UI>Cancelar plano</UI> com o motivo: as cotas em aberto saem (e são canceladas no Asaas, se emitidas) e o que já foi pago vira uma <strong>conta a pagar ao irmão</strong> em Contas (categoria 2.1.17 Devolução de Taxas de Grau), com o visto do Venerável se passar do limite. Cota com pagamento parcial precisa ser acertada antes.</li>
                 </Bullets>
               </Sub>
             </Chapter>

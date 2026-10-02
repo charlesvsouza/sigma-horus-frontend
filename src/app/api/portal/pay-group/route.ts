@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     accounts: await db.account.findMany({
       where: { id: { in: accountIds }, lodgeId, memberId },
       select: {
-        id: true, title: true, type: true, amount: true, dueDate: true, status: true, memberId: true, approvalStatus: true,
+        id: true, title: true, type: true, amount: true, dueDate: true, status: true, memberId: true, approvalStatus: true, degreeFeePlan: { select: { paymentMethod: true } },
         payments: { select: { amount: true } },
         invoices: { where: { status: { notIn: CLOSED_INVOICE_STATUSES } }, select: { id: true, asaasPaymentId: true }, orderBy: { createdAt: 'desc' }, take: 1 },
       },

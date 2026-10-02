@@ -1,4 +1,5 @@
 import { isWebhookAuthorized, processWebhook, type AsaasWebhookEvent } from '@/lib/asaas';
+import { isDegreeFeeCardRef } from '@/lib/degree-fee';
 import { isGroupRef } from '@/lib/asaas-group';
 import { settleAsaasGroupPayment } from '@/lib/asaas-group-server';
 import { prismaAdmin } from '@/lib/prisma';
@@ -155,19 +156,23 @@ export async function POST(request: Request) {
 
   // Ligação com o registro local: enviamos Invoice.id como externalReference ao criar a cobrança.
   const invoiceId = payment.externalReference;
-  if (!invoiceId) {
-    return NextResponse.json({ received: true, ignored: 'no externalReference' });
-  }
   if (isGroupRef(invoiceId)) return handleGroupWebhook(request, event, payment);
 
+  // Parcelamento no cartão (taxa de grau): as parcelas geradas pelo Asaas vêm SEM externalReference
+  // (conferido na sandbox) ou com a do parcelamento ("dfp:<plano>"), então a cota é achada pelo id
+  // da parcela, gravado na emissão. Sem referência e sem cobrança nossa com esse id: não é nosso.
   // Webhook não tem sessão de tenant → prismaAdmin (bypassa RLS), escopado pelo lodgeId da própria invoice.
-  const invoice = await prismaAdmin.invoice.findUnique({
-    where: { id: invoiceId },
+  const byPaymentId = !invoiceId || isDegreeFeeCardRef(invoiceId);
+  const invoice = await prismaAdmin.invoice.findFirst({
+    where: byPaymentId ? { asaasPaymentId: payment.id } : { id: invoiceId },
     include: {
       lodge: { select: { asaasWebhookToken: true, name: true } },
       member: { select: { name: true, email: true } },
     },
   });
+  if (!invoice && !invoiceId) {
+    return NextResponse.json({ received: true, ignored: 'no externalReference' });
+  }
   if (!invoice) {
     return NextResponse.json({ received: true, ignored: 'invoice not found' });
   }

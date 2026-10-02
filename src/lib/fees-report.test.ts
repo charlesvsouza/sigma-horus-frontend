@@ -64,3 +64,13 @@ test('id do Asaas extraído da nota da baixa', () => {
   assert.equal(asaasIdFromNote('sem parênteses'), null);
   assert.equal(asaasIdFromNote(null), null);
 });
+
+test('cartão das taxas de grau: tarifa repassada e fora da lista "fora da política"', () => {
+  const r = buildFeeReport([
+    { id: 'a', date: new Date('2026-10-01'), invoiceNumber: null, memberName: null, method: 'CREDIT_CARD', gross: 172.5, fee: 6.5, passedOn: 6.5, cardPlan: true },
+    { id: 'b', date: new Date('2026-10-01'), invoiceNumber: null, memberName: null, method: 'CREDIT_CARD', gross: 100, fee: 3, passedOn: 0 },
+  ]);
+  assert.equal(r.passedOn, 6.5);
+  assert.equal(r.absorbed, 3);
+  assert.deepEqual(r.outOfPolicy.map((x) => x.id), ['b']);
+});

@@ -2,8 +2,8 @@ import { isOutOfPolicyMethod } from '@/lib/collection';
 import { round2, sumMoney } from '@/lib/money';
 
 // Relatório de tarifas de cobrança: o que o Asaas realmente cobrou (valor − líquido, informado por
-// ele em cada recebimento) e o que a loja absorveu. Política atual: a loja ABSORVE a tarifa; a
-// coluna "repassada" existe para o dia em que houver repasse ao membro.
+// ele em cada recebimento) e o que a loja absorveu. Política: a loja ABSORVE a tarifa, exceto no
+// cartão parcelado das taxas de grau (Fase 2), em que ela é repassada ao irmão (coluna "repassada").
 
 export interface FeeRow {
   id: string;
@@ -13,7 +13,9 @@ export interface FeeRow {
   method: string | null; // PIX | BOLETO | CREDIT_CARD... (do Asaas)
   gross: number; // valor recebido
   fee: number | null; // tarifa real; null = o Asaas não informou o líquido
-  passedOn: number; // parte repassada ao membro (hoje sempre 0)
+  passedOn: number; // parte repassada ao membro (cartão das taxas de grau; no resto, 0)
+  /** Parcela de taxa de grau no cartão: cartão autorizado pela loja, não é "fora da política". */
+  cardPlan?: boolean;
 }
 
 export interface FeeBucket { key: string; count: number; gross: number; fee: number }
@@ -66,7 +68,7 @@ export function buildFeeReport(rows: FeeRow[]): FeeReport {
     averageFee: withFee.length ? round2(fee / withFee.length) : 0,
     feePercent: gross > 0 ? Math.round((fee / gross) * 10000) / 100 : 0,
     unknownFeeCount: rows.length - withFee.length,
-    outOfPolicy: rows.filter((r) => isOutOfPolicyMethod(r.method)),
+    outOfPolicy: rows.filter((r) => isOutOfPolicyMethod(r.method) && !r.cardPlan),
     byMethod: bucketize(rows, (r) => r.method ?? 'Não informado'),
     byMonth: bucketize(rows, (r) => monthKey(r.date)),
   };

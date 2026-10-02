@@ -1,4 +1,4 @@
-import { createDegreeFeePlan, PLAN_INCLUDE, presentPlan } from '@/lib/degree-fee-server';
+import { createDegreeFeePlan, emitCardInstallment, PLAN_INCLUDE, presentPlan } from '@/lib/degree-fee-server';
 import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { degreeFeeAccess, parseDate } from './shared';
@@ -30,8 +30,15 @@ export async function POST(request: Request) {
       firstDueDate,
       fourthInstructionDate: fourth,
       notes: body.notes ? String(body.notes) : null,
+      paymentMethod: body.paymentMethod === 'card' ? 'card' : 'standard',
     }),
   );
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+  // Cartão: emite o parcelamento no Asaas agora (rede fora da transação); se falhar, o plano é desfeito.
+  if (body.paymentMethod === 'card') {
+    const emitted = await emitCardInstallment(gate.lodgeId, result.planId);
+    if (!emitted.ok) return NextResponse.json({ error: emitted.error }, { status: emitted.status });
+    return NextResponse.json({ id: result.planId, cardUrl: emitted.url });
+  }
   return NextResponse.json({ id: result.planId });
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Badge, Button, EmptyState, Field, inputClass, useConfirm, type BadgeVariant } from '@/components/ui';
-import { DEGREE_FEE_KINDS, MAX_INSTALLMENTS, PLAN_SITUATION_LABEL, splitInstallments, type DegreeFeeKind, type PlanSituation } from '@/lib/degree-fee';
+import { DEGREE_FEE_KINDS, MAX_INSTALLMENTS, PLAN_SITUATION_LABEL, cardGrossUp, splitInstallments, type CardFees, type DegreeFeeKind, type PlanSituation } from '@/lib/degree-fee';
 import type { PresentedPlan } from '@/lib/degree-fee-server';
 import { brl } from '@/lib/currency';
 import { clampDateYear } from '@/lib/masks';
@@ -33,12 +33,14 @@ const nextMonthDay10 = () => {
 type Msg = { kind: 'ok' | 'error'; text: string } | null;
 
 export default function TaxasDeGrauClient({
-  plans, eligible, fees, asaasMode, prefill,
+  plans, eligible, fees, asaasMode, card, prefill,
 }: {
   plans: PresentedPlan[];
   eligible: EligibleMember[];
   fees: Record<DegreeFeeKind, number | null>;
   asaasMode: boolean;
+  /** Tarifas do cartão (Modo Asaas com cartão ligado); null = só Pix/boleto. */
+  card: CardFees | null;
   prefill: { memberId: string; kind: string };
 }) {
   const router = useRouter();
@@ -46,7 +48,8 @@ export default function TaxasDeGrauClient({
   const prefillKind = (DEGREE_FEE_KINDS.some((k) => k.kind === prefill.kind) ? prefill.kind : '') as DegreeFeeKind | '';
   const [tab, setTab] = useState<Tab>('open');
   const [creating, setCreating] = useState(Boolean(prefill.memberId));
-  const [form, setForm] = useState({ kind: prefillKind as DegreeFeeKind | '', memberId: prefill.memberId, fourth: '', installments: '1', firstDue: nextMonthDay10() });
+  const [form, setForm] = useState({ kind: prefillKind as DegreeFeeKind | '', memberId: prefill.memberId, fourth: '', installments: '1', firstDue: nextMonthDay10(), method: 'standard' as 'standard' | 'card' });
+  const [cardLink, setCardLink] = useState<{ name: string; url: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<Msg>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -62,7 +65,11 @@ export default function TaxasDeGrauClient({
 
   const total = form.kind ? fees[form.kind] : null;
   const n = Number(form.installments);
-  const preview = total && form.firstDue ? splitInstallments(total, n, new Date(form.firstDue)) : [];
+  const useCard = Boolean(card) && form.method === 'card';
+  const gross = useCard && total ? cardGrossUp(total, n, card!) : null;
+  const preview = total && form.firstDue
+    ? splitInstallments(total, n, new Date(form.firstDue)).map((c) => (gross?.ok ? { ...c, amount: gross.installmentValue } : c))
+    : [];
   const choices = eligible.filter((m) => m.kind === form.kind);
   const missingFees = DEGREE_FEE_KINDS.filter((k) => fees[k.kind] == null);
   const notify = (kind: 'ok' | 'error', text: string) => { setMessage({ kind, text }); window.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -85,17 +92,21 @@ export default function TaxasDeGrauClient({
     const label = DEGREE_FEE_KINDS.find((k) => k.kind === form.kind)!.label;
     if (!(await askConfirm({
       title: 'Criar plano',
-      message: `${label} de ${member.name}: ${brl(total)} em ${n === 1 ? '1 cota (à vista)' : `${n} cotas`}, 1º vencimento em ${formatDateOnly(form.firstDue)}. As cotas entram como cobranças do irmão${asaasMode ? ' e o Asaas emite cada uma perto do vencimento' : ''}.`,
+      message: useCard && gross?.ok
+        ? `${label} de ${member.name} no CARTÃO: ${n}x de ${brl(gross.installmentValue)} = ${brl(gross.total)} (taxa ${brl(total)} + repasse da tarifa do cartão ${brl(gross.surcharge)}). O Asaas cria o parcelamento agora e o sistema mostra o link para o irmão pagar.`
+        : `${label} de ${member.name}: ${brl(total)} em ${n === 1 ? '1 cota (à vista)' : `${n} cotas`}, 1º vencimento em ${formatDateOnly(form.firstDue)}. As cotas entram como cobranças do irmão${asaasMode ? ' e o Asaas emite cada uma perto do vencimento' : ''}.`,
       confirmLabel: 'Criar plano',
     }))) return;
     const data = await call('create', '/api/degree-fees', 'POST', {
       kind: form.kind, memberId: form.memberId, installments: n, firstDueDate: form.firstDue, fourthInstructionDate: form.kind === 'elevation' || form.kind === 'exaltation' ? form.fourth : '',
+      paymentMethod: useCard ? 'card' : 'standard',
     });
+    if (data?.cardUrl) setCardLink({ name: member.name, url: data.cardUrl });
     if (data) {
       setCreating(false);
       setExpanded(data.id);
       setTab('open');
-      notify('ok', 'Plano criado. Imprima o contrato para o irmão assinar.');
+      notify('ok', data.cardUrl ? 'Parcelamento no cartão criado no Asaas. Envie o link ao irmão e imprima o contrato para ele assinar.' : 'Plano criado. Imprima o contrato para o irmão assinar.');
     }
   }
 
@@ -146,6 +157,13 @@ export default function TaxasDeGrauClient({
         </div>
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        {cardLink ? (
+          <Alert intent="info">
+            Link para {cardLink.name} pagar no cartão:{' '}
+            <a href={cardLink.url} target="_blank" rel="noreferrer" className="break-all underline">{cardLink.url}</a>{' '}
+            <button type="button" className="underline" onClick={() => void navigator.clipboard?.writeText(cardLink.url)}>Copiar</button>
+          </Alert>
+        ) : null}
         {missingFees.length === DEGREE_FEE_KINDS.length ? (
           <Alert intent="warn">Configure os valores das taxas em Configurações da loja → Financeiro antes de criar planos.</Alert>
         ) : null}
@@ -171,29 +189,44 @@ export default function TaxasDeGrauClient({
                   <input type="date" required max={today()} value={form.fourth} onChange={(e) => setForm({ ...form, fourth: clampDateYear(e.target.value, form.fourth) })} className={inputClass} />
                 </Field>
               ) : null}
+              {card ? (
+                <Field label="Forma de pagamento">
+                  <select value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value as 'standard' | 'card' })} className={inputClass}>
+                    <option value="standard">Pix ou boleto por cota (sem acréscimo)</option>
+                    <option value="card">Cartão de crédito no Asaas (com repasse da tarifa)</option>
+                  </select>
+                </Field>
+              ) : null}
               <Field label="Parcelamento">
                 <select value={form.installments} onChange={(e) => setForm({ ...form, installments: e.target.value })} className={inputClass}>
                   {Array.from({ length: MAX_INSTALLMENTS }, (_, i) => i + 1).map((i) => <option key={i} value={i}>{i === 1 ? 'À vista (1 cota)' : `${i} cotas`}</option>)}
                 </select>
               </Field>
-              <Field label={n === 1 ? 'Vencimento' : 'Vencimento da 1ª cota'}>
+              <Field label={useCard ? 'Vencimento da 1ª parcela no Asaas' : n === 1 ? 'Vencimento' : 'Vencimento da 1ª cota'}>
                 <input type="date" required value={form.firstDue} onChange={(e) => setForm({ ...form, firstDue: clampDateYear(e.target.value, form.firstDue) })} className={inputClass} />
               </Field>
             </div>
             {preview.length > 0 ? (
               <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/40 p-4 text-sm">
-                <p className="text-sand-light">Total {brl(total!)} {n > 1 ? `em ${n} cotas` : 'à vista'}</p>
+                {useCard && gross && !gross.ok ? <p className="text-rose-300">{gross.error}</p> : null}
+                <p className="text-sand-light">
+                  {useCard && gross?.ok
+                    ? <>No cartão: {n}x de {brl(gross.installmentValue)} = {brl(gross.total)} <span className="text-sand-dark">(taxa {brl(total!)} + repasse da tarifa {brl(gross.surcharge)})</span></>
+                    : <>Total {brl(total!)} {n > 1 ? `em ${n} cotas` : 'à vista'}</>}
+                </p>
                 <ul className="mt-2 grid gap-1 text-xs text-sand-dark sm:grid-cols-2">
                   {preview.map((c) => <li key={c.number}>Cota {c.number}: {brl(c.amount)} — vence em {formatDateOnly(c.dueDate.toISOString())}</li>)}
                 </ul>
               </div>
             ) : null}
             <p className="text-xs text-sand-dark">
-              Cada cota vira uma cobrança comum do irmão: aparece no portal dele, pode ser paga {asaasMode ? 'pelo Pix ou boleto do Asaas (emitido perto do vencimento)' : 'pelo Pix da loja (sem cartão)'} e
-              entra nos lembretes. Ele pode quitar tudo antes — sem acréscimo.
+              {useCard
+                ? 'No cartão, o irmão paga uma vez pelo link do Asaas e o cartão é cobrado em parcelas; a loja recebe cada parcela mês a mês, já descontada a tarifa (que foi repassada a ele).'
+                : <>Cada cota vira uma cobrança comum do irmão: aparece no portal dele, pode ser paga {asaasMode ? 'pelo Pix ou boleto do Asaas (emitido perto do vencimento)' : 'pelo Pix da loja (sem cartão)'} e
+                  entra nos lembretes. Ele pode quitar tudo antes — sem acréscimo.</>}
             </p>
             <div className="flex gap-2">
-              <Button type="submit" disabled={busy !== null || !form.memberId || !total}>{busy === 'create' ? 'Criando…' : 'Criar plano'}</Button>
+              <Button type="submit" disabled={busy !== null || !form.memberId || !total || (useCard && !gross?.ok)}>{busy === 'create' ? 'Criando…' : 'Criar plano'}</Button>
               <Button type="button" variant="ghost" onClick={() => setCreating(false)}>Cancelar</Button>
             </div>
           </form>
@@ -230,11 +263,11 @@ export default function TaxasDeGrauClient({
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-sand-light">{p.member.name} <span className="font-normal text-sand-dark">· {p.label}</span></p>
                           <p className="mt-0.5 text-xs text-sand-dark">
-                            {brl(p.totalAmount)} em {p.installments === 1 ? '1 cota' : `${p.installments} cotas`} · pago {brl(s.paid)} · em aberto {brl(s.open)}
+                            {brl(p.totalAmount)} em {p.installments === 1 ? '1 cota' : `${p.installments} cotas`}{p.paymentMethod === 'card' ? ` no cartão (+ ${brl(p.cardSurcharge ?? 0)} de repasse da tarifa)` : ''} · pago {brl(s.paid)} · em aberto {brl(s.open)}
                             {p.expectedEventDate ? ` · ${p.event} prevista para ${formatDateOnly(p.expectedEventDate)}` : ''}
                           </p>
                           {s.overdue > 0 && s.situation !== 'canceled' ? <p className="mt-0.5 text-xs text-rose-300">{s.overdue} cota(s) vencida(s)</p> : null}
-                          {s.cotasAfterEvent > 0 && s.situation === 'open' ? <p className="mt-0.5 text-xs text-amber-300">{s.cotasAfterEvent} cota(s) vencem depois da data prevista da {p.event}</p> : null}
+                          {s.cotasAfterEvent > 0 && s.situation === 'open' && p.paymentMethod !== 'card' ? <p className="mt-0.5 text-xs text-amber-300">{s.cotasAfterEvent} cota(s) vencem depois da data prevista da {p.event}</p> : null}
                           {s.eventDoneWithBalance ? <p className="mt-0.5 text-xs text-amber-300">A {p.event} já foi registrada e o plano ainda tem saldo em aberto</p> : null}
                         </div>
                         <Badge variant={SITUATION_BADGE[s.situation]}>{PLAN_SITUATION_LABEL[s.situation]}</Badge>
@@ -268,12 +301,15 @@ export default function TaxasDeGrauClient({
                                 />
                               </Field>
                               <Button size="sm" variant="secondary" disabled={busy !== null || eventDraft[p.id] === undefined} onClick={() => void saveEventDate(p)}>Salvar data</Button>
-                              {s.cotasAfterEvent > 0 ? <Button size="sm" disabled={busy !== null} onClick={() => void anticipate(p)}>Antecipar cotas para a data</Button> : null}
+                              {s.cotasAfterEvent > 0 && p.paymentMethod !== 'card' ? <Button size="sm" disabled={busy !== null} onClick={() => void anticipate(p)}>Antecipar cotas para a data</Button> : null}
                             </div>
                           ) : null}
 
                           <div className="flex flex-wrap gap-2">
                             <Link href={`/dashboard/taxas-de-grau/${p.id}/contrato`} target="_blank" className="rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 hover:text-gold">Contrato (imprimir)</Link>
+                            {p.cardUrl && p.status === 'active' && s.open > 0 ? (
+                              <a href={p.cardUrl} target="_blank" rel="noreferrer" className="rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 hover:text-gold">Link do cartão (Asaas)</a>
+                            ) : null}
                             {p.status === 'active' && s.situation !== 'event_done' ? (
                               <Button size="sm" variant="ghost" onClick={() => setCancelDraft(cancelDraft?.id === p.id ? null : { id: p.id, reason: '' })}>Cancelar plano</Button>
                             ) : null}

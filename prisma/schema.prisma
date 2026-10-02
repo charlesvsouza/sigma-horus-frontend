@@ -62,6 +62,13 @@ model Lodge {
   elevationFee             Float?
   exaltationFee            Float?
   affiliationFee           Float?  // filiação / regularização
+  // Cartão parcelado nas taxas de grau (só Modo Asaas): a tarifa do cartão é repassada
+  // ao irmão (o valor cobrado é ajustado para a loja receber a taxa cheia). Os percentuais
+  // e o valor fixo são os do contrato da loja com o Asaas (variam por conta).
+  degreeFeeCardEnabled     Boolean @default(false)
+  cardFeePercentOneTime    Float?  // cartão à vista (1x), %
+  cardFeePercentInstallment Float? // cartão parcelado (2 a 6x), %
+  cardFeeFixed             Float?  // valor fixo por transação, R$
   // Emite automaticamente o balancete do mês anterior no dia 1 (cron mensal).
   autoBalanceteEnabled     Boolean @default(false)
   // Aplica a régua automática do Art. 002 (afastamento por mensalidade em
@@ -1190,6 +1197,11 @@ model DegreeFeePlan {
   fourthInstructionDate DateTime? // obrigatória para elevação/exaltação
   expectedEventDate     DateTime? // data prevista do evento (quando a loja marcar)
   status                String    @default("active") // active | canceled
+  // standard = cada cota é uma cobrança (Pix/boleto, sem acréscimo); card = parcelamento no
+  // cartão de crédito pelo Asaas, com a tarifa repassada (cotas já com o acréscimo).
+  paymentMethod         String    @default("standard")
+  cardSurcharge         Float?    // acréscimo total do repasse da tarifa do cartão
+  asaasInstallmentId    String?   // parcelamento no Asaas (cartão)
   canceledAt            DateTime?
   cancelReason          String?
   refundAccountId       String?   // conta a pagar da devolução, quando houve valor pago

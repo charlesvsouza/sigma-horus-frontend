@@ -174,3 +174,31 @@ export const PLAN_SITUATION_LABEL: Record<PlanSituation, string> = {
   paid: 'Quitado',
   open: 'Em pagamento',
 };
+
+// ---------------------------------------------------------------------------
+// Fase 2 — cartão parcelado (Modo Asaas) com repasse da tarifa ao irmão
+// ---------------------------------------------------------------------------
+
+export interface CardFees { percentOneTime: number | null; percentInstallment: number | null; fixed: number | null }
+
+/** Referência externa do parcelamento no Asaas: as parcelas repetem a mesma — o webhook acha a cota pelo id da parcela. */
+export const DEGREE_FEE_CARD_REF_PREFIX = 'dfp:';
+export const isDegreeFeeCardRef = (ref: string | null | undefined) => Boolean(ref && ref.startsWith(DEGREE_FEE_CARD_REF_PREFIX));
+
+/**
+ * Valor no cartão para a loja receber a taxa cheia: total = (taxa + fixo) / (1 − %),
+ * com a parcela arredondada PARA CIMA no centavo (a loja nunca recebe menos). A tarifa
+ * real é a que o Asaas cobrar (lançada na baixa); estes percentuais são os do contrato
+ * da loja, informados em Configurações.
+ */
+export function cardGrossUp(fee: number, installments: number, fees: CardFees): { ok: true; installmentValue: number; total: number; surcharge: number } | { ok: false; error: string } {
+  const pct = installments === 1 ? fees.percentOneTime : fees.percentInstallment;
+  if (pct == null || !(pct >= 0 && pct < 100)) {
+    return { ok: false, error: `Informe a tarifa do cartão ${installments === 1 ? 'à vista' : 'parcelado'} em Configurações da loja → Financeiro.` };
+  }
+  const fixed = fees.fixed ?? 0;
+  const gross = (fee + fixed) / (1 - pct / 100);
+  const installmentCents = Math.ceil(Math.round((gross / installments) * 1e6) / 1e4);
+  const totalCents = installmentCents * installments;
+  return { ok: true, installmentValue: installmentCents / 100, total: totalCents / 100, surcharge: (totalCents - Math.round(fee * 100)) / 100 };
+}

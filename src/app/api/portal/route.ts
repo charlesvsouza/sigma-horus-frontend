@@ -73,7 +73,7 @@ export async function GET() {
       db.account.findMany({
         where: { lodgeId: String(lodgeId), memberId: String(memberId) },
         select: {
-          id: true, title: true, type: true, amount: true, dueDate: true, status: true, memberId: true, approvalStatus: true,
+          id: true, title: true, type: true, amount: true, dueDate: true, status: true, memberId: true, approvalStatus: true, degreeFeePlan: { select: { paymentMethod: true } },
           chartAccount: { select: { name: true, category: true } },
           payments: { select: { id: true, amount: true, paidAt: true, method: true }, orderBy: { paidAt: 'asc' } },
         },
@@ -147,7 +147,7 @@ export async function GET() {
     db.degreeFeePlan.findMany({ where: { lodgeId: String(lodgeId), memberId: String(memberId), status: 'active' }, include: PLAN_INCLUDE, orderBy: { createdAt: 'desc' } }),
   )).map((p) => {
     const v = presentPlan(p, now);
-    return { id: v.id, label: v.label, event: v.event, totalAmount: v.totalAmount, installments: v.installments, expectedEventDate: v.expectedEventDate, paid: v.summary.paid, open: v.summary.open, situation: v.summary.situation };
+    return { id: v.id, label: v.label, event: v.event, totalAmount: v.totalAmount, installments: v.installments, expectedEventDate: v.expectedEventDate, paid: v.summary.paid, open: v.summary.open, situation: v.summary.situation, cardUrl: v.summary.open > 0 ? v.cardUrl : null };
   });
 
   const collection = lodge

@@ -131,3 +131,35 @@ export async function getAccountBalance(config: AsaasConfig, timeoutMs = 4000): 
   const data = await res.json();
   return Number(data?.balance ?? 0);
 }
+
+/**
+ * Parcelamento no cartão (taxas de grau, Fase 2): POST /v3/installments — `value` é o valor
+ * de CADA parcela. As parcelas viram cobranças próprias (GET /v3/installments/{id}/payments),
+ * todas com a mesma externalReference.
+ */
+export async function createInstallment(config: AsaasConfig, data: {
+  customer: string;
+  billingType: 'CREDIT_CARD';
+  installmentCount: number;
+  value: number;
+  dueDate: string;
+  description?: string;
+  externalReference?: string;
+}): Promise<{ id: string }> {
+  const res = await fetch(`${config.baseUrl}/installments`, { method: 'POST', headers: headers(config), body: JSON.stringify(data) });
+  if (!res.ok) throw new Error(`Asaas installment error: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+export async function listInstallmentPayments(config: AsaasConfig, installmentId: string): Promise<{ id: string; dueDate: string; value: number; invoiceUrl?: string | null; installmentNumber?: number | null }[]> {
+  const res = await fetch(`${config.baseUrl}/installments/${installmentId}/payments?limit=100`, { headers: headers(config) });
+  if (!res.ok) throw new Error(`Asaas installment payments error: ${res.status} ${await res.text()}`);
+  const body = await res.json();
+  return Array.isArray(body?.data) ? body.data : [];
+}
+
+export async function deleteInstallment(config: AsaasConfig, installmentId: string) {
+  const res = await fetch(`${config.baseUrl}/installments/${installmentId}`, { method: 'DELETE', headers: headers(config) });
+  if (!res.ok) throw new Error(`Asaas delete installment error: ${res.status} ${await res.text()}`);
+  return res.json();
+}

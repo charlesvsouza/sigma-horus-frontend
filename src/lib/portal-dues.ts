@@ -13,6 +13,8 @@ export interface PortalAccountLike {
   dueDate: Date | string;
   memberId?: string | null;
   approvalStatus?: string | null;
+  /** Cota de plano de taxa de grau: no cartão (paymentMethod 'card') não se paga por Pix. */
+  degreeFeePlan?: { paymentMethod: string } | null;
 }
 
 export function effectiveStatus(account: Pick<PortalAccountLike, 'status' | 'dueDate'>, now: Date = new Date()): EffectiveStatus {
@@ -32,6 +34,8 @@ export function openBalance(account: Pick<PortalAccountLike, 'amount' | 'status'
  */
 export function canPay(account: PortalAccountLike, memberId: string, balance: number): boolean {
   return (
+    // Cota de taxa de grau no cartão: paga pelo link do parcelamento no Asaas, não por Pix.
+    account.degreeFeePlan?.paymentMethod !== 'card' &&
     account.type === 'RECEIVABLE' &&
     account.memberId === memberId &&
     (account.approvalStatus ?? 'approved') === 'approved' &&

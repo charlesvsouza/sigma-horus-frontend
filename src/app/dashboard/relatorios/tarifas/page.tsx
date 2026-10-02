@@ -34,7 +34,7 @@ export default async function TarifasPage(props: { searchParams: Promise<{ from?
       db.lodge.findUnique({ where: { id: lid }, select: { name: true, crestUrl: true, collectionMode: true } }),
       db.payment.findMany({
         where: { lodgeId: lid, method: 'asaas', paidAt: { gte: from, lte: to } },
-        select: { id: true, amount: true, paidAt: true, note: true, accountId: true, member: { select: { name: true } } },
+        select: { id: true, amount: true, paidAt: true, note: true, accountId: true, member: { select: { name: true } }, account: { select: { degreeFeePlan: { select: { paymentMethod: true, cardSurcharge: true, installments: true } } } } },
         orderBy: { paidAt: 'desc' },
       }),
     ]);
@@ -55,6 +55,11 @@ export default async function TarifasPage(props: { searchParams: Promise<{ from?
   const rows: FeeRow[] = data.payments.map((p) => {
     const asaasId = asaasIdFromNote(p.note) ?? '';
     const inv = byAsaasAndAccount.get(`${asaasId}|${p.accountId}`) ?? byAsaasId.get(asaasId);
+    // Taxa de grau no cartão (Fase 2): a tarifa foi repassada ao irmão — a parte desta parcela.
+    const plan = p.account?.degreeFeePlan;
+    const cardPlan = plan?.paymentMethod === 'card';
+    const fee = inv?.asaasFee != null ? Number(inv.asaasFee) : null;
+    const passedOn = cardPlan && fee != null ? Math.min(fee, Math.round(((plan?.cardSurcharge ?? 0) / Math.max(1, plan?.installments ?? 1)) * 100) / 100) : 0;
     return {
       id: p.id,
       date: p.paidAt,
@@ -62,8 +67,9 @@ export default async function TarifasPage(props: { searchParams: Promise<{ from?
       memberName: p.member?.name ?? null,
       method: inv?.asaasBillingType ?? null,
       gross: Number(p.amount),
-      fee: inv?.asaasFee != null ? Number(inv.asaasFee) : null,
-      passedOn: 0, // política atual: a loja absorve a tarifa
+      fee,
+      passedOn, // a loja absorve a tarifa, exceto no cartão das taxas de grau (repassada)
+      cardPlan,
     };
   });
 

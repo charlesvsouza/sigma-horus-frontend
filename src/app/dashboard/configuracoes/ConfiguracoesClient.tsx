@@ -388,6 +388,24 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
                 <Field label="Taxa de Exaltação (R$)" value={form.exaltationFee} onChange={(v) => set('exaltationFee', v)} type="number" step="0.01" min="0" placeholder="Ex.: 800" />
                 <Field label="Taxa de Filiação / Regularização (R$)" value={form.affiliationFee} onChange={(v) => set('affiliationFee', v)} type="number" step="0.01" min="0" placeholder="Ex.: 500" />
               </div>
+              <label className="mt-4 flex items-start gap-2 text-sm text-sand">
+                <input type="checkbox" checked={form.degreeFeeCardEnabled === 'true'} onChange={(e) => set('degreeFeeCardEnabled', String(e.target.checked))} className="mt-0.5" />
+                <span>
+                  Aceitar cartão de crédito parcelado nas taxas de grau (Modo Asaas)
+                  <span className="mt-0.5 block text-xs text-sand-dark">
+                    O irmão paga no cartão, em até 6x, pelo link do Asaas, e a tarifa do cartão é repassada a ele: o valor cobrado é ajustado para a
+                    loja receber a taxa cheia. Pix e boleto continuam sem acréscimo. Informe as tarifas do contrato da loja com o Asaas (variam por conta;
+                    confira no painel do Asaas). No Modo Loja não há cartão.
+                  </span>
+                </span>
+              </label>
+              {form.degreeFeeCardEnabled === 'true' ? (
+                <div className="mt-3 grid gap-4 md:grid-cols-3">
+                  <Field label="Tarifa do cartão à vista (%)" value={form.cardFeePercentOneTime} onChange={(v) => set('cardFeePercentOneTime', v)} type="number" step="0.01" min="0" placeholder="Ex.: 2.99" />
+                  <Field label="Tarifa do cartão parcelado 2 a 6x (%)" value={form.cardFeePercentInstallment} onChange={(v) => set('cardFeePercentInstallment', v)} type="number" step="0.01" min="0" placeholder="Ex.: 3.49" />
+                  <Field label="Valor fixo por transação (R$)" value={form.cardFeeFixed} onChange={(v) => set('cardFeeFixed', v)} type="number" step="0.01" min="0" placeholder="Ex.: 0.49" />
+                </div>
+              ) : null}
             </div>
             <label className="mt-4 flex items-start gap-2 text-sm text-sand">
               <input type="checkbox" checked={form.chargeLateFeesOnPix === 'true'} onChange={(e) => set('chargeLateFeesOnPix', String(e.target.checked))} className="mt-0.5" />

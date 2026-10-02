@@ -66,6 +66,8 @@ interface DegreeFeePlanItem {
   paid: number;
   open: number;
   situation: 'open' | 'paid_waiting' | 'paid' | 'event_done' | 'canceled';
+  /** Plano no cartão (Modo Asaas): link do parcelamento para pagar. */
+  cardUrl?: string | null;
 }
 
 interface DocumentItem {
@@ -387,6 +389,9 @@ export default function PortalPage() {
                   <p className="mt-1 text-xs text-sand-dark">
                     {p.expectedEventDate ? `${p.event[0].toUpperCase()}${p.event.slice(1)} prevista para ${formatDateOnly(p.expectedEventDate)} — a taxa deve estar quitada até lá.` : `Deve estar quitada até a data da ${p.event}. Pode antecipar as cotas sem acréscimo.`}
                   </p>
+                  {p.cardUrl ? (
+                    <a href={p.cardUrl} target="_blank" rel="noreferrer" className="mt-2 mr-4 inline-flex rounded-full border border-gold/40 px-4 py-1.5 text-xs font-medium text-gold hover:text-gold-light">Pagar no cartão</a>
+                  ) : null}
                   <a href={`/dashboard/taxas-de-grau/${p.id}/contrato`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-gold hover:text-gold-light">Ver o termo de compromisso</a>
                 </div>
               ))}

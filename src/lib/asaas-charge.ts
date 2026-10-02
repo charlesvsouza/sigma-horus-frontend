@@ -56,7 +56,7 @@ export async function emitInvoiceCharge(params: {
       where: { id: lodgeId },
       select: { asaasApiKeyEnc: true, asaasEnv: true, collectionMode: true, asaasSettlementAccountId: true, asaasBillingType: true },
     });
-    const invoice = await db.invoice.findFirst({ where: { id: invoiceId, lodgeId }, include: { member: true } });
+    const invoice = await db.invoice.findFirst({ where: { id: invoiceId, lodgeId }, include: { member: true, account: { select: { degreeFeePlan: { select: { paymentMethod: true } } } } } });
     return { lodge, invoice };
   });
 
@@ -75,6 +75,11 @@ export async function emitInvoiceCharge(params: {
   if (!config) return { ok: false, status: 409, error: 'Asaas não conectado para esta loja. Configure em Integrações.' };
   const invoice = ctx.invoice;
   if (!invoice) return { ok: false, status: 404, error: 'Cobrança não encontrada.' };
+  // Cota de taxa de grau no cartão é parcela de um parcelamento do Asaas: reemitir em Pix/boleto
+  // cancelaria a parcela e desmancharia o parcelamento. O pagamento é pelo link do cartão.
+  if (invoice.account?.degreeFeePlan?.paymentMethod === 'card') {
+    return { ok: false, status: 409, error: 'Esta cota é de um parcelamento no cartão de crédito: o irmão paga pelo link do cartão (Taxas de grau).' };
+  }
   const member = invoice.member;
   if (!member) return { ok: false, status: 400, error: 'A cobrança precisa estar vinculada a um membro.' };
   if (!member.cpf) return { ok: false, status: 400, error: params.missingCpfError ?? 'O membro precisa ter CPF/CNPJ cadastrado para emitir no Asaas.' };

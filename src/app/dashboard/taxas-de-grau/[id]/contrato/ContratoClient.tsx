@@ -41,13 +41,20 @@ export default function ContratoClient({
               compromete-se a pagar à <strong>{letterhead.name}</strong> a <strong>{plan.label.toLowerCase()}</strong> no valor total de{' '}
               <strong>{brl(plan.totalAmount)}</strong>, {n === 1 ? 'à vista' : <>em <strong>{n} cotas</strong> mensais</>}, conforme o quadro abaixo.
             </p>
+            {plan.paymentMethod === 'card' ? (
+              <p className="indent-8">
+                O pagamento será feito no <strong>cartão de crédito</strong>, pela plataforma de cobrança da Loja (Asaas), em {n}x. A tarifa do cartão é
+                repassada ao {party.toLowerCase()}: ao valor da taxa somam-se <strong>{brl(plan.cardSurcharge ?? 0)}</strong>, totalizando{' '}
+                <strong>{brl(plan.totalAmount + (plan.cardSurcharge ?? 0))}</strong>. Por Pix ou boleto, não haveria acréscimo.
+              </p>
+            ) : null}
             <table>
               <thead><tr><th>Cota</th><th>Vencimento</th><th className="num">Valor</th></tr></thead>
               <tbody>
                 {plan.cotas.map((c, i) => (
                   <tr key={c.id}><td>{n === 1 ? 'Única' : `${i + 1}/${n}`}</td><td>{formatDateOnly(c.dueDate)}</td><td className="num">{brl(c.amount)}</td></tr>
                 ))}
-                <tr className="rpt-total"><td colSpan={2}>Total</td><td className="num">{brl(plan.totalAmount)}</td></tr>
+                <tr className="rpt-total"><td colSpan={2}>Total</td><td className="num">{brl(plan.cotas.reduce((sum, c) => sum + c.amount, 0))}</td></tr>
               </tbody>
             </table>
             <ol className="list-decimal space-y-2 pl-6">

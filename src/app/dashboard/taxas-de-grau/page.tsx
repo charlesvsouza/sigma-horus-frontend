@@ -22,7 +22,7 @@ export default async function TaxasDeGrauPage({ searchParams }: { searchParams: 
   if (!canManageDegreeFees(session?.user?.role)) return denied('Acesso restrito ao Administrador, ao Venerável e ao Tesoureiro.');
 
   const data = await withTenant(lodgeId, async (db) => ({
-    lodge: await db.lodge.findUnique({ where: { id: lodgeId }, select: { initiationFee: true, elevationFee: true, exaltationFee: true, affiliationFee: true, collectionMode: true } }),
+    lodge: await db.lodge.findUnique({ where: { id: lodgeId }, select: { initiationFee: true, elevationFee: true, exaltationFee: true, affiliationFee: true, collectionMode: true, degreeFeeCardEnabled: true, cardFeePercentOneTime: true, cardFeePercentInstallment: true, cardFeeFixed: true } }),
     plans: await db.degreeFeePlan.findMany({ where: { lodgeId }, include: PLAN_INCLUDE, orderBy: { createdAt: 'desc' } }),
     members: await db.member.findMany({
       where: { lodgeId, deceased: false, OR: [{ status: 'candidate', candidateProcess: { is: { closedAt: null, initiatedAt: null } } }, { status: { not: 'candidate' } }] },
@@ -60,6 +60,11 @@ export default async function TaxasDeGrauPage({ searchParams }: { searchParams: 
       eligible={eligible}
       fees={fees}
       asaasMode={normalizeCollectionMode(data.lodge?.collectionMode) === 'asaas'}
+      card={
+        normalizeCollectionMode(data.lodge?.collectionMode) === 'asaas' && data.lodge?.degreeFeeCardEnabled
+          ? { percentOneTime: data.lodge.cardFeePercentOneTime, percentInstallment: data.lodge.cardFeePercentInstallment, fixed: data.lodge.cardFeeFixed }
+          : null
+      }
       prefill={{ memberId: sp.membro ?? '', kind: sp.taxa ?? '' }}
     />
   );

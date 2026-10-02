@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canManageDegreeFees, checkEligibility, installmentTitle, degreeFeeKind, splitInstallments, summarizePlan } from './degree-fee.ts';
+import { canManageDegreeFees, cardGrossUp, checkEligibility, installmentTitle, degreeFeeKind, isDegreeFeeCardRef, splitInstallments, summarizePlan } from './degree-fee.ts';
 
 const d = (s: string) => new Date(s);
 const TODAY = d('2026-10-02');
@@ -96,4 +96,24 @@ test('candidato de filiação paga filiação, não iniciação (e vice-versa)',
   assert.equal(checkEligibility('initiation', { status: 'candidate', admissionKind: 'affiliation' }, null, TODAY).ok, false);
   assert.equal(checkEligibility('affiliation', { status: 'candidate', admissionKind: 'initiation' }, null, TODAY).ok, false);
   assert.equal(checkEligibility('affiliation', { status: 'art_002', initiationDate: d('2015-01-01') }, null, TODAY).ok, true); // regularização
+});
+
+test('cartão: repasse da tarifa faz a loja receber a taxa cheia', () => {
+  const fees = { percentOneTime: 2.99, percentInstallment: 3.49, fixed: 0.49 };
+  const r = cardGrossUp(1000, 6, fees);
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  // líquido estimado = total × (1 − 3,49%) − 0,49 ≥ 1000
+  assert.ok(r.total * (1 - 0.0349) - 0.49 >= 1000);
+  assert.ok(r.total * (1 - 0.0349) - 0.49 < 1000.1);
+  assert.equal(Math.round(r.total * 100), Math.round(r.installmentValue * 100) * 6);
+  assert.equal(Math.round((r.total - 1000) * 100), Math.round(r.surcharge * 100));
+  const vista = cardGrossUp(1000, 1, fees);
+  assert.ok(vista.ok && vista.total < r.total); // à vista no cartão usa a tarifa menor
+});
+
+test('cartão: sem tarifa configurada, recusa; referência do parcelamento', () => {
+  assert.equal(cardGrossUp(1000, 3, { percentOneTime: 2.99, percentInstallment: null, fixed: null }).ok, false);
+  assert.equal(isDegreeFeeCardRef('dfp:abc'), true);
+  assert.equal(isDegreeFeeCardRef('inv123'), false);
 });

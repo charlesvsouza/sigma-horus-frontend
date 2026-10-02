@@ -4,9 +4,13 @@ import { nextInvoiceNumbers } from '@/lib/charges';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { isValidMoney } from '@/lib/money';
 import {
-  DEGREE_FEE_REFUND_CHART, MAX_INSTALLMENTS, checkEligibility, degreeFeeKind, installmentTitle, splitInstallments, summarizePlan,
-  type DegreeFeeKind,
+  DEGREE_FEE_CARD_REF_PREFIX, DEGREE_FEE_REFUND_CHART, MAX_INSTALLMENTS, cardGrossUp, checkEligibility, degreeFeeKind, installmentTitle,
+  splitInstallments, summarizePlan, type DegreeFeeKind,
 } from '@/lib/degree-fee';
+import { createCustomer, createInstallment, deleteInstallment, listInstallmentPayments } from '@/lib/asaas';
+import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
+import { isAsaasMode } from '@/lib/collection';
+import { withTenant } from '@/lib/prisma';
 
 type Db = Prisma.TransactionClient;
 type Fail = { ok: false; status: number; error: string };
@@ -35,6 +39,8 @@ export interface CreatePlanInput {
   firstDueDate: Date;
   fourthInstructionDate: Date | null;
   notes?: string | null;
+  /** standard = Pix/boleto por cota; card = cartão parcelado no Asaas, com repasse da tarifa. */
+  paymentMethod?: 'standard' | 'card';
 }
 
 /**
@@ -50,17 +56,34 @@ export async function createDegreeFeePlan(db: Db, input: CreatePlanInput): Promi
   if (!(n >= 1 && n <= MAX_INSTALLMENTS)) return { ok: false, status: 400, error: `Parcelamento de 1 a ${MAX_INSTALLMENTS} cotas.` };
   if (Number.isNaN(input.firstDueDate.getTime())) return { ok: false, status: 400, error: 'Informe o vencimento da 1ª cota.' };
 
-  const lodge = await db.lodge.findUnique({ where: { id: input.lodgeId }, select: { initiationFee: true, elevationFee: true, exaltationFee: true, affiliationFee: true } });
+  const lodge = await db.lodge.findUnique({
+    where: { id: input.lodgeId },
+    select: {
+      initiationFee: true, elevationFee: true, exaltationFee: true, affiliationFee: true,
+      collectionMode: true, asaasApiKeyEnc: true, asaasSettlementAccountId: true,
+      degreeFeeCardEnabled: true, cardFeePercentOneTime: true, cardFeePercentInstallment: true, cardFeeFixed: true,
+    },
+  });
   const total = lodge?.[def.lodgeField] ?? null;
   if (total == null || !isValidMoney(total)) {
     return { ok: false, status: 400, error: `Configure o valor da ${def.label.toLowerCase()} em Configurações da loja → Financeiro.` };
   }
 
+  const card = input.paymentMethod === 'card';
+  if (card) {
+    // Cartão só no Modo Asaas (no Modo Loja não há cartão) e se a loja ligou a opção.
+    if (!isAsaasMode(lodge)) return { ok: false, status: 409, error: 'Cartão de crédito só no Modo Asaas. No Modo Loja, as cotas são pagas por Pix.' };
+    if (!lodge?.degreeFeeCardEnabled) return { ok: false, status: 409, error: 'Ligue o cartão parcelado nas taxas de grau em Configurações da loja → Financeiro.' };
+    if (!lodge.asaasApiKeyEnc) return { ok: false, status: 409, error: 'Asaas não conectado para esta loja. Configure em Integrações.' };
+    if (!lodge.asaasSettlementAccountId) return { ok: false, status: 409, error: 'Escolha a conta corrente que recebe o repasse do Asaas em Configurações da loja → Recebimento das cobranças.' };
+  }
+
   const member = await db.member.findFirst({
     where: { id: input.memberId, lodgeId: input.lodgeId },
-    select: { id: true, name: true, status: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true, candidateProcess: { select: { admissionKind: true } } },
+    select: { id: true, name: true, status: true, cpf: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true, candidateProcess: { select: { admissionKind: true } } },
   });
   if (!member) return { ok: false, status: 404, error: 'Irmão não encontrado.' };
+  if (card && !member.cpf) return { ok: false, status: 400, error: 'Para pagar no cartão pelo Asaas, o irmão precisa ter CPF no cadastro.' };
   const eligible = checkEligibility(def.kind, { ...member, admissionKind: member.candidateProcess?.admissionKind ?? null }, input.fourthInstructionDate);
   if (!eligible.ok) return { ok: false, status: 400, error: eligible.error };
 
@@ -72,7 +95,15 @@ export async function createDegreeFeePlan(db: Db, input: CreatePlanInput): Promi
 
   const chartAccountId = await ensureChart(db, input.lodgeId, def.chart);
   if (!chartAccountId) return chartConflict(def.chart);
-  const cotas = splitInstallments(total, n, input.firstDueDate);
+  let cotas = splitInstallments(total, n, input.firstDueDate);
+  let cardSurcharge: number | null = null;
+  if (card) {
+    const gross = cardGrossUp(total, n, { percentOneTime: lodge!.cardFeePercentOneTime, percentInstallment: lodge!.cardFeePercentInstallment, fixed: lodge!.cardFeeFixed });
+    if (!gross.ok) return { ok: false, status: 400, error: gross.error };
+    // Cotas no cartão já com o repasse: o Asaas cobra o valor cheio e a tarifa real sai como despesa na baixa.
+    cotas = cotas.map((c) => ({ ...c, amount: gross.installmentValue }));
+    cardSurcharge = gross.surcharge;
+  }
   const plan = await db.degreeFeePlan.create({
     data: {
       lodgeId: input.lodgeId,
@@ -82,13 +113,17 @@ export async function createDegreeFeePlan(db: Db, input: CreatePlanInput): Promi
       installments: n,
       firstDueDate: input.firstDueDate,
       fourthInstructionDate: def.kind === 'elevation' || def.kind === 'exaltation' ? input.fourthInstructionDate : null,
+      paymentMethod: card ? 'card' : 'standard',
+      cardSurcharge,
       notes: input.notes?.trim() || null,
       createdById: input.userId,
     },
     select: { id: true },
   });
   const numbers = await nextInvoiceNumbers(db, input.lodgeId, n);
-  const description = `Plano da ${def.label.toLowerCase()}: deve estar quitada até a data da ${def.event}.`;
+  const description = card
+    ? `Plano da ${def.label.toLowerCase()} no cartão de crédito (${n}x, com repasse da tarifa do cartão).`
+    : `Plano da ${def.label.toLowerCase()}: deve estar quitada até a data da ${def.event}.`;
   for (const [i, c] of cotas.entries()) {
     const account = await db.account.create({
       data: {
@@ -101,7 +136,7 @@ export async function createDegreeFeePlan(db: Db, input: CreatePlanInput): Promi
       data: { lodgeId: input.lodgeId, accountId: account.id, memberId: member.id, number: numbers[i], amount: c.amount, dueDate: c.dueDate, description },
     });
   }
-  await logAudit(db, { lodgeId: input.lodgeId, userId: input.userId, action: 'CREATE', entity: 'degreeFeePlan', entityId: plan.id, metadata: { member: member.name, kind: def.kind, total, installments: n } });
+  await logAudit(db, { lodgeId: input.lodgeId, userId: input.userId, action: 'CREATE', entity: 'degreeFeePlan', entityId: plan.id, metadata: { member: member.name, kind: def.kind, total, installments: n, paymentMethod: card ? 'card' : 'standard', cardSurcharge } });
   return { ok: true, planId: plan.id };
 }
 
@@ -112,7 +147,7 @@ export const PLAN_INCLUDE = {
     select: {
       id: true, title: true, amount: true, dueDate: true, status: true,
       payments: { select: { amount: true, paidAt: true } },
-      invoices: { select: { id: true, number: true, asaasPaymentId: true, status: true } },
+      invoices: { select: { id: true, number: true, asaasPaymentId: true, asaasInvoiceUrl: true, status: true } },
     },
     orderBy: { dueDate: 'asc' as const },
   },
@@ -136,6 +171,8 @@ export function presentPlan(p: PlanRow, today: Date = new Date()) {
     id: p.id, kind: p.kind, label: def.label, event: def.event,
     member: { id: p.member.id, name: p.member.name },
     totalAmount: Number(p.totalAmount), installments: p.installments,
+    paymentMethod: p.paymentMethod, cardSurcharge: p.cardSurcharge == null ? null : Number(p.cardSurcharge),
+    cardUrl: p.paymentMethod === 'card' ? (p.accounts.flatMap((a) => a.invoices).find((i) => i.asaasInvoiceUrl)?.asaasInvoiceUrl ?? null) : null,
     firstDueDate: p.firstDueDate.toISOString(),
     fourthInstructionDate: p.fourthInstructionDate?.toISOString() ?? null,
     expectedEventDate: p.expectedEventDate?.toISOString() ?? null,
@@ -157,6 +194,8 @@ export async function anticipateToEvent(db: Db, lodgeId: string, planId: string,
   if (!plan.expectedEventDate) return { ok: false, status: 400, error: 'Informe antes a data prevista do evento.' };
   const event = plan.expectedEventDate;
   let moved = 0, skipped = 0;
+  // Cartão: o Asaas cobra o parcelamento inteiro de uma vez no cartão — não há o que antecipar.
+  if (plan.paymentMethod === 'card') return { ok: true, moved: 0, skipped: 0 };
   for (const a of plan.accounts) {
     const paid = a.payments.reduce((s, x) => s + Number(x.amount), 0);
     if (a.status === 'paid' || paid >= Number(a.amount) || a.dueDate.getTime() <= event.getTime()) continue;
@@ -233,3 +272,68 @@ export async function cancelPlan(db: Db, input: { lodgeId: string; planId: strin
 }
 
 export const DEGREE_FEE_KINDS_ORDER: DegreeFeeKind[] = ['initiation', 'elevation', 'exaltation', 'affiliation'];
+
+/**
+ * Fase 2: emite no Asaas o parcelamento no cartão do plano recém-criado e liga cada parcela
+ * do Asaas a uma cota (Invoice.asaasPaymentId + link). Rede fora de transação. Se o Asaas
+ * recusar, o plano é desfeito — nada fica meio criado.
+ */
+export async function emitCardInstallment(lodgeId: string, planId: string): Promise<{ ok: true; url: string | null } | Fail> {
+  const ctx = await withTenant(lodgeId, async (db) => ({
+    lodge: await db.lodge.findUnique({ where: { id: lodgeId }, select: { asaasApiKeyEnc: true, asaasEnv: true } }),
+    plan: await db.degreeFeePlan.findFirst({
+      where: { id: planId, lodgeId },
+      include: {
+        member: { select: { id: true, name: true, email: true, phone: true, cpf: true, asaasCustomerId: true } },
+        accounts: { where: { type: 'RECEIVABLE' }, select: { id: true, title: true, amount: true, dueDate: true, invoices: { select: { id: true } } }, orderBy: { dueDate: 'asc' } },
+      },
+    }),
+  }));
+  const config = buildLodgeAsaasConfig(ctx.lodge);
+  const plan = ctx.plan;
+  if (!config || !plan) return { ok: false, status: 409, error: 'Asaas não conectado ou plano não encontrado.' };
+  const def = degreeFeeKind(plan.kind)!;
+
+  let installmentId: string | null = null;
+  try {
+    let customerId = plan.member.asaasCustomerId;
+    if (!customerId) {
+      const customer = await createCustomer(config, { name: plan.member.name, email: plan.member.email ?? undefined, cpfCnpj: plan.member.cpf!, phone: plan.member.phone ?? undefined });
+      customerId = customer?.id ?? null;
+      if (!customerId) throw new Error('Falha ao criar o cliente no Asaas.');
+      await withTenant(lodgeId, (db) => db.member.update({ where: { id: plan.member.id }, data: { asaasCustomerId: customerId } }));
+    }
+    const created = await createInstallment(config, {
+      customer: customerId,
+      billingType: 'CREDIT_CARD',
+      installmentCount: plan.installments,
+      value: Number(plan.accounts[0].amount),
+      dueDate: plan.firstDueDate.toISOString().slice(0, 10),
+      description: `${def.label} — ${plan.installments}x no cartão`,
+      externalReference: `${DEGREE_FEE_CARD_REF_PREFIX}${plan.id}`,
+    });
+    installmentId = created.id;
+    const payments = (await listInstallmentPayments(config, created.id)).sort((a, b) => (a.installmentNumber ?? 0) - (b.installmentNumber ?? 0) || a.dueDate.localeCompare(b.dueDate));
+    if (payments.length !== plan.accounts.length) throw new Error(`O Asaas gerou ${payments.length} parcelas para ${plan.accounts.length} cotas.`);
+
+    await withTenant(lodgeId, async (db) => {
+      for (const [i, a] of plan.accounts.entries()) {
+        const pay = payments[i];
+        const due = new Date(`${pay.dueDate}T00:00:00.000Z`);
+        await db.account.update({ where: { id: a.id }, data: { dueDate: due } });
+        await db.invoice.updateMany({ where: { accountId: a.id, lodgeId }, data: { asaasPaymentId: pay.id, asaasInvoiceUrl: pay.invoiceUrl ?? null, dueDate: due } });
+      }
+      await db.degreeFeePlan.update({ where: { id: plan.id }, data: { asaasInstallmentId: created.id } });
+    });
+    return { ok: true, url: payments[0]?.invoiceUrl ?? null };
+  } catch (error) {
+    if (installmentId) await deleteInstallment(config, installmentId).catch(() => {});
+    await withTenant(lodgeId, async (db) => {
+      await db.invoice.deleteMany({ where: { lodgeId, account: { degreeFeePlanId: plan.id } } });
+      await db.account.deleteMany({ where: { lodgeId, degreeFeePlanId: plan.id } });
+      await db.degreeFeePlan.delete({ where: { id: plan.id } });
+    });
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, status: 502, error: `O Asaas não criou o parcelamento no cartão (${message}). Nada foi gravado — tente de novo.` };
+  }
+}
