@@ -11,12 +11,20 @@ import {
 type Db = Prisma.TransactionClient;
 type Fail = { ok: false; status: number; error: string };
 
-async function ensureChart(db: Db, lodgeId: string, seed: { code: string; name: string; type: string; category: string }) {
-  return (
-    (await db.chartAccount.findFirst({ where: { lodgeId, code: seed.code }, select: { id: true } })) ??
-    (await db.chartAccount.create({ data: { lodgeId, ...seed }, select: { id: true } }))
-  ).id;
+/**
+ * Categoria do plano de contas pelo código (a da loja, com o nome que ela tiver);
+ * cria com o nome padrão se faltar. Código ocupado por categoria de OUTRO tipo
+ * (ex.: despesa no 1.1.08) devolve null — melhor recusar do que lançar na categoria errada.
+ */
+async function ensureChart(db: Db, lodgeId: string, seed: { code: string; name: string; type: string; category: string }): Promise<string | null> {
+  const found = await db.chartAccount.findFirst({ where: { lodgeId, code: seed.code }, select: { id: true, type: true } });
+  if (found) return found.type === seed.type ? found.id : null;
+  return (await db.chartAccount.create({ data: { lodgeId, ...seed }, select: { id: true } })).id;
 }
+const chartConflict = (seed: { code: string; name: string }): Fail => ({
+  ok: false, status: 409,
+  error: `O código ${seed.code} do plano de contas está em uso por uma categoria de outro tipo. Ajuste em Cadastros financeiros (o sistema usa ${seed.code} para "${seed.name}").`,
+});
 
 export interface CreatePlanInput {
   lodgeId: string;
@@ -63,6 +71,7 @@ export async function createDegreeFeePlan(db: Db, input: CreatePlanInput): Promi
   if (locked) return { ok: false, status: 409, error: `Período encerrado (${locked.title}). Escolha um vencimento depois do veneralato fechado.` };
 
   const chartAccountId = await ensureChart(db, input.lodgeId, def.chart);
+  if (!chartAccountId) return chartConflict(def.chart);
   const cotas = splitInstallments(total, n, input.firstDueDate);
   const plan = await db.degreeFeePlan.create({
     data: {
@@ -190,6 +199,9 @@ export async function cancelPlan(db: Db, input: { lodgeId: string; planId: strin
     }
     refundCents += paidCents;
   }
+  const refundChartId = refundCents > 0 ? await ensureChart(db, lodgeId, DEGREE_FEE_REFUND_CHART) : null;
+  if (refundCents > 0 && !refundChartId) return chartConflict(DEGREE_FEE_REFUND_CHART);
+
   for (const a of plan.accounts) {
     if (a.payments.length > 0) continue;
     await db.invoice.deleteMany({ where: { accountId: a.id, lodgeId } });
@@ -199,7 +211,7 @@ export async function cancelPlan(db: Db, input: { lodgeId: string; planId: strin
   let refundAccountId: string | null = null;
   const refund = refundCents / 100;
   if (refundCents > 0) {
-    const chartAccountId = await ensureChart(db, lodgeId, DEGREE_FEE_REFUND_CHART);
+    const chartAccountId = refundChartId;
     const lodge = await db.lodge.findUnique({ where: { id: lodgeId }, select: { expenseApprovalThreshold: true } });
     const threshold = lodge?.expenseApprovalThreshold;
     const today = new Date();
