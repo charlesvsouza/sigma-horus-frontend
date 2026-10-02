@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.75</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.76</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.75 — 2 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.76 — 2 de outubro de 2026</p>
               </div>
             </div>
 
@@ -1572,7 +1572,7 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li><strong>Valores:</strong> em <UI>Configurações da loja → Financeiro → Taxas de grau</UI>. O plano guarda o valor do dia em que é criado: um reajuste depois não muda planos já feitos (o irmão não paga diferença).</li>
-                  <li><strong>Quem pode contratar:</strong> iniciação — o candidato (também pelo atalho na ficha dele em Candidatos); elevação — o Aprendiz; exaltação — o Companheiro; filiação/regularização — qualquer obreiro cadastrado (já é maçom, de qualquer grau). Elevação e exaltação antecipadas só a partir da <strong>4ª instrução</strong> do grau atual: informe a data dela ao criar o plano.</li>
+                  <li><strong>Quem pode contratar:</strong> iniciação — o candidato (também pelo atalho na ficha dele em Candidatos); elevação — o Aprendiz; exaltação — o Companheiro; filiação/regularização — o candidato de filiação (processo do tipo Filiação em Candidatos) ou o obreiro cadastrado que se regulariza (afastado, Quit Placet, Placet Ex Officio, Art. 002 — a situação aparece ao lado do nome). Elevação e exaltação antecipadas só a partir da <strong>4ª instrução</strong> do grau atual: informe a data dela ao criar o plano.</li>
                   <li><strong>Novo plano:</strong> taxa, irmão, data da 4ª instrução, número de cotas (1 = à vista) e o 1º vencimento; a prévia mostra cada cota. Cada cota vira uma cobrança comum do irmão: aparece no portal dele, entra nos lembretes e, no Modo Asaas, é emitida (Pix ou boleto) perto do vencimento. Cartão não é aceito no Modo Loja.</li>
                   <li><strong>Contrato:</strong> <UI>Contrato (imprimir)</UI> gera o termo de compromisso no papel timbrado, com as cotas e as cláusulas (valor fixo, quitação até o evento, antecipação sem acréscimo, devolução se o evento não acontecer), para o irmão, o Tesoureiro e o Venerável assinarem. O irmão também abre o termo pelo portal.</li>
                   <li><strong>Data do evento:</strong> quando a loja marcar a cerimônia, informe a <UI>Data prevista</UI> no plano. Se houver cotas vencendo depois dela, aparece o aviso e o botão <UI>Antecipar cotas para a data</UI> (cotas já emitidas no Asaas ficam como estão — vencem em poucos dias).</li>
@@ -1975,7 +1975,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-candidatos" title="8.12 Candidatos — processo de admissão">
                 <p>
-                  <UI>Secretaria → Candidatos</UI> acompanha o profano da pré-proposta à iniciação. Quem cadastra, conduz o processo e registra a
+                  <UI>Secretaria → Candidatos</UI> acompanha o candidato da pré-proposta à admissão — o profano que será <strong>iniciado</strong> ou o maçom de outra loja que pede <strong>filiação</strong> (escolha o <UI>Tipo de admissão</UI> no cadastro ou na etapa 1). Quem cadastra, conduz o processo e registra a
                   iniciação: <strong>Administrador, Venerável e Secretário</strong>. A ficha é sigilosa — o Tesoureiro não a vê.
                 </p>
                 <Bullets>
@@ -1985,7 +1985,8 @@ export function ManualBook() {
                   <li><strong>Pasta do candidato:</strong> guarde ali a pré-proposta, a proposta, os pareceres, as certidões e os demais documentos, nos modelos da sua Potência. A pasta é sigilosa: não aparece em Documentos nem no portal, nem depois da iniciação.</li>
                   <li><strong>Financeiro:</strong> a taxa de iniciação e outros valores são lançados pela Tesouraria em <UI>Contas</UI> (ou em Cobranças), escolhendo o candidato como sacado — igual a qualquer obreiro. A cobrança em massa não inclui candidatos.</li>
                   <li><strong>Portal do candidato:</strong> <UI>Liberar acesso ao portal</UI> envia por e-mail uma senha provisória. O candidato vê apenas <strong>Meu portal</strong>: os próprios débitos (e paga por ali), o extrato, o histórico de pagamentos e o próprio cadastro (contato, endereço e família). Não vê sessões, atas, quadros, documentos nem o processo.</li>
-                  <li><strong>Registrar iniciação:</strong> depois do escrutínio aprovado, informe a data e a loja e confirme. O candidato vira obreiro <strong>ativo</strong> (Aprendiz) e passa para <UI>Membros</UI>; o acesso dele muda sozinho de candidato para obreiro (em até 30 segundos, sem precisar sair). Cobranças e pagamentos continuam no mesmo cadastro.</li>
+                  <li><strong>Filiação:</strong> as etapas são as mesmas, e a última vira <UI>Registrar filiação</UI>: informe a data da filiação, a loja de origem e a história maçônica que o irmão traz (iniciação obrigatória; elevação e exaltação, com as lojas, quando houver). Ele entra como obreiro ativo no grau que já tem — não como Aprendiz iniciado aqui.</li>
+                    <li><strong>Registrar iniciação:</strong> depois do escrutínio aprovado, informe a data e a loja e confirme. O candidato vira obreiro <strong>ativo</strong> (Aprendiz) e passa para <UI>Membros</UI>; o acesso dele muda sozinho de candidato para obreiro (em até 30 segundos, sem precisar sair). Cobranças e pagamentos continuam no mesmo cadastro.</li>
                   <li><strong>Encerrar processo:</strong> reprovado, desistência ou arquivado. A ficha, a pasta e o financeiro ficam guardados e o acesso ao portal é desativado; <UI>Reabrir processo</UI> desfaz. <UI>Excluir</UI> só funciona para candidato sem lançamentos, pagamentos ou documentos.</li>
                 </Bullets>
                 <Note>

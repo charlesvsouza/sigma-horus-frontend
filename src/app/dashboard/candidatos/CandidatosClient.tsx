@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Badge, Button, EmptyState, Field, MaskedInput, inputClass } from '@/components/ui';
-import { CANDIDATE_STAGES, CANDIDATE_STAGE_LABEL, closedReasonLabel, type CandidateStage } from '@/lib/candidate';
+import { ADMISSION_KINDS, CANDIDATE_STAGES, admissionDef, closedReasonLabel, stageLabel, type CandidateStage } from '@/lib/candidate';
 import { clampDateYear, maskCPF, maskPhone } from '@/lib/masks';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -22,6 +22,7 @@ export interface CandidateRow {
   since: string;
   initiationScheduledAt: string | null;
   initiatedAt: string | null;
+  admissionKind: string;
 }
 
 type Tab = 'open' | 'initiated' | 'closed';
@@ -32,7 +33,7 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 const tabOf = (r: CandidateRow): Tab => (r.stage === 'initiated' ? 'initiated' : r.stage === 'closed' ? 'closed' : 'open');
 
-const EMPTY = { name: '', email: '', phone: '', cpf: '', proposerId: '', preProposalDate: '' };
+const EMPTY = { admissionKind: 'initiation', name: '', email: '', phone: '', cpf: '', proposerId: '', preProposalDate: '' };
 
 export default function CandidatosClient({ rows, brothers }: { rows: CandidateRow[]; brothers: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -101,6 +102,11 @@ export default function CandidatosClient({ rows, brothers }: { rows: CandidateRo
                   {brothers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </Field>
+              <Field label="Tipo de admissão">
+                <select value={form.admissionKind} onChange={(e) => set('admissionKind', e.target.value)} className={inputClass}>
+                  {ADMISSION_KINDS.map((k) => <option key={k.value} value={k.value}>{k.value === 'initiation' ? 'Iniciação (profano)' : 'Filiação (maçom de outra loja)'}</option>)}
+                </select>
+              </Field>
               <Field label="Pré-proposta recebida em">
                 <input type="date" value={form.preProposalDate} onChange={(e) => set('preProposalDate', clampDateYear(e.target.value, form.preProposalDate))} className={inputClass} />
               </Field>
@@ -144,7 +150,7 @@ export default function CandidatosClient({ rows, brothers }: { rows: CandidateRo
                   <li key={r.id}>
                     <Link href={`/dashboard/candidatos/${r.id}`} className="flex flex-wrap items-center justify-between gap-3 py-3 transition-colors hover:bg-white/2">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-sand-light">{r.name}</p>
+                        <p className="text-sm font-medium text-sand-light">{r.name}{r.admissionKind === 'affiliation' ? <span className="ml-2 text-xs font-normal text-gold/80">filiação</span> : null}</p>
                         <p className="mt-0.5 text-xs text-sand-dark">
                           {r.proposer ? `Proponente: ${r.proposer}` : 'Sem proponente'} · desde {formatDateOnly(r.since)}
                           {r.contact ? ` · ${r.contact}` : ''}
@@ -153,13 +159,13 @@ export default function CandidatosClient({ rows, brothers }: { rows: CandidateRo
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         {r.stage === 'initiated' ? (
-                          <Badge variant="success">Iniciado em {formatDateOnly(r.initiatedAt)}</Badge>
+                          <Badge variant="success">{admissionDef(r.admissionKind).done} em {formatDateOnly(r.initiatedAt)}</Badge>
                         ) : r.stage === 'closed' ? (
                           <Badge variant="canceled">{closedReasonLabel(r.closedReason)}</Badge>
                         ) : (
                           <>
                             <span className="text-sand-dark">Etapa {r.stageIndex + 1} de {CANDIDATE_STAGES.length}</span>
-                            <Badge variant={r.warning ? 'warning' : 'info'}>{CANDIDATE_STAGE_LABEL[r.stage]}</Badge>
+                            <Badge variant={r.warning ? 'warning' : 'info'}>{stageLabel(r.stage, r.admissionKind)}</Badge>
                             {r.initiationScheduledAt ? <Badge variant="pending">Iniciação em {formatDateOnly(r.initiationScheduledAt)}</Badge> : null}
                           </>
                         )}

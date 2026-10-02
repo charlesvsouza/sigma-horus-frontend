@@ -250,6 +250,9 @@ model CandidateProcess {
   id                    String    @id @default(cuid())
   lodgeId               String
   memberId              String    @unique
+  // initiation = profano que será iniciado; affiliation = maçom de outra loja que se filia
+  // (na filiação, initiatedAt guarda a data da filiação e o cadastro recebe a história maçônica que ele traz).
+  admissionKind         String    @default("initiation")
   proposerId            String?   // padrinho/proponente (obreiro da loja)
   preProposalDate       DateTime? // pré-proposta recebida
   proposalReadingDate   DateTime? // proposta lida em sessão

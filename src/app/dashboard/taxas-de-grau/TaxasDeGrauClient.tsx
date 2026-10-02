@@ -163,7 +163,7 @@ export default function TaxasDeGrauClient({
               <Field label={form.kind === 'initiation' ? 'Candidato' : form.kind === 'elevation' ? 'Aprendiz' : form.kind === 'exaltation' ? 'Companheiro' : 'Obreiro'}>
                 <select required disabled={!form.kind} value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })} className={inputClass}>
                   <option value="">{form.kind ? (choices.length ? 'Escolha…' : 'Ninguém nessa situação') : 'Escolha a taxa primeiro'}</option>
-                  {choices.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  {choices.map((m) => <option key={m.id} value={m.id}>{form.kind === 'affiliation' ? `${m.name} — ${m.situation}` : m.name}</option>)}
                 </select>
               </Field>
               {form.kind === 'elevation' || form.kind === 'exaltation' ? (

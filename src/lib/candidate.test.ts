@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canInitiate, candidateMayVisit, deriveStage, greeting, isCandidateRole, parseProcessPatch } from './candidate.ts';
+import { canInitiate, candidateMayVisit, deriveStage, greeting, isCandidateRole, parseProcessPatch, stageLabel, stageListFor } from './candidate.ts';
 
 const d = (s: string) => new Date(s);
 
@@ -65,4 +65,20 @@ test('candidato abre só o portal, recibo, Minha conta e o contrato da taxa', ()
   assert.equal(candidateMayVisit('/dashboard/taxas-de-grau/abc123/contrato'), true);
   assert.equal(candidateMayVisit('/dashboard/taxas-de-grau'), false);
   assert.equal(candidateMayVisit('/dashboard/membros'), false);
+});
+
+test('tipo de admissão: rótulos e mensagens da filiação', () => {
+  assert.equal(stageLabel('initiation', 'affiliation'), 'Aguardando filiação');
+  assert.equal(stageLabel('initiated', 'affiliation'), 'Filiado');
+  assert.equal(stageLabel('initiated', null), 'Iniciado');
+  assert.equal(stageListFor('affiliation')[5].label, 'Filiação');
+  const r = canInitiate({ ballotResult: 'rejected' }, 'affiliation');
+  assert.equal(r.ok, false);
+  if (!r.ok) assert.match(r.error, /filiação/);
+});
+
+test('patch aceita o tipo de admissão e recusa valor inválido', () => {
+  const r = parseProcessPatch({ admissionKind: 'affiliation' });
+  assert.ok(r.ok && r.patch.admissionKind === 'affiliation');
+  assert.equal(parseProcessPatch({ admissionKind: 'transferencia' }).ok, false);
 });

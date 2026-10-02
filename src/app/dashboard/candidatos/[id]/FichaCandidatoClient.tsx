@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
 import { Alert, Badge, Button, Field, MaskedInput, inputClass, useConfirm } from '@/components/ui';
 import {
-  CANDIDATE_STAGES, CANDIDATE_STAGE_LABEL, CLOSED_REASONS, OPINIONS, closedReasonLabel, deriveStage, opinionLabel,
+  ADMISSION_KINDS, CLOSED_REASONS, OPINIONS, admissionDef, closedReasonLabel, deriveStage, opinionLabel, stageLabel, stageListFor,
 } from '@/lib/candidate';
 import { CANDIDACY_DOCUMENT_CATEGORY } from '@/lib/documents';
 import { clampDateYear, fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
@@ -14,6 +14,7 @@ import { formatDateOnly } from '@/lib/date-only';
 
 interface Inquirer { id: string; memberId: string; opinion: string | null; reportedAt: string | null; member: { id: string; name: string } }
 interface Process {
+  admissionKind: string;
   proposerId: string | null; preProposalDate: string | null; proposalReadingDate: string | null;
   inquiryOpenedAt: string | null; inquiryDeadline: string | null; inquiryClosedAt: string | null; inquiryResult: string | null;
   ballotDate: string | null; ballotResult: string | null;
@@ -34,7 +35,7 @@ interface Candidate {
 interface DocItem { id: string; title: string; fileName: string | null; createdAt: string }
 
 const PERSONAL_KEYS = ['name', 'email', 'phone', 'cpf', 'rg', 'birthDate', 'maritalStatus', 'occupation', 'nationality', 'zipCode', 'addressLine', 'addressNumber', 'complement', 'neighborhood', 'city', 'state', 'country'] as const;
-const PROCESS_KEYS = ['proposerId', 'preProposalDate', 'proposalReadingDate', 'inquiryOpenedAt', 'inquiryDeadline', 'inquiryClosedAt', 'inquiryResult', 'ballotDate', 'ballotResult', 'potencySentAt', 'potencyApprovedAt', 'potencyReference', 'initiationScheduledAt', 'notes'] as const;
+const PROCESS_KEYS = ['admissionKind', 'proposerId', 'preProposalDate', 'proposalReadingDate', 'inquiryOpenedAt', 'inquiryDeadline', 'inquiryClosedAt', 'inquiryResult', 'ballotDate', 'ballotResult', 'potencySentAt', 'potencyApprovedAt', 'potencyReference', 'initiationScheduledAt', 'notes'] as const;
 type ProcKey = (typeof PROCESS_KEYS)[number];
 const DATE_KEYS = new Set(['birthDate', 'preProposalDate', 'proposalReadingDate', 'inquiryOpenedAt', 'inquiryDeadline', 'inquiryClosedAt', 'ballotDate', 'potencySentAt', 'potencyApprovedAt', 'initiationScheduledAt']);
 
@@ -44,6 +45,7 @@ const toForm = <K extends string>(keys: readonly K[], src: Record<string, unknow
 const today = () => new Date().toISOString().slice(0, 10);
 
 type Msg = { kind: 'ok' | 'error'; text: string } | null;
+const HISTORY_STEPS = [['initiation', 'Iniciação'], ['elevation', 'Elevação'], ['exaltation', 'Exaltação']] as const;
 type Refresh = 'all' | { proc?: ProcKey[]; personal?: boolean; inquirers?: boolean };
 
 export default function FichaCandidatoClient({ id, brothers, lodgeName, canManageFees }: { id: string; brothers: { id: string; name: string }[]; lodgeName: string; canManageFees: boolean }) {
@@ -58,6 +60,8 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<Msg>(null);
   const [initiation, setInitiation] = useState({ date: today(), lodge: lodgeName });
+  // Filiação: a história maçônica que o irmão traz da loja de origem.
+  const [history, setHistory] = useState({ initiationDate: '', initiationLodge: '', elevationDate: '', elevationLodge: '', exaltationDate: '', exaltationLodge: '', originLodge: '' });
   const [closing, setClosing] = useState<{ reason: string; date: string } | null>(null);
   const [upload, setUpload] = useState<{ title: string; file: File | null }>({ title: '', file: null });
   const [cepStatus, setCepStatus] = useState('');
@@ -116,6 +120,7 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
 
   const p = item.candidateProcess;
   const info = deriveStage(p);
+  const admission = admissionDef(p.admissionKind);
   const locked = info.stage === 'initiated' || info.stage === 'closed';
   const setP = (k: ProcKey, v: string) => setProc((prev) => ({ ...prev, [k]: v }));
   const setPe = (k: string, v: string) => setPersonal((prev) => ({ ...prev, [k]: v }));
@@ -151,6 +156,7 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
   }
 
   async function initiate() {
+    if (admission.value === 'affiliation') return affiliate();
     if (!initiation.date) { notify('error', 'Informe a data da iniciação.'); return; }
     const noPotency = !p.potencyApprovedAt;
     if (!(await askConfirm({
@@ -159,6 +165,18 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
       confirmLabel: 'Registrar iniciação',
     }))) return;
     await send('initiate', `/api/candidates/${id}/initiate`, 'POST', { initiatedAt: initiation.date, initiationLodge: initiation.lodge }, 'Iniciação registrada. O cadastro agora está em Membros.');
+  }
+
+  async function affiliate() {
+    if (!initiation.date) { notify('error', 'Informe a data da filiação.'); return; }
+    if (!history.initiationDate) { notify('error', 'Informe a data de iniciação do irmão (na loja de origem).'); return; }
+    const degree = history.exaltationDate ? 'Mestre' : history.elevationDate ? 'Companheiro' : 'Aprendiz';
+    if (!(await askConfirm({
+      title: 'Registrar filiação',
+      message: `${item!.name} passa a obreiro ATIVO desta loja, filiado em ${formatDateOnly(initiation.date)}, como ${degree} (iniciado em ${formatDateOnly(history.initiationDate)}${history.initiationLodge ? ` na ${history.initiationLodge}` : ''}). ${item!.user ? 'O acesso dele ao sistema passa de candidato para obreiro. ' : ''}Cobranças e pagamentos continuam no mesmo cadastro.`,
+      confirmLabel: 'Registrar filiação',
+    }))) return;
+    await send('initiate', `/api/candidates/${id}/initiate`, 'POST', { initiatedAt: initiation.date, ...history }, 'Filiação registrada. O cadastro agora está em Membros.');
   }
 
   async function closeProcess() {
@@ -236,9 +254,10 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
             <div>
               <h1 className="font-display text-2xl font-bold text-sand-light">{item.name}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                {info.stage === 'initiated' ? <Badge variant="success">Iniciado em {formatDateOnly(p.initiatedAt)}</Badge>
+                <Badge variant="canceled">{admission.label}</Badge>
+                {info.stage === 'initiated' ? <Badge variant="success">{admission.done} em {formatDateOnly(p.initiatedAt)}</Badge>
                   : info.stage === 'closed' ? <Badge variant="canceled">{closedReasonLabel(p.closedReason)} em {formatDateOnly(p.closedAt)}</Badge>
-                  : <Badge variant={info.warning ? 'warning' : 'info'}>{CANDIDATE_STAGE_LABEL[info.stage]}</Badge>}
+                  : <Badge variant={info.warning ? 'warning' : 'info'}>{stageLabel(info.stage, p.admissionKind)}</Badge>}
                 {item.user ? <span className="text-sand-dark">Portal: {item.user.status === 'active' ? (item.user.mustChangePassword ? 'acesso liberado, aguardando o 1º login' : 'acesso ativo') : 'acesso desativado'}</span> : <span className="text-sand-dark">Sem acesso ao portal</span>}
               </div>
             </div>
@@ -285,7 +304,7 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
 
         {/* Linha do tempo do processo */}
         <ol className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6" aria-label="Etapas do processo">
-          {CANDIDATE_STAGES.map((s, i) => {
+          {stageListFor(p.admissionKind).map((s, i) => {
             const done = info.stage === 'initiated' || (info.index > i && info.stage !== 'closed');
             const current = info.index === i && !locked;
             return (
@@ -304,6 +323,11 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
           <div className="space-y-6">
             <Stage n={1} title="Pré-proposta" hint="Recebimento da pré-proposta e o obreiro que apresenta o candidato.">
               <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Tipo de admissão" className="sm:col-span-2">
+                  <select disabled={locked} value={proc.admissionKind || 'initiation'} onChange={(e) => setP('admissionKind', e.target.value)} className={inputClass}>
+                    {ADMISSION_KINDS.map((k) => <option key={k.value} value={k.value}>{k.value === 'initiation' ? 'Iniciação (profano)' : 'Filiação (maçom de outra loja)'}</option>)}
+                  </select>
+                </Field>
                 <Field label="Proponente (padrinho)">
                   <select disabled={locked} value={proc.proposerId ?? ''} onChange={(e) => setP('proposerId', e.target.value)} className={inputClass}>
                     <option value="">—</option>
@@ -313,7 +337,7 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
                 </Field>
                 {dateInput('preProposalDate', 'Pré-proposta recebida em')}
               </div>
-              {stageSave('s1', ['proposerId', 'preProposalDate'], 'Pré-proposta')}
+              {stageSave('s1', ['admissionKind', 'proposerId', 'preProposalDate'], 'Pré-proposta')}
             </Stage>
 
             <Stage n={2} title="Leitura da proposta" hint="Proposta formal lida em sessão.">
@@ -394,23 +418,50 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
               {stageSave('s5', ['potencySentAt', 'potencyApprovedAt', 'potencyReference'], 'Autorização')}
             </Stage>
 
-            <Stage n={6} title="Iniciação" hint="Marque a data e, depois da cerimônia, registre a iniciação: o candidato vira obreiro ativo (Aprendiz).">
+            <Stage
+              n={6}
+              title={admission.label}
+              hint={admission.value === 'affiliation'
+                ? 'Marque a data e, depois da sessão, registre a filiação com a história maçônica que o irmão traz: ele vira obreiro ativo desta loja no grau que já tem.'
+                : 'Marque a data e, depois da cerimônia, registre a iniciação: o candidato vira obreiro ativo (Aprendiz).'}
+            >
               <div className="grid gap-4 sm:grid-cols-2">{dateInput('initiationScheduledAt', 'Data marcada')}</div>
               {stageSave('s6', ['initiationScheduledAt'], 'Data marcada')}
               {item.status === 'candidate' && !locked ? (
                 <div className="mt-5 rounded-lg border border-gold/25 bg-gold/5 p-4">
-                  <p className="text-sm font-medium text-sand-light">Registrar iniciação</p>
+                  <p className="text-sm font-medium text-sand-light">Registrar {admission.event}</p>
                   {p.ballotResult !== 'approved' ? <p className="mt-1 text-xs text-amber-300">Disponível depois do escrutínio aprovado.</p> : null}
-                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                    <Field label="Iniciado em">
-                      <input type="date" value={initiation.date} onChange={(e) => setInitiation({ ...initiation, date: clampDateYear(e.target.value, initiation.date) })} className={inputClass} />
-                    </Field>
-                    <Field label="Loja da iniciação">
-                      <input value={initiation.lodge} onChange={(e) => setInitiation({ ...initiation, lodge: e.target.value })} className={inputClass} />
-                    </Field>
-                  </div>
+                  {admission.value === 'affiliation' ? (
+                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                      <Field label="Filiado em">
+                        <input type="date" value={initiation.date} onChange={(e) => setInitiation({ ...initiation, date: clampDateYear(e.target.value, initiation.date) })} className={inputClass} />
+                      </Field>
+                      <Field label="Loja de origem">
+                        <input value={history.originLodge} onChange={(e) => setHistory({ ...history, originLodge: e.target.value })} className={inputClass} />
+                      </Field>
+                      {HISTORY_STEPS.map(([k, label]) => (
+                        <div key={k} className="contents">
+                          <Field label={`${label} em${k === 'initiation' ? ' *' : ''}`}>
+                            <input type="date" value={history[`${k}Date`]} onChange={(e) => setHistory({ ...history, [`${k}Date`]: clampDateYear(e.target.value, history[`${k}Date`]) })} className={inputClass} />
+                          </Field>
+                          <Field label={`Loja da ${label.toLowerCase()}`}>
+                            <input value={history[`${k}Lodge`]} onChange={(e) => setHistory({ ...history, [`${k}Lodge`]: e.target.value })} className={inputClass} />
+                          </Field>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                      <Field label="Iniciado em">
+                        <input type="date" value={initiation.date} onChange={(e) => setInitiation({ ...initiation, date: clampDateYear(e.target.value, initiation.date) })} className={inputClass} />
+                      </Field>
+                      <Field label="Loja da iniciação">
+                        <input value={initiation.lodge} onChange={(e) => setInitiation({ ...initiation, lodge: e.target.value })} className={inputClass} />
+                      </Field>
+                    </div>
+                  )}
                   <div className="mt-3">
-                    <Button size="sm" disabled={busy !== null || p.ballotResult !== 'approved'} onClick={() => void initiate()}>{busy === 'initiate' ? 'Registrando…' : 'Registrar iniciação'}</Button>
+                    <Button size="sm" disabled={busy !== null || p.ballotResult !== 'approved'} onClick={() => void initiate()}>{busy === 'initiate' ? 'Registrando…' : `Registrar ${admission.event}`}</Button>
                   </div>
                 </div>
               ) : null}
@@ -501,11 +552,11 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
               </p>
               {item.status === 'candidate' && info.stage !== 'closed' ? (
                 canManageFees ? (
-                  <Link href={`/dashboard/taxas-de-grau?membro=${id}&taxa=initiation`} className="mt-3 inline-flex rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 hover:text-gold">
-                    Plano da taxa de iniciação (à vista ou em até 6 cotas)
+                  <Link href={`/dashboard/taxas-de-grau?membro=${id}&taxa=${admission.value}`} className="mt-3 inline-flex rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 hover:text-gold">
+                    Plano da taxa de {admission.value === 'affiliation' ? 'filiação' : 'iniciação'} (à vista ou em até 6 cotas)
                   </Link>
                 ) : (
-                  <p className="mt-2 text-xs text-sand-dark">O plano da taxa de iniciação (à vista ou em até 6 cotas) é criado pela Tesouraria em Taxas de grau.</p>
+                  <p className="mt-2 text-xs text-sand-dark">O plano da taxa de {admission.value === 'affiliation' ? 'filiação' : 'iniciação'} (à vista ou em até 6 cotas) é criado pela Tesouraria em Taxas de grau.</p>
                 )
               ) : null}
             </section>

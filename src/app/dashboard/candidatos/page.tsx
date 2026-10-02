@@ -27,7 +27,7 @@ export default async function CandidatosPage() {
         user: { select: { status: true } },
         candidateProcess: {
           select: {
-            preProposalDate: true, proposalReadingDate: true, inquiryOpenedAt: true, inquiryClosedAt: true, inquiryResult: true,
+            admissionKind: true, preProposalDate: true, proposalReadingDate: true, inquiryOpenedAt: true, inquiryClosedAt: true, inquiryResult: true,
             ballotDate: true, ballotResult: true, potencyApprovedAt: true, initiationScheduledAt: true, initiatedAt: true,
             closedAt: true, closedReason: true, createdAt: true,
             proposer: { select: { name: true } },
@@ -50,6 +50,7 @@ export default async function CandidatosPage() {
       contact: [c.email, c.phone].filter(Boolean).join(' · '),
       isCandidate: c.status === CANDIDATE_STATUS,
       stage: info.stage,
+      admissionKind: p.admissionKind,
       stageIndex: info.index,
       warning: info.warning,
       proposer: p.proposer?.name ?? null,

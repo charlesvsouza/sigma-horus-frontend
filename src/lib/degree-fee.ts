@@ -6,7 +6,8 @@
 //  - até 6 cotas (1 = à vista); cada cota é uma cobrança comum do irmão;
 //  - elevação/exaltação antecipadas a partir da 4ª instrução do grau atual
 //    (Aprendiz → elevação; Companheiro → exaltação). Iniciação: o candidato.
-//    Filiação/regularização: qualquer obreiro cadastrado, sem a regra da instrução;
+//    Filiação/regularização: candidato de filiação (maçom de outra loja) ou obreiro
+//    cadastrado que se regulariza (afastado, placet, Art. 002) — sem a regra da instrução;
 //  - a taxa deve estar quitada até a data prevista do evento; quitada antes da
 //    data, fica "quitada antecipadamente" (o "crédito" que o irmão vê no portal);
 //  - evento que não acontece: a loja devolve o que foi pago;
@@ -81,7 +82,11 @@ export const installmentTitle = (def: DegreeFeeKindDef, number: number, total: n
 // Elegibilidade
 // ---------------------------------------------------------------------------
 
-export interface EligibilityInput extends DegreeSource { status?: string | null }
+export interface EligibilityInput extends DegreeSource {
+  status?: string | null;
+  /** Tipo de admissão do candidato (initiation | affiliation), quando for candidato. */
+  admissionKind?: string | null;
+}
 
 export function checkEligibility(
   kind: DegreeFeeKind,
@@ -91,10 +96,14 @@ export function checkEligibility(
 ): { ok: true } | { ok: false; error: string } {
   if (kind === 'initiation') {
     if (member.status !== 'candidate') return { ok: false, error: 'A taxa de iniciação é do candidato: cadastre-o em Secretaria → Candidatos.' };
+    if (member.admissionKind === 'affiliation') return { ok: false, error: 'Este candidato é de filiação: use a taxa de filiação / regularização.' };
     return { ok: true };
   }
   if (kind === 'affiliation') {
-    if (member.status === 'candidate') return { ok: false, error: 'Filiação/regularização é de quem já é maçom: cadastre o irmão em Membros.' };
+    // Candidato de filiação (maçom de outra loja) ou obreiro que se regulariza (afastado, placet, Art. 002).
+    if (member.status === 'candidate' && member.admissionKind !== 'affiliation') {
+      return { ok: false, error: 'Este candidato é de iniciação: use a taxa de iniciação. Para filiação, o processo dele deve ser do tipo Filiação.' };
+    }
     return { ok: true };
   }
   const situation = symbolicSituation(member);

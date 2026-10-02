@@ -19,6 +19,26 @@ export const isCandidateRole = (role: string | null | undefined) => (role ?? '')
 const CANDIDATE_PATHS = [/^\/dashboard\/portal\/?$/, /^\/dashboard\/portal\/historico\/?$/, /^\/dashboard\/pagamentos\/[^/]+\/recibo\/?$/, /^\/dashboard\/minha-conta\/?$/, /^\/dashboard\/taxas-de-grau\/[^/]+\/contrato\/?$/];
 export const candidateMayVisit = (pathname: string) => CANDIDATE_PATHS.some((re) => re.test(pathname));
 
+// Tipo de admissão: profano que será iniciado, ou maçom de outra loja que se filia.
+// Mesmas etapas; muda a última (Iniciação × Filiação) e o que o registro final grava.
+export type AdmissionKind = 'initiation' | 'affiliation';
+export const ADMISSION_KINDS: { value: AdmissionKind; label: string; event: string; done: string }[] = [
+  { value: 'initiation', label: 'Iniciação', event: 'iniciação', done: 'Iniciado' },
+  { value: 'affiliation', label: 'Filiação', event: 'filiação', done: 'Filiado' },
+];
+export const admissionKindOf = (v: string | null | undefined): AdmissionKind => (v === 'affiliation' ? 'affiliation' : 'initiation');
+export const admissionDef = (v: string | null | undefined) => ADMISSION_KINDS.find((k) => k.value === admissionKindOf(v))!;
+
+/** Rótulo da etapa considerando o tipo (a 6ª é Iniciação ou Filiação). */
+export function stageLabel(stage: CandidateStage, kind: string | null | undefined): string {
+  const def = admissionDef(kind);
+  if (stage === 'initiation') return `Aguardando ${def.event}`;
+  if (stage === 'initiated') return def.done;
+  return CANDIDATE_STAGE_LABEL[stage];
+}
+export const stageListFor = (kind: string | null | undefined) =>
+  CANDIDATE_STAGES.map((s) => (s.key === 'initiation' ? { ...s, label: admissionDef(kind).label } : s));
+
 export type CandidateStage = 'pre_proposal' | 'reading' | 'inquiry' | 'ballot' | 'potency' | 'initiation' | 'initiated' | 'closed';
 
 export const CANDIDATE_STAGES: { key: Exclude<CandidateStage, 'initiated' | 'closed'>; label: string }[] = [
@@ -102,10 +122,11 @@ export function deriveStage(p: ProcessDates): StageInfo {
  * A autorização da Potência não trava (há lojas que a recebem só no dia), mas
  * a tela avisa quando falta.
  */
-export function canInitiate(p: ProcessDates): { ok: true } | { ok: false; error: string } {
-  if (p.initiatedAt) return { ok: false, error: 'A iniciação deste candidato já foi registrada.' };
-  if (p.closedAt) return { ok: false, error: 'O processo está encerrado. Reabra-o antes de registrar a iniciação.' };
-  if (p.ballotResult !== 'approved') return { ok: false, error: 'Registre o escrutínio aprovado antes da iniciação.' };
+export function canInitiate(p: ProcessDates, kind?: string | null): { ok: true } | { ok: false; error: string } {
+  const ev = admissionDef(kind).event;
+  if (p.initiatedAt) return { ok: false, error: `A ${ev} deste candidato já foi registrada.` };
+  if (p.closedAt) return { ok: false, error: `O processo está encerrado. Reabra-o antes de registrar a ${ev}.` };
+  if (p.ballotResult !== 'approved') return { ok: false, error: `Registre o escrutínio aprovado antes da ${ev}.` };
   return { ok: true };
 }
 
@@ -120,6 +141,7 @@ const DATE_FIELDS = [
 ] as const;
 
 export interface ProcessPatch {
+  admissionKind?: AdmissionKind;
   proposerId?: string | null;
   preProposalDate?: Date | null;
   proposalReadingDate?: Date | null;
@@ -154,6 +176,11 @@ export function parseProcessPatch(body: Record<string, unknown>): { ok: true; pa
     patch[key] = d;
   }
   if (has(body, 'proposerId')) patch.proposerId = text(body.proposerId);
+  if (has(body, 'admissionKind')) {
+    const v = text(body.admissionKind);
+    if (v !== 'initiation' && v !== 'affiliation') return { ok: false, error: 'Tipo de admissão inválido.' };
+    patch.admissionKind = v;
+  }
   if (has(body, 'potencyReference')) patch.potencyReference = text(body.potencyReference);
   if (has(body, 'notes')) patch.notes = text(body.notes);
   if (has(body, 'inquiryResult')) {

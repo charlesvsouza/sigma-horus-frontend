@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { canManageDegreeFees } from '@/lib/degree-fee';
 import { PLAN_INCLUDE, presentPlan } from '@/lib/degree-fee-server';
 import { symbolicSituation } from '@/lib/masonic-degree';
+import { memberStatusLabel } from '@/lib/member-status';
 import { normalizeCollectionMode } from '@/lib/collection';
 import { withTenant } from '@/lib/prisma';
 import TaxasDeGrauClient, { type EligibleMember } from './TaxasDeGrauClient';
@@ -25,16 +26,22 @@ export default async function TaxasDeGrauPage({ searchParams }: { searchParams: 
     plans: await db.degreeFeePlan.findMany({ where: { lodgeId }, include: PLAN_INCLUDE, orderBy: { createdAt: 'desc' } }),
     members: await db.member.findMany({
       where: { lodgeId, deceased: false, OR: [{ status: 'candidate', candidateProcess: { is: { closedAt: null, initiatedAt: null } } }, { status: { not: 'candidate' } }] },
-      select: { id: true, name: true, status: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
+      select: { id: true, name: true, status: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true, candidateProcess: { select: { admissionKind: true } } },
       orderBy: { name: 'asc' },
     }),
   }));
 
   const eligible: EligibleMember[] = data.members.flatMap((m): EligibleMember[] => {
-    if (m.status === 'candidate') return [{ id: m.id, name: m.name, kind: 'initiation', situation: 'Candidato' }];
+    if (m.status === 'candidate') {
+      // Candidato de filiação (maçom de outra loja) paga a taxa de filiação, não a de iniciação.
+      return m.candidateProcess?.admissionKind === 'affiliation'
+        ? [{ id: m.id, name: m.name, kind: 'affiliation', situation: 'Candidato à filiação' }]
+        : [{ id: m.id, name: m.name, kind: 'initiation', situation: 'Candidato' }];
+    }
     const s = symbolicSituation(m);
     // Filiação/regularização: qualquer obreiro cadastrado (já é maçom, de qualquer grau).
-    const rows: EligibleMember[] = [{ id: m.id, name: m.name, kind: 'affiliation', situation: s ?? 'Obreiro' }];
+    // Regularização: quem está afastado (placet, Art. 002, suspenso, inativo) aparece com a situação ao lado.
+    const rows: EligibleMember[] = [{ id: m.id, name: m.name, kind: 'affiliation', situation: m.status === 'active' ? (s ?? 'Obreiro') : memberStatusLabel(m.status) }];
     if (s === 'Aprendiz') rows.push({ id: m.id, name: m.name, kind: 'elevation', situation: 'Aprendiz' });
     if (s === 'Companheiro') rows.push({ id: m.id, name: m.name, kind: 'exaltation', situation: 'Companheiro' });
     return rows;

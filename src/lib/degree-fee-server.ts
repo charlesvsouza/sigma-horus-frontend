@@ -58,10 +58,10 @@ export async function createDegreeFeePlan(db: Db, input: CreatePlanInput): Promi
 
   const member = await db.member.findFirst({
     where: { id: input.memberId, lodgeId: input.lodgeId },
-    select: { id: true, name: true, status: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
+    select: { id: true, name: true, status: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true, candidateProcess: { select: { admissionKind: true } } },
   });
   if (!member) return { ok: false, status: 404, error: 'Irmão não encontrado.' };
-  const eligible = checkEligibility(def.kind, member, input.fourthInstructionDate);
+  const eligible = checkEligibility(def.kind, { ...member, admissionKind: member.candidateProcess?.admissionKind ?? null }, input.fourthInstructionDate);
   if (!eligible.ok) return { ok: false, status: 400, error: eligible.error };
 
   const existing = await db.degreeFeePlan.findFirst({ where: { lodgeId: input.lodgeId, memberId: member.id, kind: def.kind, status: 'active' }, select: { id: true } });

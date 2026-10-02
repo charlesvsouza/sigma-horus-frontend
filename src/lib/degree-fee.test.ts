@@ -90,3 +90,10 @@ test('filiação quitada = "Quitado" (o sistema não detecta a cerimônia)', () 
   assert.equal(summarizePlan({ status: 'active' }, paid, false, TODAY, false).situation, 'paid');
   assert.equal(summarizePlan({ status: 'active' }, paid, false, TODAY).situation, 'paid_waiting');
 });
+
+test('candidato de filiação paga filiação, não iniciação (e vice-versa)', () => {
+  assert.equal(checkEligibility('affiliation', { status: 'candidate', admissionKind: 'affiliation' }, null, TODAY).ok, true);
+  assert.equal(checkEligibility('initiation', { status: 'candidate', admissionKind: 'affiliation' }, null, TODAY).ok, false);
+  assert.equal(checkEligibility('affiliation', { status: 'candidate', admissionKind: 'initiation' }, null, TODAY).ok, false);
+  assert.equal(checkEligibility('affiliation', { status: 'art_002', initiationDate: d('2015-01-01') }, null, TODAY).ok, true); // regularização
+});
