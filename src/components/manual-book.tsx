@@ -64,7 +64,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-razao', label: '7.18 Razão por categoria (Tronco e qualquer outra)' },
       { id: 'tes-historico', label: '7.19 Histórico de pagamentos dos irmãos' },
       { id: 'tes-declaracao', label: '7.20 Declaração de regularidade financeira' },
-      { id: 'tes-taxas-grau', label: '7.21 Taxas de grau (iniciação, elevação, exaltação e filiação)' },
+      { id: 'tes-taxas-grau', label: '7.21 Taxas de grau (iniciação, elevação, exaltação, filiação e regularização)' },
     ],
   },
   {
@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.85</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.86</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.85 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.86 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -500,19 +500,19 @@ export function ManualBook() {
                 <li>
                   <strong>Social:</strong> os quadros da loja, <strong>abertos a todo obreiro</strong> —
                   <UI> Quadro social</UI>, <UI>Galeria de Veneráveis</UI>, <UI>Quadro da Gestão</UI> e
-                  <UI> Composição da loja</UI> (ver 10.4 e 8.2 a 8.4).
+                  <UI> Composição da loja</UI> (ver 10.4 e 8.2 a 8.4) e, para a gestão, <UI>Certificados de presença</UI>.
                 </li>
                 <li>
                   <strong>Secretaria:</strong> dividida em três grupos — <UI>Membros &amp; Cadastros</UI>
-                  (<UI>Membros</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>),
+                  (<UI>Membros</UI>, <UI>Candidatos</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>),
                   <UI> Veneralato &amp; Sessões</UI> (<UI>Veneralato</UI>, <UI>Sessões</UI>, <UI>Frequência às
-                  sessões</UI>) e <UI>Documentos &amp; Comunicação</UI> (<UI>Documentos</UI>, <UI>Comunicação</UI>).
+                  sessões</UI>, <UI>Visitantes</UI>) e <UI>Documentos &amp; Comunicação</UI> (<UI>Documentos</UI>, <UI>Comunicação</UI>).
                   Os grupos são só rótulos visuais dentro do menu já aberto — não precisam de um clique a mais.
                   O Arquiteto (por cargo) vê aqui apenas <UI>Materiais e patrimônio</UI>.
                 </li>
                 <li>
                   <strong>Tesouraria:</strong> dividida em três grupos — <UI>Entradas e Saídas</UI> (<UI>Contas</UI>,
-                  <UI> Lançamento</UI>, <UI>Cobranças</UI>, <UI>Taxas de grau</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de
+                  <UI> Lançamento</UI>, <UI>Cobranças</UI>, <UI>Taxas de grau</UI>, <UI>Acordos de regularização</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de
                   contas</UI>),
                   <UI> Cadastros e Conferência</UI> (<UI>Cadastros financeiros</UI>, <UI>Conciliação
                   bancária</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (o <UI>índice dos relatórios</UI> e três atalhos para os mais usados:
@@ -1051,7 +1051,7 @@ export function ManualBook() {
                   <li>O status passa a <strong>Emitida</strong>. Se precisar refazer, use <UI>Reemitir</UI> — a cobrança anterior é cancelada no Asaas, para o irmão não pagar duas vezes.</li>
                 </Steps>
                 <p>
-                  <strong>O irmão também paga sozinho, pelo portal.</strong> Em <UI>Meu portal → Minhas pendências</UI> ele
+                  <strong>O irmão também paga sozinho, pelo portal.</strong> Em <UI>Meu portal → Pendências</UI> ele
                   clica em <UI>Pagar</UI> em qualquer conta dele em aberto. Se a cobrança ainda não foi emitida — por exemplo, a
                   ocorrência do mês gerada pela recorrência, ou um lançamento avulso sem cobrança —, o sistema a cria e a
                   emite no Asaas na hora, sempre em Pix, com vencimento de hoje quando a conta já está vencida. Ela aparece
@@ -1143,7 +1143,7 @@ export function ManualBook() {
                   1. Movimentação financeira (Resumo financeiro, Contas recebidas, Contas pagas, Razão por categoria); 2. Contas a receber e a pagar;
                   3. Inadimplência e regularidade (Inadimplência, Histórico de pagamentos, Declaração de regularidade); 4. Planejamento (Orçamento anual,
                   Fluxo de caixa projetado); 5. Prestação de contas (Fechamento do veneralato, Balancetes periódicos, DRE comparativo); 6. Cobrança eletrônica
-                  (Tarifas do Asaas). Os relatórios aparecem em cartões; a descrição de uma frase de cada um surge ao passar o cursor (ou ao focar com o teclado; no celular fica sempre visível). Qualquer relatório também se acha pela busca (<UI>Ctrl/Cmd + K</UI>).
+                  (Tarifas de cobrança do Asaas). Os relatórios aparecem em cartões; a descrição de uma frase de cada um surge ao passar o cursor (ou ao focar com o teclado; no celular fica sempre visível). Qualquer relatório também se acha pela busca (<UI>Ctrl/Cmd + K</UI>).
                 </p>
                 <p>
                   Em <UI>Tesouraria → Relatórios → Resumo financeiro</UI> você acompanha <UI>Resumo de abertura</UI>,
@@ -1313,7 +1313,7 @@ export function ManualBook() {
                 <p>
                   <strong>Termo de acordo e assinatura digital:</strong> cada acordo tem um <UI>Termo de acordo de regularização</UI> em papel timbrado (<UI>Acordos de regularização → Abrir termo / assinar</UI>),
                   com o que foi acordado, as parcelas e as cláusulas. Assinam o <strong>Venerável Mestre</strong> (ou o Administrador, pela Loja), o <strong>Tesoureiro</strong> e o próprio
-                  <strong> irmão</strong> (pelo portal, no aviso do acordo). Para assinar basta clicar em <UI>Assinar digitalmente</UI>: o sistema grava a marca — quem assinou, quando, o resumo
+                  <strong> irmão</strong> (pelo portal, no aviso do acordo). Cada acordo mostra, no próprio cartão, <UI>Abrir termo</UI> e o botão <UI>Assinar como Venerável Mestre</UI> / <UI>Tesoureiro</UI> (para o irmão, no portal) — o botão só aparece para quem pode assinar. O sistema pede uma <strong>confirmação</strong> (<UI>Assinar digitalmente</UI>) antes de gravar a marca — quem assinou, quando, o resumo
                   (hash) do acordo e um <strong>código de verificação</strong> (AC-XXXX-XXXX), impresso sob o nome. Cada parte assina uma vez. Qualquer pessoa confirma a assinatura em
                   <strong> sigmahorus.com.br/verificar/&lt;código&gt;</strong>: a página mostra quem assinou, quando e se o acordo continua igual ao assinado, sem mostrar valores nem o nome do irmão. A minuta das cláusulas deve ser revista pela diretoria da loja.
                 </p>
@@ -1412,7 +1412,7 @@ export function ManualBook() {
                   <li><strong>Baixa assistida pelo extrato</strong> (Modo Loja): em um crédito do extrato que ainda não tem pagamento lançado, clique em
                   <UI>Sugerir cobrança</UI>. O sistema procura as cobranças em aberto cujo <strong>valor</strong> bate com o crédito e cujo <strong>nome do irmão</strong> aparece
                   na descrição do Pix/TED, e mostra o quanto confere (&quot;Valor e nome conferem&quot;, &quot;Valor confere&quot;…). Escolha a conta que recebeu e clique em
-                  <UI> Dar baixa e conciliar</UI>: a baixa é lançada e a linha do extrato já fica conciliada. Nada é baixado sem o seu clique; crédito maior que o saldo
+                  <UI> Dar baixa e conciliar</UI>: a baixa é lançada e a linha do extrato já fica conciliada. Só a sugestão em que <strong>valor e nome conferem</strong> traz o botão dourado direto; nas demais (só o valor, só o nome ou valor diferente) o botão é <UI>Conferir e dar baixa</UI> e o sistema mostra o motivo e <strong>pede confirmação</strong> antes de baixar. Nada é baixado sem o seu clique; crédito maior que o saldo
                   da cobrança não é aceito, e cobrança aberta no Asaas é recusada (nessa loja a baixa vem do Asaas).</li>
                   <li><strong>Recebido em dinheiro no painel do Asaas</strong> (Modo Asaas): se alguém marcar uma cobrança como &quot;recebida em dinheiro&quot; direto no painel do
                   Asaas, o sistema lança a baixa no <strong>Caixa</strong> da loja (sem tarifa) e avisa o Tesoureiro e os Administradores por e-mail. Em <UI>Tesouraria → Pagamentos</UI>
@@ -1617,7 +1617,7 @@ export function ManualBook() {
                   <li><strong>O próprio irmão</strong> emite a dele em <UI>Meu portal → Declaração de regularidade</UI> (capítulo 10), nas mesmas regras.</li>
                 </Bullets>
               </Sub>
-              <Sub id="tes-taxas-grau" title="7.21 Taxas de grau (iniciação, elevação, exaltação e filiação)">
+              <Sub id="tes-taxas-grau" title="7.21 Taxas de grau (iniciação, elevação, exaltação, filiação e regularização)">
                 <p>
                   <UI>Tesouraria → Taxas de grau</UI> organiza o pagamento das taxas de iniciação, elevação, exaltação, filiação e regularização — à vista ou em até
                   <strong>6 cotas</strong>, com <strong>entrada opcional</strong>. Criam e gerenciam os planos: <strong>Administrador, Venerável e Tesoureiro</strong>.
@@ -2069,6 +2069,9 @@ export function ManualBook() {
                 <li><UI>Relatórios</UI>: arrecadação, inadimplência, fluxo de caixa e frequência por período.</li>
                 <li><UI>Histórico de pagamentos</UI> (7.19): o que cada irmão pagou, com recibos — para conferir uma reclamação sem depender de terceiros.</li>
                 <li><UI>Declaração de regularidade</UI> (7.20): a declaração de &quot;nada consta&quot; financeiro, que você assina com o Tesoureiro — para transferência, elevação, filiação ou candidatura.</li>
+                <li><UI>Acordos de regularização</UI> (7.8): é o Venerável (ou o Administrador) que <strong>bloqueia o cadastro</strong> de quem está no Art. 002 depois do comunicado à Potência, define a taxa de regularização (valor aberto) e as parcelas, <strong>assina o termo</strong> do acordo e <strong>libera o irmão</strong> quando o acordo é quitado. Você também recebe o e-mail de acordo quebrado.</li>
+                <li><UI>Taxas de grau</UI> (7.21): cria e acompanha os planos de iniciação, elevação, exaltação, filiação e regularização, com entrada opcional, e assina o contrato.</li>
+                <li><strong>Aviso de fim de recorrência:</strong> 30 dias antes de acabar o período programado das mensalidades recorrentes, você recebe um e-mail (junto com o Tesoureiro e o Administrador) perguntando se a loja renova ou cria outro período — quem renova é o Tesoureiro ou o Administrador (7.3).</li>
                 <li><UI>Auditoria</UI> (se o Administrador liberar em 6.4): a trilha imutável de quem fez o quê e quando — base para pareceres e aprovações.</li>
               </Bullets>
             </Chapter>
@@ -2081,12 +2084,13 @@ export function ManualBook() {
               </p>
               <Bullets>
                 <li><strong>Resumo do obreiro:</strong> seus dados — nome, e-mail, telefone, <strong>grau atual</strong> e loja de origem.</li>
-                <li><strong>Resumo financeiro:</strong> três indicadores, sempre do que está <strong>em aberto</strong> (conta paga sai na hora da baixa) — <UI>O que devo</UI>, <UI>A Loja me deve</UI> e <UI>Vencido</UI> (a parte do que você deve que já passou do vencimento).</li>
-                <li><strong>Minhas pendências:</strong> as contas que você deve à loja e ainda estão em aberto (mensalidade, material, evento — qualquer origem), com o selo <UI>Vencida há N dias</UI> e o total em aberto. Clique em <UI>Pagar</UI> para gerar o Pix com o valor exato (QR Code e <UI>Copiar código</UI>). Se a loja recebe pelo <strong>Asaas</strong>, a confirmação é automática: depois do Pix, a conta sai das pendências e o recibo aparece no extrato. Se a loja recebe <strong>direto na conta dela</strong>, o Pix cai na chave da loja; depois de pagar, clique em <UI>Já paguei</UI> para avisar a Tesouraria, que confere o extrato e dá a baixa — se quiser, anexe antes a foto ou o PDF do comprovante (<UI>Anexar comprovante</UI>, até 4 MB). O Asaas exige CPF: se o seu não estiver no cadastro, peça à Secretaria. <strong>Várias de uma vez:</strong> com duas ou mais pendências, marque as que quiser (ou <UI>Marcar todas</UI>) e clique em <UI>Pagar selecionadas</UI> — sai um Pix só com a soma; no Asaas, a confirmação quita todas; na conta da loja, o <UI>Já paguei</UI> avisa a Tesouraria de todas juntas. <strong>Depois do aviso</strong>, você recebe um e-mail <em>Comprovante recebido</em> (serve de protocolo): se o comprovante em PDF foi conferido, ele diz que o valor, o recebedor e o identificador batem e que falta só a baixa; caso contrário, que a Tesouraria vai conferir. Na baixa chega o <em>Pagamento confirmado</em>. <strong>Aviso não confirmado:</strong> se a Tesouraria recusar o aviso (ex.: comprovante de outro pagamento), a conta volta a <em>Em aberto</em> com o motivo escrito embaixo e você recebe um e-mail explicando — é só enviar o comprovante certo pelo <UI>Já paguei</UI>, sem esperar 24 horas. <strong>Pagou por fora</strong> (ex.: respondeu a Tesouraria no WhatsApp com o comprovante)? A Tesouraria registra por você e o e-mail é o mesmo. <strong>Multa e juros:</strong> se a loja cobra acréscimo por atraso, o Pix de uma pendência vencida sai com o valor atualizado até o dia, e a tela mostra quanto é de multa e juros.</li>
-                <li><strong>Meu extrato:</strong> cada conta vinculada a você — tipo (a receber/a pagar), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado — sai com o cabeçalho da loja, o saldo do filtro e o aviso de que é um documento informativo (o comprovante oficial de um pagamento é o recibo da Tesouraria, que você abre pelo link <UI>Recibo</UI> de cada conta paga).</li>
-                <li><strong>Meu histórico de pagamentos:</strong> no Resumo financeiro, abra <UI>Meu histórico de pagamentos</UI> para ver tudo o que você já pagou à loja, por período (padrão: o ano corrente): data, a que se refere, vencimento, forma de pagamento e valor, com o <UI>Recibo</UI> de cada pagamento e o total. Use <UI>Imprimir / PDF</UI> ou <UI>Exportar CSV</UI> para guardar. Assim você confere, por conta própria, o que já quitou.</li>
-                <li><strong>Declaração de regularidade:</strong> em dia com a Tesouraria (nada vencido)? Abra <UI>Declaração de regularidade</UI> no Resumo financeiro e imprima a declaração oficial da loja, com as assinaturas do Tesoureiro e do Venerável — para transferência, elevação, filiação ou candidatura. Com algum débito vencido, a tela mostra o que falta e o caminho para pagar.</li>
-                <li><strong>Documentos recentes:</strong> os arquivos disponibilizados a você pela loja.</li>
+                <li><strong>Situação financeira:</strong> indicadores do que está <strong>em aberto</strong> (conta paga sai na hora da baixa) — <UI>Saldo devedor</UI> (o que você deve à loja), <UI>Vencido</UI> (a parte do saldo que já passou do vencimento; só aparece se houver) e <UI>Crédito a receber</UI> (o que a loja deve a você; só aparece se houver).</li>
+                <li><strong>Pendências:</strong> as contas que você deve à loja e ainda estão em aberto (mensalidade, material, evento — qualquer origem), com o selo <UI>Vencida há N dias</UI> e o total em aberto. Clique em <UI>Pagar</UI> para gerar o Pix com o valor exato (QR Code e <UI>Copiar código</UI>). Se a loja recebe pelo <strong>Asaas</strong>, a confirmação é automática: depois do Pix, a conta sai das pendências e o recibo aparece no extrato. Se a loja recebe <strong>direto na conta dela</strong>, o Pix cai na chave da loja; depois de pagar, clique em <UI>Já paguei</UI> para avisar a Tesouraria, que confere o extrato e dá a baixa — se quiser, anexe antes a foto ou o PDF do comprovante (<UI>Anexar comprovante</UI>, até 4 MB). O Asaas exige CPF: se o seu não estiver no cadastro, peça à Secretaria. <strong>Várias de uma vez:</strong> com duas ou mais pendências, marque as que quiser (ou <UI>Marcar todas</UI>) e clique em <UI>Pagar selecionadas</UI> — sai um Pix só com a soma; no Asaas, a confirmação quita todas; na conta da loja, o <UI>Já paguei</UI> avisa a Tesouraria de todas juntas. <strong>Depois do aviso</strong>, você recebe um e-mail <em>Comprovante recebido</em> (serve de protocolo): se o comprovante em PDF foi conferido, ele diz que o valor, o recebedor e o identificador batem e que falta só a baixa; caso contrário, que a Tesouraria vai conferir. Na baixa chega o <em>Pagamento confirmado</em>. <strong>Aviso não confirmado:</strong> se a Tesouraria recusar o aviso (ex.: comprovante de outro pagamento), a conta volta a <em>Em aberto</em> com o motivo escrito embaixo e você recebe um e-mail explicando — é só enviar o comprovante certo pelo <UI>Já paguei</UI>, sem esperar 24 horas. <strong>Pagou por fora</strong> (ex.: respondeu a Tesouraria no WhatsApp com o comprovante)? A Tesouraria registra por você e o e-mail é o mesmo. <strong>Multa e juros:</strong> se a loja cobra acréscimo por atraso, o Pix de uma pendência vencida sai com o valor atualizado até o dia, e a tela mostra quanto é de multa e juros.</li>
+                <li><strong>Extrato:</strong> (começa recolhido — clique no título para abrir, ou use <UI>Recibos e extrato</UI> no cartão Comprovantes) cada conta vinculada a você — tipo (<UI>Débito</UI> = você deve; <UI>Crédito</UI> = a loja deve a você), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado — sai com o cabeçalho da loja, o saldo do filtro e o aviso de que é um documento informativo (o comprovante oficial de um pagamento é o recibo da Tesouraria, que você abre pelo link <UI>Recibo</UI> de cada conta paga).</li>
+                <li><strong>Histórico de pagamentos:</strong> no cartão <UI>Comprovantes</UI>, abra <UI>Histórico de pagamentos</UI> para ver tudo o que você já pagou à loja, por período (padrão: o ano corrente): data, a que se refere, vencimento, forma de pagamento e valor, com o <UI>Recibo</UI> de cada pagamento e o total. Use <UI>Imprimir / PDF</UI> ou <UI>Exportar CSV</UI> para guardar. Assim você confere, por conta própria, o que já quitou.</li>
+                <li><strong>Declaração de regularidade:</strong> em dia com a Tesouraria (nada vencido)? Abra <UI>Declaração de regularidade</UI> no cartão <UI>Comprovantes</UI> e imprima a declaração oficial da loja, com as assinaturas do Tesoureiro e do Venerável — para transferência, elevação, filiação ou candidatura. Com algum débito vencido, a tela mostra o que falta e o caminho para pagar.</li>
+                <li><strong>Minhas taxas de grau:</strong> se você tem um plano de taxa (iniciação, elevação, exaltação, filiação ou regularização), o cartão mostra o valor, as cotas — com a <strong>entrada</strong>, se houver —, o que já pagou e o que falta; quitada antes do evento, vira &quot;Crédito referente à taxa…&quot;, reservado para a cerimônia (7.21).</li>
+                <li><strong>Documentos recentes:</strong> os arquivos disponibilizados a você pela loja (o cartão só aparece quando há algum).</li>
                 <li><strong>Documentos da Loja:</strong> regimento interno, regulamento geral, constituição da Potência e outros documentos institucionais, publicados pela Secretaria pra todos os obreiros — abra ou baixe direto por aqui.</li>
               </Bullets>
               <p>

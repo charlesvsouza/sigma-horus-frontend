@@ -12,7 +12,7 @@ const modules = [
     numeral: 'I',
     name: 'Tesouraria',
     description:
-      'O coração financeiro: cobranças e mensalidades, boletos e PIX com baixa automática, contas a pagar e a receber com cadastro de clientes e fornecedores, contas bancárias e transferências entre elas, conciliação bancária, fechamento de caixa e balancetes, fluxo de caixa projetado e a régua do Art. 002 para a inadimplência.',
+      'O coração financeiro: cobranças e mensalidades, boletos e PIX com baixa automática, contas a pagar e a receber com cadastro de clientes e fornecedores, contas bancárias e transferências entre elas, conciliação bancária, fechamento de caixa e balancetes, fluxo de caixa projetado e o acompanhamento da inadimplência.',
   },
   {
     numeral: 'II',
@@ -131,7 +131,7 @@ export default function Home() {
               maçônica em uma só plataforma, segura e com a precisão de quem presta contas.
             </p>
             <ul className="animate-rise mt-6 flex flex-wrap gap-2 text-xs text-sand-light" style={{ animationDelay: '350ms' }} aria-label="Destaques">
-              {['Irmão paga pelo portal com Pix', 'Histórico e recibos para cada irmão', 'Art. 002 automático', 'Prestação de contas pronta'].map((t) => (
+              {['Irmão paga pelo portal com Pix', 'Histórico e recibos para cada irmão', 'Inadimplência acompanhada', 'Prestação de contas pronta'].map((t) => (
                 <li key={t} className="rounded-full border border-gold/30 bg-sigma-blue-deep/50 px-3 py-1 backdrop-blur-sm">{t}</li>
               ))}
             </ul>

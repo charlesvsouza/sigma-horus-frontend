@@ -19,7 +19,7 @@ const benefits = [
   ['Tesouraria sem planilha', 'Mensalidades recorrentes, contas a pagar e a receber, conciliação bancária e prestação de contas pronta para o fechamento do veneralato.'],
   ['O irmão paga pelo portal', 'Pix com QR Code — uma conta ou várias num Pix só. Pelo Asaas, a baixa é automática; na conta da loja, sem tarifa do sistema.'],
   ['Transparência para cada irmão', 'Histórico de tudo o que já pagou, com recibo, e a declaração de regularidade emitida na hora.'],
-  ['Art. 002 no automático', 'Inadimplência acompanhada pela régua do regimento, com lembretes por e-mail, WhatsApp ou SMS.'],
+  ['Inadimplência acompanhada', 'Quem está em atraso, em um só relatório, com lembretes por e-mail, WhatsApp ou SMS e a declaração de regularidade emitida na hora.'],
   ['A loja inteira', 'Secretaria, sessões e frequência, chancelaria e materiais, hospitalaria e o Tronco — num só lugar.'],
   ['Seguro e conforme a LGPD', 'Cada loja só vê os próprios dados, cada cargo a sua área, auditoria de tudo e backup diário.'],
 ];

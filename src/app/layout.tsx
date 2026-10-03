@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     template: "%s · Sigma Horus",
   },
   description:
-    "Sistema para loja maçônica: tesouraria com Pix e baixa automática, portal do irmão, mensalidades e inadimplência (Art. 002), secretaria, chancelaria e hospitalaria — com prestação de contas pronta e LGPD.",
+    "Sistema para loja maçônica: tesouraria com Pix e baixa automática, portal do irmão, mensalidades e inadimplência, secretaria, chancelaria e hospitalaria — com prestação de contas pronta e LGPD.",
   keywords: ["sistema para loja maçônica", "tesouraria de loja maçônica", "gestão de loja maçônica", "mensalidade loja maçônica", "software maçonaria"],
   applicationName: "Sigma Horus",
   openGraph: {

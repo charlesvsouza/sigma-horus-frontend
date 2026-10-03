@@ -168,7 +168,7 @@ export function endNoticeText(lodgeName: string, lastDues: Date[]): { subject: s
       'O que deseja fazer?\n' +
         '1) Renovar o período atual (mesmo valor, mais alguns meses): Tesouraria → Cobranças → "Recorrências chegando ao fim" → Renovar.\n' +
         '2) Criar outro período, com novo valor ou novas datas: Tesouraria → Cobranças → Nova cobrança (ou Cobrança em massa) → "Criar como cobrança recorrente".',
-      'A renovação é feita pelo Tesoureiro ou pelo Administrador.',
+      'A renovação é feita pelo Tesoureiro ou pelo Administrador; o Venerável, se preferir, pede a eles.',
     ].join('\n\n'),
   };
 }
