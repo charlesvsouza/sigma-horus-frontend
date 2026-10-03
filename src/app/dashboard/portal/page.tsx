@@ -270,7 +270,8 @@ export default function PortalPage() {
   const [savedMessage, setSavedMessage] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'RECEIVABLE' | 'PAYABLE'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid' | 'overdue'>('all');
-  const [extratoOpen, setExtratoOpen] = useState(true);
+  // Fechado por padrão: as pendências (acima) já mostram o que está em aberto; o extrato é consulta de histórico e recibos.
+  const [extratoOpen, setExtratoOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [photoBusy, setPhotoBusy] = useState(false);
   // Candidato (profano em admissão): só débitos e cadastro — sem grau, declaração e documentos.
@@ -420,7 +421,7 @@ export default function PortalPage() {
           </section>
         ) : null}
 
-        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="grid items-start gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-sand-light">{isCandidate ? 'Meu cadastro' : 'Resumo do obreiro'}</h2>
@@ -605,6 +606,7 @@ export default function PortalPage() {
           </div>
 
           {isCandidate ? null : <>
+          {documents.length > 0 ? (
           <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Documentos recentes</h2>
             <div className="mt-5 space-y-3">
@@ -617,6 +619,7 @@ export default function PortalPage() {
               ))}
             </div>
           </div>
+          ) : null}
 
           <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Documentos da Loja</h2>

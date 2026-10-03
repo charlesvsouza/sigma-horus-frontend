@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { EmptyState, FormCard, Toast } from '@/components/ui';
+import { EmptyState, FilePicker, FormCard, Toast, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDayMixed } from '@/lib/date-only';
 
@@ -19,7 +19,8 @@ const CONFIDENCE: Record<string, string> = { 'exact-strong': 'Valor e nome confe
 
 // Baixa assistida (Modo Loja): propõe a cobrança em aberto que o crédito provavelmente quitou, por valor e
 // nome do pagador. Quem confirma é a Tesouraria — nada é baixado sem o clique.
-function SettlePicker({ bankTxId, banks, onDone, onError }: { bankTxId: string; banks: Bank[]; onDone: () => void; onError: (text: string) => void }) {
+function SettlePicker({ bankTxId, description, banks, onDone, onError }: { bankTxId: string; description: string; banks: Bank[]; onDone: () => void; onError: (text: string) => void }) {
+  const askConfirm = useConfirm();
   const [data, setData] = useState<{ suggestions: Suggestion[] } | null>(null);
   const [loadError, setLoadError] = useState('');
   const [bankId, setBankId] = useState(banks.find((b) => b.isDefault)?.id ?? banks[0]?.id ?? '');
@@ -34,7 +35,16 @@ function SettlePicker({ bankTxId, banks, onDone, onError }: { bankTxId: string; 
     return () => { alive = false; };
   }, [bankTxId]);
 
-  async function settle(accountId: string) {
+  // Só "valor e nome conferem" é um palpite forte. Os demais pedem confirmação que cita o nome divergente:
+  // dar baixa na cobrança do irmão errado desfaz-se só estornando o pagamento.
+  async function settle(s: Suggestion) {
+    const strong = s.amountMatch === 'exact' && s.nameMatch === 'strong';
+    if (!strong && !(await askConfirm({
+      title: 'Conferir antes de dar baixa',
+      message: `O extrato diz "${description}", mas a cobrança é de ${s.memberName ?? 'outro irmão'} (${(CONFIDENCE[s.amountMatch + '-' + s.nameMatch] ?? '').toLowerCase()}). Confirma que este crédito pagou esta cobrança?`,
+      confirmLabel: 'Sim, dar baixa',
+    }))) return;
+    const accountId = s.accountId;
     setBusy(accountId);
     const res = await fetch(`/api/bank-reconciliation/${bankTxId}/settle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountId, bankAccountId: bankId }) });
     const json = await res.json().catch(() => ({}));
@@ -55,17 +65,25 @@ function SettlePicker({ bankTxId, banks, onDone, onError }: { bankTxId: string; 
         </select>
       </div>
       <ul className="mt-2 space-y-2">
-        {data.suggestions.map((s) => (
+        {data.suggestions.map((s) => {
+          const strong = s.amountMatch === 'exact' && s.nameMatch === 'strong';
+          return (
           <li key={s.accountId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-3 py-2">
             <div className="text-sm">
               <p className="font-medium text-sand-light">{s.memberName ?? '—'} · {s.title}</p>
               <p className="text-xs text-sand-dark">Saldo {brl(s.balance)} · venc. {fmt(s.dueDate)} · <span className={s.amountMatch === 'exact' && s.nameMatch !== 'none' ? 'text-emerald-300' : 'text-amber-300'}>{CONFIDENCE[`${s.amountMatch}-${s.nameMatch}`]}</span></p>
             </div>
-            <button type="button" onClick={() => void settle(s.accountId)} disabled={busy !== null || !bankId} className="rounded-full bg-gold px-4 py-1.5 text-xs font-medium text-sigma-blue-deep hover:bg-gold-light disabled:opacity-40">
-              {busy === s.accountId ? 'Dando baixa…' : 'Dar baixa e conciliar'}
+            <button
+              type="button"
+              onClick={() => void settle(s)}
+              disabled={busy !== null || !bankId}
+              className={`rounded-full px-4 py-1.5 text-xs font-medium disabled:opacity-40 ${strong ? 'bg-gold text-sigma-blue-deep hover:bg-gold-light' : 'border border-white/15 text-sand-light hover:border-white/30'}`}
+            >
+              {busy === s.accountId ? 'Dando baixa…' : strong ? 'Dar baixa e conciliar' : 'Conferir e dar baixa'}
             </button>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </div>
   );
@@ -126,6 +144,7 @@ export default function ConciliacaoClient({ items, banks, canSettle }: { items: 
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [pickingId, setPickingId] = useState<string | null>(null);
   const [settlingId, setSettlingId] = useState<string | null>(null);
+  const [importFileName, setImportFileName] = useState('');
 
   async function handleFile(file: File) {
     setImporting(true);
@@ -176,14 +195,13 @@ export default function ConciliacaoClient({ items, banks, canSettle }: { items: 
         <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard title="Importar extrato" description="Arquivo OFX (exportado pelo internet banking) ou CSV com colunas Data/Descrição/Valor.">
           <div className="mt-4">
-            <input
-              ref={fileRef}
-              type="file"
-              aria-label="Arquivo do extrato (OFX ou CSV)"
+            <FilePicker
+              inputRef={fileRef}
+              ariaLabel="Arquivo do extrato (OFX ou CSV)"
               accept=".ofx,.csv,text/plain"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f); }}
               disabled={importing}
-              className="text-sm text-sand-dark file:mr-4 file:rounded-full file:border-0 file:bg-gold file:px-4 file:py-2 file:text-sm file:font-medium file:text-sigma-blue-deep hover:file:bg-gold-light"
+              fileNames={importFileName ? [importFileName] : []}
+              onFiles={(files) => { const f = files[0]; if (f) { setImportFileName(f.name); void handleFile(f); } }}
             />
             {importing ? <p className="mt-2 text-xs text-sand-dark">Importando…</p> : null}
           </div>
@@ -234,7 +252,7 @@ export default function ConciliacaoClient({ items, banks, canSettle }: { items: 
                     <button onClick={() => void ignore(tx.id)} className="text-xs text-sand-dark hover:text-sand-light">Ignorar</button>
                   </div>
                 )}
-                {settlingId === tx.id ? <SettlePicker bankTxId={tx.id} banks={banks} onDone={() => { setSettlingId(null); setMessage({ kind: 'ok', text: 'Baixa registrada e linha do extrato conciliada.' }); router.refresh(); }} onError={(text) => setMessage({ kind: 'error', text })} /> : null}
+                {settlingId === tx.id ? <SettlePicker bankTxId={tx.id} description={tx.description} banks={banks} onDone={() => { setSettlingId(null); setMessage({ kind: 'ok', text: 'Baixa registrada e linha do extrato conciliada.' }); router.refresh(); }} onError={(text) => setMessage({ kind: 'error', text })} /> : null}
                 {pickingId === tx.id ? <MatchPicker bankTxId={tx.id} onDone={() => { setPickingId(null); router.refresh(); }} /> : null}
               </div>
             ))}

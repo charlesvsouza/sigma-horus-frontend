@@ -184,9 +184,13 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
 
   return (
     <>
-    <HistoryWindowNote full={fullHistory} hidden={data.hiddenOld} noun="pagamentos" basePath="/dashboard/pagamentos" />
-    <CashPendingCard items={cashPending} banks={data.financialAccounts.map((b) => ({ id: b.id, name: b.name, kind: b.kind }))} />
     <PagamentosClient
+      topSlot={
+        <>
+          <CashPendingCard items={cashPending} banks={data.financialAccounts.map((b) => ({ id: b.id, name: b.name, kind: b.kind }))} />
+          <HistoryWindowNote inline full={fullHistory} hidden={data.hiddenOld} noun="pagamentos" basePath="/dashboard/pagamentos" />
+        </>
+      }
       accounts={accounts}
       members={data.members}
       payments={payments}

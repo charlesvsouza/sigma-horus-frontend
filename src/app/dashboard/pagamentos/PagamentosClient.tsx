@@ -74,7 +74,8 @@ interface PaymentItem {
   bankAccount?: { id: string; name: string; kind: string } | null;
 }
 
-export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null, currentUserId = null }: { accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[]; notices?: PaymentNotice[]; initialAccountId?: string | null; currentUserId?: string | null }) {
+export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null, currentUserId = null, topSlot = null }: {
+  topSlot?: React.ReactNode; accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[]; notices?: PaymentNotice[]; initialAccountId?: string | null; currentUserId?: string | null }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -255,8 +256,11 @@ export default function PagamentosClient({ accounts, members, payments, financia
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-sand-light">Pagamentos</h1>
-          <p className="mt-1 text-sm text-sand-dark">Registre entradas e saídas de caixa vinculadas às contas do MVP.</p>
+          <p className="mt-1 text-sm text-sand-dark">Registre entradas e saídas de caixa vinculadas às contas a pagar e a receber.</p>
         </div>
+
+        {/* Avisos que pedem ação (ex.: dinheiro marcado no painel do Asaas) vêm DEPOIS do título da página. */}
+        {topSlot}
 
         <Toast message={message} onClose={() => setMessage(null)} />
 

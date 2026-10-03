@@ -25,7 +25,7 @@
   --sigma-gold-dark:  #8B6914; /* ouro pressionado */
   --sigma-sand:       #5C5346; /* texto secundário (marrom sépia) */
   --sigma-sand-light: #2D281E; /* texto principal (tinta sépia escura, não preto) */
-  --sigma-sand-dark:  #7D725E; /* texto desabilitado / leve */
+  --sigma-sand-dark:  #625847; /* texto secundário (≥5,0:1 sobre página, card e chip) */
 }
 
 /* Tema "Sistema": segue a preferência clara/escura do SO. Quando o SO está em
@@ -41,7 +41,7 @@
     --sigma-gold-dark:  #8B6914;
     --sigma-sand:       #5C5346;
     --sigma-sand-light: #2D281E;
-    --sigma-sand-dark:  #7D725E;
+    --sigma-sand-dark:  #625847;
   }
 }
 
@@ -372,10 +372,10 @@
    Regras fora de @layer p/ vencerem as utilities. Tema escuro (:root) intacto.
    =========================================================================== */
 [data-theme="light"] {
-  --color-rose-100: #9f1239; --color-rose-200: #be123c; --color-rose-300: #be123c;
-  --color-amber-100: #92400e; --color-amber-200: #b45309; --color-amber-300: #b45309;
-  --color-emerald-100: #065f46; --color-emerald-200: #047857; --color-emerald-300: #047857;
-  --color-sky-100: #075985; --color-sky-200: #0369a1; --color-sky-300: #0369a1;
+  --color-rose-100: #9f1239; --color-rose-200: #9f1239; --color-rose-300: #9f1239;
+  --color-amber-100: #92400e; --color-amber-200: #92400e; --color-amber-300: #92400e;
+  --color-emerald-100: #065f46; --color-emerald-200: #065f46; --color-emerald-300: #065f46;
+  --color-sky-100: #075985; --color-sky-200: #075985; --color-sky-300: #075985;
 }
 [data-theme="light"] .bg-rose-500\/10,
 [data-theme="light"] .bg-rose-500\/12 { background-color: color-mix(in oklab, var(--color-rose-500) 15%, transparent); }
@@ -387,10 +387,10 @@
 
 @media (prefers-color-scheme: light) {
   [data-theme="system"] {
-    --color-rose-100: #9f1239; --color-rose-200: #be123c; --color-rose-300: #be123c;
-    --color-amber-100: #92400e; --color-amber-200: #b45309; --color-amber-300: #b45309;
-    --color-emerald-100: #065f46; --color-emerald-200: #047857; --color-emerald-300: #047857;
-    --color-sky-100: #075985; --color-sky-200: #0369a1; --color-sky-300: #0369a1;
+    --color-rose-100: #9f1239; --color-rose-200: #9f1239; --color-rose-300: #9f1239;
+    --color-amber-100: #92400e; --color-amber-200: #92400e; --color-amber-300: #92400e;
+    --color-emerald-100: #065f46; --color-emerald-200: #065f46; --color-emerald-300: #065f46;
+    --color-sky-100: #075985; --color-sky-200: #075985; --color-sky-300: #075985;
   }
   [data-theme="system"] .bg-rose-500\/10,
   [data-theme="system"] .bg-rose-500\/12 { background-color: color-mix(in oklab, var(--color-rose-500) 15%, transparent); }
@@ -459,6 +459,17 @@
   }
 }
 
+/* Botão em ouro no Papiro: o texto usava o token "blue-deep", que no tema claro é o próprio papiro (2,87:1
+   sobre o ouro). Tinta escura dá 4,5:1 no ouro e 6,2:1 no ouro de hover. Cobre todo "bg-gold ... text-sigma-blue-deep". */
+[data-theme="light"] .bg-gold.text-sigma-blue-deep {
+  color: #2d281e;
+}
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] .bg-gold.text-sigma-blue-deep {
+    color: #2d281e;
+  }
+}
+
 /* Alvos de toque: em tela de toque (celular/tablet) os botões, links-botão e caixas de marcar do conteúdo
    ganham no mínimo 44px — o público é sênior e usa muito o celular. O desktop (mouse) não muda.
    Exceção: data-compact. Fora do <main> (menu lateral, cabeçalho) cada componente já cuida do seu tamanho. */
@@ -475,7 +486,18 @@
   }
   main input[type="checkbox"],
   main input[type="radio"] {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  /* Links de ação soltos (Abrir arquivo, Recibo, Abrir termo…) e selects ganham área de toque; links dentro de
+     parágrafos corridos não (quebrariam a linha). */
+  main a:not(.rounded-full):not([data-compact]):not(p a):not(li > p a):not(nav a) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+  main select:not([data-compact]),
+  main input[type="file"]:not([data-compact]) {
+    min-height: 2.75rem;
   }
 }

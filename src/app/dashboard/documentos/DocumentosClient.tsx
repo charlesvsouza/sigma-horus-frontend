@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
+import { Badge, Button, CollapsibleCard, EmptyState, Field, FilePicker, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 
 import { DOCUMENT_CATEGORY_SUGGESTIONS as DOCUMENT_CATEGORIES, DOCUMENT_DEGREES, documentDegreeLabel, isInternalCategory } from '@/lib/documents';
@@ -200,11 +200,11 @@ export default function DocumentosClient({ items, members, canEdit = false }: { 
                   </select>
                 </Field>
               ) : null}
-              <label className="rounded-lg border border-dashed border-white/8 bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand md:col-span-2">
+              <div className="rounded-lg border border-dashed border-white/8 bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand md:col-span-2">
                 <span className="mb-2 block font-medium text-sand-light">Arquivo(s)</span>
-                <input type="file" multiple onChange={(event) => setFiles(Array.from(event.target.files ?? []))} className="w-full" />
+                <FilePicker multiple ariaLabel="Arquivos do documento" fileNames={files.map((f) => f.name)} onFiles={setFiles} />
                 {files.length > 1 ? <span className="mt-2 block text-xs text-sand-dark">{files.length} arquivos selecionados — cada um vira um documento, com o título acima seguido do nome do arquivo.</span> : null}
-              </label>
+              </div>
               <Field label="Resumo ou conteúdo do documento" className="md:col-span-2">
                 <textarea value={content} onChange={(event) => setContent(event.target.value)} className={`${INPUT} md:col-span-2`} rows={4} />
               </Field>

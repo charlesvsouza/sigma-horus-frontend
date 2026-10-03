@@ -138,7 +138,7 @@ export function Signatures({ signatures, className = '' }: { signatures?: Signat
           <div className="border-t border-sand-dark/60 pt-1.5" />
           {s.name ? <p className="font-semibold text-sand-light">{s.name}</p> : <p className="text-sand-dark">&nbsp;</p>}
           <p className="text-sand-dark">{s.role}</p>
-          {s.mark ? <p className="mt-1 text-[0.65rem] leading-tight text-emerald-300">{s.mark}</p> : null}
+          {s.mark ? <p className="mt-1 text-[0.72rem] leading-tight text-emerald-200">{s.mark}</p> : null}
         </div>
       ))}
     </div>

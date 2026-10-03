@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Alert, Badge, Button, Card, EmptyState, inputClass, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
-import { AGREEMENT_PARTIES } from '@/lib/agreement-signature';
+import { AGREEMENT_PARTIES, partyLabel } from '@/lib/agreement-signature';
 import Link from 'next/link';
 
 export interface AgreementView {
   id: string;
   signedParties: string[];
+  canSignAs: string | null;
   memberId: string;
   memberName: string;
   status: string; // open | settled | lifted
@@ -109,6 +110,19 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
   const late = a.status === 'open' && a.schedule.some((p) => p.late);
   const pct = a.total > 0 ? Math.min(100, Math.round((a.paid / a.total) * 100)) : 0;
 
+  async function sign() {
+    const label = a.canSignAs ? partyLabel(a.canSignAs) : '';
+    if (!(await askConfirm({
+      title: 'Assinar o termo de acordo',
+      message: `Você assina digitalmente o Termo de acordo de regularização de ${a.memberName} como ${label}. A assinatura registra quem assinou, quando e o resumo do acordo, e não pode ser desfeita. Antes, leia o termo (botão "Abrir termo").`,
+      confirmLabel: 'Assinar digitalmente',
+    }))) return;
+    const res = await fetch(`/api/members/${a.memberId}/block/sign`, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) { setMessage({ kind: 'ok', text: `Termo assinado. Código de verificação: ${data.code}.` }); router.refresh(); }
+    else setMessage({ kind: 'error', text: data.error ?? 'Não foi possível assinar.' });
+  }
+
   async function lift() {
     if (!(await askConfirm({
       title: 'Liberar o irmão',
@@ -189,7 +203,10 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
             {a.signedParties.includes(p.party) ? '✓' : '○'} {p.label}
           </span>
         ))}
-        <Link href={`/dashboard/acordos/${a.id}/termo`} className="ml-auto text-gold hover:text-gold-light">Abrir termo / assinar</Link>
+        <span className="ml-auto flex flex-wrap items-center gap-3">
+          <Link href={`/dashboard/acordos/${a.id}/termo`} className="text-gold hover:text-gold-light">Abrir termo</Link>
+          {a.canSignAs ? <Button type="button" size="sm" onClick={() => void sign()}>Assinar como {partyLabel(a.canSignAs)}</Button> : null}
+        </span>
       </div>
 
       {a.status !== 'lifted' ? (

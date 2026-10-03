@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { partyForSigner } from '@/lib/agreement-signature';
 import { canBlockMembers } from '@/lib/member-block';
 import { summarizeBlock } from '@/lib/member-block-server';
 import { syncMemberBlock } from '@/lib/member-block-sync';
@@ -21,6 +22,7 @@ export default async function AcordosPage() {
   const access = await requireLodgeAccess(lodgeId, role, 'accounts', 'read');
   if (!access.ok) return denied('Acesso negado.');
   const canPay = (await requireLodgeAccess(lodgeId, role, 'accounts', 'write')).ok;
+  const ownMemberId = session?.user?.memberId ? String(session.user.memberId) : null;
 
   const data = await withTenant(lodgeId, async (db) => {
     const blocks = await db.memberBlock.findMany({
@@ -42,6 +44,8 @@ export default async function AcordosPage() {
   const agreements: AgreementView[] = data.summaries.map(({ b, s }) => ({
     id: s.id,
     signedParties: b.signatures.map((x) => x.party),
+    // Em nome de qual parte o usuário logado ainda pode assinar (nenhuma = já assinou, não é parte, ou o acordo acabou).
+    canSignAs: (() => { const p = partyForSigner(role, ownMemberId === b.memberId); return p && s.status !== 'lifted' && !b.signatures.some((x) => x.party === p) ? p : null; })(),
     memberId: s.memberId,
     memberName: b.member.name,
     status: s.status,

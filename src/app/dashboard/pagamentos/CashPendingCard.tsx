@@ -41,7 +41,7 @@ export default function CashPendingCard({ items, banks }: { items: CashPendingIt
   }
 
   return (
-    <section aria-labelledby="cash-pending-title" className="mx-auto mt-6 max-w-6xl px-6">
+    <section aria-labelledby="cash-pending-title" className="">
       <Alert intent="warn">
         <h2 id="cash-pending-title" className="text-sm font-semibold">Recebidos em dinheiro no Asaas — confirme na Tesouraria ({items.length})</h2>
         <p className="mt-1 text-xs">

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { OfficialDocument } from '@/components/report/official-document';
 import { ReportActions, type Signatory } from '@/components/report/report-document';
-import { Button, Toast, type ToastMessage } from '@/components/ui';
+import { Button, Toast, useConfirm, type ToastMessage } from '@/components/ui';
 import { partyLabel } from '@/lib/agreement-signature';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
@@ -34,11 +34,17 @@ export default function TermoAcordoClient({
   issuedBy: string | null;
 }) {
   const router = useRouter();
+  const askConfirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<ToastMessage>(null);
   const signed = parties.filter((p) => p.signedAt).length;
 
   async function sign() {
+    if (!(await askConfirm({
+      title: 'Assinar o termo de acordo',
+      message: `Você assina digitalmente este termo como ${partyLabel(canSignAs ?? '')}. A assinatura registra quem assinou, quando e o resumo do acordo, e não pode ser desfeita.`,
+      confirmLabel: 'Assinar digitalmente',
+    }))) return;
     setBusy(true);
     const res = await fetch(`/api/members/${memberId}/block/sign`, { method: 'POST' });
     const data = await res.json().catch(() => ({}));
