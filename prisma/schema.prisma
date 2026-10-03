@@ -143,6 +143,7 @@ model Lodge {
   degreeFeePlans DegreeFeePlan[]
   memberBlocks   MemberBlock[]
   memberBlockItems MemberBlockItem[]
+  sessionMinutes SessionMinutes[]
   candidateInquirers CandidateInquirer[]
   hospitalityRequests HospitalityRequest[]
   financialAccounts FinancialAccount[]
@@ -829,6 +830,7 @@ model Session {
   attendances Attendance[]
   accounts   Account[]
   visitors   SessionVisitor[]
+  minutesFiles SessionMinutes[]
   @@index([lodgeId, date])
 }
 
@@ -1278,4 +1280,26 @@ model MemberBlockItem {
   @@index([lodgeId])
   @@index([blockId])
   @@index([accountId])
+}
+
+// Balaustre (ata) da sessão como arquivo, UM POR GRAU trabalhado: a sessão que sobe aos três graus tem
+// até três balaustres (Aprendiz, Companheiro, Mestre). Bucket privado de Documentos. Só vê/baixa quem tem
+// o grau do balaustre ou superior (quem envia documentos vê todos). Os campos antigos Session.minutes*
+// ficaram só como legado: a migration copiou o arquivo que já existia para o menor grau da sessão.
+model SessionMinutes {
+  id           String   @id @default(cuid())
+  lodgeId      String
+  sessionId    String
+  degree       Int      // 1 = Aprendiz, 2 = Companheiro, 3 = Mestre
+  storageKey   String
+  fileName     String
+  mimeType     String
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lodge   Lodge   @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@unique([sessionId, degree])
+  @@index([lodgeId])
 }

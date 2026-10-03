@@ -8,13 +8,14 @@ import { toBRDateTimeLocal } from '@/lib/br-time';
 import { degreesLabel } from '@/lib/session-convocation';
 import { Alert, Button, Field, inputClass, useConfirm } from '@/components/ui';
 import { SessionDegreePicker } from '@/components/session-degree-picker';
+import { minutesDegreeLabel } from '@/lib/session-minutes';
 import { ConvocationPanel } from './ConvocationPanel';
 import { VisitorsPanel, type SessionVisit } from './VisitorsPanel';
 
 interface Member { id: string; name: string; }
 interface SessionInfo {
   id: string; title: string; date: string; endDate?: string | null; type: string; degrees: number[];
-  agenda?: string | null; minutesFileName?: string | null;
+  agenda?: string | null; minutesDegrees: number[]; minutesFiles: { degree: number; fileName: string }[];
   convocationSentAt?: string | null; convocationSentText: string | null; convocationCurrentText: string; convocationChanged: boolean;
   locked: boolean; lockedAt?: string | null;
 }
@@ -39,9 +40,9 @@ export default function SessionDetailClient({
   const [attendanceMap, setAttendanceMap] = useState<Record<string, string>>(initialAttendance);
   const [agenda, setAgenda] = useState(session.agenda ?? '');
   const [savedAgenda, setSavedAgenda] = useState(session.agenda ?? '');
-  const [minutesFileName, setMinutesFileName] = useState(session.minutesFileName ?? null);
+  const [minutesFiles, setMinutesFiles] = useState(session.minutesFiles);
   const [savingAgenda, setSavingAgenda] = useState(false);
-  const [uploadingMinutes, setUploadingMinutes] = useState(false);
+  const [uploadingMinutes, setUploadingMinutes] = useState<number | null>(null); // grau em envio/remoção
   const [locked, setLocked] = useState(session.locked);
   const [lockedAt, setLockedAt] = useState(session.lockedAt ?? null);
   const [lockBusy, setLockBusy] = useState(false);
@@ -140,30 +141,32 @@ export default function SessionDetailClient({
     }
   }
 
-  async function uploadMinutes(file: File) {
-    setUploadingMinutes(true);
+  async function uploadMinutes(degree: number, file: File) {
+    setUploadingMinutes(degree);
     setMessage(null);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('degree', String(degree));
     const res = await fetch(`/api/sessions/${session.id}/minutes`, { method: 'POST', body: formData });
     const data = await res.json().catch(() => ({}));
-    setUploadingMinutes(false);
+    setUploadingMinutes(null);
     if (res.ok) {
-      setMinutesFileName(data.fileName ?? file.name);
-      setMessage({ kind: 'ok', text: 'Balaustre enviado.' });
+      setMinutesFiles((cur) => [...cur.filter((m) => m.degree !== degree), { degree, fileName: data.fileName ?? file.name }].sort((x, y) => x.degree - y.degree));
+      setMessage({ kind: 'ok', text: data.locked ? `Balaustre do ${minutesDegreeLabel(degree)} enviado. Todos os graus têm balaustre: a sessão foi trancada.` : `Balaustre do ${minutesDegreeLabel(degree)} enviado.` });
+      router.refresh();
     } else {
       setMessage({ kind: 'error', text: data.error ?? 'Erro ao enviar o balaustre.' });
     }
   }
 
-  async function removeMinutes() {
-    if (!(await askConfirm({ title: 'Remover balaustre', message: 'Remove o arquivo do balaustre desta sessão.', confirmLabel: 'Remover', intent: 'danger' }))) return;
-    setUploadingMinutes(true);
+  async function removeMinutes(degree: number) {
+    if (!(await askConfirm({ title: 'Remover balaustre', message: `Remove o arquivo do balaustre do ${minutesDegreeLabel(degree)} desta sessão.`, confirmLabel: 'Remover', intent: 'danger' }))) return;
+    setUploadingMinutes(degree);
     setMessage(null);
-    const res = await fetch(`/api/sessions/${session.id}/minutes`, { method: 'DELETE' });
-    setUploadingMinutes(false);
+    const res = await fetch(`/api/sessions/${session.id}/minutes?degree=${degree}`, { method: 'DELETE' });
+    setUploadingMinutes(null);
     if (res.ok) {
-      setMinutesFileName(null);
+      setMinutesFiles((cur) => cur.filter((m) => m.degree !== degree));
       setMessage({ kind: 'ok', text: 'Balaustre removido.' });
     } else {
       const data = await res.json().catch(() => ({}));
@@ -302,30 +305,41 @@ export default function SessionDetailClient({
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Balaustre / Ata</h2>
           <p className="mt-1 text-xs text-sand-dark">
-            Importe o balaustre em PDF ou Word — não é digitado no sistema. Depois de enviado, qualquer membro pode
-            baixá-lo ao revisitar esta sessão (Secretaria, no portal).
+            Importe o balaustre em PDF ou Word — não é digitado no sistema. {session.minutesDegrees.length > 1
+              ? 'A sessão trabalhou mais de um grau: envie um balaustre para cada grau. Cada irmão baixa o do seu grau e o dos graus inferiores (Secretaria, no portal).'
+              : 'Depois de enviado, qualquer obreiro pode baixá-lo ao revisitar esta sessão (Secretaria, no portal).'}
+            {session.minutesDegrees.length > 1 ? ' Quando todos os graus tiverem balaustre, a sessão é trancada automaticamente.' : ''}
           </p>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            {minutesFileName ? (
-              <a href={`/api/sessions/${session.id}/minutes/download`} className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold">
-                Baixar {minutesFileName}
-              </a>
-            ) : (
-              <span className="text-sm text-sand-dark">Ainda não enviado.</span>
-            )}
-            <label className={`cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-sand transition-colors hover:border-white/25 ${locked ? 'cursor-not-allowed opacity-40' : ''}`}>
-              {uploadingMinutes ? 'Enviando…' : minutesFileName ? 'Trocar arquivo' : 'Enviar arquivo'}
-              <input
-                type="file"
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                className="hidden"
-                disabled={uploadingMinutes || locked}
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMinutes(f); e.target.value = ''; }}
-              />
-            </label>
-            {minutesFileName ? (
-              <button type="button" onClick={() => void removeMinutes()} disabled={uploadingMinutes || locked} className="text-sm text-rose-300/70 transition hover:text-rose-300 disabled:opacity-40">Remover</button>
-            ) : null}
+          <div className="mt-4 space-y-3">
+            {session.minutesDegrees.map((degree) => {
+              const file = minutesFiles.find((m) => m.degree === degree);
+              const busy = uploadingMinutes === degree;
+              return (
+                <div key={degree} className="flex flex-wrap items-center gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3">
+                  {session.minutesDegrees.length > 1 ? <span className="min-w-44 text-sm font-medium text-sand-light">{minutesDegreeLabel(degree)}</span> : null}
+                  {file ? (
+                    <a href={`/api/sessions/${session.id}/minutes/download?degree=${degree}`} className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/80 transition-colors hover:border-gold/60 hover:text-gold">
+                      Baixar {file.fileName}
+                    </a>
+                  ) : (
+                    <span className="text-sm text-sand-dark">Ainda não enviado.</span>
+                  )}
+                  <label className={`cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-sand transition-colors hover:border-white/25 ${locked ? 'cursor-not-allowed opacity-40' : ''}`}>
+                    {busy ? 'Enviando…' : file ? 'Trocar arquivo' : 'Enviar arquivo'}
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      className="hidden"
+                      disabled={uploadingMinutes !== null || locked}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMinutes(degree, f); e.target.value = ''; }}
+                    />
+                  </label>
+                  {file ? (
+                    <button type="button" onClick={() => void removeMinutes(degree)} disabled={uploadingMinutes !== null || locked} className="text-sm text-rose-300/70 transition hover:text-rose-300 disabled:opacity-40">Remover</button>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         </section>
 

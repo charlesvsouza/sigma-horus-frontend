@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.81</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.82</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.81 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.82 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -1801,7 +1801,7 @@ export function ManualBook() {
                   <li><strong>Alterou depois de convocar:</strong> ao salvar, o sistema avisa que a sessão já foi convocada. Em seguida o cartão mostra <strong>⚠ A sessão foi alterada depois da convocação</strong>, com a versão enviada ao lado da atual, e o botão vira <UI>Revisar e enviar retificação</UI> — a mensagem sai marcada como <strong>RETIFICAÇÃO</strong>.</li>
                   <li><strong>Enviar também pelo WhatsApp:</strong> depois do e-mail, lista os convocados para você mandar o mesmo texto irmão por irmão, pelo seu WhatsApp (como no envio de cobranças): <UI>Enviar</UI> abre a conversa com o texto pronto; ao voltar, confirme <UI>Sim, enviei</UI>. Se a sessão mudou, a lista só volta depois da retificação.</li>
                   <li><strong>Ordem do dia:</strong> edite e clique em <UI>Salvar ordem do dia</UI>. Ela vai na convocação.</li>
-                  <li><strong>Balaustre / Ata:</strong> <strong>não é digitado no sistema</strong> — importe o arquivo (PDF ou Word) em <UI>Enviar arquivo</UI>. Depois de enviado, qualquer membro pode baixá-lo ao revisitar a sessão na Secretaria do portal (<UI>Baixar</UI>). <UI>Trocar arquivo</UI> substitui a versão anterior; <UI>Remover</UI> tira o arquivo da sessão.</li>
+                  <li><strong>Balaustre / Ata:</strong> <strong>não é digitado no sistema</strong> — importe o arquivo (PDF ou Word) em <UI>Enviar arquivo</UI>. <strong>Um balaustre por grau:</strong> se a sessão trabalhou os três graus (marcados na convocação), aparecem três linhas — Aprendiz, Companheiro e Mestre — e você envia um arquivo em cada. Na Secretaria do portal, cada irmão baixa o balaustre do <strong>seu grau e dos graus inferiores</strong> (um Aprendiz não vê o do Mestre). <UI>Trocar arquivo</UI> substitui a versão do grau; <UI>Remover</UI> tira o arquivo daquele grau. Quando todos os graus da sessão têm balaustre, a sessão é <strong>trancada automaticamente</strong>; enquanto falta algum, ela continua aberta para você enviar o restante.</li>
                   <li><strong>Registrar presença:</strong> toggle por obreiro (presente/ausente) — <strong>só libera depois do horário de término da sessão</strong> (campo <UI>Término</UI> da criação); antes disso os botões ficam desabilitados. Sessões criadas antes deste recurso (sem término definido) não são bloqueadas.</li>
                 </Bullets>
                 <Note>

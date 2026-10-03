@@ -38,6 +38,7 @@ export const BACKUP_MODELS = [
   'materialIncident',
   'venerableGalleryEntry',
   'session',
+  'sessionMinutes', // depois de session (balaustre por grau)
   'visitor',
   'sessionVisitor', // depois de session e visitor
   'chartAccount',

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
+import { minutesDegreeLabel } from '@/lib/session-minutes';
 
 interface SessionItem {
   id: string;
@@ -11,7 +12,7 @@ interface SessionItem {
   grade: string | null;
   agenda: string | null;
   minutes: string | null;
-  minutesFileName: string | null;
+  minutesFiles: { degree: number; fileName: string }[];
   convocationSentAt: string | null;
 }
 
@@ -153,10 +154,16 @@ export default function SecretariaPage() {
               </div>
               <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gold">Balaustre / Ata</p>
-                {selected.minutesFileName ? (
-                  <a href={`/api/sessions/${selected.id}/minutes/download`} className="mt-2 inline-block text-sm text-gold hover:text-gold-light">
-                    Baixar {selected.minutesFileName}
-                  </a>
+                {selected.minutesFiles.length > 0 ? (
+                  <ul className="mt-2 space-y-1">
+                    {selected.minutesFiles.map((m) => (
+                      <li key={m.degree}>
+                        <a href={`/api/sessions/${selected.id}/minutes/download?degree=${m.degree}`} className="inline-block text-sm text-gold hover:text-gold-light">
+                          {selected.minutesFiles.length > 1 ? `${minutesDegreeLabel(m.degree)} — ` : ''}Baixar {m.fileName}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 ) : (
                   <p className="mt-2 whitespace-pre-wrap text-sm text-sand">{selected.minutes || 'Ainda não publicado.'}</p>
                 )}

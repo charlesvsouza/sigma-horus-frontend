@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { NOT_CANDIDATE } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
 import { sessionDegrees } from '@/lib/session-convocation';
+import { minutesDegrees } from '@/lib/session-minutes';
 import { loadConvocation } from '@/lib/session-convocation-server';
 import SessionDetailClient from './SessionDetailClient';
 
@@ -16,7 +17,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     ? await withTenant(String(lodgeId), async (db) => {
         const item = await db.session.findFirst({
           where: { id, lodgeId: String(lodgeId) },
-          include: { attendances: { include: { member: { select: { id: true, name: true } } } } },
+          include: { attendances: { include: { member: { select: { id: true, name: true } } } }, minutesFiles: { select: { degree: true, fileName: true }, orderBy: { degree: 'asc' } } },
         });
         // Visitantes da sessão (lista digitada pela Secretaria), na ordem em que foram incluídos.
         const visits = await db.sessionVisitor.findMany({
@@ -57,7 +58,8 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         endDate: data.item.endDate ? data.item.endDate.toISOString() : null,
         type: data.item.type, degrees: sessionDegrees(data.item),
         agenda: data.item.agenda ?? null,
-        minutesFileName: data.item.minutesFileName ?? null,
+        minutesDegrees: minutesDegrees(data.item),
+        minutesFiles: data.item.minutesFiles,
         convocationSentAt: data.item.convocationSentAt ? data.item.convocationSentAt.toISOString() : null,
         convocationSentText: convocation?.sentText ?? null,
         convocationCurrentText: convocation?.base ?? '',
