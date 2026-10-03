@@ -161,7 +161,8 @@ export default function DocumentosClient({ items, members, canEdit = false }: { 
 
         {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
 
-        <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className={`grid items-start gap-6 ${canEdit ? 'lg:grid-cols-2' : ''}`}>
+        {canEdit ? (
         <FormCard title="Novo documento">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -211,6 +212,7 @@ export default function DocumentosClient({ items, members, canEdit = false }: { 
             <Button type="submit" disabled={submitting}>{submitting ? 'Enviando…' : files.length > 1 ? `Enviar ${files.length} documentos` : 'Enviar e salvar documento'}</Button>
           </form>
         </FormCard>
+        ) : null}
 
         <CollapsibleCard title="Arquivos e atas" count={items.length}>
           <div className="space-y-3">
@@ -242,9 +244,11 @@ export default function DocumentosClient({ items, members, canEdit = false }: { 
                     {item.storageKey ? <a href={`/api/documents/${item.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-sm text-gold hover:text-gold-light">Abrir arquivo</a> : null}
                   </div>
                   <p className="max-w-2xl text-sm text-sand-dark">{item.content ?? 'Sem resumo.'}</p>
-                  <button type="button" onClick={() => void removeDocument(item)} disabled={removingId === item.id} className="text-sm text-rose-300/70 transition hover:text-rose-300 disabled:opacity-40">
-                    {removingId === item.id ? 'Removendo…' : 'Remover'}
-                  </button>
+                  {canEdit ? (
+                    <button type="button" onClick={() => void removeDocument(item)} disabled={removingId === item.id} className="text-sm text-rose-300/70 transition hover:text-rose-300 disabled:opacity-40">
+                      {removingId === item.id ? 'Removendo…' : 'Remover'}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))}

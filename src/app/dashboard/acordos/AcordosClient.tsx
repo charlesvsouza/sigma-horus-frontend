@@ -171,7 +171,7 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
           <ul className="mt-2 space-y-1 text-xs text-sand-dark">
             {a.items.map((i) => (
               <li key={i.id} className="flex justify-between gap-3">
-                <span>{KIND_LABEL[i.kind] ?? i.kind}: {i.title}</span>
+                <span>{i.kind === 'debt' ? `${KIND_LABEL.debt}: ${i.title}` : i.title}</span>
                 <span className="tabular-nums">{i.remaining <= 0 ? <span className="text-emerald-300">pago</span> : <>{brl(i.remaining)}{i.remaining < i.openAmount ? ` de ${brl(i.openAmount)}` : ''}</>}</span>
               </li>
             ))}
