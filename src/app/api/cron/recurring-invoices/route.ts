@@ -9,7 +9,8 @@ import { NextResponse } from 'next/server';
 // Cobranças recorrentes. Duas portas de entrada:
 //  - GET (Vercel Cron, Authorization: Bearer $CRON_SECRET): todas as lojas ativas, uma vez por dia.
 //  - POST (botão "Processar recorrentes" em Cobranças): só a loja de quem clicou.
-// Regras (lib/recurring.ts): no máximo UMA ocorrência por cobrança-mãe por rodada; a recorrência
+// Regras (lib/recurring.ts): cada ocorrência nasce até RECURRING_LEAD_DAYS (10) dias antes do vencimento;
+// no máximo UMA ocorrência por cobrança-mãe por rodada; a recorrência
 // independe de a cobrança anterior estar paga; irmão bloqueado (comunicado à Potência) fica retido
 // até voltar (lib/member-block-server → liftBlock). O Art. 002 em si não retém nada.
 // Depois da geração, a emissão automática no Asaas (lib/asaas-auto-emit.ts) — só nas lojas que

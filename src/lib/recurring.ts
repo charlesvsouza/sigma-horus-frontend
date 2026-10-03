@@ -5,7 +5,7 @@ import { todayBR } from '@/lib/date-only';
 import { lockKey } from '@/lib/locks';
 import { prismaAdmin, withTenant } from '@/lib/prisma';
 import { BLOCKED_STATUS } from '@/lib/member-block';
-import { addInterval, descriptionForOccurrence, isLegacyGeneratedNumber } from '@/lib/recurring-rules';
+import { addInterval, descriptionForOccurrence, isLegacyGeneratedNumber, recurringHorizon } from '@/lib/recurring-rules';
 import { findClosedTermForDate } from '@/lib/term-lock';
 
 type Db = Prisma.TransactionClient;
@@ -28,13 +28,13 @@ async function heldMemberIds(db: Db, lodgeId: string): Promise<Set<string>> {
   return new Set(blocked.map((m) => m.id));
 }
 
-/** Cobranças "mãe" com ocorrência vencida (independe de a mãe estar paga ou em atraso). */
-async function loadDueTemplates(db: Db, lodgeId: string, today: Date, memberId?: string) {
+/** Cobranças "mãe" com ocorrência a gerar: vence até hoje + antecedência (independe de a mãe estar paga ou em atraso). */
+async function loadDueTemplates(db: Db, lodgeId: string, horizon: Date, memberId?: string) {
   const rows = await db.invoice.findMany({
     where: {
       lodgeId,
       isRecurring: true,
-      nextDueDate: { lte: today },
+      nextDueDate: { lte: horizon },
       // recurringCount nulo = sem fim. `{ not: 0 }` exclui NULL no Prisma; por isso o OR explícito.
       OR: [{ recurringCount: null }, { recurringCount: { gt: 0 } }],
       ...(memberId ? { memberId } : {}),
@@ -129,9 +129,9 @@ async function emitOccurrence(lodgeId: string, templateId: string, expectedDue: 
  * Irmão bloqueado fica retido; ao voltar, a recorrência recomeça no próximo vencimento (liftBlock).
  */
 export async function processRecurringForLodge(lodgeId: string, actorId: string = SYSTEM_ACTOR, now: Date = new Date()): Promise<RecurringRunResult> {
-  const today = todayBR(now);
+  const horizon = recurringHorizon(todayBR(now));
   const { templates, held } = await withTenant(lodgeId, async (db) => ({
-    templates: await loadDueTemplates(db, lodgeId, today),
+    templates: await loadDueTemplates(db, lodgeId, horizon),
     held: await heldMemberIds(db, lodgeId),
   }));
 
@@ -155,7 +155,7 @@ export async function processRecurringAllLodges(now: Date = new Date()): Promise
   const due = await prismaAdmin.invoice.findMany({
     where: {
       isRecurring: true,
-      nextDueDate: { lte: todayBR(now) },
+      nextDueDate: { lte: recurringHorizon(todayBR(now)) },
       OR: [{ recurringCount: null }, { recurringCount: { gt: 0 } }],
       lodge: { status: 'active' },
     },

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { addInterval, skipPendingOccurrences, isLegacyGeneratedNumber, pendingOccurrences, recurrenceSummary, descriptionForOccurrence, resolveDescriptionPlaceholders, occurrenceDescriptionsPreview } from './recurring-rules';
+import { addInterval, recurringHorizon, RECURRING_LEAD_DAYS, skipPendingOccurrences, isLegacyGeneratedNumber, pendingOccurrences, recurrenceSummary, descriptionForOccurrence, resolveDescriptionPlaceholders, occurrenceDescriptionsPreview } from './recurring-rules';
 
 const d = (s: string) => new Date(`${s}T00:00:00.000Z`);
 const iso = (x: Date) => x.toISOString().slice(0, 10);
@@ -108,4 +108,13 @@ test('prévia das próximas descrições no formulário', () => {
   assert.deepEqual(occurrenceDescriptionsPreview('Mensalidade {mês}/{ano}', '2026-11-10', 'monthly', '2'), ['Mensalidade dezembro/2026', 'Mensalidade janeiro/2027']);
   assert.deepEqual(occurrenceDescriptionsPreview('', '2026-09-10', 'monthly', '3'), []);
   assert.equal(occurrenceDescriptionsPreview('Mensalidade', '2026-09-10', 'monthly', '').length, 3);
+});
+
+test('recurringHorizon: gera até 10 dias antes do vencimento', () => {
+  assert.equal(RECURRING_LEAD_DAYS, 10);
+  const horizon = recurringHorizon(d('2026-10-26'));
+  assert.equal(iso(horizon), '2026-11-05');
+  // a de 05/11 já entra em 26/10; a de 06/11 só em 27/10
+  assert.ok(d('2026-11-05').getTime() <= horizon.getTime());
+  assert.ok(d('2026-11-06').getTime() > horizon.getTime());
 });

@@ -997,8 +997,9 @@ export function ManualBook() {
                   <li>Clique em <UI>Criar cobrança</UI>.</li>
                 </Steps>
                 <p>
-                  <strong>Cobranças recorrentes.</strong> O sistema gera sozinho, todo dia, a próxima cobrança de cada recorrência
-                  que venceu — não é preciso clicar em nada. Cada ocorrência tem o seu próprio lançamento (pagar uma parcela não quita as seguintes)
+                  <strong>Cobranças recorrentes.</strong> O sistema gera sozinho, todo dia, a próxima cobrança de cada recorrência,
+                  <strong> com até 10 dias de antecedência</strong> (a de 05/11 aparece em 26/10, já com o vencimento certo e sem contar como
+                  atraso) — não é preciso clicar em nada. Cada ocorrência tem o seu próprio lançamento (pagar uma parcela não quita as seguintes)
                   e a recorrência <strong>continua mesmo que a cobrança anterior já esteja paga ou em atraso</strong>. O botão <UI>Processar
                   recorrentes</UI>, no alto da tela (só Tesoureiro e Administrador), roda a mesma rotina na hora. Uma rodada gera, no máximo,
                   <strong> uma</strong> cobrança por recorrência: parcelas acumuladas nunca são despejadas de uma vez. No Modo Asaas, com

@@ -5,6 +5,14 @@
 // (não recorrente) e avança a mãe. A mãe não depende de estar paga: a mensalidade do mês
 // seguinte nasce mesmo que a do mês corrente já tenha sido quitada — ou esteja em atraso.
 
+/** Antecedência: cada ocorrência é gerada até 10 dias antes do vencimento (com o vencimento já correto). */
+export const RECURRING_LEAD_DAYS = 10;
+
+/** Última data de vencimento que a rodada de hoje já pode gerar (hoje + antecedência). */
+export function recurringHorizon(today: Date, leadDays: number = RECURRING_LEAD_DAYS): Date {
+  return new Date(today.getTime() + leadDays * 86_400_000);
+}
+
 /** Cobranças filhas geradas pelo código antigo tinham o sufixo `-<timestamp de 13 dígitos>` no número. */
 const LEGACY_CHILD_NUMBER = /-\d{13}$/;
 
