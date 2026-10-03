@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Alert, Badge, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 
-import { DOCUMENT_CATEGORY_SUGGESTIONS as DOCUMENT_CATEGORIES, isInternalCategory } from '@/lib/documents';
+import { DOCUMENT_CATEGORY_SUGGESTIONS as DOCUMENT_CATEGORIES, DOCUMENT_DEGREES, documentDegreeLabel, isInternalCategory } from '@/lib/documents';
 
 interface DocumentItem {
   id: string;
@@ -15,9 +15,11 @@ interface DocumentItem {
   content?: string | null;
   storageKey?: string | null;
   member?: { name: string } | null;
+  minDegree?: string | null;
+  personal?: boolean;
 }
 
-export default function DocumentosClient({ items, members }: { items: DocumentItem[]; members: { id: string; name: string }[] }) {
+export default function DocumentosClient({ items, members, canEdit = false }: { items: DocumentItem[]; members: { id: string; name: string }[]; canEdit?: boolean }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [title, setTitle] = useState('');
@@ -25,6 +27,8 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
   const [category, setCategory] = useState('');
   const [content, setContent] = useState('');
   const [memberId, setMemberId] = useState('');
+  const [minDegree, setMinDegree] = useState('');
+  const [savingDegreeId, setSavingDegreeId] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +72,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
           category: category || undefined,
           content,
           memberId: memberId || undefined,
+          minDegree: !memberId && minDegree ? minDegree : undefined,
           storageKey: urlData.storageKey,
           fileName: file.name,
           mimeType,
@@ -95,6 +100,19 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
     }
   }
 
+  async function changeDegree(item: DocumentItem, value: string) {
+    setSavingDegreeId(item.id);
+    const res = await fetch(`/api/documents/${item.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ minDegree: value || null }) });
+    setSavingDegreeId(null);
+    if (res.ok) {
+      setMessage({ kind: 'ok', text: value ? `"${item.title}" agora é visto a partir de ${documentDegreeLabel(value)}.` : `"${item.title}" agora é visto por todos os obreiros.` });
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao mudar o grau do documento.' });
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
@@ -115,6 +133,7 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
         setCategory('');
         setContent('');
         setMemberId('');
+        setMinDegree('');
         setFiles([]);
         router.refresh();
       } else if (failed.length === results.length) {
@@ -172,6 +191,14 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
                   {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
                 </select>
               </Field>
+              {!memberId ? (
+                <Field label="Quem pode ver (grau mínimo)">
+                  <select value={minDegree} onChange={(event) => setMinDegree(event.target.value)} className={INPUT}>
+                    <option value="">Todos os obreiros</option>
+                    {DOCUMENT_DEGREES.map((d) => <option key={d.value} value={d.value}>{d.label}{d.value === 'installed' ? '' : ' e acima'}</option>)}
+                  </select>
+                </Field>
+              ) : null}
               <label className="rounded-lg border border-dashed border-white/8 bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand md:col-span-2">
                 <span className="mb-2 block font-medium text-sand-light">Arquivo(s)</span>
                 <input type="file" multiple onChange={(event) => setFiles(Array.from(event.target.files ?? []))} className="w-full" />
@@ -196,12 +223,22 @@ export default function DocumentosClient({ items, members }: { items: DocumentIt
                     <p className="flex items-center gap-2 text-sm font-medium text-sand-light">
                       {item.title}
                       {!item.member ? <Badge variant="info">Institucional</Badge> : null}
+                      {!item.member ? <Badge variant={item.minDegree ? 'warning' : 'success'}>{item.minDegree ? `A partir de ${documentDegreeLabel(item.minDegree)}` : 'Todos os obreiros'}</Badge> : null}
                     </p>
                     <p className="mt-1 text-xs text-sand-dark">
                       {DOCUMENT_KIND_LABEL[item.kind] ?? item.kind}
                       {item.category ? ` • ${item.category}` : ''}
                       {item.member ? ` • ${item.member.name}` : ''}
                     </p>
+                    {canEdit && !item.personal ? (
+                      <label className="mt-2 flex items-center gap-2 text-xs text-sand-dark">
+                        Grau mínimo
+                        <select value={item.minDegree ?? ''} disabled={savingDegreeId === item.id} onChange={(event) => void changeDegree(item, event.target.value)} className={`${INPUT} w-auto py-1!`}>
+                          <option value="">Todos os obreiros</option>
+                          {DOCUMENT_DEGREES.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                        </select>
+                      </label>
+                    ) : null}
                     {item.storageKey ? <a href={`/api/documents/${item.id}/download`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-sm text-gold hover:text-gold-light">Abrir arquivo</a> : null}
                   </div>
                   <p className="max-w-2xl text-sm text-sand-dark">{item.content ?? 'Sem resumo.'}</p>

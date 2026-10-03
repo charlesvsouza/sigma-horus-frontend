@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { NOT_CANDIDACY_DOCUMENT } from '@/lib/documents';
+import { canViewDocument, NOT_CANDIDACY_DOCUMENT, parseDocumentDegree } from '@/lib/documents';
+import { loadDocumentViewer } from '@/lib/documents-server';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { normalizeStoragePayload } from '@/lib/storage';
@@ -19,13 +20,18 @@ export async function GET() {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  const items = await withTenant(String(lodgeId), (db) =>
-    db.document.findMany({
-      where: { lodgeId: String(lodgeId), ...NOT_CANDIDACY_DOCUMENT },
-      include: { member: { select: { id: true, name: true } } },
-      orderBy: { createdAt: 'desc' },
-    }),
-  );
+  const items = await withTenant(String(lodgeId), async (db) => {
+    const [all, viewer] = await Promise.all([
+      db.document.findMany({
+        where: { lodgeId: String(lodgeId), ...NOT_CANDIDACY_DOCUMENT },
+        include: { member: { select: { id: true, name: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      loadDocumentViewer(db, String(lodgeId), session),
+    ]);
+    // Cada um só recebe o que pode ver (grau mínimo, "Interno Loja", documentos de outros irmãos).
+    return all.filter((d) => canViewDocument(d, viewer));
+  });
 
   return NextResponse.json({ items });
 }
@@ -51,6 +57,8 @@ export async function POST(request: Request) {
   const status = String(body?.status ?? 'draft');
   const content = String(body?.content ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
+  // Grau mínimo só vale para documento institucional (sem membro vinculado).
+  const minDegree = memberId ? null : parseDocumentDegree(body?.minDegree);
   const storage = normalizeStoragePayload(body as Record<string, unknown>);
 
   if (!title) {
@@ -62,6 +70,7 @@ export async function POST(request: Request) {
       data: {
         lodgeId: String(lodgeId),
         memberId,
+        minDegree,
         title,
         kind,
         category,

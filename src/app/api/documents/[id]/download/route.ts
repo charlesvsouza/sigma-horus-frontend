@@ -1,7 +1,8 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { canLodgeAccess, normalizeRole, requireLodgeAccess } from '@/lib/rbac';
-import { isCandidacyCategory, memberCanAccessDocument } from '@/lib/documents';
+import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
+import { canViewDocument, isCandidacyCategory } from '@/lib/documents';
+import { loadDocumentViewer } from '@/lib/documents-server';
 import { getPresignedDownloadUrl } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
@@ -20,12 +21,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  const item = await withTenant(String(lodgeId), (db) =>
-    db.document.findFirst({
+  const found = await withTenant(String(lodgeId), async (db) => ({
+    item: await db.document.findFirst({
       where: { lodgeId: String(lodgeId), id },
-      select: { storageKey: true, memberId: true, category: true },
+      select: { storageKey: true, memberId: true, category: true, minDegree: true },
     }),
-  );
+    viewer: await loadDocumentViewer(db, String(lodgeId), session),
+  }));
+  const item = found.item;
 
   if (!item?.storageKey) {
     return NextResponse.json({ error: 'Arquivo não encontrado.' }, { status: 404 });
@@ -36,8 +39,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Arquivo não encontrado.' }, { status: 404 });
   }
 
-  // Irmão (papel Membro) só baixa os próprios documentos e os institucionais — nunca os "Interno Loja".
-  if (normalizeRole(role) === 'member' && !memberCanAccessDocument(item, session?.user?.memberId)) {
+  // Grau mínimo do documento; o irmão (papel Membro) só baixa os próprios e os institucionais — nunca os "Interno Loja".
+  if (!canViewDocument(item, found.viewer)) {
     return NextResponse.json({ error: 'Arquivo não encontrado.' }, { status: 404 });
   }
 

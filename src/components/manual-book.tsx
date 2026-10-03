@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.80</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.81</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.80 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.81 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -1941,12 +1941,21 @@ export function ManualBook() {
                   pra organizar a lista.
                 </p>
                 <p>
-                  <strong>Documentos internos:</strong> escolha a categoria <strong>Interno Loja</strong> para documentos de uso
-                  só da gestão (atas da diretoria, papéis da tesouraria etc.). Eles ficam disponíveis em <UI>Documentos</UI> para
-                  quem administra a loja, mas <strong>não aparecem no portal dos irmãos e não podem ser baixados por eles</strong>
-                  — mesmo sem membro vinculado (que normalmente significa &quot;visível a todos&quot;). Além disso, cada irmão só
-                  baixa os próprios documentos e os institucionais.
+                  <strong>Quem pode ver cada documento (grau mínimo):</strong> ao enviar um documento sem vínculo com membro,
+                  escolha <UI>Quem pode ver (grau mínimo)</UI>: <strong>Todos os obreiros</strong>, <strong>Aprendiz</strong>,
+                  <strong> Companheiro</strong>, <strong>Mestre</strong> ou <strong>Mestre Instalado</strong>. Quem tem o grau
+                  exigido <strong>ou superior</strong> vê e baixa; quem está abaixo nem vê o documento na lista. Por exemplo, um documento de
+                  Companheiro é visto por Companheiros, Mestres e Mestres Instalados — nunca por Aprendizes. O grau do irmão é o da sua
+                  evolução no cadastro (iniciação, elevação, exaltação, instalação); quem não tem nenhuma data cadastrada só vê os documentos para
+                  &quot;Todos os obreiros&quot;. Só o Administrador, o Venerável e o Secretário enviam documentos, e eles veem tudo. Para mudar
+                  o grau de um documento já enviado, use a lista <UI>Grau mínimo</UI> na linha dele. O <strong>candidato</strong> não vê documento algum.
                 </p>
+                <Note>
+                  A categoria <strong>Interno Loja</strong> deixou de ser sugerida: o que era de uso interno agora se define pelo grau (o nível mais baixo é
+                  Aprendiz). Os documentos <strong>antigos</strong> dessa categoria <strong>continuam restritos à gestão</strong> — não foram abertos sozinhos,
+                  para não expor o que era sigiloso. Reclassifique um a um, escolhendo o grau na linha de cada documento. Cada irmão também só baixa os próprios
+                  documentos e os institucionais do seu grau.
+                </Note>
                 <p>
                   Em <UI>Comunicação</UI>, escreva um <UI>Título</UI> e o <UI>Texto da comunicação</UI>, escolha o
                   <UI> canal</UI> (E-mail, WhatsApp ou SMS) e <UI>Enviar a todos ou a um membro</UI>, e clique em

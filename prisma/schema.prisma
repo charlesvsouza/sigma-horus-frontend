@@ -340,6 +340,8 @@ model Document {
   title        String
   kind         String   @default("document")
   category     String?  @default("general")
+  // Grau mínimo para ver o documento institucional (apprentice | fellow | master | installed); null = todos os obreiros.
+  minDegree    String?
   status       String?  @default("draft")
   storageKey   String?
   fileName     String?

@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { PLAN_INCLUDE, presentPlan } from '@/lib/degree-fee-server';
 import { isCandidateRole } from '@/lib/candidate';
+import { degreeAllowsDocument, memberDocumentRank } from '@/lib/documents';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NOT_INTERNAL_DOCUMENT } from '@/lib/documents';
@@ -91,11 +92,17 @@ export async function GET() {
     candidate ? noDocuments() : withTenant(String(lodgeId), (db) =>
       db.document.findMany({
         where: { lodgeId: String(lodgeId), memberId: null, ...NOT_INTERNAL_DOCUMENT },
-        select: { id: true, title: true, kind: true, category: true, createdAt: true },
+        select: { id: true, title: true, kind: true, category: true, minDegree: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
       }),
     ),
   ]);
+
+  // Documento institucional com grau mínimo: o irmão só o vê se o grau dele (das datas de evolução) alcança o exigido.
+  const viewerRank = memberDocumentRank(member);
+  const visibleInstitutional = institutionalDocuments
+    .filter((d) => degreeAllowsDocument((d as { minDegree?: string | null }).minDegree, viewerRank))
+    .map((d) => ({ id: d.id, title: d.title, kind: d.kind, category: d.category, createdAt: d.createdAt }));
 
   // Último "Já paguei" de cada conta em aberto (Modo Loja) — a tela mostra "Aviso enviado em …".
   const openIds = accounts.filter((a) => a.status !== 'paid').map((a) => a.id);
@@ -160,7 +167,7 @@ export async function GET() {
     collection,
     accounts: items,
     documents,
-    institutionalDocuments,
+    institutionalDocuments: visibleInstitutional,
     summary,
     degreeFeePlans,
     isCandidate: candidate,

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { parseDocumentDegree } from '@/lib/documents';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { normalizeStoragePayload } from '@/lib/storage';
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const title = String(body?.title ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
+  const minDegree = memberId ? null : parseDocumentDegree(body?.minDegree);
   const category = body?.category ? String(body.category) : 'general';
   const kind = body?.kind ? String(body.kind) : 'document';
   const content = body?.content ? String(body.content) : null;
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
       data: {
         lodgeId: String(lodgeId),
         memberId,
+        minDegree,
         title,
         kind,
         category,
