@@ -1,6 +1,28 @@
 # Retomada — Sigma Horus (pausa em 2026-09-19)
 
-> ⚠️ **Atualização de 2026-10-03:** este arquivo é anterior a muita coisa (Fundos viraram categorias em 21/09; importador Cenize rodou só na Tim Maia; crítica impeccable já feita — ver 1.1). A **decisão nº 9** (seção 3) e o item de recorrência (2.3) foram **revertidos**: o Art. 002 agora é só informativo; o bloqueio é manual (Venerável/Administrador) e gera o acordo de regularização — ver o handoff de 2026-10-03 no AGENTS.md e `art002bloqueio_potencia.md`. Itens da seção 2.2 sobre "caixas" de Tronco/Doações estão obsoletos.
+> ## ✅ ESTADO VERIFICADO EM 2026-10-03 (noite) — leia ESTA seção; o restante do arquivo é histórico de 19/09
+>
+> Cada item abaixo foi conferido no código e/ou no banco de produção (somente leitura). A loja real é a **amm139** (única); a Tim Maia (`horus-reaa`) é demo fictícia. Tudo está publicado na `main` (HEAD `4d796e7` ou posterior), 73 migrations aplicadas em produção.
+>
+> **Resolvido desde 19/09 (não refazer):** crítica impeccable (feita em 19/09); Fundos viraram categorias (21/09); índices do banco (`20260919150000`: Payment, Invoice, Account(lodgeId,dueDate), Member, AuditLog, MessageLog — conferidos); número de cobrança único (`20260920100000`) e rate limit (`20260920200000`) aplicados; recorrência automática com cron; Float→Decimal **decidido não migrar**; `paidAt` no dia de Brasília + estorno automático do Asaas (3c0f071); dependências críticas (`next` 16.3.8, `next-auth` beta.32 é a mais nova; as pendências restantes do `npm audit` são do CLI do Prisma/exceljs, sem correção compatível — **não rebaixar o Prisma**); Art. 002 informativo + bloqueio manual + acordo de regularização; documentos por grau; balaustre por grau; Toast e alvos de toque de 44px; `inputMode`; contraste do Papiro; JSON inválido → 400 em 45 rotas; índice numerado de Relatórios e portal reorganizado; importador Cenize (rodou só na Tim Maia; a AMM **não** importa); decisões da seção 3 (ver memória `owner-decisions-section3-2026-10-03`).
+>
+> **ABERTO — depende do dono / de terceiros:**
+> 1. **Assinatura da amm139:** o teste dela termina em **2026-10-28**; só então ligar `SUBSCRIPTION_ENFORCEMENT=enforce` (hoje presumivelmente `log`; o valor é cifrado na Vercel). Antes de ligar: olhar os logs `[subscription-guard] would block`.
+> 2. **Sandbox do Asaas por loja:** as duas lojas usam a MESMA conta sandbox (webhook = 1 token por conta). Para testar o cartão/estorno de verdade, criar uma 2ª conta sandbox.
+> 3. **Testar com o tesoureiro da AMM** as telas novas: Acordos de regularização, documentos por grau (reclassificar os 4 documentos antigos — os de "Interno Loja" seguem restritos à gestão até lá), balaustre por grau.
+>
+> **ABERTO — técnico (eu faço):**
+> 4. **Restauração real de backup** nunca foi provada ponta a ponta (parcial em 19/09: migrations aplicam, ordem das FKs bate). Proposta: gerar um backup de uma loja fictícia num Postgres descartável e restaurar num banco vazio (sem tocar nos dados reais). `MemberBlock`, `MemberBlockItem` e `SessionMinutes` já estão em `BACKUP_MODELS`.
+> 5. **Recebido em dinheiro no painel do Asaas** → Caixa + confirmação da Tesouraria (decisão do dono, ainda não implementado).
+> 6. **Baixa assistida por extrato (OFX) no Modo Loja** (reaproveitar `lib/bank-reconciliation`); depois, registrar cada repasse Asaas→banco como conferência.
+> 7. **Renegociação** (`api/members/[id]/renegotiate`) ainda usa o valor cheio das contas (ignora pagamento parcial); o acordo de regularização já usa o saldo.
+> 8. **Passo "modo de recebimento" no onboarding** (hoje só em Configurações; toda loja nova nasce em Modo Loja, decisão do dono).
+> 9. **Termo de acordo para imprimir** (papel timbrado) — não feito.
+> 10. **Estados vazios** ("Nenhum…" soltos): adiado de propósito (ver PLANO_DE_ACAO).
+> 11. **Observar:** pool de conexões = 5 por instância (`DB_POOL_MAX`) e listagens sem paginação — tabelas pequenas hoje (Account 365, Payment 276, Invoice 267, AuditLog 718 linhas); só vira problema com milhares de linhas (`dashboard/page.tsx` lê tudo a cada visita — trocar por agregados no banco quando crescer).
+> 12. **Cobranças antigas emitidas como `UNDEFINED`** no Asaas (aceitam cartão) e **tarifa real de pagamento não simulado** (só o sandbox foi visto) — decidir/medir quando houver pagamento real em Modo Asaas.
+>
+> **Descartado/decidido não fazer:** cartão fora do Modo Asaas; repasse de tarifa ao irmão (adiado); migrar Float→Decimal.
 
 > Ponto de retomada da sessão de 18–19/09/2026. Tudo abaixo já está **commitado e enviado** para `main`
 > (HEAD `f51a3d5`), com as 3 migrations aplicadas no banco de produção (Railway). Manual do usuário na **v1.29**.
