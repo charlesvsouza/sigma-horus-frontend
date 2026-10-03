@@ -447,6 +447,18 @@
   [data-theme="system"] .divide-white\/6 > :not([hidden]) ~ :not([hidden]) { border-color: color-mix(in srgb, var(--sigma-sand-light) 12%, transparent); }
 }
 
+/* Texto em ouro no Papiro: #B8860B sobre #F5F0E8 dá só 2,87:1 (mínimo 4,5:1 para texto pequeno). Só o TEXTO
+   (.text-gold) ganha um ouro mais fundo (#765A0C = 5,7:1); botões e fundos em ouro seguem como estão, e o
+   hover continua trocando a cor. Fora de @layer para vencer a utility, como as demais regras do tema claro. */
+[data-theme="light"] .text-gold:not(:hover) {
+  color: #765a0c;
+}
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] .text-gold:not(:hover) {
+    color: #765a0c;
+  }
+}
+
 /* Alvos de toque: em tela de toque (celular/tablet) os botões, links-botão e caixas de marcar do conteúdo
    ganham no mínimo 44px — o público é sênior e usa muito o celular. O desktop (mouse) não muda.
    Exceção: data-compact. Fora do <main> (menu lateral, cabeçalho) cada componente já cuida do seu tamanho. */

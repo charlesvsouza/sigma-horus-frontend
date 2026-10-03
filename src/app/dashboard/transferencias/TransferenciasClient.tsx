@@ -137,7 +137,7 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
                   </select>
                 </Field>
                 <Field label="Valor">
-                  <input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={INPUT} required />
+                  <input type="number" inputMode="decimal" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={INPUT} required />
                 </Field>
                 <Field label="Data">
                   <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={INPUT} required />

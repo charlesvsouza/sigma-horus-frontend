@@ -410,10 +410,10 @@ export default function PagamentosClient({ accounts, members, payments, financia
                 </select>
               </Field>
               <Field label="Valor">
-                <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT} required />
+                <input type="number" inputMode="decimal" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT} required />
               </Field>
               <Field label="Multa e juros recebidos (opcional)">
-                <input type="number" step="0.01" min="0" value={form.lateCharge} onChange={(event) => setForm({ ...form, lateCharge: event.target.value })} className={INPUT} placeholder="0,00" />
+                <input type="number" inputMode="decimal" step="0.01" min="0" value={form.lateCharge} onChange={(event) => setForm({ ...form, lateCharge: event.target.value })} className={INPUT} placeholder="0,00" />
                 <span className="mt-1 block text-xs text-sand-dark">Acréscimo por atraso pago junto: vai à parte, em 1.2.06 Multas e Juros por Atraso. Só para conta a receber de irmão.</span>
               </Field>
               <Field label="Data do pagamento">

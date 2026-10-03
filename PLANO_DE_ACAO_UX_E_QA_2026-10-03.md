@@ -66,17 +66,17 @@
 
 ### P2 — Médio
 
-5. **Estados vazios**: 19 textos soltos "Nenhum…" fora do `EmptyState` (34 usam). Padronizar com a voz de cada ofício (já definida no DESIGN.md).
+5. ⏸ **DECIDIDO NÃO FAZER AGORA** — **Estados vazios**: os "Nenhum…" soltos são mensagens dentro de sublistas/tabelas (o `EmptyState` tem 80px de altura e pioraria o layout). Texto original: 19 textos soltos "Nenhum…" fora do `EmptyState` (34 usam). Padronizar com a voz de cada ofício (já definida no DESIGN.md).
 6. **Campos**: ~120 `placeholder` em formulários — auditar quais não estão dentro de `Field` (rótulo some ao digitar).
-7. **`type="number"` sem `inputMode`** (32): em valores em reais usar `inputMode="decimal"` para o teclado numérico do celular.
+7. ✅ **FEITO (2026-10-03)** — **`type="number"` sem `inputMode`** (34 campos: decimal nos valores em R$/%, numérico nos inteiros): em valores em reais usar `inputMode="decimal"` para o teclado numérico do celular.
 8. **125 dicas por `title=`** não aparecem no toque; as que carregam informação essencial viram texto visível ou ícone com legenda.
-9. **Relatórios com `h1` duplicado** (cabeçalho de impressão + tela): usar um só `h1` e marcar o outro como `aria-hidden`/`print-only`.
-10. **Tabelas**: 8 arquivos com `<table>` sem `overflow-x-auto` direto (os 2 que conferi são folha de impressão — conferir os outros 6).
+9. ✅ **VERIFICADO, NÃO APLICÁVEL** — **Relatórios com `h1` duplicado**: o cabeçalho de impressão usa `<h2>` e só existe na impressão (não há dois `h1`); (cabeçalho de impressão + tela): usar um só `h1` e marcar o outro como `aria-hidden`/`print-only`.
+10. ✅ **VERIFICADO** — **Tabelas**: as 8 sem `overflow-x-auto` são folhas de impressão (`ReportDocument`) ou tabelas de 2–3 colunas (Tarifas); nenhuma rola na tela do celular. Item antigo: 8 arquivos com `<table>` sem `overflow-x-auto` direto (os 2 que conferi são folha de impressão — conferir os outros 6).
 
 ### P3 — Refinamento
 
 11. Fio de prumo e Cinzel estão bem usados; **cuidado com o ouro**: em telas com muitos botões primários (Cobranças), reduzir a 1 por vista.
-12. Tema Papiro: rodar uma verificação de contraste automática (ouro `#B8860B` sobre `#F5F0E8` em texto pequeno).
+12. ✅ **FEITO (2026-10-03)** — Tema Papiro: medido, o ouro `#B8860B` sobre `#F5F0E8` dava 2,87:1 (falhava); texto `.text-gold` agora usa `#765A0C` (5,7:1) no tema claro, botões/fundos inalterados. Item original: rodar uma verificação de contraste automática (ouro `#B8860B` sobre `#F5F0E8` em texto pequeno).
 13. Landing: separar métricas de "Persuade" (landing) das de "Operate" (painel) para não misturar decisões.
 
 ### Próximos passos sugeridos (ordem)

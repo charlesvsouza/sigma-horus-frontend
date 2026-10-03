@@ -372,9 +372,9 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
               branco para não exigir aprovação de nenhuma despesa.
             </p>
             <div className="mt-5 grid gap-4 md:grid-cols-3">
-              <Field label="Limite para aprovação de despesa (R$)" value={form.expenseApprovalThreshold} onChange={(v) => set('expenseApprovalThreshold', v)} type="number" step="0.01" min="0" placeholder="Ex.: 500" />
-              <Field label="Multa por atraso (%)" value={form.lateFeePercent} onChange={(v) => set('lateFeePercent', v)} type="number" step="0.1" min="0" placeholder="Ex.: 2" />
-              <Field label="Juros de mora ao mês (%)" value={form.lateInterestPercentMonth} onChange={(v) => set('lateInterestPercentMonth', v)} type="number" step="0.1" min="0" placeholder="Ex.: 1" />
+              <Field label="Limite para aprovação de despesa (R$)" value={form.expenseApprovalThreshold} onChange={(v) => set('expenseApprovalThreshold', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 500" />
+              <Field label="Multa por atraso (%)" value={form.lateFeePercent} onChange={(v) => set('lateFeePercent', v)} type="number" inputMode="decimal" step="0.1" min="0" placeholder="Ex.: 2" />
+              <Field label="Juros de mora ao mês (%)" value={form.lateInterestPercentMonth} onChange={(v) => set('lateInterestPercentMonth', v)} type="number" inputMode="decimal" step="0.1" min="0" placeholder="Ex.: 1" />
             </div>
             <div className="mt-5">
               <p className="text-sm font-medium text-sand-light">Taxas de grau</p>
@@ -383,10 +383,10 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
                 guarda o valor do dia — um reajuste aqui não muda planos já feitos.
               </p>
               <div className="mt-3 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Field label="Taxa de Iniciação (R$)" value={form.initiationFee} onChange={(v) => set('initiationFee', v)} type="number" step="0.01" min="0" placeholder="Ex.: 1500" />
-                <Field label="Taxa de Elevação (R$)" value={form.elevationFee} onChange={(v) => set('elevationFee', v)} type="number" step="0.01" min="0" placeholder="Ex.: 600" />
-                <Field label="Taxa de Exaltação (R$)" value={form.exaltationFee} onChange={(v) => set('exaltationFee', v)} type="number" step="0.01" min="0" placeholder="Ex.: 800" />
-                <Field label="Taxa de Filiação / Regularização (R$)" value={form.affiliationFee} onChange={(v) => set('affiliationFee', v)} type="number" step="0.01" min="0" placeholder="Ex.: 500" />
+                <Field label="Taxa de Iniciação (R$)" value={form.initiationFee} onChange={(v) => set('initiationFee', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 1500" />
+                <Field label="Taxa de Elevação (R$)" value={form.elevationFee} onChange={(v) => set('elevationFee', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 600" />
+                <Field label="Taxa de Exaltação (R$)" value={form.exaltationFee} onChange={(v) => set('exaltationFee', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 800" />
+                <Field label="Taxa de Filiação / Regularização (R$)" value={form.affiliationFee} onChange={(v) => set('affiliationFee', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 500" />
               </div>
               <label className="mt-4 flex items-start gap-2 text-sm text-sand">
                 <input type="checkbox" checked={form.degreeFeeCardEnabled === 'true'} onChange={(e) => set('degreeFeeCardEnabled', String(e.target.checked))} className="mt-0.5" />
@@ -401,9 +401,9 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
               </label>
               {form.degreeFeeCardEnabled === 'true' ? (
                 <div className="mt-3 grid gap-4 md:grid-cols-3">
-                  <Field label="Tarifa do cartão à vista (%)" value={form.cardFeePercentOneTime} onChange={(v) => set('cardFeePercentOneTime', v)} type="number" step="0.01" min="0" placeholder="Ex.: 2.99" />
-                  <Field label="Tarifa do cartão parcelado 2 a 6x (%)" value={form.cardFeePercentInstallment} onChange={(v) => set('cardFeePercentInstallment', v)} type="number" step="0.01" min="0" placeholder="Ex.: 3.49" />
-                  <Field label="Valor fixo por transação (R$)" value={form.cardFeeFixed} onChange={(v) => set('cardFeeFixed', v)} type="number" step="0.01" min="0" placeholder="Ex.: 0.49" />
+                  <Field label="Tarifa do cartão à vista (%)" value={form.cardFeePercentOneTime} onChange={(v) => set('cardFeePercentOneTime', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 2.99" />
+                  <Field label="Tarifa do cartão parcelado 2 a 6x (%)" value={form.cardFeePercentInstallment} onChange={(v) => set('cardFeePercentInstallment', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 3.49" />
+                  <Field label="Valor fixo por transação (R$)" value={form.cardFeeFixed} onChange={(v) => set('cardFeeFixed', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 0.49" />
                 </div>
               ) : null}
             </div>

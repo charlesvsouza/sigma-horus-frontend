@@ -204,7 +204,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                   </select>
                 </Field>
                 <Field label="Valor">
-                  <input type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT_CLASS} required />
+                  <input type="number" inputMode="decimal" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} className={INPUT_CLASS} required />
                 </Field>
                 <Field label="Data de vencimento">
                   <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT_CLASS} required />

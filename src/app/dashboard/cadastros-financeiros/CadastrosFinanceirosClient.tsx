@@ -421,7 +421,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
               )}
               <label className="block text-sm text-sand-dark sm:col-span-2">
                 Saldo inicial (o que já existia nessa conta antes de começar a usar o sistema)
-                <input type="number" step="0.01" value={faForm.openingBalance} onChange={(e) => setFaForm({ ...faForm, openingBalance: e.target.value })} className={`mt-1 ${inputClass}`} placeholder="0,00" />
+                <input type="number" inputMode="decimal" step="0.01" value={faForm.openingBalance} onChange={(e) => setFaForm({ ...faForm, openingBalance: e.target.value })} className={`mt-1 ${inputClass}`} placeholder="0,00" />
               </label>
               <div className="flex gap-2 sm:col-span-2">
                 <Button type="submit" disabled={faSaving}>{faSaving ? '…' : 'Criar'}</Button>
@@ -443,7 +443,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
                         <input value={faEditForm.name} onChange={(e) => setFaEditForm({ ...faEditForm, name: e.target.value })} aria-label="Nome" className="min-w-[10rem] flex-1 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <input value={faEditForm.agency} onChange={(e) => setFaEditForm({ ...faEditForm, agency: e.target.value })} aria-label="Agência" placeholder="Agência" className="w-24 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <input value={faEditForm.accountNumber} onChange={(e) => setFaEditForm({ ...faEditForm, accountNumber: e.target.value })} aria-label="Conta" placeholder="Conta" className="w-28 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
-                        <input type="number" step="0.01" value={faEditForm.openingBalance} onChange={(e) => setFaEditForm({ ...faEditForm, openingBalance: e.target.value })} aria-label="Saldo inicial" placeholder="Saldo inicial" className="w-32 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
+                        <input type="number" inputMode="decimal" step="0.01" value={faEditForm.openingBalance} onChange={(e) => setFaEditForm({ ...faEditForm, openingBalance: e.target.value })} aria-label="Saldo inicial" placeholder="Saldo inicial" className="w-32 rounded border border-white/8 bg-sigma-blue-deep/60 px-2 py-1 text-xs text-sand-light outline-none focus:border-gold/50" />
                         <button onClick={() => saveFa(f.id)} className="text-xs text-gold">Salvar</button>
                         <button onClick={() => setEditingFa(null)} className="text-xs text-sand-dark">Cancelar</button>
                       </div>

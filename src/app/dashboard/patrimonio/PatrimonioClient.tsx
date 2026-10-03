@@ -127,10 +127,10 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
                 <input type="date" value={form.acquisitionDate} onChange={(e) => setForm({ ...form, acquisitionDate: e.target.value })} className={`mt-1.5 ${INPUT_CLASS}`} />
               </label>
               <Field label="Valor de aquisição">
-                <input type="number" step="0.01" min="0" value={form.acquisitionValue} onChange={(e) => setForm({ ...form, acquisitionValue: e.target.value })} className={INPUT_CLASS} required />
+                <input type="number" inputMode="decimal" step="0.01" min="0" value={form.acquisitionValue} onChange={(e) => setForm({ ...form, acquisitionValue: e.target.value })} className={INPUT_CLASS} required />
               </Field>
               <Field label="Valor atual estimado (opcional)">
-                <input type="number" step="0.01" min="0" value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: e.target.value })} className={INPUT_CLASS} />
+                <input type="number" inputMode="decimal" step="0.01" min="0" value={form.currentValue} onChange={(e) => setForm({ ...form, currentValue: e.target.value })} className={INPUT_CLASS} />
               </Field>
               <Field label="Situação">
                 <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={INPUT_CLASS}>

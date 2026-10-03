@@ -78,7 +78,7 @@ function EditableCell({ value, onSave, disabled }: { value: number; onSave: (v: 
   return (
     <input
       autoFocus
-      type="number"
+      type="number" inputMode="decimal"
       step="0.01"
       min="0"
       value={draft}
@@ -195,7 +195,7 @@ export default function OrcamentoClient({
           </div>
           <div className="flex items-end gap-2">
             <label className="text-xs text-sand-dark">Ano
-              <input type="number" value={yearInput} onChange={(e) => setYearInput(e.target.value)} className={`mt-1 block w-28 ${inputClass}`} />
+              <input type="number" inputMode="numeric" value={yearInput} onChange={(e) => setYearInput(e.target.value)} className={`mt-1 block w-28 ${inputClass}`} />
             </label>
             <button onClick={() => router.push(`/dashboard/relatorios/orcamento?year=${yearInput}`)} className="rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold/90 hover:border-gold/60 hover:text-gold">Aplicar</button>
           </div>

@@ -260,7 +260,7 @@ export default function ConvitesPlataformaPage() {
             </div>
             <Input
               label="Dias de teste (opcional)"
-              type="number"
+              type="number" inputMode="numeric"
               min={1}
               value={form.trialDays}
               onChange={(e) => setForm((f) => ({ ...f, trialDays: e.target.value }))}
@@ -268,7 +268,7 @@ export default function ConvitesPlataformaPage() {
             />
             <Input
               label="Validade do link em dias (opcional)"
-              type="number"
+              type="number" inputMode="numeric"
               min={1}
               value={form.ttlDays}
               onChange={(e) => setForm((f) => ({ ...f, ttlDays: e.target.value }))}

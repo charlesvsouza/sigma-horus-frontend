@@ -157,7 +157,7 @@ export default function CampanhasClient({ items, tronco, channels, requests, ban
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} placeholder="Título da campanha *" required />
-                <input type="number" step="0.01" value={form.goalAmount} onChange={(e) => setForm({ ...form, goalAmount: e.target.value })} className={inputClass} placeholder="Meta (R$, opcional)" />
+                <input type="number" inputMode="decimal" step="0.01" value={form.goalAmount} onChange={(e) => setForm({ ...form, goalAmount: e.target.value })} className={inputClass} placeholder="Meta (R$, opcional)" />
                 <select value={form.beneficiaryType} onChange={(e) => setForm({ ...form, beneficiaryType: e.target.value })} className={inputClass}>
                   {BENEFICIARY.map((b) => <option key={b.v} value={b.v}>{b.l}</option>)}
                 </select>
@@ -268,7 +268,7 @@ function CampaignDetail({ campaign, tronco, channels, bankAccounts, onChange }: 
         {/* Doação voluntária */}
         <form onSubmit={addDonation} className="space-y-2 rounded-lg border border-white/6 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-gold">Registrar doação</p>
-          <input type="number" step="0.01" value={donation.amount} onChange={(e) => setDonation({ ...donation, amount: e.target.value })} className={inputClass} placeholder="Valor *" required />
+          <input type="number" inputMode="decimal" step="0.01" value={donation.amount} onChange={(e) => setDonation({ ...donation, amount: e.target.value })} className={inputClass} placeholder="Valor *" required />
           <input value={donation.donorName} onChange={(e) => setDonation({ ...donation, donorName: e.target.value })} className={inputClass} placeholder="Nome do doador" disabled={donation.anonymous} />
           <label className="flex items-center gap-2 text-xs text-sand-dark"><input type="checkbox" checked={donation.anonymous} onChange={(e) => setDonation({ ...donation, anonymous: e.target.checked })} className="accent-gold" /> Doador anônimo</label>
           <Button type="submit" size="sm">Registrar</Button>
@@ -278,7 +278,7 @@ function CampaignDetail({ campaign, tronco, channels, bankAccounts, onChange }: 
         <form onSubmit={fundFromTronco} className="space-y-2 rounded-lg border border-white/6 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-gold">Custear pelo Tronco</p>
           <p className="text-xs text-sand-dark">Disponível: {tronco?.configured ? brl(tronco.balance) : '—'}. Já custeado: {brl(Number(campaign.fundAllocated))}.</p>
-          <input type="number" step="0.01" value={fund} onChange={(e) => setFund(e.target.value)} className={inputClass} placeholder="Valor a custear" disabled={!tronco?.configured} />
+          <input type="number" inputMode="decimal" step="0.01" value={fund} onChange={(e) => setFund(e.target.value)} className={inputClass} placeholder="Valor a custear" disabled={!tronco?.configured} />
           <Button type="submit" size="sm" variant="secondary" disabled={!tronco?.configured}>Custear</Button>
         </form>
       </div>

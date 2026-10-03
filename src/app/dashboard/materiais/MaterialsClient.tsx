@@ -440,7 +440,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
                 </Field>
                 <datalist id="material-categories">{MATERIAL_CATEGORIES.map((c) => <option key={c} value={c} />)}</datalist>
                 <Field label="Quantidade">
-                  <input type="number" min="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className={INPUT_CLASS} required />
+                  <input type="number" inputMode="numeric" min="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className={INPUT_CLASS} required />
                 </Field>
                 <Field label="Grau exigido">
                   <select value={form.requiredDegree} onChange={(e) => setForm({ ...form, requiredDegree: e.target.value })} className={INPUT_CLASS}>
@@ -521,7 +521,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
                   </select>
                 </Field>
                 <Field label="Quantidade afetada">
-                  <input type="number" min="1" value={incidentForm.quantity} onChange={(e) => setIncidentForm({ ...incidentForm, quantity: e.target.value })} className={INPUT_CLASS} required />
+                  <input type="number" inputMode="numeric" min="1" value={incidentForm.quantity} onChange={(e) => setIncidentForm({ ...incidentForm, quantity: e.target.value })} className={INPUT_CLASS} required />
                 </Field>
                 <Field label="Observação">
                   <input value={incidentForm.notes} onChange={(e) => setIncidentForm({ ...incidentForm, notes: e.target.value })} className={INPUT_CLASS} placeholder="O que aconteceu? (opcional)" />
@@ -621,12 +621,12 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
               </select>
             </Field>
             <Field label="Quantidade">
-              <input type="number" min="1" value={loanForm.quantity} onChange={(e) => setLoanForm({ ...loanForm, quantity: e.target.value })} className={INPUT_CLASS} required />
+              <input type="number" inputMode="numeric" min="1" value={loanForm.quantity} onChange={(e) => setLoanForm({ ...loanForm, quantity: e.target.value })} className={INPUT_CLASS} required />
             </Field>
             {loanForm.kind === 'sale' ? (
               <>
                 <Field label="Valor unitário (R$)">
-                  <input type="number" min="0.01" step="0.01" value={loanForm.unitPrice} onChange={(e) => setLoanForm({ ...loanForm, unitPrice: e.target.value })} className={INPUT_CLASS} required />
+                  <input type="number" inputMode="decimal" min="0.01" step="0.01" value={loanForm.unitPrice} onChange={(e) => setLoanForm({ ...loanForm, unitPrice: e.target.value })} className={INPUT_CLASS} required />
                 </Field>
                 <Field label="Vencimento da cobrança">
                   <input type="date" value={loanForm.dueDate} onChange={(e) => setLoanForm({ ...loanForm, dueDate: e.target.value })} className={INPUT_CLASS} required />
@@ -673,7 +673,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
                     {converting.kind === 'sale' ? (
                       <>
                         <label className="text-xs text-sand-dark">Valor unitário (R$)
-                          <input type="number" min="0.01" step="0.01" value={converting.unitPrice} onChange={(e) => setConverting({ ...converting, unitPrice: e.target.value })} className={`mt-1 block w-32 ${INPUT_CLASS}`} />
+                          <input type="number" inputMode="decimal" min="0.01" step="0.01" value={converting.unitPrice} onChange={(e) => setConverting({ ...converting, unitPrice: e.target.value })} className={`mt-1 block w-32 ${INPUT_CLASS}`} />
                         </label>
                         <label className="text-xs text-sand-dark">Vencimento
                           <input type="date" value={converting.dueDate} onChange={(e) => setConverting({ ...converting, dueDate: e.target.value })} className={`mt-1 block ${INPUT_CLASS}`} />
