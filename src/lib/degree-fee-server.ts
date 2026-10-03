@@ -1,6 +1,7 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { logAudit } from '@/lib/audit';
 import { nextInvoiceNumbers } from '@/lib/charges';
+import { lockKey } from '@/lib/locks';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { isValidMoney } from '@/lib/money';
 import {
@@ -87,6 +88,8 @@ export async function createDegreeFeePlan(db: Db, input: CreatePlanInput): Promi
   const eligible = checkEligibility(def.kind, { ...member, admissionKind: member.candidateProcess?.admissionKind ?? null }, input.fourthInstructionDate);
   if (!eligible.ok) return { ok: false, status: 400, error: eligible.error };
 
+  // Duplo clique: sem a trava, duas requisições passam juntas pela conferência e criam dois planos ativos.
+  await lockKey(db, `degree-plan:${input.lodgeId}:${member.id}:${def.kind}`);
   const existing = await db.degreeFeePlan.findFirst({ where: { lodgeId: input.lodgeId, memberId: member.id, kind: def.kind, status: 'active' }, select: { id: true } });
   if (existing) return { ok: false, status: 409, error: `${member.name} já tem um plano ativo da ${def.label.toLowerCase()}.` };
 
