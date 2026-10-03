@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { csvRow } from '@/lib/csv';
 import { NextResponse } from 'next/server';
+import { formatDayMixed } from '@/lib/date-only';
 import { requireLodgeAccess } from '@/lib/rbac';
 
 export async function GET(request: Request) {
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
   const header = csvRow(['Data', 'Valor', 'Método', 'Conta', 'Tipo', 'Membro', 'Observação']);
   const rows = payments.map((p) =>
     csvRow([
-      new Date(p.paidAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+      formatDayMixed(p.paidAt),
       p.amount.toFixed(2),
       p.method,
       p.account?.title ?? '',

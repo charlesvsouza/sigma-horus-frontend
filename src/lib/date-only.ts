@@ -34,3 +34,17 @@ export function dateOnlyUTC(d: Date | string | number): Date {
 export function daysOverdueBR(dueDate: Date | string | number, now: Date = new Date()): number {
   return Math.floor((todayBR(now).getTime() - dateOnlyUTC(dueDate).getTime()) / DAY_MS);
 }
+
+/**
+ * dd/mm/aaaa de um campo que MISTURA os dois jeitos de gravar (ex.: Payment.paidAt): a data digitada
+ * (00:00:00.000 UTC, "só dia") e o instante real (baixa automática do Asaas, "agora").
+ * Só-dia sai no dia certo lendo em UTC; instante sai no dia de Brasília. Sem isso, qualquer um dos dois
+ * aparece errado no navegador (UTC-3) ou no servidor (UTC) — o digitado volta um dia, o da noite avança.
+ */
+export function formatDayMixed(value: Date | string | number | null | undefined, fallback = '—'): string {
+  if (value === null || value === undefined || value === '') return fallback;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return fallback;
+  const dateOnly = d.getTime() % DAY_MS === 0;
+  return d.toLocaleDateString('pt-BR', { timeZone: dateOnly ? 'UTC' : 'America/Sao_Paulo' });
+}

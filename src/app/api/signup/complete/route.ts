@@ -4,6 +4,7 @@ import { getStripe, isPlanId } from '@/lib/stripe';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { limitByIp } from '@/lib/rate-limit';
+import { validateLodgeSignup } from '@/lib/validation';
 import type Stripe from 'stripe';
 
 // Recupera a Checkout Session de self-service e valida que é elegível.
@@ -59,6 +60,8 @@ export async function POST(request: Request) {
   if (!name || !slug || !adminName || !adminEmail || !adminPassword) {
     return NextResponse.json({ error: 'Preencha todos os campos.' }, { status: 400 });
   }
+  const invalid = Object.values(validateLodgeSignup({ name, slug, adminName, adminEmail, adminPassword }))[0];
+  if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
   const loaded = await loadSession(sessionId).catch(() => null);
   if (!loaded || !loaded.ok) return NextResponse.json({ error: loaded?.error ?? 'Sessão inválida.' }, { status: 400 });

@@ -27,7 +27,20 @@ async function run() {
 
   const results: { lodgeId: string; name: string; membersAnonymized: number; usersRemoved: number }[] = [];
 
+  const skipped: { lodgeId: string; name: string; reason: string }[] = [];
+
   for (const lodge of expired) {
+    // Trava contra marcação equivocada de `terminatedAt`: anonimizar é irreversível, então loja com
+    // assinatura viva (paga ou em trial) nunca é tocada por este cron — resolve-se a marcação antes.
+    const live = await prismaAdmin.subscription.findFirst({
+      where: { lodgeId: lodge.id, status: { in: ['active', 'trialing'] } },
+      select: { id: true },
+    });
+    if (live) {
+      skipped.push({ lodgeId: lodge.id, name: lodge.name, reason: 'assinatura ativa ou em trial' });
+      continue;
+    }
+
     const memberCount = await prismaAdmin.member.updateMany({
       where: { lodgeId: lodge.id },
       data: {
@@ -70,7 +83,7 @@ async function run() {
     });
   }
 
-  return { purged: results.length, details: results };
+  return { purged: results.length, details: results, skipped };
 }
 
 export async function GET(request: Request) {

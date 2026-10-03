@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { daysOverdueBR, formatDateOnly, todayBR } from './date-only.ts';
+import { daysOverdueBR, formatDateOnly, formatDayMixed, todayBR } from './date-only.ts';
 
 // Vencimento gravado como o servidor grava (new Date('AAAA-MM-DD') = 00:00 UTC).
 const due = new Date('2026-09-20');
@@ -36,4 +36,12 @@ test('vence hoje NÃO está vencido; só no dia seguinte (fim do bug de 3h antes
   assert.equal(daysOverdueBR(due, new Date('2026-09-21T03:30:00Z')), 1);
   // 60 dias depois
   assert.equal(daysOverdueBR(due, new Date('2026-11-19T15:00:00Z')), 60);
+});
+
+test('formatDayMixed: só-dia (00:00 UTC) mantém o dia; instante da noite usa o dia de Brasília', () => {
+  assert.equal(formatDayMixed('2026-09-10T00:00:00.000Z'), '10/09/2026'); // digitado
+  assert.equal(formatDayMixed('2026-10-01T01:30:00.000Z'), '30/09/2026'); // 22:30 de 30/09 em Brasília (Pix da noite)
+  assert.equal(formatDayMixed('2026-09-10T15:00:00.000Z'), '10/09/2026'); // instante de dia
+  assert.equal(formatDayMixed(null), '—');
+  assert.equal(formatDayMixed('lixo', ''), '');
 });

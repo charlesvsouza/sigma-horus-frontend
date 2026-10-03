@@ -87,6 +87,14 @@ export function degreeShort(m: DegreeSource): string {
 // Tempo desde a iniciação. Base para mensagens automáticas de aniversário de
 // iniciação e jubileus (5, 10, 25 anos…) — ver Fase 7 (Comunicação).
 
+// Datas de marco/nascimento são "só dia": gravadas em 00:00 UTC (ver lib/date-only.ts). Ler com getDate()/getMonth()
+// locais desloca um dia no navegador do Brasil (UTC-3) e dá resultado diferente do servidor (UTC). Por isso o dia
+// do marco sai dos campos UTC e o "hoje" é o calendário de Brasília — igual em qualquer lugar. `ref` é um instante.
+const BR_OFFSET_MS = 3 * 60 * 60_000;
+interface Ymd { y: number; m: number; d: number }
+const markYmd = (d: Date): Ymd => ({ y: d.getUTCFullYear(), m: d.getUTCMonth(), d: d.getUTCDate() });
+const todayYmd = (ref: Date): Ymd => markYmd(new Date(ref.getTime() - BR_OFFSET_MS));
+
 const toDate = (d?: string | Date | null): Date | null => {
   if (!d) return null;
   const dt = d instanceof Date ? d : new Date(d);
@@ -97,9 +105,10 @@ const toDate = (d?: string | Date | null): Date | null => {
 export function yearsInOrder(initiationDate?: string | Date | null, ref: Date = new Date()): number | null {
   const start = toDate(initiationDate);
   if (!start || start > ref) return null;
-  let years = ref.getFullYear() - start.getFullYear();
-  const m = ref.getMonth() - start.getMonth();
-  if (m < 0 || (m === 0 && ref.getDate() < start.getDate())) years--;
+  const a = markYmd(start), b = todayYmd(ref);
+  let years = b.y - a.y;
+  const m = b.m - a.m;
+  if (m < 0 || (m === 0 && b.d < a.d)) years--;
   return years < 0 ? null : years;
 }
 
@@ -107,8 +116,9 @@ export function yearsInOrder(initiationDate?: string | Date | null, ref: Date = 
 export function timeInOrderLabel(initiationDate?: string | Date | null, ref: Date = new Date()): string | null {
   const start = toDate(initiationDate);
   if (!start || start > ref) return null;
-  let months = (ref.getFullYear() - start.getFullYear()) * 12 + (ref.getMonth() - start.getMonth());
-  if (ref.getDate() < start.getDate()) months--;
+  const a = markYmd(start), b = todayYmd(ref);
+  let months = (b.y - a.y) * 12 + (b.m - a.m);
+  if (b.d < a.d) months--;
   if (months < 0) return null;
   const years = Math.floor(months / 12);
   const rem = months % 12;
@@ -126,9 +136,10 @@ export function timeInOrderLabel(initiationDate?: string | Date | null, ref: Dat
 // (desde a iniciação). Não confirma "ininterrupção" (não rastreamos afastamentos).
 
 function fullYearsBetween(start: Date, ref: Date): number {
-  let years = ref.getFullYear() - start.getFullYear();
-  const m = ref.getMonth() - start.getMonth();
-  if (m < 0 || (m === 0 && ref.getDate() < start.getDate())) years--;
+  const a = markYmd(start), b = todayYmd(ref);
+  let years = b.y - a.y;
+  const m = b.m - a.m;
+  if (m < 0 || (m === 0 && b.d < a.d)) years--;
   return years;
 }
 
@@ -170,6 +181,6 @@ export const TENURE_MILESTONES = [1, 5, 10, 15, 20, 25, 30, 40, 50, 60];
 export function tenureMilestoneForYear(initiationDate?: string | Date | null, ref: Date = new Date()): number | null {
   const start = toDate(initiationDate);
   if (!start) return null;
-  const years = ref.getFullYear() - start.getFullYear();
+  const years = todayYmd(ref).y - markYmd(start).y;
   return TENURE_MILESTONES.includes(years) ? years : null;
 }

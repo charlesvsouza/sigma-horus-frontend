@@ -1,18 +1,24 @@
 import { sourceFromCookieHeader } from '@/lib/acquisition';
 import { prismaAdmin } from '@/lib/prisma';
 import { seedLodgeDefaults } from '@/lib/seed-lodge';
-import { validateInvite, consumeInvite, INVITE_ERROR_MESSAGES } from '@/lib/invites';
+import { validateInvite, INVITE_ERROR_MESSAGES } from '@/lib/invites';
+import { limitByIp } from '@/lib/rate-limit';
+import { validateLodgeSignup } from '@/lib/validation';
 import { TRIAL_DAYS, TRIAL_PLAN } from '@/lib/stripe';
 import { isPlanId } from '@/lib/plans';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
+
+class InviteTakenError extends Error {}
 
 export async function GET() {
   return NextResponse.json({ lodge: null });
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  const limited = await limitByIp(request, 'lodge-signup', 20, 60 * 60_000);
+  if (limited) return limited;
+  const body = await request.json().catch(() => ({}));
   const acquisitionSource = sourceFromCookieHeader(request.headers.get('cookie')) ?? 'convite';
   const name = String(body?.name ?? '').trim();
   const slug = String(body?.slug ?? '').trim().toLowerCase();
@@ -25,6 +31,9 @@ export async function POST(request: Request) {
   if (!name || !slug || !adminName || !adminEmail || !adminPassword) {
     return NextResponse.json({ error: 'Preencha todos os campos.' }, { status: 400 });
   }
+  // Mesma validação da tela (senha de 8+, endereço sem espaços/maiúsculas, e-mail válido): o servidor não confia no navegador.
+  const invalid = Object.values(validateLodgeSignup({ name, slug, adminName, adminEmail, adminPassword }))[0];
+  if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
   // Cadastro de teste SOMENTE por convite.
   if (!inviteCode) {
@@ -94,11 +103,18 @@ export async function POST(request: Request) {
     // Semeia ritos, potências, cargos do rito escolhido e plano de contas.
     await seedLodgeDefaults(tx, lodge.id, riteName);
 
-    return { lodge, user };
-  });
+    // Consome o convite DENTRO da transação e de forma atômica (só passa quem o encontra ainda pendente):
+    // dois cadastros simultâneos com o mesmo código não criam duas lojas.
+    const consumed = await tx.invitation.updateMany({
+      where: { code: inviteCode.trim().toUpperCase(), status: 'pending', expiresAt: { gt: new Date() } },
+      data: { status: 'used', usedAt: new Date(), lodgeId: lodge.id },
+    });
+    if (consumed.count !== 1) throw new InviteTakenError();
 
-  // Consome o convite após a loja existir (fora da transação tenant-agnóstica).
-  await consumeInvite(inviteCode, result.lodge.id);
+    return { lodge, user };
+  }).catch((error) => (error instanceof InviteTakenError ? null : Promise.reject(error)));
+
+  if (!result) return NextResponse.json({ error: INVITE_ERROR_MESSAGES.used }, { status: 409 });
 
   return NextResponse.json({
     lodge: result.lodge,

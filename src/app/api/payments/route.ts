@@ -12,6 +12,7 @@ import { buildLodgeChannels } from '@/lib/lodge-channels';
 import { brl } from '@/lib/currency';
 import { NextResponse } from 'next/server';
 import { lockKey } from '@/lib/locks';
+import { formatDayMixed } from '@/lib/date-only';
 import { LATE_CHARGE_CHART, lateChargeMarker } from '@/lib/late-charge';
 
 export async function GET() {
@@ -307,7 +308,7 @@ export async function POST(request: Request) {
     const valor = result.lateCharge > 0
       ? `${brl(payment.amount)} + ${brl(result.lateCharge)} de multa e juros por atraso (total ${brl(payment.amount + result.lateCharge)})`
       : brl(payment.amount);
-    const data = new Date(payment.paidAt).toLocaleDateString('pt-BR');
+    const data = formatDayMixed(payment.paidAt);
     dispatch(
       'email',
       payment.member.email,

@@ -4,6 +4,7 @@ import { loadAccountsReportRows, type AccountsReportVariant } from '@/lib/accoun
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
+import { formatDayMixed } from '@/lib/date-only';
 
 const VARIANTS: AccountsReportVariant[] = ['contas-a-receber', 'contas-a-pagar', 'contas-recebidas', 'contas-pagas'];
 
@@ -91,7 +92,7 @@ export async function GET(request: Request) {
   headerRow.eachCell((cell) => { cell.border = { bottom: { style: 'thin' } }; });
 
   const addLine = (r: (typeof report.rows)[number]) =>
-    sheet.addRow([new Date(r.date).toLocaleDateString('pt-BR'), r.personName ?? '—', r.reference ?? '—', r.category ?? '—', r.detail ?? '', r.amount]);
+    sheet.addRow([formatDayMixed(r.date), r.personName ?? '—', r.reference ?? '—', r.category ?? '—', r.detail ?? '', r.amount]);
   if (report.groups) {
     // Mesmos blocos da tela: um por mês (Referência) ou por pessoa (Nome), cada um com subtotal.
     for (const g of report.groups) {

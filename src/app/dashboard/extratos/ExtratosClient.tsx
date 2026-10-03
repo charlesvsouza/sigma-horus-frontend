@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { formatDayMixed } from '@/lib/date-only';
 import { ReportActions, ReportDocument } from '@/components/report/report-document';
 
 interface AccountOption {
@@ -43,7 +44,7 @@ const KIND_LABEL: Record<Movement['kind'], string> = {
 const FA_KIND_LABEL: Record<string, string> = { bank: 'Banco', cash: 'Caixa' };
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR');
+  return formatDayMixed(iso);
 }
 
 export default function ExtratosClient({

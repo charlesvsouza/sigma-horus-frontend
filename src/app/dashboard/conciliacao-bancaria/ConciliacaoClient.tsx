@@ -4,12 +4,13 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyState, FormCard, Alert } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { formatDayMixed } from '@/lib/date-only';
 
 interface MatchedPayment { id: string; amount: number; paidAt: string; accountTitle: string | null; }
 interface BankTx { id: string; date: string; description: string; amount: number; status: string; matchedPayment: MatchedPayment | null; }
 interface Candidate { id: string; amount: number; paidAt: string; account: { title: string } | null; member: { name: string } | null; }
 
-const fmt = (d: string) => new Date(d).toLocaleDateString('pt-BR');
+const fmt = (d: string) => formatDayMixed(d);
 
 function MatchPicker({ bankTxId, onDone }: { bankTxId: string; onDone: () => void }) {
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);

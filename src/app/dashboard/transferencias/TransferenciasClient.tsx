@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
 import { brl as money } from '@/lib/currency';
+import { formatDayMixed } from '@/lib/date-only';
 
 interface FinancialAccountOption { id: string; name: string; kind: string; isInvestment: boolean; active: boolean; saldo: number; }
 interface TransferItem {
@@ -161,7 +162,7 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
                     <p className="text-sm font-medium text-sand-light">{t.from.name} → {t.to.name}</p>
                     <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-medium ${STATUS_CLASS[t.status] ?? ''}`}>{STATUS_LABEL[t.status] ?? t.status}</span>
                   </div>
-                  <p className="mt-1 text-xs text-sand-dark">{new Date(t.date).toLocaleDateString('pt-BR')} • {money(t.amount)}{t.note ? ` • ${t.note}` : ''}</p>
+                  <p className="mt-1 text-xs text-sand-dark">{formatDayMixed(t.date)} • {money(t.amount)}{t.note ? ` • ${t.note}` : ''}</p>
                   {t.status === 'pending' && canApprove ? (
                     <div className="mt-2 flex items-center gap-3">
                       <button disabled={decidingId === t.id} onClick={() => void decide(t.id, 'approve')} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200 disabled:opacity-40">Aprovar</button>

@@ -5,6 +5,7 @@ import { Fragment, useState } from 'react';
 import { EmptyState, inputClass } from '@/components/ui';
 import { ReportActions, ReportDocument } from '@/components/report/report-document';
 import { brl } from '@/lib/currency';
+import { formatDayMixed } from '@/lib/date-only';
 import { csvNumber } from '@/lib/csv';
 import { ACCOUNTS_SORT_LABEL, sortHasGroups, type AccountsSort } from '@/lib/accounts-report';
 
@@ -13,7 +14,7 @@ interface ReportRow { id: string; date: string; personId: string | null; personN
 interface ReportGroup { label: string; rows: ReportRow[]; total: number; }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR');
+  return formatDayMixed(iso);
 }
 
 export default function ContasReportClient({

@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { computeAccountStatement, type StatementMovementInput } from '@/lib/financial-accounts';
 import { NextResponse } from 'next/server';
+import { formatDayMixed } from '@/lib/date-only';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -107,7 +108,7 @@ export async function GET(request: Request, { params }: Ctx) {
   sheet.addRow(['', 'Saldo inicial do período', '', '', '', statement.openingBalance]);
   for (const m of statement.movements) {
     sheet.addRow([
-      new Date(m.date).toLocaleDateString('pt-BR'),
+      formatDayMixed(m.date),
       m.description,
       m.reference ?? '—',
       KIND_LABEL[m.kind],

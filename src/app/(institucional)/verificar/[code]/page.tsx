@@ -15,8 +15,11 @@ export const metadata: Metadata = {
 // necessário para confirmar a autenticidade — número, irmão, loja que emitiu e a sessão —,
 // nunca e-mail ou telefone. Busca entre lojas (prismaAdmin): o código é único na plataforma.
 export default async function VerificarPage({ params }: { params: Promise<{ code: string }> }) {
-  const { code: raw } = await params;
-  const code = normalizeVerificationCode(decodeURIComponent(raw));
+  const { code: rawParam } = await params;
+  // Endereço digitado/colado errado (ex.: "%" solto) não pode derrubar a página com 500.
+  let raw = rawParam;
+  try { raw = decodeURIComponent(rawParam); } catch { /* mantém o texto cru */ }
+  const code = normalizeVerificationCode(raw);
   const visit = code
     ? await prismaAdmin.sessionVisitor.findUnique({
         where: { certificateCode: code },
@@ -53,7 +56,7 @@ export default async function VerificarPage({ params }: { params: Promise<{ code
         <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/5 p-6">
           <h1 className="text-xl font-semibold text-rose-200">Certificado não encontrado</h1>
           <p className="mt-2 text-sm text-sand">
-            O código <strong className="font-mono">{code ?? decodeURIComponent(raw)}</strong> não corresponde a nenhum certificado emitido. Confira a digitação
+            O código <strong className="font-mono">{code ?? raw}</strong> não corresponde a nenhum certificado emitido. Confira a digitação
             (o código tem 8 caracteres, como K7Q2-9XMA) ou fale com a loja que o emitiu.
           </p>
         </div>
