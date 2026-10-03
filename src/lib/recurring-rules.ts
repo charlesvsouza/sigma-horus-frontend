@@ -20,9 +20,16 @@ export function isLegacyGeneratedNumber(number: string): boolean {
   return LEGACY_CHILD_NUMBER.test(number);
 }
 
+/** Meses de um intervalo (mensal 1, trimestral 3, anual 12). */
+export const intervalMonths = (interval: string) => (interval === 'quarterly' ? 3 : interval === 'yearly' ? 12 : 1);
+
 /** Soma um intervalo (mensal/trimestral/anual) a uma data-só-dia (00:00 UTC), sem estourar o fim do mês. */
 export function addInterval(date: Date, interval: string): Date {
-  const months = interval === 'quarterly' ? 3 : interval === 'yearly' ? 12 : 1;
+  return shiftMonths(date, intervalMonths(interval));
+}
+
+/** Soma (ou subtrai, se negativo) meses a uma data-só-dia, limitando o dia ao fim do mês. */
+export function shiftMonths(date: Date, months: number): Date {
   const day = date.getUTCDate();
   const next = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1));
   const lastDay = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
@@ -72,6 +79,100 @@ export function skipPendingOccurrences(
   }
   return { nextDueDate: due, remaining: left, isRecurring: left === null || left > 0 };
 }
+
+/** Dias de aviso antes de a recorrência acabar: a diretoria é avisada quando a última cobrança está a até 30 dias. */
+export const RECURRENCE_END_NOTICE_DAYS = 30;
+
+/**
+ * Vencimento da ÚLTIMA ocorrência que a mãe ainda vai gerar (`remaining` = repetições que faltam).
+ * null = sem fim, ou nada mais a gerar.
+ */
+export function lastOccurrenceDue(nextDueDate: Date, interval: string, remaining: number | null): Date | null {
+  if (remaining === null || remaining <= 0) return null;
+  return shiftMonths(nextDueDate, intervalMonths(interval) * (remaining - 1));
+}
+
+/**
+ * Renova uma mãe por mais `repetitions` ocorrências. Mãe ativa: soma às que faltam. Mãe já encerrada
+ * (nextDueDate = o vencimento seguinte ao da última): recomeça no próximo vencimento a partir de hoje,
+ * sem despejar de uma vez os meses que ficaram sem cobrança.
+ */
+export function renewRecurrence(
+  mother: { nextDueDate: Date; interval: string; remaining: number | null; isRecurring: boolean },
+  repetitions: number,
+  today: Date,
+): { nextDueDate: Date; remaining: number; isRecurring: true } {
+  if (mother.isRecurring && mother.remaining !== null && mother.remaining > 0) {
+    return { nextDueDate: mother.nextDueDate, remaining: mother.remaining + repetitions, isRecurring: true };
+  }
+  let due = mother.nextDueDate;
+  let guard = 0;
+  while (due.getTime() < today.getTime() && guard++ < 600) due = addInterval(due, mother.interval);
+  return { nextDueDate: due, remaining: repetitions, isRecurring: true };
+}
+
+/** Mãe já encerrada continua listada por este tempo, para dar tempo de renovar. */
+export const ENDED_LISTED_DAYS = 90;
+const DAY_MS = 86_400_000;
+
+export interface MotherLike {
+  number: string;
+  nextDueDate: Date | null;
+  recurringInterval: string | null;
+  recurringCount: number | null;
+  isRecurring: boolean;
+}
+
+/** Vencimento da última cobrança do período da mãe e se ela já encerrou (nextDueDate = o vencimento seguinte ao da última). */
+export function describeMother(row: MotherLike): { lastDue: Date; ended: boolean } | null {
+  if (!row.nextDueDate || isLegacyGeneratedNumber(row.number)) return null;
+  const interval = row.recurringInterval ?? 'monthly';
+  if (row.isRecurring) {
+    const lastDue = lastOccurrenceDue(row.nextDueDate, interval, row.recurringCount);
+    return lastDue ? { lastDue, ended: false } : null;
+  }
+  return { lastDue: shiftMonths(row.nextDueDate, -intervalMonths(interval)), ended: true };
+}
+
+/** Quem está perto do fim (≤ 30 dias da última cobrança) ou acabou de encerrar (≤ 90 dias), da mais antiga para a mais nova. */
+export function selectEnding<T extends MotherLike>(rows: T[], today: Date): (T & { lastDue: Date; ended: boolean })[] {
+  const horizon = today.getTime() + RECURRENCE_END_NOTICE_DAYS * DAY_MS;
+  const floor = today.getTime() - ENDED_LISTED_DAYS * DAY_MS;
+  const out: (T & { lastDue: Date; ended: boolean })[] = [];
+  for (const row of rows) {
+    const d = describeMother(row);
+    if (!d) continue;
+    const t = d.lastDue.getTime();
+    if (d.ended ? t >= floor : t <= horizon) out.push({ ...row, ...d });
+  }
+  return out.sort((a, b) => a.lastDue.getTime() - b.lastDue.getTime() || a.number.localeCompare(b.number));
+}
+
+const MONTHS_FULL_NOTICE = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const dmy = (d: Date) => `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
+/** Texto do aviso à diretoria. `lastDues` = vencimento da última cobrança de cada mãe que está acabando. */
+export function endNoticeText(lodgeName: string, lastDues: Date[]): { subject: string; body: string } {
+  const byMonth = new Map<string, number>();
+  for (const d of lastDues) {
+    const key = `${MONTHS_FULL_NOTICE[d.getUTCMonth()]}/${d.getUTCFullYear()}`;
+    byMonth.set(key, (byMonth.get(key) ?? 0) + 1);
+  }
+  const lines = [...byMonth.entries()].map(([m, n]) => `• ${n} ${n === 1 ? 'recorrência termina' : 'recorrências terminam'} em ${m}`).join('\n');
+  const last = new Date(Math.max(...lastDues.map((d) => d.getTime())));
+  return {
+    subject: `Recorrência de cobranças chegando ao fim — ${lodgeName}`,
+    body: [
+      `O período programado das cobranças recorrentes (mensalidades) de ${lodgeName} está chegando ao fim.`,
+      lines,
+      `A última cobrança sai com vencimento em ${dmy(last)}. Depois disso o sistema deixa de gerar novas cobranças para esses irmãos.`,
+      'O que deseja fazer?\n' +
+        '1) Renovar o período atual (mesmo valor, mais alguns meses): Tesouraria → Cobranças → "Recorrências chegando ao fim" → Renovar.\n' +
+        '2) Criar outro período, com novo valor ou novas datas: Tesouraria → Cobranças → Nova cobrança (ou Cobrança em massa) → "Criar como cobrança recorrente".',
+      'A renovação é feita pelo Tesoureiro ou pelo Administrador.',
+    ].join('\n\n'),
+  };
+}
+
 
 const MONTHS_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const monthLabel = (d: Date) => `${MONTHS_PT[d.getUTCMonth()]}/${d.getUTCFullYear()}`;

@@ -3,6 +3,7 @@ import { autoEmitAllLodges, autoEmitForLodge } from '@/lib/asaas-auto-emit';
 import { cronAuthorized } from '@/lib/platform-auth';
 import { prismaAdmin } from '@/lib/prisma';
 import { processRecurringAllLodges, processRecurringForLodge } from '@/lib/recurring';
+import { notifyEndingRecurrences } from '@/lib/recurring-renewal';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
@@ -20,7 +21,12 @@ export async function GET(request: Request) {
   if (!cronAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const recurring = await processRecurringAllLodges();
   const autoEmit = await autoEmitAllLodges();
-  return NextResponse.json({ ...recurring, autoEmit });
+  // Aviso (uma vez) de que o período programado das recorrências está acabando: renovar ou criar outro.
+  const endNotice = await notifyEndingRecurrences().catch((err) => {
+    console.error('recorrência: falha no aviso de fim de período', err);
+    return null;
+  });
+  return NextResponse.json({ ...recurring, autoEmit, endNotice });
 }
 
 export async function POST() {

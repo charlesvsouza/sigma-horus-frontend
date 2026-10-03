@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.84</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.85</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.84 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.85 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -1007,6 +1007,13 @@ export function ManualBook() {
                   nos próximos 3 dias, e o botão informa quantas foram emitidas e quantas ficaram sem CPF.
                 </p>
                 <p>
+                  <strong>Antecedência.</strong> Cada ocorrência é gerada <strong>até 10 dias antes do vencimento</strong>, já com o vencimento certo — a cobrança de 05/11 aparece
+                  em 26/10 e só entra em atraso depois de 05/11. O período programado (ex.: mensalidades até dezembro) <strong>termina sozinho</strong>: 30 dias antes da última cobrança o sistema
+                  envia um e-mail ao <strong>Tesoureiro, ao Venerável e aos Administradores</strong> perguntando se desejam <strong>renovar o período atual</strong> ou <strong>criar outro</strong>. Em
+                  <UI>Cobranças</UI> aparece o aviso <UI>Recorrências chegando ao fim</UI>: o Tesoureiro ou o Administrador escolhe quantas repetições somar (mesmo valor) e clica em <UI>Renovar</UI>; para outro
+                  valor ou outras datas, crie uma nova cobrança recorrente. Recorrência que já terminou continua listada por 90 dias e, ao renovar, recomeça no próximo vencimento (os meses sem cobrança não são gerados de uma vez).
+                </p>
+                <p>
                   <strong>Irmão no Art. 002 e irmão bloqueado.</strong> O irmão que está no Art. 002 (mensalidade vencida há mais de 60 dias) continua
                   recebendo a recorrência normalmente — o Art. 002 é só um aviso. A recorrência <strong>para</strong> somente quando o Venerável ou o
                   Administrador <strong>bloqueia</strong> o cadastro por comunicado à Potência (7.8). Ao voltar, com o acordo de regularização quitado,
@@ -1287,7 +1294,7 @@ export function ManualBook() {
                   O formulário mostra tudo o que entra no <strong>acordo de regularização</strong> e pede:
                 </p>
                 <Bullets>
-                  <li><strong>Taxa de regularização</strong> — digitada à mão (use 0 se a loja não cobrar). Entra na categoria <em>1.1.03 Taxa de Filiação / Regularização</em>.</li>
+                  <li><strong>Taxa de regularização</strong> — valor aberto, negociado e digitado à mão (use 0 se a loja não cobrar). Entra na categoria própria <em>1.1.10 Taxa de Regularização</em>, separada da taxa de filiação (1.1.03).</li>
                   <li><strong>Multa e juros</strong> — opcional, caso a caso; entra em <em>1.2.06 Multas e Juros por Atraso</em>. Não há desconto.</li>
                   <li><strong>Pagamento</strong> — <strong>à vista</strong> por padrão, ou em <strong>2 ou 3 parcelas</strong> mensais; protocolo e data do comunicado à Potência são opcionais.</li>
                 </Bullets>
@@ -1612,16 +1619,16 @@ export function ManualBook() {
               </Sub>
               <Sub id="tes-taxas-grau" title="7.21 Taxas de grau (iniciação, elevação, exaltação e filiação)">
                 <p>
-                  <UI>Tesouraria → Taxas de grau</UI> organiza o pagamento das taxas de iniciação, elevação, exaltação e filiação/regularização — à vista ou em até
-                  <strong>6 cotas</strong>. Criam e gerenciam os planos: <strong>Administrador, Venerável e Tesoureiro</strong>.
+                  <UI>Tesouraria → Taxas de grau</UI> organiza o pagamento das taxas de iniciação, elevação, exaltação, filiação e regularização — à vista ou em até
+                  <strong>6 cotas</strong>, com <strong>entrada opcional</strong>. Criam e gerenciam os planos: <strong>Administrador, Venerável e Tesoureiro</strong>.
                 </p>
                 <Bullets>
-                  <li><strong>Valores:</strong> em <UI>Configurações da loja → Financeiro → Taxas de grau</UI>. O plano guarda o valor do dia em que é criado: um reajuste depois não muda planos já feitos (o irmão não paga diferença).</li>
-                  <li><strong>Quem pode contratar:</strong> iniciação — o candidato (também pelo atalho na ficha dele em Candidatos); elevação — o Aprendiz; exaltação — o Companheiro; filiação/regularização — o candidato de filiação (processo do tipo Filiação em Candidatos) ou o obreiro cadastrado que se regulariza (afastado, Quit Placet, Placet Ex Officio, Art. 002 — a situação aparece ao lado do nome). Elevação e exaltação antecipadas só a partir da <strong>4ª instrução</strong> do grau atual: informe a data dela ao criar o plano.</li>
-                  <li><strong>Novo plano:</strong> taxa, irmão, data da 4ª instrução, número de cotas (1 = à vista) e o 1º vencimento; a prévia mostra cada cota. Cada cota vira uma cobrança comum do irmão: aparece no portal dele, entra nos lembretes e, no Modo Asaas, é emitida (Pix ou boleto) perto do vencimento. Cartão não é aceito no Modo Loja.</li>
+                  <li><strong>Valores:</strong> iniciação, elevação, exaltação e filiação têm o valor em <UI>Configurações da loja → Financeiro → Taxas de grau</UI>. A <strong>regularização</strong> não tem valor padrão: é o valor negociado com o irmão (Art. 002, afastamento), digitado em cada plano. O plano guarda o valor do dia em que é criado: um reajuste depois não muda planos já feitos (o irmão não paga diferença).</li>
+                  <li><strong>Quem pode contratar:</strong> iniciação — o candidato (também pelo atalho na ficha dele em Candidatos); elevação — o Aprendiz; exaltação — o Companheiro; filiação — só o candidato de filiação (processo do tipo Filiação em Candidatos); regularização — o obreiro cadastrado que se regulariza (afastado, Quit Placet, Placet Ex Officio, Art. 002 — a situação aparece ao lado do nome). Elevação e exaltação antecipadas só a partir da <strong>4ª instrução</strong> do grau atual: informe a data dela ao criar o plano.</li>
+                  <li><strong>Novo plano:</strong> taxa, irmão, data da 4ª instrução (elevação/exaltação), o valor negociado (só na regularização), a <strong>entrada</strong> (opcional) e o número de cotas. <strong>À vista</strong> = uma cota. <strong>Parcelado sem entrada</strong> = valor ÷ número de cotas. <strong>Parcelado com entrada</strong> = a entrada vira a 1ª cota (com o próprio vencimento) e o saldo (valor − entrada) é dividido nas parcelas; a entrada também conta como cota, então são no máximo <strong>entrada + 5 parcelas</strong>. Ex.: R$ 1.000,00 com entrada de R$ 200,00 e 5 parcelas = 1 cota de 200 + 5 de 160. A entrada não vale no cartão (o Asaas cobra parcelas iguais). A prévia mostra cada cota. Cada cota vira uma cobrança comum do irmão: aparece no portal dele, entra nos lembretes e, no Modo Asaas, é emitida (Pix ou boleto) perto do vencimento. Cartão não é aceito no Modo Loja.</li>
                   <li><strong>Contrato:</strong> <UI>Contrato (imprimir)</UI> gera o termo de compromisso no papel timbrado, com as cotas e as cláusulas (valor fixo, quitação até o evento, antecipação sem acréscimo, devolução se o evento não acontecer), para o irmão, o Tesoureiro e o Venerável assinarem. O irmão também abre o termo pelo portal.</li>
                   <li><strong>Data do evento:</strong> quando a loja marcar a cerimônia, informe a <UI>Data prevista</UI> no plano. Se houver cotas vencendo depois dela, aparece o aviso e o botão <UI>Antecipar cotas para a data</UI> (cotas já emitidas no Asaas ficam como estão — vencem em poucos dias).</li>
-                  <li><strong>Quitado antes do evento:</strong> o plano fica <strong>Quitado — aguardando o evento</strong>, e o irmão vê no portal &quot;Crédito referente à taxa de …&quot;, reservado para a cerimônia. Registrada a elevação/exaltação/iniciação no cadastro, o plano passa a <strong>Evento realizado</strong> (com aviso se ainda houver saldo). A filiação/regularização não tem data no cadastro: quitada, o plano fica simplesmente <strong>Quitado</strong>.</li>
+                  <li><strong>Quitado antes do evento:</strong> o plano fica <strong>Quitado — aguardando o evento</strong>, e o irmão vê no portal &quot;Crédito referente à taxa de …&quot;, reservado para a cerimônia. Registrada a elevação/exaltação/iniciação no cadastro, o plano passa a <strong>Evento realizado</strong> (com aviso se ainda houver saldo). A filiação e a regularização não têm data no cadastro: quitadas, o plano fica simplesmente <strong>Quitado</strong>.</li>
                   <li><strong>Cartão de crédito (só Modo Asaas):</strong> com a opção ligada em <UI>Configurações da loja → Financeiro</UI> (e as tarifas do contrato da loja com o Asaas informadas), o plano ganha a <UI>Forma de pagamento</UI> <strong>Cartão de crédito no Asaas</strong>, à vista ou em até 6x. A tarifa do cartão é <strong>repassada</strong> ao irmão: a prévia mostra a taxa, o acréscimo e o total, e o Asaas cria o parcelamento na hora. O sistema mostra o <strong>link para o irmão pagar</strong> (botão <UI>Link do cartão (Asaas)</UI> no plano e <UI>Pagar no cartão</UI> no portal dele). O cartão é cobrado em parcelas; cada parcela dá baixa sozinha e a tarifa real sai como despesa, então a loja recebe a taxa cheia. Pix e boleto continuam sem acréscimo. No Modo Loja não há cartão. As cotas no cartão não são antecipadas nem reemitidas em Pix. No relatório <UI>Tarifas de cobrança</UI>, a tarifa dessas parcelas aparece como <strong>repassada</strong>.</li>
                     <li><strong>Cancelar plano:</strong> se o evento não for acontecer (desligamento, desistência, candidato reprovado), <UI>Cancelar plano</UI> com o motivo: as cotas em aberto saem (e são canceladas no Asaas, se emitidas) e o que já foi pago vira uma <strong>conta a pagar ao irmão</strong> em Contas (categoria 2.1.17 Devolução de Taxas de Grau), com o visto do Venerável se passar do limite. Cota com pagamento parcial precisa ser acertada antes.</li>
                 </Bullets>

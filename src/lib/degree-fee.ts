@@ -1,13 +1,16 @@
-// Taxas de grau (iniciação, elevação, exaltação, filiação/regularização) — regras puras, testáveis sem Prisma.
+// Taxas de grau (iniciação, elevação, exaltação, filiação e regularização) — regras puras, testáveis sem Prisma.
 //
 // Decisões do dono (2026-10-02):
 //  - valor configurado em Configurações da loja; o plano TRAVA o valor do dia
 //    (reajuste depois não cobra diferença);
-//  - até 6 cotas (1 = à vista); cada cota é uma cobrança comum do irmão;
+//  - até 6 cotas no total (1 = à vista); cada cota é uma cobrança comum do irmão;
+//  - entrada opcional (decisão de 2026-10-03): entrada + N parcelas — a entrada é a 1ª cota (vence na data
+//    da entrada) e as N parcelas dividem o saldo (valor − entrada); a entrada conta como cota (entrada + 5 = 6);
 //  - elevação/exaltação antecipadas a partir da 4ª instrução do grau atual
 //    (Aprendiz → elevação; Companheiro → exaltação). Iniciação: o candidato.
-//    Filiação/regularização: candidato de filiação (maçom de outra loja) ou obreiro
-//    cadastrado que se regulariza (afastado, placet, Art. 002) — sem a regra da instrução;
+//    Filiação (2026-10-03: separada da regularização): candidato de filiação (maçom de outra loja);
+//    Regularização: obreiro cadastrado que se regulariza (afastado, placet, Art. 002), com valor ABERTO
+//    digitado na negociação (não há valor padrão em Configurações). Nenhuma das duas tem a regra da instrução;
 //  - a taxa deve estar quitada até a data prevista do evento; quitada antes da
 //    data, fica "quitada antecipadamente" (o "crédito" que o irmão vê no portal);
 //  - evento que não acontece: a loja devolve o que foi pago;
@@ -16,23 +19,28 @@
 
 import { symbolicSituation, type DegreeSource } from './masonic-degree';
 
-export type DegreeFeeKind = 'initiation' | 'elevation' | 'exaltation' | 'affiliation';
+export type DegreeFeeKind = 'initiation' | 'elevation' | 'exaltation' | 'affiliation' | 'regularization';
 
 export interface DegreeFeeKindDef {
   kind: DegreeFeeKind;
   label: string;          // "Taxa de Exaltação"
   event: string;          // "exaltação"
-  lodgeField: 'initiationFee' | 'elevationFee' | 'exaltationFee' | 'affiliationFee';
+  /** Valor padrão em Configurações da loja; null = valor aberto, digitado em cada plano (regularização). */
+  lodgeField: 'initiationFee' | 'elevationFee' | 'exaltationFee' | 'affiliationFee' | null;
   /** Data do cadastro que marca o evento realizado; null = o sistema não tem como saber (filiação). */
   memberDateField: 'initiationDate' | 'elevationDate' | 'exaltationDate' | null;
   chart: { code: string; name: string; type: 'REVENUE'; category: string };
 }
 
+/** Taxa de regularização (Art. 002): categoria própria, separada da filiação (1.1.03). */
+export const REGULARIZATION_CHART = { code: '1.1.10', name: 'Taxa de Regularização', type: 'REVENUE' as const, category: 'Receitas Próprias' };
+
 export const DEGREE_FEE_KINDS: DegreeFeeKindDef[] = [
   { kind: 'initiation', label: 'Taxa de Iniciação', event: 'iniciação', lodgeField: 'initiationFee', memberDateField: 'initiationDate', chart: { code: '1.1.02', name: 'Taxa de Iniciação', type: 'REVENUE', category: 'Receitas Próprias' } },
   { kind: 'elevation', label: 'Taxa de Elevação', event: 'elevação', lodgeField: 'elevationFee', memberDateField: 'elevationDate', chart: { code: '1.1.08', name: 'Taxa de Elevação', type: 'REVENUE', category: 'Receitas Próprias' } },
   { kind: 'exaltation', label: 'Taxa de Exaltação', event: 'exaltação', lodgeField: 'exaltationFee', memberDateField: 'exaltationDate', chart: { code: '1.1.09', name: 'Taxa de Exaltação', type: 'REVENUE', category: 'Receitas Próprias' } },
-  { kind: 'affiliation', label: 'Taxa de Filiação / Regularização', event: 'filiação / regularização', lodgeField: 'affiliationFee', memberDateField: null, chart: { code: '1.1.03', name: 'Taxa de Filiação / Regularização', type: 'REVENUE', category: 'Receitas Próprias' } },
+  { kind: 'affiliation', label: 'Taxa de Filiação', event: 'filiação', lodgeField: 'affiliationFee', memberDateField: null, chart: { code: '1.1.03', name: 'Taxa de Filiação', type: 'REVENUE', category: 'Receitas Próprias' } },
+  { kind: 'regularization', label: 'Taxa de Regularização', event: 'regularização', lodgeField: null, memberDateField: null, chart: REGULARIZATION_CHART },
 ];
 
 export const degreeFeeKind = (kind: string | null | undefined) => DEGREE_FEE_KINDS.find((k) => k.kind === kind) ?? null;
@@ -66,6 +74,29 @@ export function splitInstallments(total: number, n: number, firstDueDate: Date):
   return out;
 }
 
+export interface PlannedCota extends PlannedInstallment { entry: boolean }
+
+/** Valida a entrada: maior que zero, menor que o total, com até 2 casas decimais. */
+export function validateDownPayment(total: number, down: number): { ok: true } | { ok: false; error: string } {
+  if (!Number.isFinite(down) || down <= 0 || Math.abs(down * 100 - Math.round(down * 100)) > 1e-6) return { ok: false, error: 'Informe a entrada com até 2 casas decimais, maior que zero.' };
+  if (Math.round(down * 100) >= Math.round(total * 100)) return { ok: false, error: 'A entrada deve ser menor que o valor da taxa (para pagar tudo de uma vez, use à vista, sem entrada).' };
+  return { ok: true };
+}
+
+/** Máximo de parcelas depois da entrada: a entrada também é uma cota (entrada + 5 = 6). */
+export const maxParcelas = (hasDown: boolean) => (hasDown ? MAX_INSTALLMENTS - 1 : MAX_INSTALLMENTS);
+
+/**
+ * Cotas do plano. Sem entrada: valor/n. Com entrada: a entrada é a 1ª cota (vence em `downDueDate`) e o saldo
+ * (valor − entrada) é dividido em `n` parcelas mensais a partir de `firstDueDate` (os centavos sobram na 1ª parcela).
+ */
+export function planCotas(total: number, n: number, firstDueDate: Date, down: number | null = null, downDueDate: Date | null = null): PlannedCota[] {
+  if (!down) return splitInstallments(total, n, firstDueDate).map((c) => ({ ...c, entry: false }));
+  const balance = (Math.round(total * 100) - Math.round(down * 100)) / 100;
+  const parcelas = splitInstallments(balance, n, firstDueDate).map((c) => ({ ...c, number: c.number + 1, entry: false }));
+  return [{ number: 1, amount: down, dueDate: downDueDate ?? firstDueDate, entry: true }, ...parcelas];
+}
+
 /** Soma meses mantendo o dia do 1º vencimento (31 → 28/fev → 31/mar), limitado ao fim do mês. */
 function addMonths(first: Date, months: number): Date {
   const day = first.getUTCDate();
@@ -75,8 +106,9 @@ function addMonths(first: Date, months: number): Date {
   return next;
 }
 
-export const installmentTitle = (def: DegreeFeeKindDef, number: number, total: number) =>
-  total === 1 ? `${def.label} (à vista)` : `${def.label} — cota ${number}/${total}`;
+/** Título da cota; `total` = nº de cotas do plano (entrada incluída). */
+export const installmentTitle = (def: DegreeFeeKindDef, number: number, total: number, entry = false) =>
+  entry ? `${def.label} — entrada` : total === 1 ? `${def.label} (à vista)` : `${def.label} — cota ${number}/${total}`;
 
 // ---------------------------------------------------------------------------
 // Elegibilidade
@@ -100,10 +132,14 @@ export function checkEligibility(
     return { ok: true };
   }
   if (kind === 'affiliation') {
-    // Candidato de filiação (maçom de outra loja) ou obreiro que se regulariza (afastado, placet, Art. 002).
-    if (member.status === 'candidate' && member.admissionKind !== 'affiliation') {
-      return { ok: false, error: 'Este candidato é de iniciação: use a taxa de iniciação. Para filiação, o processo dele deve ser do tipo Filiação.' };
-    }
+    // Só o candidato de filiação (maçom de outra loja). Quem já é obreiro e se regulariza usa a taxa de regularização.
+    if (member.status !== 'candidate') return { ok: false, error: 'A taxa de filiação é do candidato de filiação (Secretaria → Candidatos). Para obreiro afastado ou no Art. 002, use a taxa de regularização.' };
+    if (member.admissionKind !== 'affiliation') return { ok: false, error: 'Este candidato é de iniciação: use a taxa de iniciação. Para filiação, o processo dele deve ser do tipo Filiação.' };
+    return { ok: true };
+  }
+  if (kind === 'regularization') {
+    // Obreiro cadastrado que se regulariza (afastado, placet, Art. 002).
+    if (member.status === 'candidate') return { ok: false, error: 'A taxa de regularização é do obreiro cadastrado. Candidato paga iniciação ou filiação.' };
     return { ok: true };
   }
   const situation = symbolicSituation(member);
@@ -146,7 +182,7 @@ export function summarizePlan(
   cotas: PlanCota[],
   eventDone: boolean,
   today: Date = new Date(),
-  /** false quando o sistema não detecta o evento (filiação): quitado = "Quitado", sem "aguardando". */
+  /** false quando o sistema não detecta o evento (filiação/regularização): quitado = "Quitado", sem "aguardando". */
   tracksEvent = true,
 ): PlanSummary {
   const cents = (n: number) => Math.round(n * 100);

@@ -20,7 +20,8 @@ export default function ContratoClient({
 }) {
   const who = isCandidate ? 'o Sr.' : 'o Ir∴';
   const party = isCandidate ? 'CANDIDATO' : 'IRMÃO';
-  const n = plan.installments;
+  const n = plan.cotaCount; // cotas do plano, entrada incluída
+  const down = plan.downPayment;
   return (
     <main className="min-h-screen px-6 py-10">
       <div className="mx-auto max-w-4xl space-y-4">
@@ -31,7 +32,7 @@ export default function ContratoClient({
         <OfficialDocument
           letterhead={letterhead}
           title={`Termo de compromisso — ${plan.label}`}
-          subtitle={`Plano de pagamento ${n === 1 ? 'à vista' : `em ${n} cotas`}`}
+          subtitle={`Plano de pagamento ${n === 1 ? 'à vista' : down ? `com entrada e ${plan.installments} parcelas` : `em ${n} cotas`}`}
           issuedBy={issuedBy}
           signatures={[...signatures, { role: isCandidate ? 'Candidato' : 'Irmão contratante', name: plan.member.name }]}
         >
@@ -39,7 +40,7 @@ export default function ContratoClient({
             <p className="indent-8">
               Pelo presente termo, {who} <strong>{plan.member.name}</strong>{memberCpf ? <>, CPF {maskCPF(memberCpf)}</> : null}, doravante {party},
               compromete-se a pagar à <strong>{letterhead.name}</strong> a <strong>{plan.label.toLowerCase()}</strong> no valor total de{' '}
-              <strong>{brl(plan.totalAmount)}</strong>, {n === 1 ? 'à vista' : <>em <strong>{n} cotas</strong> mensais</>}, conforme o quadro abaixo.
+              <strong>{brl(plan.totalAmount)}</strong>, {n === 1 ? 'à vista' : down ? <>com <strong>entrada de {brl(down)}</strong> e o saldo em <strong>{plan.installments} parcelas</strong> mensais</> : <>em <strong>{n} cotas</strong> mensais</>}, conforme o quadro abaixo.
             </p>
             {plan.paymentMethod === 'card' ? (
               <p className="indent-8">
@@ -52,7 +53,7 @@ export default function ContratoClient({
               <thead><tr><th>Cota</th><th>Vencimento</th><th className="num">Valor</th></tr></thead>
               <tbody>
                 {plan.cotas.map((c, i) => (
-                  <tr key={c.id}><td>{n === 1 ? 'Única' : `${i + 1}/${n}`}</td><td>{formatDateOnly(c.dueDate)}</td><td className="num">{brl(c.amount)}</td></tr>
+                  <tr key={c.id}><td>{n === 1 ? 'Única' : down && i === 0 ? 'Entrada' : `${i + 1}/${n}`}</td><td>{formatDateOnly(c.dueDate)}</td><td className="num">{brl(c.amount)}</td></tr>
                 ))}
                 <tr className="rpt-total"><td colSpan={2}>Total</td><td className="num">{brl(plan.cotas.reduce((sum, c) => sum + c.amount, 0))}</td></tr>
               </tbody>

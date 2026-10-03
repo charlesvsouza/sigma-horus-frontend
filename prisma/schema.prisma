@@ -477,6 +477,7 @@ model Invoice {
   recurringInterval  String?
   recurringCount     Int?
   nextDueDate        DateTime?
+  recurrenceEndNoticeAt DateTime? // aviso "a recorrência vai acabar" já enviado à diretoria (zera ao renovar)
   asaasPaymentId     String?  // id da cobrança no Asaas (reconciliação reversa)
   asaasInvoiceUrl    String?  // link universal da cobrança no Asaas (boleto/PIX/cartão), persistido p/ sobreviver a reload
   asaasBillingType   String?  // método efetivamente pago (informado pelo Asaas na baixa)
@@ -1200,7 +1201,8 @@ model DegreeFeePlan {
   memberId              String
   kind                  String    // initiation | elevation | exaltation | affiliation
   totalAmount           Float     // valor travado na contratação
-  installments          Int
+  downPayment           Float?    // entrada (1ª cota); as `installments` parcelas dividem o saldo (valor − entrada)
+  installments          Int       // nº de parcelas DEPOIS da entrada (sem entrada, o nº de cotas)
   firstDueDate          DateTime
   fourthInstructionDate DateTime? // obrigatória para elevação/exaltação
   expectedEventDate     DateTime? // data prevista do evento (quando a loja marcar)

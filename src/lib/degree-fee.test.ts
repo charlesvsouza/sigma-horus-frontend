@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canManageDegreeFees, cardGrossUp, checkEligibility, installmentTitle, degreeFeeKind, isDegreeFeeCardRef, splitInstallments, summarizePlan } from './degree-fee.ts';
+import { canManageDegreeFees, cardGrossUp, checkEligibility, installmentTitle, degreeFeeKind, isDegreeFeeCardRef, maxParcelas, planCotas, splitInstallments, summarizePlan, validateDownPayment } from './degree-fee.ts';
 
 const d = (s: string) => new Date(s);
 const TODAY = d('2026-10-02');
@@ -78,11 +78,59 @@ test('quem gerencia: Administrador, Venerável e Tesoureiro', () => {
   assert.equal(canManageDegreeFees('member'), false);
 });
 
-test('filiação/regularização: qualquer obreiro, sem 4ª instrução; candidato não', () => {
-  assert.equal(checkEligibility('affiliation', { status: 'active', initiationDate: d('2010-01-01'), elevationDate: d('2011-01-01'), exaltationDate: d('2012-01-01') }, null, TODAY).ok, true);
-  assert.equal(checkEligibility('affiliation', { status: 'active' }, null, TODAY).ok, true);
-  assert.equal(checkEligibility('affiliation', { status: 'candidate' }, null, TODAY).ok, false);
+test('regularização: qualquer obreiro cadastrado, sem 4ª instrução; candidato não; valor aberto e categoria própria', () => {
+  assert.equal(checkEligibility('regularization', { status: 'active', initiationDate: d('2010-01-01'), elevationDate: d('2011-01-01'), exaltationDate: d('2012-01-01') }, null, TODAY).ok, true);
+  assert.equal(checkEligibility('regularization', { status: 'art_002' }, null, TODAY).ok, true);
+  assert.equal(checkEligibility('regularization', { status: 'candidate' }, null, TODAY).ok, false);
+  assert.equal(degreeFeeKind('regularization')!.lodgeField, null);
+  assert.equal(degreeFeeKind('regularization')!.chart.code, '1.1.10');
   assert.equal(degreeFeeKind('affiliation')!.chart.code, '1.1.03');
+  assert.equal(degreeFeeKind('affiliation')!.label, 'Taxa de Filiação');
+});
+
+test('filiação é só do candidato de filiação (obreiro usa regularização)', () => {
+  assert.equal(checkEligibility('affiliation', { status: 'active' }, null, TODAY).ok, false);
+  assert.equal(checkEligibility('affiliation', { status: 'art_002', initiationDate: d('2015-01-01') }, null, TODAY).ok, false);
+});
+
+test('entrada + parcelas: a entrada é a 1ª cota e o saldo é dividido nas parcelas', () => {
+  const cotas = planCotas(1000, 5, d('2026-11-10'), 200, d('2026-10-10'));
+  assert.equal(cotas.length, 6);
+  assert.deepEqual(cotas[0], { number: 1, amount: 200, dueDate: d('2026-10-10'), entry: true });
+  assert.equal(cotas[1].amount, 160); // (1000 − 200) / 5
+  assert.equal(cotas[1].entry, false);
+  assert.equal(cotas[1].number, 2);
+  assert.equal(cotas[5].dueDate.toISOString().slice(0, 10), '2027-03-10');
+  assert.equal(Math.round(cotas.reduce((s2, c) => s2 + c.amount, 0) * 100), 100000);
+});
+
+test('entrada: saldo com centavos fecha o total exato (sobra na 1ª parcela)', () => {
+  const cotas = planCotas(1000, 3, d('2026-11-10'), 100, d('2026-10-10'));
+  assert.deepEqual(cotas.map((c) => c.amount), [100, 300, 300, 300]);
+  const odd = planCotas(1000, 3, d('2026-11-10'), 100.01, d('2026-10-10'));
+  assert.equal(Math.round(odd.reduce((s2, c) => s2 + c.amount, 0) * 100), 100000);
+  assert.equal(odd[1].amount, 300.01); // 899,99 em 3: 299,99 + 2 centavos na 1ª parcela
+});
+
+test('sem entrada: planCotas = divisão simples (à vista = 1 cota)', () => {
+  const cotas = planCotas(900, 3, d('2026-10-10'));
+  assert.deepEqual(cotas.map((c) => c.amount), [300, 300, 300]);
+  assert.ok(cotas.every((c) => !c.entry));
+  assert.equal(planCotas(900, 1, d('2026-10-10')).length, 1);
+});
+
+test('entrada: validação e limite de 6 cotas contando a entrada', () => {
+  assert.equal(validateDownPayment(1000, 200).ok, true);
+  assert.equal(validateDownPayment(1000, 0).ok, false);
+  assert.equal(validateDownPayment(1000, -5).ok, false);
+  assert.equal(validateDownPayment(1000, 1000).ok, false); // entrada = total é à vista
+  assert.equal(validateDownPayment(1000, 1200).ok, false);
+  assert.equal(validateDownPayment(1000, 10.005).ok, false);
+  assert.equal(maxParcelas(false), 6);
+  assert.equal(maxParcelas(true), 5);
+  const def = degreeFeeKind('elevation')!;
+  assert.equal(installmentTitle(def, 1, 6, true), 'Taxa de Elevação — entrada');
+  assert.equal(installmentTitle(def, 2, 6), 'Taxa de Elevação — cota 2/6');
 });
 
 test('filiação quitada = "Quitado" (o sistema não detecta a cerimônia)', () => {
@@ -95,7 +143,6 @@ test('candidato de filiação paga filiação, não iniciação (e vice-versa)',
   assert.equal(checkEligibility('affiliation', { status: 'candidate', admissionKind: 'affiliation' }, null, TODAY).ok, true);
   assert.equal(checkEligibility('initiation', { status: 'candidate', admissionKind: 'affiliation' }, null, TODAY).ok, false);
   assert.equal(checkEligibility('affiliation', { status: 'candidate', admissionKind: 'initiation' }, null, TODAY).ok, false);
-  assert.equal(checkEligibility('affiliation', { status: 'art_002', initiationDate: d('2015-01-01') }, null, TODAY).ok, true); // regularização
 });
 
 test('cartão: repasse da tarifa faz a loja receber a taxa cheia', () => {

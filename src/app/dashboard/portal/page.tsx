@@ -62,6 +62,8 @@ interface DegreeFeePlanItem {
   event: string;
   totalAmount: number;
   installments: number;
+  /** Entrada (1ª cota), quando o plano tem. */
+  downPayment?: number | null;
   expectedEventDate: string | null;
   paid: number;
   open: number;
@@ -405,7 +407,7 @@ export default function PortalPage() {
                     <p className="mt-1 text-sand-dark">{p.open > 0 ? `${p.event[0].toUpperCase()}${p.event.slice(1)} realizada — falta pagar ${brl(p.open)}.` : `${p.event[0].toUpperCase()}${p.event.slice(1)} realizada e taxa quitada.`}</p>
                   ) : (
                     <p className="mt-1 text-sand-dark">
-                      {brl(p.totalAmount)} em {p.installments === 1 ? '1 cota' : `${p.installments} cotas`} · pago {brl(p.paid)} · falta {brl(p.open)}
+                      {brl(p.totalAmount)} em {p.installments === 1 ? '1 cota' : `${p.installments} cotas`}{p.downPayment ? ` (entrada de ${brl(p.downPayment)})` : ''} · pago {brl(p.paid)} · falta {brl(p.open)}
                     </p>
                   )}
                   <p className="mt-1 text-xs text-sand-dark">

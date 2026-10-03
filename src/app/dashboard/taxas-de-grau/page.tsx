@@ -8,7 +8,7 @@ import { withTenant } from '@/lib/prisma';
 import TaxasDeGrauClient, { type EligibleMember } from './TaxasDeGrauClient';
 
 // Tesouraria → Taxas de grau: planos de pagamento das taxas de iniciação, elevação,
-// exaltação e filiação/regularização (à vista ou em até 6 cotas). Ver lib/degree-fee.ts.
+// exaltação, filiação e regularização (à vista, ou em até 6 cotas, com entrada opcional). Ver lib/degree-fee.ts.
 export default async function TaxasDeGrauPage({ searchParams }: { searchParams: Promise<{ membro?: string; taxa?: string }> }) {
   const sp = await searchParams;
   const session = await auth();
@@ -39,9 +39,9 @@ export default async function TaxasDeGrauPage({ searchParams }: { searchParams: 
         : [{ id: m.id, name: m.name, kind: 'initiation', situation: 'Candidato' }];
     }
     const s = symbolicSituation(m);
-    // Filiação/regularização: qualquer obreiro cadastrado (já é maçom, de qualquer grau).
-    // Regularização: quem está afastado (placet, Art. 002, suspenso, inativo) aparece com a situação ao lado.
-    const rows: EligibleMember[] = [{ id: m.id, name: m.name, kind: 'affiliation', situation: m.status === 'active' ? (s ?? 'Obreiro') : memberStatusLabel(m.status) }];
+    // Regularização: obreiro cadastrado; quem está afastado (placet, Art. 002, suspenso, inativo) aparece com a situação ao lado.
+    // (Filiação é só do candidato de filiação, acima.)
+    const rows: EligibleMember[] = [{ id: m.id, name: m.name, kind: 'regularization', situation: m.status === 'active' ? (s ?? 'Obreiro') : memberStatusLabel(m.status) }];
     if (s === 'Aprendiz') rows.push({ id: m.id, name: m.name, kind: 'elevation', situation: 'Aprendiz' });
     if (s === 'Companheiro') rows.push({ id: m.id, name: m.name, kind: 'exaltation', situation: 'Companheiro' });
     return rows;
@@ -52,6 +52,7 @@ export default async function TaxasDeGrauPage({ searchParams }: { searchParams: 
     elevation: data.lodge?.elevationFee ?? null,
     exaltation: data.lodge?.exaltationFee ?? null,
     affiliation: data.lodge?.affiliationFee ?? null,
+    regularization: null, // valor aberto: digitado em cada plano
   };
 
   return (

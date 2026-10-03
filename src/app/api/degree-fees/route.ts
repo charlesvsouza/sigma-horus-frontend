@@ -20,6 +20,8 @@ export async function POST(request: Request) {
   const fourth = parseDate(body.fourthInstructionDate);
   if (!firstDueDate) return NextResponse.json({ error: 'Informe o vencimento da 1ª cota.' }, { status: 400 });
   if (fourth === undefined) return NextResponse.json({ error: 'Data da 4ª instrução inválida.' }, { status: 400 });
+  const downDue = parseDate(body.downPaymentDueDate);
+  if (downDue === undefined) return NextResponse.json({ error: 'Vencimento da entrada inválido.' }, { status: 400 });
   const result = await withTenant(gate.lodgeId, (db) =>
     createDegreeFeePlan(db, {
       lodgeId: gate.lodgeId,
@@ -31,6 +33,9 @@ export async function POST(request: Request) {
       fourthInstructionDate: fourth,
       notes: body.notes ? String(body.notes) : null,
       paymentMethod: body.paymentMethod === 'card' ? 'card' : 'standard',
+      amount: body.amount != null && body.amount !== '' ? Number(body.amount) : null,
+      downPayment: body.downPayment != null && body.downPayment !== '' ? Number(body.downPayment) : null,
+      downPaymentDueDate: downDue ?? null,
     }),
   );
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });

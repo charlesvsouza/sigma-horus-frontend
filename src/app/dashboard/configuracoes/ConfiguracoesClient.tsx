@@ -386,7 +386,7 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
                 <Field label="Taxa de Iniciação (R$)" value={form.initiationFee} onChange={(v) => set('initiationFee', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 1500" />
                 <Field label="Taxa de Elevação (R$)" value={form.elevationFee} onChange={(v) => set('elevationFee', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 600" />
                 <Field label="Taxa de Exaltação (R$)" value={form.exaltationFee} onChange={(v) => set('exaltationFee', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 800" />
-                <Field label="Taxa de Filiação / Regularização (R$)" value={form.affiliationFee} onChange={(v) => set('affiliationFee', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 500" />
+                <Field label="Taxa de Filiação (R$)" value={form.affiliationFee} onChange={(v) => set('affiliationFee', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 500" />
               </div>
               <label className="mt-4 flex items-start gap-2 text-sm text-sand">
                 <input type="checkbox" checked={form.degreeFeeCardEnabled === 'true'} onChange={(e) => set('degreeFeeCardEnabled', String(e.target.checked))} className="mt-0.5" />

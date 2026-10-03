@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Badge, Button, EmptyState, Field, inputClass, useConfirm, type BadgeVariant, Toast } from '@/components/ui';
-import { DEGREE_FEE_KINDS, MAX_INSTALLMENTS, PLAN_SITUATION_LABEL, cardGrossUp, splitInstallments, type CardFees, type DegreeFeeKind, type PlanSituation } from '@/lib/degree-fee';
+import { DEGREE_FEE_KINDS, MAX_INSTALLMENTS, PLAN_SITUATION_LABEL, cardGrossUp, maxParcelas, planCotas, validateDownPayment, type CardFees, type DegreeFeeKind, type PlanSituation } from '@/lib/degree-fee';
 import type { PresentedPlan } from '@/lib/degree-fee-server';
 import { brl } from '@/lib/currency';
 import { clampDateYear } from '@/lib/masks';
@@ -48,7 +48,7 @@ export default function TaxasDeGrauClient({
   const prefillKind = (DEGREE_FEE_KINDS.some((k) => k.kind === prefill.kind) ? prefill.kind : '') as DegreeFeeKind | '';
   const [tab, setTab] = useState<Tab>('open');
   const [creating, setCreating] = useState(Boolean(prefill.memberId));
-  const [form, setForm] = useState({ kind: prefillKind as DegreeFeeKind | '', memberId: prefill.memberId, fourth: '', installments: '1', firstDue: nextMonthDay10(), method: 'standard' as 'standard' | 'card' });
+  const [form, setForm] = useState({ kind: prefillKind as DegreeFeeKind | '', memberId: prefill.memberId, fourth: '', installments: '1', firstDue: nextMonthDay10(), method: 'standard' as 'standard' | 'card', amount: '', down: '', downDue: today() });
   const [cardLink, setCardLink] = useState<{ name: string; url: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<Msg>(null);
@@ -63,15 +63,21 @@ export default function TaxasDeGrauClient({
   }, [plans]);
   const visible = plans.filter((p) => tab === 'all' || tabOf(p.summary.situation) === tab);
 
-  const total = form.kind ? fees[form.kind] : null;
-  const n = Number(form.installments);
+  const kindDef = DEGREE_FEE_KINDS.find((k) => k.kind === form.kind) ?? null;
+  const money = (v: string) => { const x = Number(v.replace(',', '.')); return Number.isFinite(x) && x > 0 ? x : null; };
+  // Regularização (Art. 002) tem valor aberto, digitado na negociação; as demais usam o valor de Configurações.
+  const total = form.kind ? (kindDef?.lodgeField === null ? money(form.amount) : fees[form.kind]) : null;
   const useCard = Boolean(card) && form.method === 'card';
+  const downValue = useCard ? null : money(form.down);
+  const downCheck = total && downValue ? validateDownPayment(total, downValue) : null;
+  const down = downCheck?.ok ? downValue : null;
+  const n = Math.min(Number(form.installments), maxParcelas(down !== null));
   const gross = useCard && total ? cardGrossUp(total, n, card!) : null;
   const preview = total && form.firstDue
-    ? splitInstallments(total, n, new Date(form.firstDue)).map((c) => (gross?.ok ? { ...c, amount: gross.installmentValue } : c))
+    ? planCotas(total, n, new Date(form.firstDue), down, form.downDue ? new Date(form.downDue) : null).map((c) => (gross?.ok ? { ...c, amount: gross.installmentValue } : c))
     : [];
   const choices = eligible.filter((m) => m.kind === form.kind);
-  const missingFees = DEGREE_FEE_KINDS.filter((k) => fees[k.kind] == null);
+  const missingFees = DEGREE_FEE_KINDS.filter((k) => k.lodgeField !== null && fees[k.kind] == null);
   const notify = (kind: 'ok' | 'error', text: string) => { setMessage({ kind, text }); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   async function call(key: string, url: string, method: string, body?: unknown) {
@@ -90,16 +96,22 @@ export default function TaxasDeGrauClient({
     const member = choices.find((m) => m.id === form.memberId);
     if (!member || !form.kind || !total) return;
     const label = DEGREE_FEE_KINDS.find((k) => k.kind === form.kind)!.label;
+    if (downCheck && !downCheck.ok) { notify('error', downCheck.error); return; }
+    if (down && form.downDue && form.downDue > form.firstDue) { notify('error', 'A entrada deve vencer até a data da 1ª parcela.'); return; }
     if (!(await askConfirm({
       title: 'Criar plano',
       message: useCard && gross?.ok
         ? `${label} de ${member.name} no CARTÃO: ${n}x de ${brl(gross.installmentValue)} = ${brl(gross.total)} (taxa ${brl(total)} + repasse da tarifa do cartão ${brl(gross.surcharge)}). O Asaas cria o parcelamento agora e o sistema mostra o link para o irmão pagar.`
+                  : down
+        ? `${label} de ${member.name}: ${brl(total)} com entrada de ${brl(down)} (vence em ${formatDateOnly(form.downDue || form.firstDue)}) e o saldo de ${brl(total - down)} em ${n}x de ${brl(preview[1]?.amount ?? 0)}, a partir de ${formatDateOnly(form.firstDue)}. A entrada e cada parcela entram como cobranças do irmão${asaasMode ? ' e o Asaas emite cada uma perto do vencimento' : ''}.`
         : `${label} de ${member.name}: ${brl(total)} em ${n === 1 ? '1 cota (à vista)' : `${n} cotas`}, 1º vencimento em ${formatDateOnly(form.firstDue)}. As cotas entram como cobranças do irmão${asaasMode ? ' e o Asaas emite cada uma perto do vencimento' : ''}.`,
       confirmLabel: 'Criar plano',
     }))) return;
     const data = await call('create', '/api/degree-fees', 'POST', {
       kind: form.kind, memberId: form.memberId, installments: n, firstDueDate: form.firstDue, fourthInstructionDate: form.kind === 'elevation' || form.kind === 'exaltation' ? form.fourth : '',
       paymentMethod: useCard ? 'card' : 'standard',
+      amount: kindDef?.lodgeField === null ? total : undefined,
+      downPayment: down ?? undefined, downPaymentDueDate: down ? (form.downDue || form.firstDue) : undefined,
     });
     if (data?.cardUrl) setCardLink({ name: member.name, url: data.cardUrl });
     if (data) {
@@ -140,7 +152,7 @@ export default function TaxasDeGrauClient({
           <div>
             <h1 className="font-display text-2xl font-bold text-sand-light">Taxas de grau</h1>
             <p className="mt-1 max-w-3xl text-sm text-sand-dark">
-              Iniciação, elevação, exaltação e filiação/regularização à vista ou em até {MAX_INSTALLMENTS} cotas. O valor fica travado no plano; a taxa deve estar quitada até a data
+              Iniciação, elevação, exaltação, filiação e regularização (Art. 002) à vista ou em até {MAX_INSTALLMENTS} cotas, com entrada opcional. O valor fica travado no plano; a taxa deve estar quitada até a data
               do evento. Elevação e exaltação antecipadas a partir da 4ª instrução do grau atual.
             </p>
           </div>
@@ -150,7 +162,7 @@ export default function TaxasDeGrauClient({
         <div className="flex flex-wrap gap-3 text-xs">
           {DEGREE_FEE_KINDS.map((k) => (
             <span key={k.kind} className="rounded-full border border-white/10 px-3 py-1.5 text-sand-dark">
-              {k.label}: <strong className="text-sand-light">{fees[k.kind] != null ? brl(fees[k.kind]!) : 'não configurada'}</strong>
+              {k.label}: <strong className="text-sand-light">{k.lodgeField === null ? 'valor negociado em cada plano' : fees[k.kind] != null ? brl(fees[k.kind]!) : 'não configurada'}</strong>
             </span>
           ))}
           <Link href="/dashboard/configuracoes" className="px-1 py-1.5 text-gold hover:text-gold-light">Alterar valores</Link>
@@ -175,13 +187,13 @@ export default function TaxasDeGrauClient({
               <Field label="Taxa">
                 <select required value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as DegreeFeeKind, memberId: '' })} className={inputClass}>
                   <option value="">Escolha…</option>
-                  {DEGREE_FEE_KINDS.map((k) => <option key={k.kind} value={k.kind} disabled={fees[k.kind] == null}>{k.label}{fees[k.kind] == null ? ' (sem valor)' : ''}</option>)}
+                  {DEGREE_FEE_KINDS.map((k) => <option key={k.kind} value={k.kind} disabled={k.lodgeField !== null && fees[k.kind] == null}>{k.label}{k.lodgeField !== null && fees[k.kind] == null ? ' (sem valor)' : ''}</option>)}
                 </select>
               </Field>
-              <Field label={form.kind === 'initiation' ? 'Candidato' : form.kind === 'elevation' ? 'Aprendiz' : form.kind === 'exaltation' ? 'Companheiro' : 'Obreiro'}>
+              <Field label={form.kind === 'initiation' || form.kind === 'affiliation' ? 'Candidato' : form.kind === 'elevation' ? 'Aprendiz' : form.kind === 'exaltation' ? 'Companheiro' : 'Obreiro'}>
                 <select required disabled={!form.kind} value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })} className={inputClass}>
                   <option value="">{form.kind ? (choices.length ? 'Escolha…' : 'Ninguém nessa situação') : 'Escolha a taxa primeiro'}</option>
-                  {choices.map((m) => <option key={m.id} value={m.id}>{form.kind === 'affiliation' ? `${m.name} — ${m.situation}` : m.name}</option>)}
+                  {choices.map((m) => <option key={m.id} value={m.id}>{form.kind === 'regularization' ? `${m.name} — ${m.situation}` : m.name}</option>)}
                 </select>
               </Field>
               {form.kind === 'elevation' || form.kind === 'exaltation' ? (
@@ -197,12 +209,27 @@ export default function TaxasDeGrauClient({
                   </select>
                 </Field>
               ) : null}
-              <Field label="Parcelamento">
-                <select value={form.installments} onChange={(e) => setForm({ ...form, installments: e.target.value })} className={inputClass}>
-                  {Array.from({ length: MAX_INSTALLMENTS }, (_, i) => i + 1).map((i) => <option key={i} value={i}>{i === 1 ? 'À vista (1 cota)' : `${i} cotas`}</option>)}
+              {kindDef?.lodgeField === null ? (
+                <Field label="Valor negociado (R$)">
+                  <input required inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={inputClass} placeholder="Ex.: 800,00" />
+                </Field>
+              ) : null}
+              {!useCard ? (
+                <Field label="Entrada (R$) — opcional">
+                  <input inputMode="decimal" value={form.down} onChange={(e) => setForm({ ...form, down: e.target.value })} className={inputClass} placeholder="Sem entrada" />
+                </Field>
+              ) : null}
+              {down ? (
+                <Field label="Vencimento da entrada">
+                  <input type="date" required value={form.downDue} onChange={(e) => setForm({ ...form, downDue: clampDateYear(e.target.value, form.downDue) })} className={inputClass} />
+                </Field>
+              ) : null}
+              <Field label={down ? 'Parcelas do saldo' : 'Parcelamento'}>
+                <select value={String(n)} onChange={(e) => setForm({ ...form, installments: e.target.value })} className={inputClass}>
+                  {Array.from({ length: maxParcelas(down !== null) }, (_, i) => i + 1).map((i) => <option key={i} value={i}>{down ? (i === 1 ? '1 parcela' : `${i} parcelas`) : i === 1 ? 'À vista (1 cota)' : `${i} cotas`}</option>)}
                 </select>
               </Field>
-              <Field label={useCard ? 'Vencimento da 1ª parcela no Asaas' : n === 1 ? 'Vencimento' : 'Vencimento da 1ª cota'}>
+              <Field label={useCard ? 'Vencimento da 1ª parcela no Asaas' : down ? 'Vencimento da 1ª parcela do saldo' : n === 1 ? 'Vencimento' : 'Vencimento da 1ª cota'}>
                 <input type="date" required value={form.firstDue} onChange={(e) => setForm({ ...form, firstDue: clampDateYear(e.target.value, form.firstDue) })} className={inputClass} />
               </Field>
             </div>
@@ -212,10 +239,10 @@ export default function TaxasDeGrauClient({
                 <p className="text-sand-light">
                   {useCard && gross?.ok
                     ? <>No cartão: {n}x de {brl(gross.installmentValue)} = {brl(gross.total)} <span className="text-sand-dark">(taxa {brl(total!)} + repasse da tarifa {brl(gross.surcharge)})</span></>
-                    : <>Total {brl(total!)} {n > 1 ? `em ${n} cotas` : 'à vista'}</>}
+                    : <>Total {brl(total!)} {down ? `com entrada de ${brl(down)} + ${n} ${n === 1 ? 'parcela' : 'parcelas'} de saldo` : n > 1 ? `em ${n} cotas` : 'à vista'}</>}
                 </p>
                 <ul className="mt-2 grid gap-1 text-xs text-sand-dark sm:grid-cols-2">
-                  {preview.map((c) => <li key={c.number}>Cota {c.number}: {brl(c.amount)} — vence em {formatDateOnly(c.dueDate.toISOString())}</li>)}
+                  {preview.map((c) => <li key={c.number}>{c.entry ? 'Entrada' : `Cota ${c.number}`}: {brl(c.amount)} — vence em {formatDateOnly(c.dueDate.toISOString())}</li>)}
                 </ul>
               </div>
             ) : null}
@@ -263,7 +290,7 @@ export default function TaxasDeGrauClient({
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-sand-light">{p.member.name} <span className="font-normal text-sand-dark">· {p.label}</span></p>
                           <p className="mt-0.5 text-xs text-sand-dark">
-                            {brl(p.totalAmount)} em {p.installments === 1 ? '1 cota' : `${p.installments} cotas`}{p.paymentMethod === 'card' ? ` no cartão (+ ${brl(p.cardSurcharge ?? 0)} de repasse da tarifa)` : ''} · pago {brl(s.paid)} · em aberto {brl(s.open)}
+                            {brl(p.totalAmount)} em {p.cotaCount === 1 ? '1 cota' : `${p.cotaCount} cotas`}{p.downPayment ? ` (entrada de ${brl(p.downPayment)} + ${p.installments} ${p.installments === 1 ? 'parcela' : 'parcelas'})` : ''}{p.paymentMethod === 'card' ? ` no cartão (+ ${brl(p.cardSurcharge ?? 0)} de repasse da tarifa)` : ''} · pago {brl(s.paid)} · em aberto {brl(s.open)}
                             {p.expectedEventDate ? ` · ${p.event} prevista para ${formatDateOnly(p.expectedEventDate)}` : ''}
                           </p>
                           {s.overdue > 0 && s.situation !== 'canceled' ? <p className="mt-0.5 text-xs text-rose-300">{s.overdue} cota(s) vencida(s)</p> : null}

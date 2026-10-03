@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { addInterval, recurringHorizon, RECURRING_LEAD_DAYS, skipPendingOccurrences, isLegacyGeneratedNumber, pendingOccurrences, recurrenceSummary, descriptionForOccurrence, resolveDescriptionPlaceholders, occurrenceDescriptionsPreview } from './recurring-rules';
+import { addInterval, endNoticeText, lastOccurrenceDue, renewRecurrence, selectEnding, recurringHorizon, RECURRING_LEAD_DAYS, skipPendingOccurrences, isLegacyGeneratedNumber, pendingOccurrences, recurrenceSummary, descriptionForOccurrence, resolveDescriptionPlaceholders, occurrenceDescriptionsPreview } from './recurring-rules';
 
 const d = (s: string) => new Date(`${s}T00:00:00.000Z`);
 const iso = (x: Date) => x.toISOString().slice(0, 10);
@@ -117,4 +117,52 @@ test('recurringHorizon: gera até 10 dias antes do vencimento', () => {
   // a de 05/11 já entra em 26/10; a de 06/11 só em 27/10
   assert.ok(d('2026-11-05').getTime() <= horizon.getTime());
   assert.ok(d('2026-11-06').getTime() > horizon.getTime());
+});
+
+test('lastOccurrenceDue: vencimento da última cobrança que a mãe ainda vai gerar', () => {
+  // mãe da amm139: próxima 05/11, 2 repetições (nov e dez) → última 05/12
+  assert.equal(iso(lastOccurrenceDue(d('2026-11-05'), 'monthly', 2)!), '2026-12-05');
+  assert.equal(iso(lastOccurrenceDue(d('2026-11-05'), 'monthly', 1)!), '2026-11-05');
+  assert.equal(lastOccurrenceDue(d('2026-11-05'), 'monthly', 0), null);
+  assert.equal(lastOccurrenceDue(d('2026-11-05'), 'monthly', null), null); // sem fim
+  assert.equal(iso(lastOccurrenceDue(d('2026-11-30'), 'monthly', 3)!), '2027-01-30');
+  assert.equal(iso(lastOccurrenceDue(d('2026-10-01'), 'quarterly', 2)!), '2027-01-01');
+});
+
+test('selectEnding: avisa a 30 dias do fim; sem fim e fora da janela ficam de fora; encerrada recente aparece', () => {
+  const base = { recurringInterval: 'monthly', isRecurring: true };
+  const rows = [
+    { ...base, number: 'A', nextDueDate: d('2026-11-05'), recurringCount: 2 },   // última 05/12
+    { ...base, number: 'B', nextDueDate: d('2026-11-05'), recurringCount: 12 },  // última 2027-10 (longe)
+    { ...base, number: 'C', nextDueDate: d('2026-11-05'), recurringCount: null }, // sem fim
+    { ...base, number: 'D-1700000000000', nextDueDate: d('2026-11-05'), recurringCount: 1 }, // filha do código antigo
+    { ...base, number: 'E', isRecurring: false, nextDueDate: d('2027-01-05'), recurringCount: 0 }, // encerrou: última 05/12
+    { ...base, number: 'F', isRecurring: false, nextDueDate: d('2026-02-05'), recurringCount: 0 }, // encerrou há muito
+  ];
+  assert.deepEqual(selectEnding(rows, d('2026-11-05')).map((r) => r.number), ['A', 'E']); // 05/12 está a 30 dias
+  assert.deepEqual(selectEnding(rows, d('2026-11-04')).map((r) => r.number), ['E']);      // 05/12 a 31 dias: ainda cedo para A
+  const ended = selectEnding(rows, d('2026-12-20')).find((r) => r.number === 'E')!;
+  assert.equal(ended.ended, true);
+  assert.equal(iso(ended.lastDue), '2026-12-05');
+});
+
+test('renewRecurrence: mãe ativa soma repetições; mãe encerrada recomeça no próximo vencimento sem despejar meses', () => {
+  const active = renewRecurrence({ nextDueDate: d('2026-12-05'), interval: 'monthly', remaining: 1, isRecurring: true }, 12, d('2026-11-20'));
+  assert.deepEqual({ ...active, nextDueDate: iso(active.nextDueDate) }, { nextDueDate: '2026-12-05', remaining: 13, isRecurring: true });
+  // encerrada em dezembro (próximo = 05/01); renovada em março: recomeça em 05/03 ou depois, nunca no passado
+  const ended = renewRecurrence({ nextDueDate: d('2027-01-05'), interval: 'monthly', remaining: 0, isRecurring: false }, 6, d('2027-03-10'));
+  assert.equal(iso(ended.nextDueDate), '2027-04-05');
+  assert.equal(ended.remaining, 6);
+  const fresh = renewRecurrence({ nextDueDate: d('2027-01-05'), interval: 'monthly', remaining: 0, isRecurring: false }, 6, d('2026-12-20'));
+  assert.equal(iso(fresh.nextDueDate), '2027-01-05');
+});
+
+test('endNoticeText: resume por mês, cita a última cobrança e as duas saídas', () => {
+  const { subject, body } = endNoticeText('AMM 139', [d('2026-12-05'), d('2026-12-05'), d('2027-01-05')]);
+  assert.match(subject, /AMM 139/);
+  assert.match(body, /2 recorrências terminam em dezembro\/2026/);
+  assert.match(body, /1 recorrência termina em janeiro\/2027/);
+  assert.match(body, /vencimento em 05\/01\/2027/);
+  assert.match(body, /Renovar o período atual/);
+  assert.match(body, /Criar outro período/);
 });

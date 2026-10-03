@@ -19,7 +19,7 @@ import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 type Db = Prisma.TransactionClient;
 type Fail = { ok: false; status: number; error: string; [k: string]: unknown };
 
-const FEE_CHART = DEGREE_FEE_KINDS.find((k) => k.kind === 'affiliation')!.chart;
+const FEE_CHART = DEGREE_FEE_KINDS.find((k) => k.kind === 'regularization')!.chart;
 
 /** Mensagem de bloqueio se o irmão está bloqueado (para travar lançamentos novos); null se livre. */
 export async function blockedMemberError(db: Db, lodgeId: string, memberId: string | null | undefined): Promise<string | null> {
@@ -47,7 +47,7 @@ export async function loadMemberDebts(db: Db, lodgeId: string, memberId: string)
 export async function previewBlock(db: Db, lodgeId: string, memberId: string, now: Date = new Date()) {
   const [member, lodge, dues, debts] = await Promise.all([
     db.member.findFirst({ where: { id: memberId, lodgeId }, select: { id: true, name: true, status: true } }),
-    db.lodge.findUnique({ where: { id: lodgeId }, select: { art002Enabled: true, affiliationFee: true } }),
+    db.lodge.findUnique({ where: { id: lodgeId }, select: { art002Enabled: true } }),
     getMemberDuesStatus(db, lodgeId, memberId, now),
     loadMemberDebts(db, lodgeId, memberId),
   ]);
@@ -60,7 +60,8 @@ export async function previewBlock(db: Db, lodgeId: string, memberId: string, no
     overdueAmount: dues?.amount ?? 0,
     canBlock: check.ok,
     reason: check.ok ? null : check.error,
-    suggestedFee: lodge?.affiliationFee ?? null,
+    // Regularização é valor aberto: negociado e digitado pelo Venerável/Administrador (sem sugestão da filiação).
+    suggestedFee: null,
     debts: pkg.items.map((i) => ({ accountId: i.accountId, title: i.title, openAmount: i.openAmount })),
     debtsTotal: pkg.debtsTotal,
   };

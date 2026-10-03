@@ -3,6 +3,9 @@ import { withTenant } from '@/lib/prisma';
 import HistoryWindowNote from '@/components/history-window-note';
 import { historyCutoff, wantsFullHistory } from '@/lib/list-window';
 import CobrancasClient from './CobrancasClient';
+import RecorrenciasTerminando from './RecorrenciasTerminando';
+import { loadEndingMothers } from '@/lib/recurring-renewal';
+import { canLodgeAccessFor } from '@/lib/rbac';
 import { getAccountBalance } from '@/lib/asaas';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { isAsaasMode, paymentInstructions } from '@/lib/collection';
@@ -39,12 +42,14 @@ export default async function CobrancasPage({ searchParams }: { searchParams: Pr
           select: { id: true, name: true },
           orderBy: { name: 'asc' },
         }),
+        endingMothers: await loadEndingMothers(db, String(lodgeId)),
         lodge: await db.lodge.findUnique({
           where: { id: String(lodgeId) },
           select: { collectionMode: true, asaasSettlementAccountId: true, asaasApiKeyEnc: true, asaasEnv: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true },
         }),
       }))
-    : { invoices: [], chartAccounts: [], members: [], lodge: null, hiddenOld: 0 };
+    : { invoices: [], chartAccounts: [], members: [], lodge: null, hiddenOld: 0, endingMothers: [] };
+  const canRenew = lodgeId ? await canLodgeAccessFor({ lodgeId: String(lodgeId), role: session?.user?.role, memberId: null }, 'accounts', 'write') : false;
 
   // Modo de recebimento da loja. No Modo Asaas mostra o saldo que ainda está no Asaas (a repassar,
   // manualmente, à conta corrente); no Modo Loja, como os irmãos pagam.
@@ -99,6 +104,7 @@ export default async function CobrancasPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
+      <RecorrenciasTerminando items={data.endingMothers} canRenew={canRenew} />
       <HistoryWindowNote full={fullHistory} hidden={data.hiddenOld} noun="cobranças" basePath="/dashboard/cobrancas" />
       <CobrancasClient invoices={invoices} chartAccounts={data.chartAccounts} members={data.members} collection={collection} openSummary={openSummary} />
     </>
