@@ -21,7 +21,8 @@ export async function PUT(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: 'Apenas Secretário, Venerável ou Administrador podem editar a galeria.' }, { status: 403 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const name = String(body?.name ?? '').trim();
   const periodLabel = String(body?.periodLabel ?? '').trim();
   const sortDateRaw = String(body?.sortDate ?? '');

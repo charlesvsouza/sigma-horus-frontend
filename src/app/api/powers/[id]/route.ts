@@ -35,7 +35,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { id } = await params;
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const { name } = body;
 
   if (!name || typeof name !== 'string') {

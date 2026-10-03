@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { hardNavigate } from '@/lib/hard-navigate';
 
 export default function ChangePasswordForm({ email }: { email: string }) {
   const [current, setCurrent] = useState('');
@@ -37,7 +38,7 @@ export default function ChangePasswordForm({ email }: { email: string }) {
     }
     // Reautentica para obter um token sem a flag de troca obrigatória.
     await signIn('credentials', { redirect: false, email, password: next });
-    window.location.href = '/dashboard';
+    hardNavigate('/dashboard');
   }
 
   return (

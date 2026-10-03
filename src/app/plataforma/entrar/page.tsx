@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { FormEvent, useEffect, useState } from 'react';
 import { Alert, Button, Card, CardDescription, CardTitle, Input, inputClass } from '@/components/ui';
+import { hardNavigate } from '@/lib/hard-navigate';
 
 // Login do dono da plataforma como o admin de qualquer loja ativa — mesmo
 // PLATFORM_OWNER_TOKEN de /plataforma/convites e /plataforma/backups, mas em
@@ -108,7 +109,7 @@ export default function EntrarSuperadminPage() {
       return;
     }
 
-    window.location.href = '/dashboard';
+    hardNavigate('/dashboard');
   }
 
   if (checking) {

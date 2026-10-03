@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { hardNavigate } from '@/lib/hard-navigate';
 
 const REMEMBER_KEY = "sigma-remember-email";
 
@@ -57,7 +58,7 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.href = "/dashboard";
+    hardNavigate("/dashboard");
   }
 
   async function handleForgot(event: FormEvent) {

@@ -54,7 +54,8 @@ export async function POST(request: Request) {
   const access = await requireLodgeAccess(String(lodgeId), role, 'inventory', 'write', session?.user?.memberId);
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const materialId = String(body?.materialId ?? '').trim();
   const memberId = String(body?.memberId ?? '').trim();
   const quantity = Number(body?.quantity ?? 1);

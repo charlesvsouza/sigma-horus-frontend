@@ -21,7 +21,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if ('error' in check) return NextResponse.json({ error: check.error }, { status: check.status });
 
   const { id } = await params;
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
 
   if (body?.kind != null && !KINDS.includes(String(body.kind))) {
     return NextResponse.json({ error: 'Tipo deve ser client, supplier ou both.' }, { status: 400 });

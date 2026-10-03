@@ -26,7 +26,8 @@ export async function POST(request: Request) {
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'members', 'write');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const title = String(body?.title ?? '').trim();
   const startDate = body?.startDate ? new Date(body.startDate) : new Date();
   const endDate = body?.endDate ? new Date(body.endDate) : null;

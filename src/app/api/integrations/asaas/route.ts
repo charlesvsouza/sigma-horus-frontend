@@ -42,7 +42,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Apenas administradores podem configurar integrações.' }, { status: 403 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const apiKey = String(body?.apiKey ?? '').trim();
   const env = String(body?.env ?? 'sandbox').trim() === 'production' ? 'production' : 'sandbox';
   const webhookToken = body?.webhookToken != null ? String(body.webhookToken).trim() : '';

@@ -15,7 +15,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { id } = await params;
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const moneyInputs = [body?.acquisitionValue, body?.currentValue].filter((v) => v !== undefined && v !== null && v !== '').map(Number);
   if (moneyInputs.some((v) => !hasAtMostCents(v) || v < 0)) {
     return NextResponse.json({ error: 'Informe valores em reais, não negativos, com no máximo 2 casas decimais.' }, { status: 400 });

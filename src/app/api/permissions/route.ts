@@ -42,7 +42,8 @@ export async function PUT(request: Request) {
   if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
   if (!isAdmin(role)) return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const incoming = body?.matrix as
     | Record<string, Record<string, Record<string, boolean>>>
     | undefined;

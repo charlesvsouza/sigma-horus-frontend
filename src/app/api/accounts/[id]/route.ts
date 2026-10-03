@@ -19,7 +19,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { id } = await params;
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const paidAt = body?.paidAt ? new Date(body.paidAt) : new Date();
   if (body?.amount !== undefined && !isValidMoney(Number(body.amount))) {
     return NextResponse.json({ error: 'Informe um valor maior que zero, com até 2 casas decimais.' }, { status: 400 });

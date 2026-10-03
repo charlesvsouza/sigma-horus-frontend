@@ -58,7 +58,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const accountId = String(body?.accountId ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
   const amount = round2(Number(body?.amount ?? 0));

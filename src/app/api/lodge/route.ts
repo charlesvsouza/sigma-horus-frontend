@@ -56,7 +56,8 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Apenas administradores podem editar os dados da loja.' }, { status: 403 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const data: Record<string, string | number | boolean | null> = {};
   if ('autoBalanceteEnabled' in body) {
     data.autoBalanceteEnabled = String(body.autoBalanceteEnabled) === 'true';
