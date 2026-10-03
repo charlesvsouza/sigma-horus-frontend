@@ -3,7 +3,7 @@
 import { brl } from '@/lib/currency';
 import { ReportActions, ReportDocument } from '@/components/report/report-document';
 
-const METHOD_LABEL: Record<string, string> = { manual: 'Manual', pix: 'PIX', cash: 'Dinheiro', card: 'Cartão', asaas: 'Asaas' };
+const METHOD_LABEL: Record<string, string> = { manual: 'Manual', pix: 'PIX', cash: 'Dinheiro', card: 'Cartão', asaas: 'Asaas', 'asaas-cash': 'Dinheiro (baixa no Asaas)' };
 
 interface Lodge { name: string; cnpj?: string | null; addressLine?: string | null; addressNumber?: string | null; city?: string | null; state?: string | null; crestUrl?: string | null; }
 interface Payment {

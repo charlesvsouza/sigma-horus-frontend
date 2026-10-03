@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { hashAgreement, normalizeSignatureCode, partyLabel } from '@/lib/agreement-signature';
 import { normalizeVerificationCode } from '@/lib/certificate';
 import { longDateBR } from '@/lib/letterhead';
 import { prismaAdmin } from '@/lib/prisma';
@@ -19,6 +20,54 @@ export default async function VerificarPage({ params }: { params: Promise<{ code
   // Endereço digitado/colado errado (ex.: "%" solto) não pode derrubar a página com 500.
   let raw = rawParam;
   try { raw = decodeURIComponent(rawParam); } catch { /* mantém o texto cru */ }
+  // Código de assinatura digital de termo de acordo (AC-XXXX-XXXX): confirma quem assinou, quando e se o
+  // acordo continua igual ao que foi assinado. Não mostra o irmão nem valores (dado financeiro sensível).
+  const sigCode = normalizeSignatureCode(raw);
+  if (sigCode) {
+    const sig = await prismaAdmin.memberBlockSignature.findUnique({
+      where: { code: sigCode },
+      select: {
+        party: true, signerName: true, signerRole: true, signedAt: true, contentHash: true,
+        lodge: { select: { name: true, city: true, state: true } },
+        block: { select: { id: true, memberId: true, total: true, regularizationFee: true, extraCharge: true, installments: true, firstDueDate: true, member: { select: { name: true } }, items: { select: { kind: true, title: true, openAmount: true, sortOrder: true } } } },
+      },
+    });
+    const intact = sig
+      ? hashAgreement({
+          blockId: sig.block.id, memberId: sig.block.memberId, memberName: sig.block.member.name,
+          total: Number(sig.block.total), regularizationFee: Number(sig.block.regularizationFee), extraCharge: Number(sig.block.extraCharge),
+          installments: sig.block.installments, firstDueDate: sig.block.firstDueDate,
+          items: sig.block.items.map((i) => ({ kind: i.kind, title: i.title, openAmount: Number(i.openAmount), sortOrder: i.sortOrder })),
+        }) === sig.contentHash
+      : false;
+    return (
+      <div className="mx-auto max-w-xl px-6 py-16">
+        <p className="text-xs uppercase tracking-[0.3em] text-gold">Verificação de assinatura digital</p>
+        {sig ? (
+          <div className={`mt-4 rounded-xl border p-6 ${intact ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
+            <h1 className={`text-xl font-semibold ${intact ? 'text-emerald-200' : 'text-amber-200'}`}>{intact ? 'Assinatura válida' : 'Assinatura encontrada, mas o acordo foi alterado'}</h1>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div><dt className="text-sand-dark">Documento</dt><dd className="text-sand-light">Termo de acordo de regularização</dd></div>
+              <div><dt className="text-sand-dark">Assinado por</dt><dd className="text-sand-light">{sig.signerName} — {sig.signerRole || partyLabel(sig.party)}</dd></div>
+              <div><dt className="text-sand-dark">Em</dt><dd className="text-sand-light">{sig.signedAt.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'long', timeStyle: 'short' })}</dd></div>
+              <div><dt className="text-sand-dark">Loja</dt><dd className="text-sand-light">{sig.lodge.name}{sig.lodge.city ? ` — Oriente de ${sig.lodge.city}${sig.lodge.state ? `/${sig.lodge.state}` : ''}` : ''}</dd></div>
+              <div><dt className="text-sand-dark">Resumo (hash)</dt><dd className="font-mono text-xs text-sand-light">{sig.contentHash.slice(0, 16)}…</dd></div>
+            </dl>
+            <p className="mt-4 text-xs text-sand-dark">
+              {intact ? 'O conteúdo do acordo é o mesmo que foi assinado.' : 'O conteúdo do acordo é diferente do que existia no momento da assinatura: procure a Tesouraria da loja.'}
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/5 p-6">
+            <h1 className="text-xl font-semibold text-rose-200">Assinatura não encontrada</h1>
+            <p className="mt-2 text-sm text-sand">O código <strong className="font-mono">{sigCode}</strong> não corresponde a nenhuma assinatura registrada. Confira a digitação ou fale com a loja.</p>
+          </div>
+        )}
+        <Link href="/" className="mt-8 inline-block text-xs text-gold hover:text-gold-light">Sigma Horus — gestão para lojas maçônicas</Link>
+      </div>
+    );
+  }
+
   const code = normalizeVerificationCode(raw);
   const visit = code
     ? await prismaAdmin.sessionVisitor.findUnique({

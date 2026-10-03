@@ -12,12 +12,12 @@
 > 3. **Testar com o tesoureiro da AMM** as telas novas: Acordos de regularização, documentos por grau (reclassificar os 4 documentos antigos — os de "Interno Loja" seguem restritos à gestão até lá), balaustre por grau.
 >
 > **ABERTO — técnico (eu faço):**
-> 4. **Restauração real de backup** nunca foi provada ponta a ponta (parcial em 19/09: migrations aplicam, ordem das FKs bate). Proposta: gerar um backup de uma loja fictícia num Postgres descartável e restaurar num banco vazio (sem tocar nos dados reais). `MemberBlock`, `MemberBlockItem` e `SessionMinutes` já estão em `BACKUP_MODELS`.
-> 5. **Recebido em dinheiro no painel do Asaas** → Caixa + confirmação da Tesouraria (decisão do dono, ainda não implementado).
-> 6. **Baixa assistida por extrato (OFX) no Modo Loja** (reaproveitar `lib/bank-reconciliation`); depois, registrar cada repasse Asaas→banco como conferência.
+> ~~4. **Restauração real de backup**~~ ✅ **FEITO 2026-10-03: testada com loja fictícia, 0 diferenças em 45 tabelas** (e corrigido o Json NULL). Antes: nunca foi provada ponta a ponta (parcial em 19/09: migrations aplicam, ordem das FKs bate). Proposta: gerar um backup de uma loja fictícia num Postgres descartável e restaurar num banco vazio (sem tocar nos dados reais). `MemberBlock`, `MemberBlockItem` e `SessionMinutes` já estão em `BACKUP_MODELS`.
+> ~~5. Recebido em dinheiro no painel do Asaas → Caixa + confirmação~~ ✅ **FEITO**.
+> ~~6. Baixa assistida por extrato (OFX) no Modo Loja~~ ✅ **FEITO** (falta, quando a loja operar com o Asaas, a análise de repasse Asaas→banco como conferência).
 > 7. **Renegociação** (`api/members/[id]/renegotiate`) ainda usa o valor cheio das contas (ignora pagamento parcial); o acordo de regularização já usa o saldo.
 > 8. **Passo "modo de recebimento" no onboarding** (hoje só em Configurações; toda loja nova nasce em Modo Loja, decisão do dono).
-> 9. **Termo de acordo para imprimir** (papel timbrado) — não feito.
+> ~~9. Termo de acordo para imprimir~~ ✅ **FEITO, com assinatura digital das três partes**.
 > 10. **Estados vazios** ("Nenhum…" soltos): adiado de propósito (ver PLANO_DE_ACAO).
 > 11. **Observar:** pool de conexões = 5 por instância (`DB_POOL_MAX`) e listagens sem paginação — tabelas pequenas hoje (Account 365, Payment 276, Invoice 267, AuditLog 718 linhas); só vira problema com milhares de linhas (`dashboard/page.tsx` lê tudo a cada visita — trocar por agregados no banco quando crescer).
 > 12. **Cobranças antigas emitidas como `UNDEFINED`** no Asaas (aceitam cartão) e **tarifa real de pagamento não simulado** (só o sandbox foi visto) — decidir/medir quando houver pagamento real em Modo Asaas.

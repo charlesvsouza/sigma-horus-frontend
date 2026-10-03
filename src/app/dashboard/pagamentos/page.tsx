@@ -5,12 +5,18 @@ import { openBalance, PAYMENT_NOTICE_CHECK_ENTITY, PAYMENT_NOTICE_ENTITY, PAYMEN
 import type { ReceiptCheck } from '@/lib/receipt-check';
 import { withTenant } from '@/lib/prisma';
 import { round2 } from '@/lib/money';
+import { ASAAS_CASH_CONFIRMED_ENTITY, ASAAS_CASH_METHOD } from '@/lib/asaas-cash';
+import HistoryWindowNote from '@/components/history-window-note';
+import { historyCutoff, wantsFullHistory } from '@/lib/list-window';
+import CashPendingCard from './CashPendingCard';
 import PagamentosClient from './PagamentosClient';
 
 // Server Component: carrega contas + membros + pagamentos no servidor.
 // `?conta=<id>` (link do e-mail "Já paguei") abre o formulário já preenchido para a baixa.
-export default async function PagamentosPage({ searchParams }: { searchParams: Promise<{ conta?: string }> }) {
-  const { conta } = await searchParams;
+export default async function PagamentosPage({ searchParams }: { searchParams: Promise<{ conta?: string; historico?: string }> }) {
+  const { conta, historico } = await searchParams;
+  const fullHistory = wantsFullHistory(historico);
+  const cutoff = historyCutoff();
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const data = lodgeId
@@ -31,8 +37,10 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           select: { id: true, name: true },
           orderBy: { name: 'asc' },
         }),
+        // Pagamentos dos últimos 12 meses; o resto fica em "Ver todo o histórico" (e no Histórico de pagamentos).
+        hiddenOld: fullHistory ? 0 : await db.payment.count({ where: { lodgeId: String(lodgeId), paidAt: { lt: cutoff } } }),
         payments: await db.payment.findMany({
-          where: { lodgeId: String(lodgeId) },
+          where: { lodgeId: String(lodgeId), ...(fullHistory ? {} : { paidAt: { gte: cutoff } }) },
           include: {
             account: { select: { id: true, title: true, type: true } },
             member: { select: { id: true, name: true } },
@@ -65,13 +73,21 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           orderBy: { createdAt: 'desc' },
           take: 200,
         }),
+        // Recebidos em dinheiro no painel do Asaas (baixados no Caixa) e as confirmações já feitas pela Tesouraria.
+        cashPayments: await db.payment.findMany({
+          where: { lodgeId: String(lodgeId), method: ASAAS_CASH_METHOD },
+          select: { id: true, amount: true, paidAt: true, bankAccountId: true, account: { select: { title: true } }, member: { select: { name: true } } },
+          orderBy: { paidAt: 'desc' },
+          take: 100,
+        }),
+        cashConfirmed: await db.auditLog.findMany({ where: { lodgeId: String(lodgeId), entity: ASAAS_CASH_CONFIRMED_ENTITY }, select: { entityId: true }, take: 500 }),
         // Créditos do extrato importado ainda não conciliados (últimos 45 dias): casam com os avisos.
         bankLines: await db.bankTransaction.findMany({
           where: { lodgeId: String(lodgeId), status: 'unmatched', amount: { gt: 0 }, date: { gte: new Date(todayBR().getTime() - 45 * 86_400_000) } },
           select: { id: true, date: true, amount: true, description: true },
         }),
       }))
-    : { accounts: [], members: [], payments: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], receiptChecks: [] };
+    : { accounts: [], members: [], payments: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], receiptChecks: [], cashPayments: [], cashConfirmed: [], hiddenOld: 0 };
 
   const accounts = data.accounts
     .map((a) => {
@@ -161,7 +177,15 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
     bankAccount: p.bankAccount ? { id: p.bankAccount.id, name: p.bankAccount.name, kind: p.bankAccount.kind } : null,
   }));
 
+  const confirmedCash = new Set(data.cashConfirmed.map((c) => c.entityId));
+  const cashPending = data.cashPayments
+    .filter((p) => !confirmedCash.has(p.id))
+    .map((p) => ({ id: p.id, amount: Number(p.amount), paidAt: p.paidAt.toISOString(), accountTitle: p.account?.title ?? 'Cobrança', memberName: p.member?.name ?? null, bankAccountId: p.bankAccountId ?? null }));
+
   return (
+    <>
+    <HistoryWindowNote full={fullHistory} hidden={data.hiddenOld} noun="pagamentos" basePath="/dashboard/pagamentos" />
+    <CashPendingCard items={cashPending} banks={data.financialAccounts.map((b) => ({ id: b.id, name: b.name, kind: b.kind }))} />
     <PagamentosClient
       accounts={accounts}
       members={data.members}
@@ -171,5 +195,6 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
       currentUserId={session?.user?.id ?? null}
       initialAccountId={conta && openById.has(conta) ? conta : null}
     />
+    </>
   );
 }

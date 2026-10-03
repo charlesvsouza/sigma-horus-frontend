@@ -26,13 +26,15 @@ export default async function ConciliacaoBancariaPage() {
     );
   }
 
-  const items = await withTenant(String(lodgeId), (db) =>
-    db.bankTransaction.findMany({
+  const { items, banks } = await withTenant(String(lodgeId), async (db) => ({
+    items: await db.bankTransaction.findMany({
       where: { lodgeId: String(lodgeId) },
       include: { matchedPayment: { select: { id: true, amount: true, paidAt: true, account: { select: { title: true } } } } },
       orderBy: { date: 'desc' },
     }),
-  );
+    banks: await db.financialAccount.findMany({ where: { lodgeId: String(lodgeId), active: true }, select: { id: true, name: true, isDefault: true }, orderBy: { name: 'asc' } }),
+  }));
+  const canWrite = (await requireLodgeAccess(String(lodgeId), role, 'accounts', 'write')).ok;
 
   const serialized = items.map((t) => ({
     id: t.id,
@@ -45,5 +47,5 @@ export default async function ConciliacaoBancariaPage() {
       : null,
   }));
 
-  return <ConciliacaoClient items={serialized} />;
+  return <ConciliacaoClient items={serialized} banks={banks} canSettle={canWrite} />;
 }

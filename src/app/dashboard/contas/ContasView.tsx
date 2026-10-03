@@ -3,18 +3,23 @@ import { donorDisplayName } from '@/lib/hospitalaria';
 import { isArt002Enabled } from '@/lib/overdue';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
+import HistoryWindowNote from '@/components/history-window-note';
+import { historyCutoff } from '@/lib/list-window';
 import ContasClient from './ContasClient';
 
 // Server Component compartilhado por /dashboard/contas (lista) e /dashboard/contas/lancamento
 // (a mesma tela com o formulário de lançamento já aberto).
-export default async function ContasView({ startWithForm = false }: { startWithForm?: boolean }) {
+export default async function ContasView({ startWithForm = false, fullHistory = false, basePath = '/dashboard/contas' }: { startWithForm?: boolean; fullHistory?: boolean; basePath?: string }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const role = normalizeRole(session?.user?.role);
+  const cutoff = historyCutoff();
   const data = lodgeId
     ? await withTenant(String(lodgeId), async (db) => ({
+        // Em aberto (qualquer data) + o que venceu nos últimos 12 meses; o resto fica em "Ver todo o histórico".
+        hiddenOld: fullHistory ? 0 : await db.account.count({ where: { lodgeId: String(lodgeId), status: 'paid', dueDate: { lt: cutoff } } }),
         accounts: await db.account.findMany({
-          where: { lodgeId: String(lodgeId) },
+          where: { lodgeId: String(lodgeId), ...(fullHistory ? {} : { OR: [{ status: { not: 'paid' } }, { dueDate: { gte: cutoff } }] }) },
           include: {
             member: { select: { id: true, name: true } },
             counterparty: { select: { id: true, name: true, kind: true } },
@@ -47,7 +52,7 @@ export default async function ContasView({ startWithForm = false }: { startWithF
         }),
         lodge: await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { art002Enabled: true } }),
       }))
-    : { accounts: [], members: [], chartAccounts: [], counterparties: [], financialAccounts: [], lodge: null };
+    : { accounts: [], members: [], chartAccounts: [], counterparties: [], financialAccounts: [], lodge: null, hiddenOld: 0 };
 
   const accounts = data.accounts.map((a) => {
     const isSolidarity = a.chartAccount?.isSolidarity ?? false;
@@ -78,5 +83,10 @@ export default async function ContasView({ startWithForm = false }: { startWithF
     isDues: c.isDues,
   }));
 
-  return <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} startWithForm={startWithForm} art002Enabled={isArt002Enabled(data.lodge)} />;
+  return (
+    <>
+      <HistoryWindowNote full={fullHistory} hidden={data.hiddenOld} noun="lançamentos" basePath={basePath} />
+      <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} startWithForm={startWithForm} art002Enabled={isArt002Enabled(data.lodge)} />
+    </>
+  );
 }

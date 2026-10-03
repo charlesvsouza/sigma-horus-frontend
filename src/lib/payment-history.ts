@@ -18,7 +18,7 @@ const METHOD_LABEL: Record<string, string> = {
   pix: 'Pix',
   cash: 'Dinheiro',
   card: 'Cartão',
-  asaas: 'Asaas',
+  asaas: 'Asaas', 'asaas-cash': 'Dinheiro (baixa no Asaas)',
   transfer: 'Transferência',
   boleto: 'Boleto',
 };

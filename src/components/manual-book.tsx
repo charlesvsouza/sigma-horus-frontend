@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.83</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.84</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.83 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.84 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -1126,11 +1126,16 @@ export function ManualBook() {
 
               <Sub id="tes-relatorios" title="7.6 Relatórios e fechamento">
                 <p>
-                  <strong>Índice de relatórios:</strong> <UI>Tesouraria → Relatórios</UI> abre o índice numerado, agrupado por natureza —
+                  <strong>Contas, Cobranças e Pagamentos — histórico:</strong> para continuarem rápidas com o passar dos anos, estas listas mostram por padrão <strong>tudo o que está em aberto</strong> e os
+                  <strong> últimos 12 meses</strong>. Um aviso acima da lista informa quantos registros mais antigos estão ocultos, e <UI>Ver todo o histórico</UI> mostra tudo. Os relatórios
+                  (e os totais do Resumo financeiro) não usam essa janela.
+                </p>
+                <p>
+                  <strong>Índice de relatórios:</strong> <UI>Tesouraria → Relatórios</UI> abre o índice em cartões numerados, agrupado por natureza —
                   1. Movimentação financeira (Resumo financeiro, Contas recebidas, Contas pagas, Razão por categoria); 2. Contas a receber e a pagar;
                   3. Inadimplência e regularidade (Inadimplência, Histórico de pagamentos, Declaração de regularidade); 4. Planejamento (Orçamento anual,
                   Fluxo de caixa projetado); 5. Prestação de contas (Fechamento do veneralato, Balancetes periódicos, DRE comparativo); 6. Cobrança eletrônica
-                  (Tarifas do Asaas). Cada linha traz uma descrição de uma frase. Qualquer relatório também se acha pela busca (<UI>Ctrl/Cmd + K</UI>).
+                  (Tarifas do Asaas). Os relatórios aparecem em cartões; a descrição de uma frase de cada um surge ao passar o cursor (ou ao focar com o teclado; no celular fica sempre visível). Qualquer relatório também se acha pela busca (<UI>Ctrl/Cmd + K</UI>).
                 </p>
                 <p>
                   Em <UI>Tesouraria → Relatórios → Resumo financeiro</UI> você acompanha <UI>Resumo de abertura</UI>,
@@ -1298,6 +1303,13 @@ export function ManualBook() {
                   Venerável e os Administradores</strong> (acordo quebrado); o irmão segue bloqueado e as medidas cabíveis ficam com eles.
                 </p>
                 <p>
+                  <strong>Termo de acordo e assinatura digital:</strong> cada acordo tem um <UI>Termo de acordo de regularização</UI> em papel timbrado (<UI>Acordos de regularização → Abrir termo / assinar</UI>),
+                  com o que foi acordado, as parcelas e as cláusulas. Assinam o <strong>Venerável Mestre</strong> (ou o Administrador, pela Loja), o <strong>Tesoureiro</strong> e o próprio
+                  <strong> irmão</strong> (pelo portal, no aviso do acordo). Para assinar basta clicar em <UI>Assinar digitalmente</UI>: o sistema grava a marca — quem assinou, quando, o resumo
+                  (hash) do acordo e um <strong>código de verificação</strong> (AC-XXXX-XXXX), impresso sob o nome. Cada parte assina uma vez. Qualquer pessoa confirma a assinatura em
+                  <strong> sigmahorus.com.br/verificar/&lt;código&gt;</strong>: a página mostra quem assinou, quando e se o acordo continua igual ao assinado, sem mostrar valores nem o nome do irmão. A minuta das cláusulas deve ser revista pela diretoria da loja.
+                </p>
+                <p>
                   O irmão <strong>só volta com o acordo totalmente pago</strong>. Quitado o último item, o acordo aparece como &quot;Quitado — aguardando retorno&quot; e o
                   Venerável ou o Administrador clica em <UI>Liberar o irmão</UI>: o cadastro volta a Ativo, ele volta a ser convocado e a mensalidade recomeça no próximo vencimento.
                   Enquanto bloqueado, o próprio irmão vê no painel o aviso com o total, o pago e o saldo do acordo.
@@ -1389,6 +1401,15 @@ export function ManualBook() {
                   <li><strong>Avisos &quot;Já paguei&quot; × extrato</strong> (Modo Loja): com o extrato importado, cada aviso em
                   <UI> Pagamentos</UI> mostra se há um crédito correspondente, e <UI>Dar baixa</UI> já concilia a linha (7.5). Pix
                   agrupado aparece como um crédito só, do total do grupo.</li>
+                  <li><strong>Baixa assistida pelo extrato</strong> (Modo Loja): em um crédito do extrato que ainda não tem pagamento lançado, clique em
+                  <UI>Sugerir cobrança</UI>. O sistema procura as cobranças em aberto cujo <strong>valor</strong> bate com o crédito e cujo <strong>nome do irmão</strong> aparece
+                  na descrição do Pix/TED, e mostra o quanto confere (&quot;Valor e nome conferem&quot;, &quot;Valor confere&quot;…). Escolha a conta que recebeu e clique em
+                  <UI> Dar baixa e conciliar</UI>: a baixa é lançada e a linha do extrato já fica conciliada. Nada é baixado sem o seu clique; crédito maior que o saldo
+                  da cobrança não é aceito, e cobrança aberta no Asaas é recusada (nessa loja a baixa vem do Asaas).</li>
+                  <li><strong>Recebido em dinheiro no painel do Asaas</strong> (Modo Asaas): se alguém marcar uma cobrança como &quot;recebida em dinheiro&quot; direto no painel do
+                  Asaas, o sistema lança a baixa no <strong>Caixa</strong> da loja (sem tarifa) e avisa o Tesoureiro e os Administradores por e-mail. Em <UI>Tesouraria → Pagamentos</UI>
+                  aparece o quadro <UI>Recebidos em dinheiro no Asaas — confirme na Tesouraria</UI>: confira o dinheiro e clique em <UI>Confirmar recebimento</UI> (ou escolha outra conta,
+                  se ele foi depositado em outro lugar). A confirmação fica na auditoria.</li>
                   <li><strong>Pix agrupado no Asaas:</strong> <UI>Verificar pagamentos no Asaas</UI> reconhece o Pix que quitou várias
                   contas e divide o valor e a tarifa entre elas, como o aviso automático (7.4).</li>
                 </Bullets>

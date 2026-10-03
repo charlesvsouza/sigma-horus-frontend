@@ -24,6 +24,8 @@ import { downloadCsv } from '@/lib/csv';
 export interface Signatory {
   role: string;
   name?: string | null;
+  /** Marca de assinatura digital (ex.: "Assinado digitalmente em 03/10/2026 14:05 · AC-K7M2-9PQX"), impressa sob o nome. */
+  mark?: string | null;
 }
 
 export const fmtIssued = (d: Date) =>
@@ -136,6 +138,7 @@ export function Signatures({ signatures, className = '' }: { signatures?: Signat
           <div className="border-t border-sand-dark/60 pt-1.5" />
           {s.name ? <p className="font-semibold text-sand-light">{s.name}</p> : <p className="text-sand-dark">&nbsp;</p>}
           <p className="text-sand-dark">{s.role}</p>
+          {s.mark ? <p className="mt-1 text-[0.65rem] leading-tight text-emerald-300">{s.mark}</p> : null}
         </div>
       ))}
     </div>

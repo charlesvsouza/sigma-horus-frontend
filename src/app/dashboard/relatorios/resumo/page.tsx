@@ -50,39 +50,29 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
     paymentWhere.paidAt = range;
   }
 
-  const [accounts, invoices, payments] = await withTenant(String(lodgeId), (db) =>
+  // Somas e contagens no banco (não traz todas as linhas para o servidor: com 30 mil lançamentos eram 10 s) —
+  // os números são os mesmos de antes; só as 6 linhas de "Próximos vencimentos" e de "Últimos registros" são lidas.
+  const openWhere = { ...accountWhere, status: { not: 'paid' } } satisfies Prisma.AccountWhereInput;
+  const [totalsByType, openByType, upcomingRows, paymentTotal, payments, invoices] = await withTenant(String(lodgeId), (db) =>
     Promise.all([
-      db.account.findMany({
-        where: accountWhere,
-        select: { id: true, title: true, type: true, amount: true, dueDate: true, status: true },
-        orderBy: { dueDate: 'asc' },
-      }),
-      db.invoice.findMany({
-        where: invoiceWhere,
-        select: { id: true, number: true, amount: true, dueDate: true, status: true },
-        orderBy: { dueDate: 'asc' },
-      }),
-      db.payment.findMany({
-        where: paymentWhere,
-        select: { id: true, amount: true, paidAt: true, method: true },
-        orderBy: { paidAt: 'desc' },
-      }),
+      db.account.groupBy({ by: ['type'], where: accountWhere, _sum: { amount: true } }),
+      db.account.groupBy({ by: ['type'], where: openWhere, _count: { _all: true } }),
+      db.account.findMany({ where: openWhere, select: { id: true, title: true, type: true, dueDate: true }, orderBy: { dueDate: 'asc' }, take: 6 }),
+      db.payment.aggregate({ where: paymentWhere, _sum: { amount: true } }),
+      db.payment.findMany({ where: paymentWhere, select: { id: true, amount: true, paidAt: true, method: true }, orderBy: { paidAt: 'desc' }, take: 6 }),
+      db.invoice.findMany({ where: invoiceWhere, select: { id: true, number: true, amount: true, dueDate: true, status: true }, orderBy: { dueDate: 'asc' }, take: 6 }),
     ]),
   );
 
-  const receivables = accounts.filter((a) => a.type === 'RECEIVABLE');
-  const payables = accounts.filter((a) => a.type === 'PAYABLE');
-  const openReceivables = receivables.filter((a) => a.status !== 'paid');
-  const openPayables = payables.filter((a) => a.status !== 'paid');
-  const totalReceivables = receivables.reduce((s, a) => s + Number(a.amount ?? 0), 0);
-  const totalPayables = payables.reduce((s, a) => s + Number(a.amount ?? 0), 0);
-  const totalPayments = payments.reduce((s, p) => s + Number(p.amount ?? 0), 0);
+  const sumOf = (type: string) => Number(totalsByType.find((t) => t.type === type)?._sum.amount ?? 0);
+  const countOf = (type: string) => openByType.find((t) => t.type === type)?._count._all ?? 0;
+  const totalReceivables = sumOf('RECEIVABLE');
+  const totalPayables = sumOf('PAYABLE');
+  const openReceivables = { length: countOf('RECEIVABLE') };
+  const openPayables = { length: countOf('PAYABLE') };
+  const totalPayments = Number(paymentTotal._sum.amount ?? 0);
   const netFlow = totalPayments - totalPayables;
-
-  const upcoming = ([...receivables, ...payables] as Array<{ id: string; title: string; type: string; dueDate: string | Date }>)
-    .filter((item) => !accounts.find((a) => a.id === item.id) || (accounts.find((a) => a.id === item.id)?.status !== 'paid'))
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-    .slice(0, 6);
+  const upcoming = upcomingRows;
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -153,7 +143,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Últimos registros</h2>
           <div className="mt-5 space-y-3">
-            {payments.slice(0, 6).map((payment) => (
+            {payments.map((payment) => (
               <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                 <span>Pagamento registrado</span>
                 <span>{brl(payment.amount)}</span>
@@ -161,7 +151,7 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
                 <span>{payment.method}</span>
               </div>
             ))}
-            {invoices.slice(0, 6).map((invoice) => (
+            {invoices.map((invoice) => (
               <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
                 <span>Cobrança {invoice.number}</span>
                 <span>{brl(invoice.amount)}</span>

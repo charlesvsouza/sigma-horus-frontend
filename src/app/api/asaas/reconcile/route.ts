@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { getPayment } from '@/lib/asaas';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
+import { isAsaasCashStatus } from '@/lib/asaas-cash';
 import { settleAsaasInvoicePayment } from '@/lib/asaas-settlement';
 import { isGroupRef } from '@/lib/asaas-group';
 import { settleAsaasGroupPayment } from '@/lib/asaas-group-server';
@@ -66,6 +67,7 @@ export async function POST() {
             billingType: remote.billingType ?? null,
             userId: session.user.id,
             source: 'manual-reconcile',
+            receivedInCash: isAsaasCashStatus(remote?.status),
           }),
           { timeoutMs: 30_000 },
         );
@@ -84,6 +86,7 @@ export async function POST() {
           billingType: remote.billingType ?? null,
           asaasPaymentId: invoice.asaasPaymentId!,
           userId: session.user.id,
+          receivedInCash: isAsaasCashStatus(remote?.status),
         }),
       );
       reconciled++;

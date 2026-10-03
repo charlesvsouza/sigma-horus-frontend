@@ -1,5 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 import { gzipSync, gunzipSync } from 'node:zlib';
+import { Prisma } from '@/generated/prisma/client';
 import { prismaAdmin } from './prisma';
 import { deleteObject, listObjectKeys, putObject } from './storage';
 
@@ -29,6 +30,7 @@ export const BACKUP_MODELS = [
   'degreeFeePlan', // depois de member; antes de account (a cota aponta para o plano)
   'memberBlock', // depois de member (bloqueio por comunicado à Potência + acordo)
   'memberBlockItem', // depois de memberBlock (o item aponta para a conta, sem FK)
+  'memberBlockSignature', // depois de memberBlock (assinatura digital do termo do acordo)
   'user',
   'financialAccount',
   'accountTransfer',
@@ -190,9 +192,25 @@ export function decodeBackupBlob(blob: Buffer): BackupManifest {
   return JSON.parse(json) as BackupManifest;
 }
 
+// Colunas Json do schema por modelo. No backup (JSON), um Json NULL do banco vira `null`; ao gravar de volta o
+// Prisma o guardaria como o valor JSON "null" (diferente do NULL do banco) — por isso vira Prisma.DbNull.
+// backup.test.ts confere que esta lista cobre todas as colunas Json do schema.
+export const JSON_COLUMNS: Partial<Record<BackupModelName, string[]>> = { lodge: ['certificateLayout'], balancete: ['detail'] };
+
+/** Linhas prontas para gravar: Json nulo do backup volta a ser NULL de banco. */
+export function rowsForRestore(model: BackupModelName, rows: Row[]): Row[] {
+  const jsonCols = JSON_COLUMNS[model];
+  if (!jsonCols) return rows;
+  return rows.map((r) => {
+    const out: Row = { ...r };
+    for (const c of jsonCols) if (out[c] === null) out[c] = Prisma.DbNull;
+    return out;
+  });
+}
+
 /** Grava as linhas de um modelo (usado só pelo script de restauração). */
 export async function restoreModelRows(model: BackupModelName, rows: Row[]): Promise<number> {
   if (rows.length === 0) return 0;
-  const result = await delegateFor(model).createMany({ data: rows, skipDuplicates: true });
+  const result = await delegateFor(model).createMany({ data: rowsForRestore(model, rows), skipDuplicates: true });
   return result.count;
 }

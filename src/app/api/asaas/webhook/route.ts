@@ -29,6 +29,25 @@ async function settledByAsaasPayment(accountId: string, asaasPaymentId: string) 
   return Boolean(found);
 }
 
+/**
+ * Cobrança marcada como "Recebida em dinheiro" no painel do Asaas: o sistema lançou a baixa no Caixa e a
+ * Tesouraria precisa confirmar. Avisa o Tesoureiro e os administradores por e-mail.
+ */
+async function notifyCashReceived(lodgeId: string, lodgeName: string, payment: { id: string; value: number }, numbers: string[]) {
+  const staff = await prismaAdmin.user.findMany({ where: { lodgeId, role: { in: ['treasurer', 'admin'] }, status: 'active' }, select: { email: true } });
+  for (const u of staff) {
+    dispatch(
+      'email',
+      u.email,
+      `Recebido em dinheiro no Asaas — confirme na Tesouraria — ${lodgeName}`,
+      `Foi marcado como "recebido em dinheiro" no painel do Asaas um valor de ${brl(payment.value)} (cobrança ${numbers.join(', ')}; id ${payment.id}).
+
+O sistema lançou a baixa no Caixa da loja. Abra Tesouraria → Pagamentos, confira o dinheiro e confirme a baixa (ou troque a conta, se ele foi depositado em outro lugar).`,
+      EMPTY_CHANNELS,
+    ).catch(() => {});
+  }
+}
+
 async function flagDuplicateReceipt(
   invoice: { id: string; lodgeId: string; number: string; lodge: { name: string } },
   payment: { id: string; value: number },
@@ -133,9 +152,11 @@ async function handleGroupWebhook(request: Request, event: string, payment: NonN
         billingType: payment.billingType ?? null,
         userId: 'system:asaas-webhook',
         source: event,
+        receivedInCash: payment.status === 'RECEIVED_IN_CASH',
       }),
       { timeout: 30_000 },
     );
+    if (payment.status === 'RECEIVED_IN_CASH') await notifyCashReceived(first.lodgeId, first.lodge.name, payment, open.map((i) => i.number));
 
     const member = open.find((i) => i.member?.email)?.member;
     if (member?.email) {
@@ -249,8 +270,10 @@ export async function POST(request: Request) {
         asaasPaymentId: payment.id,
         userId: 'system:asaas-webhook',
         source: event,
+        receivedInCash: payment.status === 'RECEIVED_IN_CASH',
       }),
     );
+    if (payment.status === 'RECEIVED_IN_CASH') await notifyCashReceived(invoice.lodgeId, invoice.lodge.name, payment, [invoice.number]);
 
     if (invoice.member?.email) {
       const valor = brl(payment.value);

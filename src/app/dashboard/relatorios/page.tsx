@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { requireLodgeAccess } from '@/lib/rbac';
 
-// Índice de Relatórios: um sumário numerado, por natureza do relatório (como o índice de um livro-razão),
-// no lugar de quinze itens soltos no menu. Os endereços de cada relatório não mudam.
+// Índice de Relatórios: cartões numerados por natureza do relatório, no lugar de quinze itens soltos no menu.
+// A descrição de cada relatório só aparece com o cursor/foco no item. Os endereços dos relatórios não mudam.
 const SECTIONS: { title: string; items: { href: string; label: string; description: string }[] }[] = [
   {
     title: 'Movimentação financeira',
@@ -66,26 +66,34 @@ export default async function RelatoriosIndexPage() {
 
   return (
     <main className="min-h-screen px-6 py-12">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-5xl">
         <h1 className="font-display text-2xl font-bold text-sand-light">Relatórios</h1>
-        <p className="mt-1 text-sm text-sand-dark">Índice dos relatórios da Tesouraria, por natureza. Cada um tem filtro de período e exporta em PDF ou CSV.</p>
+        <p className="mt-1 text-sm text-sand-dark">Relatórios da Tesouraria, por natureza. Passe o cursor (ou use o teclado) sobre um relatório para ver a descrição.</p>
 
-        <ol className="mt-8 space-y-8">
+        <ol className="mt-8 grid gap-5 md:grid-cols-2">
           {SECTIONS.map((section, index) => (
-            <li key={section.title}>
-              <h2 className="flex items-baseline gap-3 border-b border-gold/25 pb-2 text-sm font-semibold uppercase tracking-[0.18em] text-gold">
+            <li key={section.title} className="rounded-xl border border-white/6 bg-sigma-card p-5">
+              <h2 className="flex items-baseline gap-3 border-b border-gold/25 pb-3 text-sm font-semibold uppercase tracking-[0.18em] text-gold">
                 <span className="tabular-nums" aria-hidden="true">{index + 1}</span>
                 {section.title}
               </h2>
-              <ul className="divide-y divide-white/5">
+              <ul className="mt-2">
                 {section.items.map((item) => (
                   <li key={item.href}>
+                    {/* A descrição só aparece com o cursor ou o foco no item (sem deslocar a linha: o espaço é reservado).
+                        Em tela de toque, que não tem cursor, ela fica sempre visível. */}
                     <Link
                       href={item.href}
-                      className="group flex flex-col gap-0.5 py-3 pl-7 transition-colors hover:bg-white/3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
+                      aria-describedby={`desc-${item.href}`}
+                      className="group block rounded-lg px-3 py-2 outline-none transition-colors hover:bg-white/5 focus-visible:bg-white/5 focus-visible:ring-2 focus-visible:ring-gold/60"
                     >
-                      <span className="text-sm font-medium text-sand-light group-hover:text-gold">{item.label}</span>
-                      <span className="text-xs text-sand-dark sm:text-right">{item.description}</span>
+                      <span className="block text-sm font-medium text-sand-light group-hover:text-gold group-focus-visible:text-gold">{item.label}</span>
+                      <span
+                        id={`desc-${item.href}`}
+                        className="block text-xs text-sand-dark opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                      >
+                        {item.description}
+                      </span>
                     </Link>
                   </li>
                 ))}

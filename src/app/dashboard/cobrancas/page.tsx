@@ -1,5 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
+import HistoryWindowNote from '@/components/history-window-note';
+import { historyCutoff, wantsFullHistory } from '@/lib/list-window';
 import CobrancasClient from './CobrancasClient';
 import { getAccountBalance } from '@/lib/asaas';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
@@ -9,13 +11,17 @@ import { CLOSED_INVOICE_STATUSES } from '@/lib/portal-invoice';
 import { round2, sumMoney } from '@/lib/money';
 
 // Server Component: cobranças + contas + membros no servidor.
-export default async function CobrancasPage() {
+export default async function CobrancasPage({ searchParams }: { searchParams: Promise<{ historico?: string }> }) {
+  const fullHistory = wantsFullHistory((await searchParams).historico);
+  const cutoff = historyCutoff();
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const data = lodgeId
     ? await withTenant(String(lodgeId), async (db) => ({
+        // Em aberto (qualquer data) + o que venceu nos últimos 12 meses; o resto fica em "Ver todo o histórico".
+        hiddenOld: fullHistory ? 0 : await db.invoice.count({ where: { lodgeId: String(lodgeId), status: 'paid', dueDate: { lt: cutoff } } }),
         invoices: await db.invoice.findMany({
-          where: { lodgeId: String(lodgeId) },
+          where: { lodgeId: String(lodgeId), ...(fullHistory ? {} : { OR: [{ status: { not: 'paid' } }, { dueDate: { gte: cutoff } }] }) },
           include: {
             account: { select: { id: true, title: true, amount: true, status: true, payments: { select: { amount: true } } } },
             member: { select: { id: true, name: true, email: true } },
@@ -38,7 +44,7 @@ export default async function CobrancasPage() {
           select: { collectionMode: true, asaasSettlementAccountId: true, asaasApiKeyEnc: true, asaasEnv: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true },
         }),
       }))
-    : { invoices: [], chartAccounts: [], members: [], lodge: null };
+    : { invoices: [], chartAccounts: [], members: [], lodge: null, hiddenOld: 0 };
 
   // Modo de recebimento da loja. No Modo Asaas mostra o saldo que ainda está no Asaas (a repassar,
   // manualmente, à conta corrente); no Modo Loja, como os irmãos pagam.
@@ -91,5 +97,10 @@ export default async function CobrancasPage() {
     withoutEmail: new Set(chargeable.filter((i) => !i.memberHasEmail).map((i) => i.member!.id)).size,
   };
 
-  return <CobrancasClient invoices={invoices} chartAccounts={data.chartAccounts} members={data.members} collection={collection} openSummary={openSummary} />;
+  return (
+    <>
+      <HistoryWindowNote full={fullHistory} hidden={data.hiddenOld} noun="cobranças" basePath="/dashboard/cobrancas" />
+      <CobrancasClient invoices={invoices} chartAccounts={data.chartAccounts} members={data.members} collection={collection} openSummary={openSummary} />
+    </>
+  );
 }

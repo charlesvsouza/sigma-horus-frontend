@@ -29,7 +29,7 @@ function openOf(inv: { amount: number; memberId: string | null; account: { membe
  */
 export async function settleAsaasGroupPayment(
   db: Db,
-  params: { lodgeId: string; asaasPaymentId: string; total: number; netValue: number | null; billingType: string | null; userId: string; source: string },
+  params: { lodgeId: string; asaasPaymentId: string; total: number; netValue: number | null; billingType: string | null; userId: string; source: string; receivedInCash?: boolean },
 ): Promise<{ settled: number; memberIds: string[] }> {
   const invoices = await db.invoice.findMany({
     where: { lodgeId: params.lodgeId, asaasPaymentId: params.asaasPaymentId, status: { not: 'paid' } },
@@ -58,6 +58,7 @@ export async function settleAsaasGroupPayment(
       asaasPaymentId: params.asaasPaymentId,
       userId: params.userId,
       source: `${params.source}:grupo`,
+      receivedInCash: params.receivedInCash,
     });
   }
   return { settled: allocations.length, memberIds: [...new Set(invoices.map((i) => i.memberId).filter((m): m is string => Boolean(m)))] };

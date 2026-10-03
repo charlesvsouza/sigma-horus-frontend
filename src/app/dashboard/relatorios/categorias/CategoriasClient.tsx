@@ -13,7 +13,7 @@ interface LedgerGroup { key: string; code: string; name: string; category: strin
 interface Ledger { totals: { opening: number; in: number; out: number; closing: number; openIn: number; openOut: number }; groups: LedgerGroup[] }
 
 const METHOD_LABEL: Record<string, string> = {
-  manual: 'Manual', cash: 'Dinheiro', pix: 'Pix', transfer: 'Transferência', asaas: 'Asaas', donation: 'Doação', fund: 'Custeio (Tronco)', boleto: 'Boleto', card: 'Cartão',
+  manual: 'Manual', cash: 'Dinheiro', pix: 'Pix', transfer: 'Transferência', asaas: 'Asaas', 'asaas-cash': 'Dinheiro (baixa no Asaas)', donation: 'Doação', fund: 'Custeio (Tronco)', boleto: 'Boleto', card: 'Cartão',
 };
 const FUND_LABEL = { tronco: 'Tronco', donations: 'Doações' } as const;
 

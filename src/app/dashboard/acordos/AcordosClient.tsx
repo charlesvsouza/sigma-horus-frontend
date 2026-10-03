@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Alert, Badge, Button, Card, EmptyState, inputClass, useConfirm } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
+import { AGREEMENT_PARTIES } from '@/lib/agreement-signature';
+import Link from 'next/link';
 
 export interface AgreementView {
   id: string;
+  signedParties: string[];
   memberId: string;
   memberName: string;
   status: string; // open | settled | lifted
@@ -177,6 +180,16 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
             ))}
           </ul>
         </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-3 text-xs">
+        <span className="font-medium text-sand-light">Termo de acordo</span>
+        {AGREEMENT_PARTIES.map((p) => (
+          <span key={p.party} className={a.signedParties.includes(p.party) ? 'text-emerald-300' : 'text-sand-dark'}>
+            {a.signedParties.includes(p.party) ? '✓' : '○'} {p.label}
+          </span>
+        ))}
+        <Link href={`/dashboard/acordos/${a.id}/termo`} className="ml-auto text-gold hover:text-gold-light">Abrir termo / assinar</Link>
       </div>
 
       {a.status !== 'lifted' ? (

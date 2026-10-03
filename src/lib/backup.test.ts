@@ -42,3 +42,19 @@ test('cada modelo vem depois dos modelos de que depende (ordem da restauração)
     }
   }
 });
+
+test('a restauração trata como NULL de banco toda coluna Json do schema (lista JSON_COLUMNS completa)', () => {
+  // Acha cada "campo Json" dentro do seu modelo no schema.
+  const found: Record<string, string[]> = {};
+  let current = '';
+  for (const line of schema.split(/\r?\n/)) {
+    const m = line.match(/^model (\w+) \{/);
+    if (m) { current = lowerFirst(m[1]); continue; }
+    const f = line.match(/^\s+(\w+)\s+Json\??/);
+    if (f && current) (found[current] ??= []).push(f[1]);
+  }
+  const listed = source.match(/JSON_COLUMNS[^=]*=\s*\{([^}]*)\}/)?.[1] ?? '';
+  for (const [model, cols] of Object.entries(found)) {
+    for (const col of cols) assert.ok(new RegExp(String.raw`${model}:\s*\[[^\]]*'${col}'`).test(listed), `coluna Json ${model}.${col} fora de JSON_COLUMNS (a restauração gravaria o JSON "null")`);
+  }
+});

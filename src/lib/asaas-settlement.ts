@@ -1,6 +1,7 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { logAudit } from '@/lib/audit';
 import { ASAAS_FEE_CHART, feeFromNet } from '@/lib/collection';
+import { ASAAS_CASH_METHOD, ASAAS_CASH_PENDING_ENTITY, asaasCashNote, pickCashAccount } from '@/lib/asaas-cash';
 import { coversAmount } from '@/lib/money';
 import { syncMemberBlock } from '@/lib/member-block-sync';
 import { lockKey } from '@/lib/locks';
@@ -34,14 +35,16 @@ export async function settleAsaasInvoicePayment(
     billingType?: string | null;
     /** Evento do Asaas que originou a baixa (webhook) ou "manual-reconcile" (reconciliação sob demanda) — só para o audit log. */
     source?: string;
+    /** Recebido em dinheiro, marcado direto no painel do Asaas: vai para o CAIXA (não para a conta de repasse), sem tarifa, e fica aguardando a confirmação da Tesouraria. */
+    receivedInCash?: boolean;
   },
 ) {
-  const { lodgeId, invoiceId, accountId, memberId, amount, asaasPaymentId, userId, netValue, billingType, source = 'manual-reconcile' } = params;
+  const { lodgeId, invoiceId, accountId, memberId, amount, asaasPaymentId, userId, netValue, billingType, source = 'manual-reconcile', receivedInCash = false } = params;
 
   // Idempotência: o Asaas reenvia webhooks e a reconciliação manual pode rodar junto. Uma baixa
   // por cobrança do Asaas por vez, e se este pagamento já foi lançado devolve o existente.
   await lockKey(db, `asaas-payment:${asaasPaymentId}`);
-  const already = await db.payment.findFirst({ where: { accountId, method: 'asaas', note: { contains: asaasPaymentId } } });
+  const already = await db.payment.findFirst({ where: { accountId, method: { in: ['asaas', ASAAS_CASH_METHOD] }, note: { contains: asaasPaymentId } } });
   if (already) return already;
 
   const [invoice, account, lodge] = await Promise.all([
@@ -53,15 +56,19 @@ export async function settleAsaasInvoicePayment(
   // Sem conta bancária o pagamento não entra no saldo de nenhuma conta: usa a
   // prevista do lançamento e, na falta dela, a conta corrente de repasse do Asaas
   // escolhida pela loja (é onde o Pix de uma doação ao Tronco cai de fato).
-  const bankAccountId = account?.bankAccountId ?? lodge?.asaasSettlementAccountId ?? null;
+  // Dinheiro em espécie (RECEIVED_IN_CASH): entra no Caixa da loja; a Tesouraria confirma (ou troca a conta).
+  const cashBank = receivedInCash
+    ? pickCashAccount(await db.financialAccount.findMany({ where: { lodgeId }, select: { id: true, kind: true, active: true, isDefault: true } }))
+    : null;
+  const bankAccountId = cashBank?.id ?? account?.bankAccountId ?? lodge?.asaasSettlementAccountId ?? null;
   const created = await db.payment.create({
     // paidAt = DIA de Brasília (só-dia, 00:00 UTC), como toda data digitada: um Pix das 22h do último dia do mês
     // fica no mês certo nos relatórios, que agrupam por dia/UTC.
-    data: { lodgeId, accountId, memberId, bankAccountId, amount, method: 'asaas', paidAt: todayBR(), note: `Baixa automática Asaas (${asaasPaymentId})` },
+    data: { lodgeId, accountId, memberId, bankAccountId, amount, method: receivedInCash ? ASAAS_CASH_METHOD : 'asaas', paidAt: todayBR(), note: receivedInCash ? asaasCashNote(asaasPaymentId) : `Baixa automática Asaas (${asaasPaymentId})` },
   });
 
   // Tarifa real cobrada pelo Asaas: despesa na mesma conta, com o rastro na cobrança.
-  const fee = feeFromNet(amount, netValue);
+  const fee = receivedInCash ? null : feeFromNet(amount, netValue);
   if (invoice) {
     await db.invoice.update({
       where: { id: invoiceId },
@@ -130,8 +137,11 @@ export async function settleAsaasInvoicePayment(
     action: 'CREATE',
     entity: 'payment',
     entityId: created.id,
-    metadata: { source: 'asaas', event: source, asaasPaymentId, invoiceId, amount, fee, billingType: billingType ?? null },
+    metadata: { source: 'asaas', event: source, asaasPaymentId, invoiceId, amount, fee, billingType: billingType ?? null, ...(receivedInCash ? { cash: true } : {}) },
   });
+  if (receivedInCash) {
+    await logAudit(db, { lodgeId, userId, action: 'CREATE', entity: ASAAS_CASH_PENDING_ENTITY, entityId: created.id, metadata: { asaasPaymentId, invoiceId, amount, bankAccountId } });
+  }
 
   return created;
 }

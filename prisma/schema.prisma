@@ -144,6 +144,7 @@ model Lodge {
   memberBlocks   MemberBlock[]
   memberBlockItems MemberBlockItem[]
   sessionMinutes SessionMinutes[]
+  memberBlockSignatures MemberBlockSignature[]
   candidateInquirers CandidateInquirer[]
   hospitalityRequests HospitalityRequest[]
   financialAccounts FinancialAccount[]
@@ -1259,6 +1260,7 @@ model MemberBlock {
   lodge  Lodge             @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   member Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
   items  MemberBlockItem[]
+  signatures MemberBlockSignature[]
   @@index([lodgeId, memberId])
   @@index([lodgeId, status])
 }
@@ -1301,5 +1303,27 @@ model SessionMinutes {
   lodge   Lodge   @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   @@unique([sessionId, degree])
+  @@index([lodgeId])
+}
+
+// Assinatura digital do Termo de acordo de regularização: ao clicar em "Assinar", o sistema grava a marca
+// (quem, quando, hash do conteúdo do acordo e um código de verificação). Partes: venerable (Venerável ou
+// Administrador), treasurer e member (o próprio irmão). Uma assinatura por parte por acordo.
+model MemberBlockSignature {
+  id             String   @id @default(cuid())
+  lodgeId        String
+  blockId        String
+  party          String   // venerable | treasurer | member
+  signerUserId   String
+  signerName     String
+  signerRole     String   // rótulo no termo (ex.: Venerável Mestre)
+  signedAt       DateTime @default(now())
+  contentHash    String   // sha256 do conteúdo do acordo no momento da assinatura
+  code           String   @unique // código público de verificação (AC-XXXX-XXXX)
+  ip             String?
+
+  lodge Lodge       @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  block MemberBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  @@unique([blockId, party])
   @@index([lodgeId])
 }
