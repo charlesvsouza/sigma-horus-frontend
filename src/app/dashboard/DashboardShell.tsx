@@ -98,6 +98,8 @@ interface Props {
   lodgeName: string;
   userName: string;
   role: string;
+  /** Telas que não estão no menu mas entram na busca Ctrl/Cmd+K (ex.: relatórios do índice). */
+  extraCommands?: Command[];
   children: ReactNode;
   /** Dias de atraso da mensalidade do usuário logado, só quando > 60 (Art. 002). */
   art002DaysOverdue?: number | null;
@@ -114,7 +116,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 // Rótulos de segmentos de rota para a trilha (breadcrumb) que não vêm do menu.
 const SEGMENT_LABELS: Record<string, string> = {
-  configuracoes: 'Configurações da loja', relatorios: 'Resumo financeiro', hospitalaria: 'Hospitalaria',
+  configuracoes: 'Configurações da loja', relatorios: 'Relatórios', resumo: 'Resumo financeiro', hospitalaria: 'Hospitalaria',
   sessoes: 'Sessões', contrato: 'Contrato', 'taxas-de-grau': 'Taxas de grau', acordos: 'Acordos de regularização', usuarios: 'Usuários & acessos', 'minha-conta': 'Minha conta', permissoes: 'Permissões', 'importar-financeiro': 'Importar backup financeiro',
   fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', tarifas: 'Tarifas de cobrança (Asaas)', fundos: 'Fundos (Tronco e Doações)', portal: 'Meu portal', secretaria: 'Secretaria',
   inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos', categorias: 'Razão por categoria', 'historico-pagamentos': 'Histórico de pagamentos', historico: 'Meu histórico de pagamentos', 'declaracao-regularidade': 'Declaração de regularidade', declaracao: 'Declaração de regularidade',
@@ -125,7 +127,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   'saldo-irmaos': 'Saldo dos Irmãos', whatsapp: 'Envio pelo WhatsApp', livro: 'Livro de presença', 'lista-visitantes': 'Lista de visitantes',
 };
 
-export default function DashboardShell({ groups, lodgeName, userName, role, children, art002DaysOverdue }: Props) {
+export default function DashboardShell({ groups, extraCommands = [], lodgeName, userName, role, children, art002DaysOverdue }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -213,8 +215,9 @@ export default function DashboardShell({ groups, lodgeName, userName, role, chil
       for (const it of g.items) list.push({ label: it.label, href: it.href, group: g.category });
       for (const sg of g.subgroups) for (const it of sg.items) list.push({ label: it.label, href: it.href, group: `${g.category} › ${sg.label}` });
     }
+    for (const c of extraCommands) if (!list.some((x) => x.href === c.href)) list.push(c);
     return list;
-  }, [groups]);
+  }, [groups, extraCommands]);
 
   const crumbs = useMemo(() => {
     if (!pathname?.startsWith('/dashboard')) return [];

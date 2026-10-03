@@ -12,13 +12,13 @@ export function FiltrosRelatorios({ from, to }: { from: string; to: string }) {
     const params = new URLSearchParams();
     if (fromVal) params.set('from', fromVal);
     if (toVal) params.set('to', toVal);
-    router.push(`/dashboard/relatorios?${params.toString()}`);
+    router.push(`/dashboard/relatorios/resumo?${params.toString()}`);
   }
 
   function limpar() {
     setFromVal('');
     setToVal('');
-    router.push('/dashboard/relatorios');
+    router.push('/dashboard/relatorios/resumo');
   }
 
   const hasFilter = !!from || !!to;

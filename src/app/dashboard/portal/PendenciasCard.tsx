@@ -225,7 +225,7 @@ export function PendenciasCard({
     <section className="rounded-xl border border-white/6 bg-sigma-card p-6" aria-labelledby="pendencias-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="pendencias-title" className="text-base font-semibold text-sand-light">Minhas pendências</h2>
+          <h2 id="pendencias-title" className="text-base font-semibold text-sand-light">Pendências</h2>
           <p className="mt-0.5 text-xs text-sand-dark">
             {accounts.length === 0
               ? 'Nenhuma conta em aberto. Tudo em dia.'

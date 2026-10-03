@@ -253,7 +253,7 @@ function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; on
   );
 }
 
-const TYPE_FILTER_LABEL: Record<string, string> = { all: 'Tudo', RECEIVABLE: 'Devo', PAYABLE: 'A Loja me deve' };
+const TYPE_FILTER_LABEL: Record<string, string> = { all: 'Tudo', RECEIVABLE: 'Débito', PAYABLE: 'Crédito' };
 const STATUS_FILTER_LABEL: Record<string, string> = { all: 'Qualquer status', pending: 'Pendente', paid: 'Pago', overdue: 'Vencido' };
 
 export default function PortalPage() {
@@ -359,6 +359,27 @@ export default function PortalPage() {
             {loadError}{' '}
             <button onClick={() => void load()} className="underline hover:no-underline">Tentar de novo</button>
           </Alert>
+        ) : null}
+
+        {!loading && member && (summary.totalReceivables > 0 || summary.totalPayables > 0) ? (
+          <section aria-label="Situação financeira" className="flex flex-wrap items-stretch gap-3">
+            <div className="min-w-36 flex-1 rounded-xl border border-white/6 bg-sigma-card px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Saldo devedor</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-sand-light">{brl(summary.totalReceivables)}</p>
+            </div>
+            {summary.overdue > 0 ? (
+              <div className="min-w-36 flex-1 rounded-xl border border-rose-400/30 bg-rose-500/10 px-5 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-300">Vencido</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-rose-300">{brl(summary.overdue)}</p>
+              </div>
+            ) : null}
+            {summary.totalPayables > 0 ? (
+              <div className="min-w-36 flex-1 rounded-xl border border-white/6 bg-sigma-card px-5 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Crédito a receber</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-sand-light">{brl(summary.totalPayables)}</p>
+              </div>
+            ) : null}
+          </section>
         ) : null}
 
         {!loading && member ? (
@@ -472,42 +493,38 @@ export default function PortalPage() {
           </div>
 
           <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
-            <h2 className="text-base font-semibold text-sand-light">Resumo financeiro</h2>
+            <h2 className="text-base font-semibold text-sand-light">Comprovantes</h2>
             {loading ? (
               <p className="mt-6 text-sm text-sand-dark">Carregando...</p>
-            ) : (
+            ) : member ? (
               <div className="mt-5 space-y-3 text-sm text-sand">
-                <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-gold">O que devo</p>
-                  <p className="mt-2 text-xl font-semibold text-sand-light">{brl(summary.totalReceivables)}</p>
-                </div>
-                <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-gold">A Loja me deve</p>
-                  <p className="mt-2 text-xl font-semibold text-sand-light">{brl(summary.totalPayables)}</p>
-                </div>
-                <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-gold">Vencido</p>
-                  <p className={`mt-2 text-xl font-semibold ${summary.overdue > 0 ? 'text-rose-300' : 'text-sand-light'}`}>{brl(summary.overdue)}</p>
-                </div>
-                {member ? (
-                  <Link href="/dashboard/portal/historico" className="flex items-center justify-between rounded-lg border border-gold/25 px-4 py-3 text-sm font-medium text-gold transition-colors hover:border-gold/50 hover:text-gold-light">
-                    Meu histórico de pagamentos
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                ) : null}
-                {member && !isCandidate ? (
+                <button
+                  type="button"
+                  onClick={() => { setExtratoOpen(true); setTimeout(() => document.getElementById('extrato')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }}
+                  className="flex w-full items-center justify-between rounded-lg border border-gold/25 px-4 py-3 text-left text-sm font-medium text-gold transition-colors hover:border-gold/50 hover:text-gold-light"
+                >
+                  Recibos e extrato
+                  <span aria-hidden="true">↓</span>
+                </button>
+                <Link href="/dashboard/portal/historico" className="flex items-center justify-between rounded-lg border border-gold/25 px-4 py-3 text-sm font-medium text-gold transition-colors hover:border-gold/50 hover:text-gold-light">
+                  Histórico de pagamentos
+                  <span aria-hidden="true">→</span>
+                </Link>
+                {!isCandidate ? (
                   <Link href="/dashboard/portal/declaracao" className="flex items-center justify-between rounded-lg border border-gold/25 px-4 py-3 text-sm font-medium text-gold transition-colors hover:border-gold/50 hover:text-gold-light">
                     Declaração de regularidade
                     <span aria-hidden="true">→</span>
                   </Link>
                 ) : null}
               </div>
+            ) : (
+              <p className="mt-6 text-sm text-sand-dark">Sem cadastro vinculado.</p>
             )}
           </div>
         </section>
 
         <section className={isCandidate ? 'grid gap-6' : 'grid gap-6 lg:grid-cols-2'}>
-          <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
+          <div id="extrato" className="scroll-mt-24 rounded-xl border border-white/6 bg-sigma-card p-6">
             <button
               type="button"
               onClick={() => setExtratoOpen((v) => !v)}
@@ -516,7 +533,7 @@ export default function PortalPage() {
               className="flex w-full items-center justify-between gap-3 rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
             >
               <div>
-                <h2 className="text-base font-semibold text-sand-light">Meu extrato</h2>
+                <h2 className="text-base font-semibold text-sand-light">Extrato</h2>
                 <p className="mt-0.5 text-xs text-sand-dark">{accounts.length} registro{accounts.length !== 1 ? 's' : ''}</p>
               </div>
               <svg className={`h-4 w-4 shrink-0 text-sand-dark transition-transform duration-200 ${extratoOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -529,8 +546,8 @@ export default function PortalPage() {
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <select aria-label="Filtrar por tipo" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)} className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
                     <option value="all">Tudo</option>
-                    <option value="RECEIVABLE">Devo</option>
-                    <option value="PAYABLE">A Loja me deve</option>
+                    <option value="RECEIVABLE">Débito</option>
+                    <option value="PAYABLE">Crédito</option>
                   </select>
                   <select aria-label="Filtrar por situação" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-2.5 py-1.5 text-xs text-sand-light outline-none focus:border-gold/50">
                     <option value="all">Qualquer status</option>
@@ -559,7 +576,7 @@ export default function PortalPage() {
                           <div>
                             <p className="font-medium text-sand-light">{account.title}</p>
                             <p className="text-sand-dark">
-                              {account.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'} • {formatDateOnly(account.dueDate)}
+                              {account.type === 'RECEIVABLE' ? 'Débito' : 'Crédito'} • {formatDateOnly(account.dueDate)}
                             </p>
                             {account.chartAccount ? (
                               <p className="mt-0.5 text-xs text-gold/80">{account.chartAccount.category ? `${account.chartAccount.category} — ` : ''}{account.chartAccount.name}</p>
@@ -637,13 +654,13 @@ export default function PortalPage() {
                 <td>{formatDateOnly(account.dueDate)}</td>
                 <td>{account.title}</td>
                 <td>{account.chartAccount ? `${account.chartAccount.category ? account.chartAccount.category + ' — ' : ''}${account.chartAccount.name}` : '—'}</td>
-                <td>{account.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'}</td>
+                <td>{account.type === 'RECEIVABLE' ? 'Débito' : 'Crédito'}</td>
                 <td>{account.paidNoticeAt && account.effectiveStatus !== 'paid' ? 'Aguardando confirmação da Tesouraria' : ACCOUNT_STATUS_LABEL[account.effectiveStatus] ?? account.status}</td>
                 <td className="num">{brl(account.amount)}</td>
               </tr>
             ))}
             <tr className="rpt-total">
-              <td colSpan={5}>Saldo do filtro (o que devo − o que a Loja me deve)</td>
+              <td colSpan={5}>Saldo do filtro (débitos − créditos)</td>
               <td className="num">{brl(filteredTotal)}</td>
             </tr>
           </tbody>

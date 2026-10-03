@@ -16,6 +16,23 @@ interface NavEntry { href: string; label: string; roles: string[]; /** Se inform
 interface NavSubgroupDef { label: string; items: NavEntry[]; }
 interface NavGroupDef { category: string; items?: NavEntry[]; subgroups?: NavSubgroupDef[]; flat?: boolean; }
 
+// Relatórios que não têm item próprio no menu (ficam no índice /dashboard/relatorios) mas continuam
+// acháveis pela busca Ctrl/Cmd+K. Só para quem lê a Tesouraria.
+const REPORT_SEARCH_COMMANDS = [
+  { label: 'Resumo financeiro', href: '/dashboard/relatorios/resumo' },
+  { label: 'Contas a pagar', href: '/dashboard/relatorios/contas-a-pagar' },
+  { label: 'Contas recebidas', href: '/dashboard/relatorios/contas-recebidas' },
+  { label: 'Contas pagas', href: '/dashboard/relatorios/contas-pagas' },
+  { label: 'Histórico de pagamentos', href: '/dashboard/relatorios/historico-pagamentos' },
+  { label: 'Declaração de regularidade', href: '/dashboard/relatorios/declaracao-regularidade' },
+  { label: 'DRE comparativo', href: '/dashboard/relatorios/dre' },
+  { label: 'Razão por categoria', href: '/dashboard/relatorios/categorias' },
+  { label: 'Balancetes periódicos', href: '/dashboard/relatorios/balancetes' },
+  { label: 'Fluxo de caixa projetado', href: '/dashboard/relatorios/fluxo-caixa' },
+  { label: 'Orçamento anual', href: '/dashboard/relatorios/orcamento' },
+  { label: 'Tarifas de cobrança (Asaas)', href: '/dashboard/relatorios/tarifas' },
+];
+
 const NAV: NavGroupDef[] = [
   // "Visão geral" é um grupo solto (flat): os itens aparecem direto no menu,
   // sem precisar abrir um acordeão — são as telas mais acessadas por
@@ -113,22 +130,11 @@ const NAV: NavGroupDef[] = [
       {
         label: 'Relatórios',
         items: [
-          { href: '/dashboard/relatorios', label: 'Resumo financeiro', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/contas-a-receber', label: 'Contas a receber', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/contas-a-pagar', label: 'Contas a pagar', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/contas-recebidas', label: 'Contas recebidas', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/contas-pagas', label: 'Contas pagas', roles: ['admin', 'venerable', 'treasurer'] },
-          // Histórico dos irmãos: sem o Secretário (decisão do dono, 2026-09-27).
-          { href: '/dashboard/relatorios/historico-pagamentos', label: 'Histórico de pagamentos', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/declaracao-regularidade', label: 'Declaração de regularidade', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/dre', label: 'DRE comparativo', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/categorias', label: 'Razão por categoria', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer'] },
+          // Índice numerado dos relatórios + 3 atalhos para os mais usados; os demais ficam só no índice e na busca (Ctrl+K).
+          { href: '/dashboard/relatorios', label: 'Relatórios', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/balancetes', label: 'Balancetes periódicos', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/fluxo-caixa', label: 'Fluxo de caixa projetado', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/orcamento', label: 'Orçamento anual', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/tarifas', label: 'Tarifas de cobrança (Asaas)', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/contas-a-receber', label: 'Contas a receber', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer'] },
         ],
       },
     ],
@@ -251,7 +257,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           __html: `try{var t=localStorage.getItem('sigma-theme');if(t==='light'||t==='system')document.documentElement.setAttribute('data-theme',t);}catch(e){}`,
         }}
       />
-      <DashboardShell groups={groups} lodgeName={lodgeName} userName={session?.user?.name ?? 'Usuário'} role={role} art002DaysOverdue={art002DaysOverdue}>
+      <DashboardShell groups={groups} extraCommands={['admin', 'venerable', 'treasurer'].includes(role) ? REPORT_SEARCH_COMMANDS.map((c) => ({ ...c, group: 'Tesouraria › Relatórios' })) : []} lodgeName={lodgeName} userName={session?.user?.name ?? 'Usuário'} role={role} art002DaysOverdue={art002DaysOverdue}>
       {blocked ? (
         <Alert variant="banner" intent="danger">
           {trialExpired

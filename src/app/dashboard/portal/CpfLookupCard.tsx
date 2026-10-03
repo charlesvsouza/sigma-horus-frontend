@@ -110,7 +110,7 @@ export function CpfLookupCard() {
                       <div className="min-w-0">
                         <p className="font-medium text-sand-light">{a.title}</p>
                         <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sand-dark">
-                          <span>{a.type === 'RECEIVABLE' ? 'Devo' : 'A Loja me deve'} • {formatDateOnly(a.dueDate)}</span>
+                          <span>{a.type === 'RECEIVABLE' ? 'Débito' : 'Crédito'} • {formatDateOnly(a.dueDate)}</span>
                           <Badge variant={a.effectiveStatus}>
                             {a.effectiveStatus === 'overdue' ? `Vencido há ${days} dia${days !== 1 ? 's' : ''}` : STATUS_LABEL[a.effectiveStatus]}
                           </Badge>

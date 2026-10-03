@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.82</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.83</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.82 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.83 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -515,11 +515,8 @@ export function ManualBook() {
                   <UI> Lançamento</UI>, <UI>Cobranças</UI>, <UI>Taxas de grau</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de
                   contas</UI>),
                   <UI> Cadastros e Conferência</UI> (<UI>Cadastros financeiros</UI>, <UI>Conciliação
-                  bancária</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (<UI>Resumo financeiro</UI>, <UI>Contas a
-                  receber</UI>, <UI>Contas a pagar</UI>, <UI>Contas recebidas</UI>, <UI>Contas pagas</UI>, <UI>Histórico de pagamentos</UI>,
-                  <UI> Declaração de regularidade</UI>, <UI>DRE comparativo</UI>, <UI>Razão por categoria</UI>, <UI>Fechamento</UI>, <UI>Inadimplência (Art. 002)</UI>, <UI>Balancetes
-                  periódicos</UI>, <UI>Fluxo de caixa projetado</UI>, <UI>Orçamento anual</UI>, <UI>Tarifas de
-                  cobrança (Asaas)</UI>).
+                  bancária</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (o <UI>índice dos relatórios</UI> e três atalhos para os mais usados:
+                  <UI> Inadimplência (Art. 002)</UI>, <UI>Contas a receber</UI> e <UI>Fechamento</UI>; todos os outros relatórios estão no índice).
                 </li>
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI>, <UI>Campanhas</UI> de benemerência e <UI>Fundos (Tronco e Doações)</UI>. O obreiro comum vê aqui só o item <UI>Hospitalaria</UI>, onde doa ao Tronco de Solidariedade, faz um pedido e acompanha as campanhas ativas.</li>
                 <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Importar cadastros</UI>, <UI>Importar backup financeiro</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
@@ -1128,6 +1125,13 @@ export function ManualBook() {
               </Sub>
 
               <Sub id="tes-relatorios" title="7.6 Relatórios e fechamento">
+                <p>
+                  <strong>Índice de relatórios:</strong> <UI>Tesouraria → Relatórios</UI> abre o índice numerado, agrupado por natureza —
+                  1. Movimentação financeira (Resumo financeiro, Contas recebidas, Contas pagas, Razão por categoria); 2. Contas a receber e a pagar;
+                  3. Inadimplência e regularidade (Inadimplência, Histórico de pagamentos, Declaração de regularidade); 4. Planejamento (Orçamento anual,
+                  Fluxo de caixa projetado); 5. Prestação de contas (Fechamento do veneralato, Balancetes periódicos, DRE comparativo); 6. Cobrança eletrônica
+                  (Tarifas do Asaas). Cada linha traz uma descrição de uma frase. Qualquer relatório também se acha pela busca (<UI>Ctrl/Cmd + K</UI>).
+                </p>
                 <p>
                   Em <UI>Tesouraria → Relatórios → Resumo financeiro</UI> você acompanha <UI>Resumo de abertura</UI>,
                   <UI> Próximos vencimentos</UI> e <UI>Últimos registros</UI>, com <strong>filtro por período</strong> e <UI>Exportar</UI> (CSV — disponível a quem tem acesso de leitura a Tesouraria; campos que começam com = + - ou @ saem protegidos para não virarem fórmula na planilha).

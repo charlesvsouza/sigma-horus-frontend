@@ -1,176 +1,98 @@
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
-import { withTenant } from '@/lib/prisma';
-import { Prisma } from '@/generated/prisma/client';
-import { FiltrosRelatorios } from './filtros';
-import { BotaoExportar } from './exportar';
-import { INVOICE_STATUS_LABEL } from '@/lib/status-labels';
-import { brl } from '@/lib/currency';
-import { formatDateOnly } from '@/lib/date-only';
+import { requireLodgeAccess } from '@/lib/rbac';
 
-function parseDate(value: string | undefined): Date | undefined {
-  if (!value) return undefined;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}
+// Índice de Relatórios: um sumário numerado, por natureza do relatório (como o índice de um livro-razão),
+// no lugar de quinze itens soltos no menu. Os endereços de cada relatório não mudam.
+const SECTIONS: { title: string; items: { href: string; label: string; description: string }[] }[] = [
+  {
+    title: 'Movimentação financeira',
+    items: [
+      { href: '/dashboard/relatorios/resumo', label: 'Resumo financeiro', description: 'Posição de entradas, saídas e saldo no período.' },
+      { href: '/dashboard/relatorios/contas-recebidas', label: 'Contas recebidas', description: 'Recebimentos efetivados.' },
+      { href: '/dashboard/relatorios/contas-pagas', label: 'Contas pagas', description: 'Pagamentos efetivados.' },
+      { href: '/dashboard/relatorios/categorias', label: 'Razão por categoria', description: 'Lançamentos por categoria do plano de contas.' },
+    ],
+  },
+  {
+    title: 'Contas a receber e a pagar',
+    items: [
+      { href: '/dashboard/relatorios/contas-a-receber', label: 'Contas a receber', description: 'Valores a receber em aberto.' },
+      { href: '/dashboard/relatorios/contas-a-pagar', label: 'Contas a pagar', description: 'Obrigações em aberto.' },
+    ],
+  },
+  {
+    title: 'Inadimplência e regularidade',
+    items: [
+      { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', description: 'Mensalidades em atraso e enquadramento.' },
+      { href: '/dashboard/relatorios/historico-pagamentos', label: 'Histórico de pagamentos', description: 'Pagamentos por irmão.' },
+      { href: '/dashboard/relatorios/declaracao-regularidade', label: 'Declaração de regularidade', description: 'Situação do irmão perante a Tesouraria.' },
+    ],
+  },
+  {
+    title: 'Planejamento',
+    items: [
+      { href: '/dashboard/relatorios/orcamento', label: 'Orçamento anual', description: 'Previsto e realizado.' },
+      { href: '/dashboard/relatorios/fluxo-caixa', label: 'Fluxo de caixa projetado', description: 'Projeção de entradas e saídas.' },
+    ],
+  },
+  {
+    title: 'Prestação de contas',
+    items: [
+      { href: '/dashboard/relatorios/fechamento', label: 'Fechamento do veneralato', description: 'Encerramento do período.' },
+      { href: '/dashboard/relatorios/balancetes', label: 'Balancetes periódicos', description: 'Balancetes mensais.' },
+      { href: '/dashboard/relatorios/dre', label: 'DRE comparativo', description: 'Demonstração do resultado do exercício.' },
+    ],
+  },
+  {
+    title: 'Cobrança eletrônica',
+    items: [
+      { href: '/dashboard/relatorios/tarifas', label: 'Tarifas de cobrança (Asaas)', description: 'Tarifas cobradas pelo meio de pagamento.' },
+    ],
+  },
+];
 
-export default async function RelatoriosPage(props: { searchParams: Promise<{ from?: string; to?: string }> }) {
+export default async function RelatoriosIndexPage() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
-
-  const searchParams = await props.searchParams;
-  const fromDate = parseDate(searchParams.from);
-  const toDate = parseDate(searchParams.to);
-
-  if (!lodgeId) {
-    return (
-      <main className="min-h-screen px-6 py-12">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="font-display text-2xl font-bold text-sand-light">Resumo financeiro</h1>
-          <p className="mt-1 text-sm text-sand-dark">Faça login para ver o fluxo financeiro da lodge.</p>
-        </div>
-      </main>
-    );
-  }
-
-  const accountWhere: Prisma.AccountWhereInput = { lodgeId: String(lodgeId) };
-  const invoiceWhere: Prisma.InvoiceWhereInput = { lodgeId: String(lodgeId) };
-  const paymentWhere: Prisma.PaymentWhereInput = { lodgeId: String(lodgeId) };
-
-  if (fromDate || toDate) {
-    const range: Prisma.DateTimeFilter = {};
-    if (fromDate) range.gte = fromDate;
-    if (toDate) {
-      const end = new Date(toDate);
-      end.setHours(23, 59, 59, 999);
-      range.lte = end;
-    }
-    accountWhere.dueDate = range;
-    invoiceWhere.dueDate = range;
-    paymentWhere.paidAt = range;
-  }
-
-  const [accounts, invoices, payments] = await withTenant(String(lodgeId), (db) =>
-    Promise.all([
-      db.account.findMany({
-        where: accountWhere,
-        select: { id: true, title: true, type: true, amount: true, dueDate: true, status: true },
-        orderBy: { dueDate: 'asc' },
-      }),
-      db.invoice.findMany({
-        where: invoiceWhere,
-        select: { id: true, number: true, amount: true, dueDate: true, status: true },
-        orderBy: { dueDate: 'asc' },
-      }),
-      db.payment.findMany({
-        where: paymentWhere,
-        select: { id: true, amount: true, paidAt: true, method: true },
-        orderBy: { paidAt: 'desc' },
-      }),
-    ]),
+  const denied = (text: string) => (
+    <main className="min-h-screen px-6 py-12">
+      <p className="text-sm text-sand-dark">{text}</p>
+    </main>
   );
-
-  const receivables = accounts.filter((a) => a.type === 'RECEIVABLE');
-  const payables = accounts.filter((a) => a.type === 'PAYABLE');
-  const openReceivables = receivables.filter((a) => a.status !== 'paid');
-  const openPayables = payables.filter((a) => a.status !== 'paid');
-  const totalReceivables = receivables.reduce((s, a) => s + Number(a.amount ?? 0), 0);
-  const totalPayables = payables.reduce((s, a) => s + Number(a.amount ?? 0), 0);
-  const totalPayments = payments.reduce((s, p) => s + Number(p.amount ?? 0), 0);
-  const netFlow = totalPayments - totalPayables;
-
-  const upcoming = ([...receivables, ...payables] as Array<{ id: string; title: string; type: string; dueDate: string | Date }>)
-    .filter((item) => !accounts.find((a) => a.id === item.id) || (accounts.find((a) => a.id === item.id)?.status !== 'paid'))
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-    .slice(0, 6);
+  if (!lodgeId) return denied('Sessão expirada.');
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'accounts', 'read');
+  if (!access.ok) return denied('Acesso negado.');
 
   return (
     <main className="min-h-screen px-6 py-12">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-sand-light">Resumo financeiro</h1>
-            <p className="mt-1 text-sm text-sand-dark">Extrato resumido, contas abertas e fluxo de caixa do período.</p>
-          </div>
-          <BotaoExportar from={searchParams.from} to={searchParams.to} />
-        </div>
+      <div className="mx-auto max-w-4xl">
+        <h1 className="font-display text-2xl font-bold text-sand-light">Relatórios</h1>
+        <p className="mt-1 text-sm text-sand-dark">Índice dos relatórios da Tesouraria, por natureza. Cada um tem filtro de período e exporta em PDF ou CSV.</p>
 
-        <FiltrosRelatorios from={searchParams.from ?? ''} to={searchParams.to ?? ''} />
-
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
-            <p className="text-sm text-sand-dark">A receber</p>
-            <p className="mt-3 text-2xl font-semibold text-emerald-300">{brl(totalReceivables)}</p>
-          </div>
-          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
-            <p className="text-sm text-sand-dark">A pagar</p>
-            <p className="mt-3 text-2xl font-semibold text-rose-300">{brl(totalPayables)}</p>
-          </div>
-          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
-            <p className="text-sm text-sand-dark">Pagamentos registrados</p>
-            <p className="mt-3 text-2xl font-semibold text-gold">{brl(totalPayments)}</p>
-          </div>
-          <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
-            <p className="text-sm text-sand-dark">Fluxo líquido</p>
-            <p className={`mt-3 text-2xl font-semibold ${netFlow >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{brl(netFlow)}</p>
-          </div>
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-sand-light">Resumo de abertura</h2>
-              <Link href="/dashboard/contas" className="text-sm text-gold hover:text-gold-light">Ver contas</Link>
-            </div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
-                <p className="text-sm text-sand-dark">Contas a receber abertas</p>
-                <p className="mt-2 text-2xl font-semibold text-emerald-300">{openReceivables.length}</p>
-              </div>
-              <div className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4">
-                <p className="text-sm text-sand-dark">Contas a pagar abertas</p>
-                <p className="mt-2 text-2xl font-semibold text-rose-300">{openPayables.length}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
-            <h2 className="text-base font-semibold text-sand-light">Próximos vencimentos</h2>
-            <div className="mt-5 space-y-3">
-              {upcoming.map((item) => (
-                <div key={item.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-3 text-sm text-sand">
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{item.title}</span>
-                    <span className={item.type === 'RECEIVABLE' ? 'text-emerald-300' : 'text-rose-300'}>{item.type === 'RECEIVABLE' ? 'Receber' : 'Pagar'}</span>
-                  </div>
-                  <p className="mt-1 text-xs text-sand-dark">Vence em {formatDateOnly(item.dueDate)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Últimos registros</h2>
-          <div className="mt-5 space-y-3">
-            {payments.slice(0, 6).map((payment) => (
-              <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
-                <span>Pagamento registrado</span>
-                <span>{brl(payment.amount)}</span>
-                <span>{new Date(payment.paidAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</span>
-                <span>{payment.method}</span>
-              </div>
-            ))}
-            {invoices.slice(0, 6).map((invoice) => (
-              <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 text-sm text-sand">
-                <span>Cobrança {invoice.number}</span>
-                <span>{brl(invoice.amount)}</span>
-                <span>{formatDateOnly(invoice.dueDate)}</span>
-                <span>{INVOICE_STATUS_LABEL[invoice.status] ?? invoice.status}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+        <ol className="mt-8 space-y-8">
+          {SECTIONS.map((section, index) => (
+            <li key={section.title}>
+              <h2 className="flex items-baseline gap-3 border-b border-gold/25 pb-2 text-sm font-semibold uppercase tracking-[0.18em] text-gold">
+                <span className="tabular-nums" aria-hidden="true">{index + 1}</span>
+                {section.title}
+              </h2>
+              <ul className="divide-y divide-white/5">
+                {section.items.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className="group flex flex-col gap-0.5 py-3 pl-7 transition-colors hover:bg-white/3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
+                    >
+                      <span className="text-sm font-medium text-sand-light group-hover:text-gold">{item.label}</span>
+                      <span className="text-xs text-sand-dark sm:text-right">{item.description}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ol>
       </div>
     </main>
   );
