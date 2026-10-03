@@ -5,6 +5,7 @@ import { settleAsaasGroupPayment } from '@/lib/asaas-group-server';
 import { prismaAdmin } from '@/lib/prisma';
 import { syncMemberArt002Status } from '@/lib/overdue';
 import { settleAsaasInvoicePayment } from '@/lib/asaas-settlement';
+import { MONEY_BACK_EVENTS, reverseAsaasPayment, type ReversalResult } from '@/lib/asaas-reversal';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { brl } from '@/lib/currency';
 import { logAudit } from '@/lib/audit';
@@ -54,6 +55,38 @@ O valor entrou na conta do Asaas e NÃO foi lançado no sistema. Verifique e, se
       EMPTY_CHANNELS,
     ).catch(() => {});
   }
+}
+
+/**
+ * Devolução ao pagador (reembolso/chargeback) de um recebimento já baixado: lança o estorno (Payment negativo,
+ * a conta volta a ficar em aberto) e avisa os administradores da loja — é dinheiro que SAIU da conta.
+ */
+async function refundAndNotify(lodgeId: string, lodgeName: string, payment: { id: string; value: number }, event: string) {
+  const result: ReversalResult = await prismaAdmin.$transaction(
+    (tx) => reverseAsaasPayment(tx, { lodgeId, asaasPaymentId: payment.id, event, userId: 'system:asaas-webhook' }),
+    { timeout: 30_000 },
+  );
+  if (result.reversed === 0) return result;
+  await logAudit(prismaAdmin, {
+    lodgeId, userId: 'system:asaas-webhook', action: 'CREATE', entity: 'asaas-refund', entityId: payment.id,
+    metadata: { event, total: result.total, invoices: result.invoiceNumbers },
+  }).catch(() => {});
+  const admins = await prismaAdmin.user.findMany({ where: { lodgeId, role: { in: ['admin', 'treasurer'] }, status: 'active' }, select: { email: true } });
+  const motivo = event === 'PAYMENT_REFUNDED' ? 'reembolsado ao pagador' : 'contestado pelo titular do cartão (chargeback)';
+  for (const a of admins) {
+    dispatch(
+      'email',
+      a.email,
+      `Atenção: recebimento estornado — ${lodgeName}`,
+      `O Asaas informou que um recebimento de ${brl(result.total)} foi ${motivo} (id ${payment.id}).
+
+O sistema lançou o estorno (saída de ${brl(result.total)} na conta de repasse) e reabriu a(s) cobrança(s): ${result.invoiceNumbers.join(', ')}. A tarifa do Asaas continua como despesa.
+
+Confira o extrato e, se for o caso, cobre o irmão novamente.`,
+      EMPTY_CHANNELS,
+    ).catch(() => {});
+  }
+  return result;
 }
 
 /**
@@ -120,6 +153,11 @@ async function handleGroupWebhook(request: Request, event: string, payment: NonN
   if (OVERDUE_EVENTS.has(event)) {
     await prismaAdmin.invoice.updateMany({ where: { asaasPaymentId: payment.id, status: { not: 'paid' } }, data: { status: 'overdue' } });
     return NextResponse.json({ received: true, status: 'overdue', group: invoices.length });
+  }
+
+  if (MONEY_BACK_EVENTS.has(event) && (await Promise.all(invoices.map((i) => settledByAsaasPayment(i.accountId, payment.id)))).some(Boolean)) {
+    const r = await refundAndNotify(first.lodgeId, first.lodge.name, payment, event);
+    return NextResponse.json({ received: true, status: 'refunded', group: invoices.length, reversed: r.reversed });
   }
 
   if (REVERSED_EVENTS.has(event)) {
@@ -242,6 +280,12 @@ export async function POST(request: Request) {
 
   if (REVERSED_EVENTS.has(event)) {
     if (!isCurrentCharge) return NextResponse.json({ received: true, ignored: 'superseded charge' });
+    // Reembolso/chargeback de dinheiro que ENTROU pelo Asaas: estorna de verdade (antes só a cobrança voltava a
+    // "pendente" e o recebimento seguia lançado, deixando os livros inconsistentes).
+    if (MONEY_BACK_EVENTS.has(event) && (await settledByAsaasPayment(invoice.accountId, payment.id))) {
+      const r = await refundAndNotify(invoice.lodgeId, invoice.lodge.name, payment, event);
+      return NextResponse.json({ received: true, status: 'refunded', reversed: r.reversed });
+    }
     // Cobrança cancelada/estornada no Asaas. Se ela já estava baixada por FORA do
     // Asaas (recebimento manual), o cancelamento lá não desfaz o recebimento real —
     // só limpa o vínculo com a cobrança do Asaas.

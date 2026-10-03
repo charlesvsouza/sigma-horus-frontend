@@ -4,6 +4,7 @@ import { ASAAS_FEE_CHART, feeFromNet } from '@/lib/collection';
 import { coversAmount } from '@/lib/money';
 import { syncMemberArt002Status } from '@/lib/overdue';
 import { lockKey } from '@/lib/locks';
+import { todayBR } from '@/lib/date-only';
 
 /**
  * Baixa automática de uma cobrança paga no Asaas: cria o Payment, marca a
@@ -54,7 +55,9 @@ export async function settleAsaasInvoicePayment(
   // escolhida pela loja (é onde o Pix de uma doação ao Tronco cai de fato).
   const bankAccountId = account?.bankAccountId ?? lodge?.asaasSettlementAccountId ?? null;
   const created = await db.payment.create({
-    data: { lodgeId, accountId, memberId, bankAccountId, amount, method: 'asaas', note: `Baixa automática Asaas (${asaasPaymentId})` },
+    // paidAt = DIA de Brasília (só-dia, 00:00 UTC), como toda data digitada: um Pix das 22h do último dia do mês
+    // fica no mês certo nos relatórios, que agrupam por dia/UTC.
+    data: { lodgeId, accountId, memberId, bankAccountId, amount, method: 'asaas', paidAt: todayBR(), note: `Baixa automática Asaas (${asaasPaymentId})` },
   });
 
   // Tarifa real cobrada pelo Asaas: despesa na mesma conta, com o rastro na cobrança.
@@ -75,7 +78,7 @@ export async function settleAsaasInvoicePayment(
         type: 'PAYABLE',
         title: `Tarifa Asaas — cobrança ${invoice?.number ?? invoiceId}`,
         amount: fee,
-        dueDate: new Date(),
+        dueDate: todayBR(),
         status: 'paid',
         chartAccountId: chart.id,
         bankAccountId,
@@ -84,7 +87,7 @@ export async function settleAsaasInvoicePayment(
       },
     });
     await db.payment.create({
-      data: { lodgeId, accountId: feeAccount.id, bankAccountId, amount: fee, method: 'asaas-fee', note: `Tarifa Asaas (${asaasPaymentId})` },
+      data: { lodgeId, accountId: feeAccount.id, bankAccountId, amount: fee, method: 'asaas-fee', paidAt: todayBR(), note: `Tarifa Asaas (${asaasPaymentId})` },
     });
   }
 

@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 2 de outubro de 2026 · versão 1.78</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.79</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.78 — 2 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.79 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -1078,6 +1078,7 @@ export function ManualBook() {
                   <li>Se o aviso ao Asaas falhar, a baixa no sistema é mantida (o dinheiro foi recebido) e a tela indica o que encerrar manualmente no painel do Asaas. Pagamento parcial não encerra a cobrança lá — ela segue aberta pelo valor integral.</li>
                   <li><strong>Pagamento em duplicidade:</strong> se o Asaas confirmar um pagamento de uma cobrança que você já tinha baixado por fora, o valor entrou no Asaas mas <strong>não é lançado no sistema</strong>. Os administradores recebem um e-mail de alerta (e o registro fica em <UI>Auditoria</UI>) para conferir e, se for o caso, estornar ao irmão pelo painel do Asaas.</li>
                   <li>Cancelar a cobrança no painel do Asaas depois de uma baixa por fora <strong>não desfaz</strong> a baixa no sistema.</li>
+                  <li><strong>Reembolso ou chargeback:</strong> se o Asaas devolver ao pagador um valor que o sistema já tinha baixado, o sistema lança o <strong>estorno</strong> (um pagamento negativo na conta de repasse, método <em>asaas-refund</em>), reabre a cobrança e a conta, e os administradores e o Tesoureiro recebem um e-mail. A tarifa do Asaas continua como despesa. A data dessas baixas é sempre o <strong>dia de Brasília</strong> em que o pagamento chegou.</li>
                 </Bullets>
               </Sub>
 
