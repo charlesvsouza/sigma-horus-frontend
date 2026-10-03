@@ -1,7 +1,6 @@
 # Plano de ação — UX/UI + rodada de debug (2026-10-03)
 
-> Feito enquanto o dono estava ausente. **Nada foi publicado**: tudo está num commit local na branch
-> `qa/ajustes-2026-10-03` (não foi enviado para a `main`, então o Vercel não deployou nada).
+> ⚠️ Atualização de 2026-10-03 (noite): este plano já foi para a `main` (as correções de debug estão publicadas; o Toast e os alvos de toque também — componente `ui/toast.tsx` usado por 24 telas e regra `pointer: coarse` em `globals.css` + `Button`). Falta, da parte 2: P1.1 (índice de Relatórios), P1.4 (portal) e os itens P2/P3.
 > Base de verificação: tsc ✔ · eslint 0 erros (3 avisos antigos) · prisma validate ✔ · **359 testes** passando.
 
 ## Como ler
@@ -61,8 +60,8 @@
 ### P1 — Alto impacto
 
 1. **Tesouraria tem 25 itens em 3 grupos (15 só em "Relatórios").** O Tesoureiro conhece o caminho, mas o Venerável não. Proposta: página-índice "Relatórios" com cartões por pergunta ("O que entrou?", "Quem está devendo?", "Fechar o mês") e deixar o menu lateral com 1 entrada. A paleta `Ctrl+K` já existe — divulgar no cabeçalho do celular também.
-2. **Feedback de ação.** Não há toast; o retorno é um `Alert` na tela e só 3 pontos usam `aria-live`. Resultado: salvar/pagar pode passar despercebido (principalmente no celular, com a mensagem fora da tela) e leitor de tela não anuncia. Proposta: um componente `Toast` único (sucesso/erro, 5 s, `aria-live`) usado por todo formulário.
-3. **Alvos de toque.** 49 botões com `py-1`/`h-6`/`h-7` (< 44 px). Para público sênior no celular, subir o mínimo para 40–44 px nas telas de portal, cobrança e sessões (presença).
+2. ✅ **FEITO (2026-10-03) — Feedback de ação.** Não há toast; o retorno é um `Alert` na tela e só 3 pontos usam `aria-live`. Resultado: salvar/pagar pode passar despercebido (principalmente no celular, com a mensagem fora da tela) e leitor de tela não anuncia. Proposta: um componente `Toast` único (sucesso/erro, 5 s, `aria-live`) usado por todo formulário.
+3. ✅ **FEITO (2026-10-03) — Alvos de toque.** 49 botões com `py-1`/`h-6`/`h-7` (< 44 px). Para público sênior no celular, subir o mínimo para 40–44 px nas telas de portal, cobrança e sessões (presença).
 4. **Portal do irmão (`dashboard/portal/page.tsx`, 655 linhas).** É a tela mais vista pelos 31 obreiros. Fazer o "teste dos 5 segundos": quanto eu devo / como pago / meu comprovante. Quebrar em componentes e deixar o botão **Pagar** como única ação em ouro.
 
 ### P2 — Médio

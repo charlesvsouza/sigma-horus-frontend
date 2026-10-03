@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Alert, Button, inputClass } from '@/components/ui';
+import { Alert, Button, inputClass, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
 
 interface CampaignItem {
@@ -105,7 +105,7 @@ export default function HospitalariaPortalPage() {
           </button>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         {troncoBalance !== null ? (
           <section className="rounded-xl border border-white/6 bg-sigma-card p-6">

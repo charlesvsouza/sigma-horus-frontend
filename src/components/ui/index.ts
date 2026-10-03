@@ -12,6 +12,8 @@ export { inputClass, inputBase, inputBorder, inputBorderError } from './field-st
 export { Skeleton, SkeletonCard } from './skeleton';
 export { EmptyState } from './empty-state';
 export { Alert } from './alert';
+export { Toast } from './toast';
+export type { ToastMessage } from './toast';
 export type { AlertIntent } from './alert';
 export { ConfirmProvider, useConfirm } from './confirm-dialog';
 export type { ConfirmOptions } from './confirm-dialog';

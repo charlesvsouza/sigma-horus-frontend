@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -175,7 +175,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
           </div>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         {formOpen ? (
         <FormCard

@@ -446,3 +446,24 @@
   [data-theme="system"] .divide-white\/\[6\%\] > :not([hidden]) ~ :not([hidden]),
   [data-theme="system"] .divide-white\/6 > :not([hidden]) ~ :not([hidden]) { border-color: color-mix(in srgb, var(--sigma-sand-light) 12%, transparent); }
 }
+
+/* Alvos de toque: em tela de toque (celular/tablet) os botões, links-botão e caixas de marcar do conteúdo
+   ganham no mínimo 44px — o público é sênior e usa muito o celular. O desktop (mouse) não muda.
+   Exceção: data-compact. Fora do <main> (menu lateral, cabeçalho) cada componente já cuida do seu tamanho. */
+@media (pointer: coarse) {
+  main button:not([data-compact]),
+  main [role="button"]:not([data-compact]),
+  main summary {
+    min-height: 2.75rem;
+  }
+  main a.rounded-full:not([data-compact]) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+  main input[type="checkbox"],
+  main input[type="radio"] {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}

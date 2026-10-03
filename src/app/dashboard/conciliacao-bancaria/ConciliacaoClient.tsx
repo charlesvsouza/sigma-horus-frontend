@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { EmptyState, FormCard, Alert } from '@/components/ui';
+import { EmptyState, FormCard, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDayMixed } from '@/lib/date-only';
 
@@ -111,7 +111,7 @@ export default function ConciliacaoClient({ items }: { items: BankTx[] }) {
           <p className="mt-1 text-sm text-sand-dark">Importe o extrato do banco (OFX ou CSV) e concilie com os pagamentos já lançados no sistema.</p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard title="Importar extrato" description="Arquivo OFX (exportado pelo internet banking) ou CSV com colunas Data/Descrição/Valor.">

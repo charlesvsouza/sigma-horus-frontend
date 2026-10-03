@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Badge, Button, EmptyState, Field, inputClass, useConfirm, type BadgeVariant } from '@/components/ui';
+import { Alert, Badge, Button, EmptyState, Field, inputClass, useConfirm, type BadgeVariant, Toast } from '@/components/ui';
 import { DEGREE_FEE_KINDS, MAX_INSTALLMENTS, PLAN_SITUATION_LABEL, cardGrossUp, splitInstallments, type CardFees, type DegreeFeeKind, type PlanSituation } from '@/lib/degree-fee';
 import type { PresentedPlan } from '@/lib/degree-fee-server';
 import { brl } from '@/lib/currency';
@@ -156,7 +156,7 @@ export default function TaxasDeGrauClient({
           <Link href="/dashboard/configuracoes" className="px-1 py-1.5 text-gold hover:text-gold-light">Alterar valores</Link>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
         {cardLink ? (
           <Alert intent="info">
             Link para {cardLink.name} pagar no cartão:{' '}

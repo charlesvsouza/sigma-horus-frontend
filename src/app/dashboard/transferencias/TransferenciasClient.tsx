@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { Button, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { brl as money } from '@/lib/currency';
 import { formatDayMixed } from '@/lib/date-only';
 
@@ -102,7 +102,7 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
           </p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Saldo atual por conta</h2>

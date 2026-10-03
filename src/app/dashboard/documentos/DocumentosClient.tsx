@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Badge, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { Badge, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 
 import { DOCUMENT_CATEGORY_SUGGESTIONS as DOCUMENT_CATEGORIES, DOCUMENT_DEGREES, documentDegreeLabel, isInternalCategory } from '@/lib/documents';
@@ -159,7 +159,7 @@ export default function DocumentosClient({ items, members, canEdit = false }: { 
           <p className="mt-1 text-sm text-sand-dark">Centralize atas, prontuários, comprovantes e arquivos da loja.</p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <div className={`grid items-start gap-6 ${canEdit ? 'lg:grid-cols-2' : ''}`}>
         {canEdit ? (

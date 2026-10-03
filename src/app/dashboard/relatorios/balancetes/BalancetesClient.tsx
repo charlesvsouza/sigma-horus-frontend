@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, EmptyState, FormCard, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Badge, Button, EmptyState, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { ReportDocument, type Signatory } from '@/components/report/report-document';
 import { brl } from '@/lib/currency';
 import { csvNumber, downloadCsv } from '@/lib/csv';
@@ -200,7 +200,7 @@ export default function BalancetesClient({
           </p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <div className="grid items-start gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, CollapsibleCard, inputClass, useConfirm } from '@/components/ui';
+import { Button, CollapsibleCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { BRAZILIAN_BANKS } from '@/lib/banks';
 import { brl } from '@/lib/currency';
 
@@ -245,7 +245,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
           <p className="mt-1 text-sm text-sand-dark">Plano de contas, clientes/fornecedores e as contas bancárias/Caixa da loja.</p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <CollapsibleCard title="Plano de contas" count={chartAccounts.length} defaultOpen={false}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

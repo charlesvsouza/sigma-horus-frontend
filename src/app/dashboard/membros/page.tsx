@@ -5,7 +5,7 @@ import { UserRound } from 'lucide-react';
 import { clampDateYear, fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel, remidoEligibility } from '@/lib/masonic-degree';
 import { BLOCKED_STATUS_DEF, MEMBER_FILTER_STATUSES, MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
-import { Button, EmptyState, Input, MaskedInput, Skeleton, inputClass, Alert, useConfirm } from '@/components/ui';
+import { Button, EmptyState, Input, MaskedInput, Skeleton, inputClass, Alert, useConfirm, Toast } from '@/components/ui';
 import { formatDateOnly } from '@/lib/date-only';
 import { ReportDocument } from '@/components/report/report-document';
 
@@ -357,7 +357,7 @@ export default function MembrosPage() {
           </button>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
         {loadError ? (
           <Alert intent="danger">
             {loadError}{' '}

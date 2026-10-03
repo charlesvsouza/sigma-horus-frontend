@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, EmptyState, inputClass, useConfirm } from '@/components/ui';
+import { Button, EmptyState, inputClass, useConfirm, Toast } from '@/components/ui';
 import { EMPTY_VISITOR, VisitorFieldsInputs, visitorFormFrom, type VisitorFormValue } from '@/components/visitor-fields';
 import { visitorLodgeLabel } from '@/lib/visitors';
 
@@ -106,7 +106,7 @@ export function VisitorsPanel({ sessionId, visits }: { sessionId: string; visits
         {!open ? <Button type="button" variant="secondary" size="sm" onClick={() => setOpen(true)}>Adicionar visitante</Button> : null}
       </div>
 
-      {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+      <Toast message={message} onClose={() => setMessage(null)} />
 
       {open ? (
         <form onSubmit={add} className="space-y-3 rounded-lg border border-white/8 bg-sigma-blue-deep/50 p-4">

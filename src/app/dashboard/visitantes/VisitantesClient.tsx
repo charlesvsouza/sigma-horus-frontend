@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, EmptyState, inputClass, useConfirm } from '@/components/ui';
+import { Button, EmptyState, inputClass, useConfirm, Toast } from '@/components/ui';
 import { VisitorFieldsInputs, visitorFormFrom, type VisitorFormValue } from '@/components/visitor-fields';
 import { visitorLodgeLabel } from '@/lib/visitors';
 
@@ -75,7 +75,7 @@ export default function VisitantesClient({ rows, removed, canEdit }: { rows: Vis
           </p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
 import { toBRDateTimeLocal } from '@/lib/br-time';
 import { degreesLabel } from '@/lib/session-convocation';
-import { Alert, Button, Field, inputClass, useConfirm } from '@/components/ui';
+import { Button, Field, inputClass, useConfirm, Toast } from '@/components/ui';
 import { SessionDegreePicker } from '@/components/session-degree-picker';
 import { minutesDegreeLabel } from '@/lib/session-minutes';
 import { ConvocationPanel } from './ConvocationPanel';
@@ -226,7 +226,7 @@ export default function SessionDetailClient({
           </div>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">

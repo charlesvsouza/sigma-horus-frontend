@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { SessionDegreePicker } from '@/components/session-degree-picker';
 import { degreesLabel } from '@/lib/session-convocation';
 
@@ -64,7 +64,7 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
           <p className="mt-1 text-sm text-sand-dark">Cadastre sessões da loja e registre presença dos membros.</p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard title="Nova sessão">

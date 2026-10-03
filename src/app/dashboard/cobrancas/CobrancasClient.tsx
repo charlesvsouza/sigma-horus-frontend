@@ -4,7 +4,7 @@ import { FormEvent, useState } from 'react';
 import { occurrenceDescriptionsPreview, recurrenceSummary } from '@/lib/recurring-rules';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { fetchWhatsAppShare, WhatsAppSendDialog, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
 import { fetchReceiptContext, RegisterReceiptDialog, type ReceiptContext } from '@/components/register-receipt-dialog';
 import { ChargeReminderDialog } from '@/components/charge-reminder-dialog';
@@ -234,7 +234,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
           </div>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
         {justCreated ? (
           <div className="flex flex-wrap items-center gap-3 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-3 text-sm text-sand">
             <span>Enviar a cobrança {justCreated.number} ao irmão pelo WhatsApp?</span>

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
-import { Alert, Badge, Button, Field, MaskedInput, inputClass, useConfirm } from '@/components/ui';
+import { Alert, Badge, Button, Field, MaskedInput, inputClass, useConfirm, Toast } from '@/components/ui';
 import {
   ADMISSION_KINDS, CLOSED_REASONS, OPINIONS, admissionDef, closedReasonLabel, deriveStage, opinionLabel, stageLabel, stageListFor,
 } from '@/lib/candidate';
@@ -277,7 +277,7 @@ export default function FichaCandidatoClient({ id, brothers, lodgeName, canManag
           </div>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
         {info.warning && !locked ? <Alert intent="warn">{info.warning} Decida se o processo segue ou se deve ser encerrado.</Alert> : null}
 
         {closing ? (

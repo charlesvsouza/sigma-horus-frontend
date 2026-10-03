@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { MATERIAL_CATEGORIES } from '@/lib/masonic-reference';
 import { symbolicSituation, isEligibleForDegree, type SymbolicSituation } from '@/lib/masonic-degree';
 import { INCIDENT_KINDS, KIND_LABEL, STATUS_LABEL, awaitingReplacement, type IncidentKind, type IncidentStatus, type Resolution } from '@/lib/inventory';
@@ -423,7 +423,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
           </button> : null}
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <div className={`grid items-start gap-6 ${canManageCatalog ? 'lg:grid-cols-2' : ''}`}>
           {canManageCatalog ? <FormCard

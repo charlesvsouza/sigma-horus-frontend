@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Alert, Button, MaskedInput, inputClass, useConfirm } from '@/components/ui';
+import { Alert, Button, MaskedInput, inputClass, useConfirm, Toast } from '@/components/ui';
 import ThemeToggle from '@/components/theme-toggle';
 import CollectionSettings, { type CollectionProps } from './CollectionSettings';
 import { fetchCep, maskCEP, maskCNPJ, maskPhone } from '@/lib/masks';
@@ -220,7 +220,7 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
           </Link>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <form onSubmit={save} className="space-y-6">
           <section className="rounded-xl border border-white/6 bg-sigma-card p-6">

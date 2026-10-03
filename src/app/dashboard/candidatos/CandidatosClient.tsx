@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Badge, Button, EmptyState, Field, MaskedInput, inputClass } from '@/components/ui';
+import { Badge, Button, EmptyState, Field, MaskedInput, inputClass, Toast } from '@/components/ui';
 import { ADMISSION_KINDS, CANDIDATE_STAGES, admissionDef, closedReasonLabel, stageLabel, type CandidateStage } from '@/lib/candidate';
 import { clampDateYear, maskCPF, maskPhone } from '@/lib/masks';
 import { formatDateOnly } from '@/lib/date-only';
@@ -78,7 +78,7 @@ export default function CandidatosClient({ rows, brothers }: { rows: CandidateRo
           <Button onClick={() => { setCreating((v) => !v); setMessage(null); }}>{creating ? 'Fechar' : '+ Novo candidato'}</Button>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         {creating ? (
           <form onSubmit={create} className="space-y-4 rounded-xl border border-white/6 bg-sigma-card p-6">

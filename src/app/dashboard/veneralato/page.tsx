@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, CollapsibleCard, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { Button, CollapsibleCard, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 import { compareOffices } from '@/lib/office-order';
@@ -261,7 +261,7 @@ export default function VeneralatoPage() {
           <p className="mt-1 text-sm text-sand-dark">Gerencie períodos de gestão, cargos dos membros e fechamento de caixa.</p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <div className="grid items-start gap-6 lg:grid-cols-2">
           <FormCard title="Novo período">

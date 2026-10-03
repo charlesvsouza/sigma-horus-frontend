@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Alert, CollapsibleCard, useConfirm } from '@/components/ui';
+import { CollapsibleCard, useConfirm, Toast } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 
 interface Item { id: string; name: string; order: number; }
@@ -150,7 +150,7 @@ export default function CadastrosClient({ rites, powers }: { rites: Item[]; powe
           </button>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <CollapsibleCard title="Ritos" count={rites.length} defaultOpen={rites.length <= 10}>

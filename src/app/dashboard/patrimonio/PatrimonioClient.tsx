@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { Button, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -96,7 +96,7 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
           <p className="mt-1 text-sm text-sand-dark">Inventário de bens da loja — móveis, insígnias, equipamentos. Cadastro simples, sem cálculo automático de depreciação.</p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <section className="grid max-w-2xl gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-white/6 bg-sigma-card p-5">

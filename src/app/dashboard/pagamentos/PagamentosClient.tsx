@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm } from '@/components/ui';
+import { Button, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly, todayBR } from '@/lib/date-only';
 
@@ -258,7 +258,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
           <p className="mt-1 text-sm text-sand-dark">Registre entradas e saídas de caixa vinculadas às contas do MVP.</p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         {notices.length > 0 ? (
           <section className="rounded-xl border border-sky-500/25 bg-sky-500/5 p-6" aria-labelledby="avisos-title">

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass } from '@/components/ui';
+import { Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, Toast } from '@/components/ui';
 import { MESSAGE_STATUS_LABEL } from '@/lib/status-labels';
 
 interface MessageItem {
@@ -76,7 +76,7 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
           <p className="mt-1 text-sm text-sand-dark">Crie lembretes, convocações e avisos para membros e gestores da loja.</p>
         </div>
 
-        {message ? <Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert> : null}
+        <Toast message={message} onClose={() => setMessage(null)} />
 
         <div className="grid items-start gap-6 lg:grid-cols-2">
         <FormCard title="Nova comunicação">
