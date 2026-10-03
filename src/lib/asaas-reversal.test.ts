@@ -16,6 +16,7 @@ function fakeDb() {
     invoice: { findMany: async () => [invoice], update: async ({ data }: any) => Object.assign(invoice, data) },
     account: { findUnique: async () => account, update: async ({ data }: any) => Object.assign(account, data) },
     member: { findFirst: async () => null },
+    memberBlock: { findFirst: async () => null },
     auditLog: { create: async () => ({}) },
     payment: {
       findMany: async ({ where }: any) => payments.filter((p) => p.method === where.method && p.accountId === where.accountId && p.note.includes(where.note.contains)),

@@ -4,7 +4,9 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccessFor, type Resource } from '@/lib/rbac';
 import { Alert } from '@/components/ui';
+import { brl } from '@/lib/currency';
 import { subscriptionAccess } from '@/lib/subscription-access';
+import { summarizeBlock } from '@/lib/member-block-server';
 import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import DashboardShell from './DashboardShell';
 
@@ -93,6 +95,8 @@ const NAV: NavGroupDef[] = [
           { href: '/dashboard/cobrancas', label: 'Cobranças', roles: ['admin', 'treasurer'] },
           // Planos de pagamento das taxas de iniciação/elevação/exaltação (decisão do dono: os três). Ver lib/degree-fee.ts.
           { href: '/dashboard/taxas-de-grau', label: 'Taxas de grau', roles: ['admin', 'venerable', 'treasurer'] },
+          // Irmãos bloqueados por comunicado à Potência (Art. 002) e o acordo de regularização. Ver lib/member-block.ts.
+          { href: '/dashboard/acordos', label: 'Acordos de regularização', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
           { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/extratos', label: 'Extratos de contas', roles: ['admin', 'venerable', 'treasurer'] },
@@ -175,6 +179,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     pendingPlanEffectiveAt: Date | null;
   } | null = null;
   let art002DaysOverdue: number | null = null;
+  let blockInfo: { total: number; paid: number; remaining: number; installments: number; settled: boolean } | null = null;
   const memberId = session?.user?.memberId;
   if (lodgeId) {
     const data = await withTenant(String(lodgeId), async (db) => {
@@ -186,14 +191,20 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         }),
         memberId ? getMemberDuesStatus(db, String(lodgeId), String(memberId)) : Promise.resolve(null),
       ]);
-      return { lodge, subscription, dues };
+      // Irmão bloqueado (comunicado à Potência): mostra a ele o acordo de regularização.
+      const block = memberId
+        ? await db.memberBlock.findFirst({ where: { lodgeId: String(lodgeId), memberId: String(memberId), status: { in: ['open', 'settled'] } }, include: { items: true } })
+        : null;
+      return { lodge, subscription, dues, block: block ? await summarizeBlock(db, block) : null };
     });
     if (data.lodge?.name) lodgeName = data.lodge.name;
     sub = data.subscription;
     // Só avisa o próprio membro quando já cruzou o prazo do Art. 002 (60 dias)
     // e a loja tem a régua automática ligada; mensalidade em atraso mas ainda
     // dentro do prazo, ou loja com o Art. 002 desligado, não dispara o popup.
-    if (isArt002Enabled(data.lodge) && data.dues && data.dues.daysOverdue > ART_002_THRESHOLD_DAYS) {
+    if (data.block) {
+      blockInfo = { total: data.block.total, paid: data.block.paid, remaining: data.block.remaining, installments: data.block.installments, settled: data.block.status === 'settled' };
+    } else if (isArt002Enabled(data.lodge) && data.dues && data.dues.daysOverdue > ART_002_THRESHOLD_DAYS) {
       art002DaysOverdue = data.dues.daysOverdue;
     }
   }
@@ -256,6 +267,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       ) : isActive && sub?.pendingPlan ? (
         <Alert variant="banner" intent="info">
           Downgrade agendado para {fmtDate(sub.pendingPlanEffectiveAt)}. Você mantém o plano atual até lá.
+        </Alert>
+      ) : null}
+      {blockInfo ? (
+        <Alert variant="banner" intent="danger">
+          {blockInfo.settled
+            ? 'Seu acordo de regularização está quitado. Aguarde o Venerável Mestre liberar o seu cadastro.'
+            : `Seu cadastro está bloqueado por comunicação à Potência (Art. 002). Para voltar, quite o acordo de regularização: total ${brl(blockInfo.total)}, pago ${brl(blockInfo.paid)}, saldo ${brl(blockInfo.remaining)}${blockInfo.installments > 1 ? ` (em até ${blockInfo.installments} parcelas)` : ' (à vista)'}. Procure o Tesoureiro ou o Venerável Mestre.`}
         </Alert>
       ) : null}
       {children}

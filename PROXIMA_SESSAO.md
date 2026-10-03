@@ -1,5 +1,7 @@
 # Retomada — Sigma Horus (pausa em 2026-09-19)
 
+> ⚠️ **Atualização de 2026-10-03:** este arquivo é anterior a muita coisa (Fundos viraram categorias em 21/09; importador Cenize rodou só na Tim Maia; crítica impeccable já feita — ver 1.1). A **decisão nº 9** (seção 3) e o item de recorrência (2.3) foram **revertidos**: o Art. 002 agora é só informativo; o bloqueio é manual (Venerável/Administrador) e gera o acordo de regularização — ver o handoff de 2026-10-03 no AGENTS.md e `art002bloqueio_potencia.md`. Itens da seção 2.2 sobre "caixas" de Tronco/Doações estão obsoletos.
+
 > Ponto de retomada da sessão de 18–19/09/2026. Tudo abaixo já está **commitado e enviado** para `main`
 > (HEAD `f51a3d5`), com as 3 migrations aplicadas no banco de produção (Railway). Manual do usuário na **v1.29**.
 > Testes: 116 passando · `tsc` e `eslint` limpos.
@@ -104,7 +106,7 @@ Código pronto e testado (153 testes; ponta a ponta num Postgres descartável): 
 6. **Repasse Asaas → banco**: o sistema mostra o saldo a repassar (manual). Vale registrar cada repasse como evento/conferência com o extrato OFX?
 7. **Doações do irmão por Pix (portal)** e doações a campanhas → sempre no caixa do Tronco. E **"Doações e Contribuições"** recebe o quê na prática (só pela categoria 1.1.04)?
 8. **"Interno Loja"**: hoje só o papel **Membro** é barrado; oficiais (secretário, tesoureiro, hospitaleiro…) veem tudo em *Documentos*. Restringir por papel também?
-9. ~~**Recorrência**~~ **decidido e implementado (2026-09-19)**: continua mesmo com a anterior paga; gera a próxima mesmo em atraso; não gera parcelas atrasadas em lote — Art. 002 retém e o Tesoureiro/Venerável libera após negociar.
+9. ~~**Recorrência**~~ **decidido e implementado (2026-09-19)**: continua mesmo com a anterior paga; gera a próxima mesmo em atraso; não gera parcelas atrasadas em lote. ~~Art. 002 retém e o Tesoureiro/Venerável libera após negociar~~ → **REVERTIDO em 2026-10-03**: o Art. 002 não retém nada; só o irmão **bloqueado** (comunicado à Potência) fica sem recorrência, e ao voltar (acordo quitado) ela recomeça no próximo vencimento, sem gerar o período bloqueado.
 10. **Assinatura vencida**: bloquear escrita nas APIs ou só manter o aviso/pausa da tela?
 11. **Lojas com Asaas já conectado** foram migradas para Modo Asaas; as demais ficaram em Modo Loja. Correto para todas?
 12. **Sessão**: mudanças de papel/status agora valem em ~30 s (cache por instância). Aceitável ou exigir logout imediato?

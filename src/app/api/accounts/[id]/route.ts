@@ -3,7 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
-import { syncMemberArt002Status } from '@/lib/overdue';
+import { syncMemberBlock } from '@/lib/member-block-sync';
 import { isPlainAccount, settleAccountAsPaid } from '@/lib/account-status';
 import { coversAmount, isValidMoney, round2 } from '@/lib/money';
 import { asaasConflictBody, findOpenAsaasCharges, groupedChargeNumbers, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
@@ -151,7 +151,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     // O vínculo com membro ou o vencimento podem ter mudado o quadro do Art.002
     // tanto do membro antigo quanto do novo.
     for (const mId of new Set([existing.memberId, updated.memberId].filter(Boolean) as string[])) {
-      await syncMemberArt002Status(db, String(lodgeId), mId);
+      await syncMemberBlock(db, String(lodgeId), mId);
     }
 
     return { updated, chargeIds };
@@ -209,7 +209,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'account', entityId: id, metadata: { title: prev.title } });
     await db.account.deleteMany({ where: { id, lodgeId: String(lodgeId) } });
     if (prev.memberId) {
-      await syncMemberArt002Status(db, String(lodgeId), prev.memberId);
+      await syncMemberBlock(db, String(lodgeId), prev.memberId);
     }
     return { ok: true as const };
   });

@@ -3,7 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
-import { syncMemberArt002Status } from '@/lib/overdue';
+import { syncMemberBlock } from '@/lib/member-block-sync';
 import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
 import { coversAmount, isValidMoney, remainingAmount, round2 } from '@/lib/money';
 import { asaasConflictBody, findOpenAsaasCharges, groupedChargeNumbers, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
@@ -221,13 +221,13 @@ export async function POST(request: Request) {
       if (nextStatus === 'paid') {
         await db.invoice.updateMany({ where: { accountId, status: { not: 'paid' } }, data: { status: 'paid' } });
       }
-      await syncMemberArt002Status(db, String(lodgeId), account.memberId);
+      await syncMemberBlock(db, String(lodgeId), account.memberId);
     } else if (plainAccount) {
       // Conta simples (fornecedor/despesa/receita avulsa, sem membro nem cobrança):
       // quitar quando a soma dos pagamentos cobre o valor. Antes este caso ficava
       // sem tratamento e a conta permanecia "aberta" mesmo depois de paga.
       await syncPlainAccountStatus(db, { id: account.id, amount: Number(account.amount), status: account.status });
-      if (memberId) await syncMemberArt002Status(db, String(lodgeId), memberId);
+      if (memberId) await syncMemberBlock(db, String(lodgeId), memberId);
     } else if (memberId) {
       const memberInvoices = await db.invoice.findMany({ where: { accountId, memberId } });
       const owedByMember = memberInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
@@ -237,7 +237,7 @@ export async function POST(request: Request) {
       if (owedByMember > 0 && coversAmount(totalPaidByMember, owedByMember)) {
         await db.invoice.updateMany({ where: { accountId, memberId, status: { not: 'paid' } }, data: { status: 'paid' } });
       }
-      await syncMemberArt002Status(db, String(lodgeId), memberId);
+      await syncMemberBlock(db, String(lodgeId), memberId);
     }
 
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method, ...(lateCharge > 0 ? { lateCharge } : {}) } });

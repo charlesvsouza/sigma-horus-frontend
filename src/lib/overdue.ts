@@ -1,5 +1,4 @@
 import type { Prisma } from '@/generated/prisma/client';
-import { prismaAdmin, withTenant } from '@/lib/prisma';
 import { daysOverdueBR, todayBR } from '@/lib/date-only';
 
 // Art. 002 (regimento): suspensão dos direitos maçônicos do membro inadimplente
@@ -8,7 +7,8 @@ import { daysOverdueBR, todayBR } from '@/lib/date-only';
 // (evento, campanha) não contam. O critério é o vencimento mais antigo em
 // aberto: se ele já passou de 60 dias, o membro está enquadrado, mesmo que
 // tenha quitado parcelas mais recentes fora de ordem ("bola de neve").
-export const ART_002_THRESHOLD_DAYS = 60;
+import { ART_002_THRESHOLD_DAYS } from '@/lib/overdue-rules';
+export { ART_002_THRESHOLD_DAYS };
 
 // É mensalidade quem tem o flag no lançamento OU está na categoria Mensalidades
 // (ChartAccount.isDues). Só o flag não basta: lançamentos feitos antes da
@@ -175,78 +175,7 @@ export async function getLodgeOverdueDuesReport(
   return rows;
 }
 
-/**
- * Aplica a régua automática do Art. 002 a UM membro: promove para 'art_002'
- * ao cruzar 60 dias (só a partir de 'active', para não sobrescrever outra
- * situação decidida manualmente pela loja — suspenso, Quit Placet etc.) e
- * reverte para 'active' quando a pendência é quitada/excluída. Chamado nos
- * pontos que mudam o quadro financeiro do membro (baixa de pagamento, exclusão
- * de conta, webhook Asaas) e, como rede de segurança, pelo cron diário.
- */
 /** true por padrão (Lodge ausente ou sem o campo carregado) — mesmo default do schema. */
 export function isArt002Enabled(lodge?: { art002Enabled: boolean } | null): boolean {
   return lodge?.art002Enabled ?? true;
-}
-
-export async function syncMemberArt002Status(
-  db: Prisma.TransactionClient,
-  lodgeId: string,
-  memberId: string,
-  now: Date = new Date(),
-): Promise<void> {
-  const member = await db.member.findFirst({ where: { id: memberId, lodgeId }, select: { status: true } });
-  if (!member) return;
-
-  const status = await getMemberDuesStatus(db, lodgeId, memberId, now);
-  const overThreshold = (status?.daysOverdue ?? 0) > ART_002_THRESHOLD_DAYS;
-
-  // Desligar o flag só impede NOVAS promoções — a reversão (dívida quitada
-  // → volta a 'active') continua sempre ativa, para não deixar ninguém preso
-  // em 'art_002' enquanto o enforcement automático estiver desligado.
-  if (overThreshold && member.status === 'active') {
-    const lodge = await db.lodge.findUnique({ where: { id: lodgeId }, select: { art002Enabled: true } });
-    if (!isArt002Enabled(lodge)) return;
-    await db.member.update({ where: { id: memberId }, data: { status: 'art_002' } });
-  } else if (!overThreshold && member.status === 'art_002') {
-    await db.member.update({ where: { id: memberId }, data: { status: 'active' } });
-  }
-}
-
-/** Varre todas as lojas e sincroniza o Art. 002 de todo mundo (cron diário). */
-export async function syncAllLodgesArt002(): Promise<{ lodges: number; promoted: number; reverted: number }> {
-  // Varre TODAS as lojas, não só as com o flag ligado: a reversão (dívida
-  // quitada → volta a 'active') deve rodar mesmo com o Art. 002 desligado,
-  // para não deixar ninguém preso em 'art_002'. Só a promoção é condicional.
-  const lodges = await prismaAdmin.lodge.findMany({ select: { id: true, art002Enabled: true } });
-  let promoted = 0;
-  let reverted = 0;
-
-  for (const lodge of lodges) {
-    await withTenant(lodge.id, async (db) => {
-      const report = await getLodgeOverdueDuesReport(db, lodge.id);
-      const overdueMemberIds = new Set(report.filter((r) => r.art002).map((r) => r.memberId));
-
-      if (isArt002Enabled(lodge)) {
-        for (const row of report) {
-          if (row.art002 && row.memberStatus === 'active') {
-            await db.member.update({ where: { id: row.memberId }, data: { status: 'art_002' } });
-            promoted++;
-          }
-        }
-      }
-
-      const currentlyFlagged = await db.member.findMany({
-        where: { lodgeId: lodge.id, status: 'art_002' },
-        select: { id: true },
-      });
-      for (const m of currentlyFlagged) {
-        if (!overdueMemberIds.has(m.id)) {
-          await db.member.update({ where: { id: m.id }, data: { status: 'active' } });
-          reverted++;
-        }
-      }
-    });
-  }
-
-  return { lodges: lodges.length, promoted, reverted };
 }

@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { nextInvoiceNumbers } from '@/lib/charges';
 import { lockKey } from '@/lib/locks';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { BLOCKED_MESSAGE, BLOCKED_STATUS } from '@/lib/member-block';
 import { isValidMoney } from '@/lib/money';
 import {
   DEGREE_FEE_CARD_REF_PREFIX, DEGREE_FEE_REFUND_CHART, MAX_INSTALLMENTS, cardGrossUp, checkEligibility, degreeFeeKind, installmentTitle,
@@ -21,12 +22,12 @@ type Fail = { ok: false; status: number; error: string };
  * cria com o nome padrão se faltar. Código ocupado por categoria de OUTRO tipo
  * (ex.: despesa no 1.1.08) devolve null — melhor recusar do que lançar na categoria errada.
  */
-async function ensureChart(db: Db, lodgeId: string, seed: { code: string; name: string; type: string; category: string }): Promise<string | null> {
+export async function ensureChart(db: Db, lodgeId: string, seed: { code: string; name: string; type: string; category: string }): Promise<string | null> {
   const found = await db.chartAccount.findFirst({ where: { lodgeId, code: seed.code }, select: { id: true, type: true } });
   if (found) return found.type === seed.type ? found.id : null;
   return (await db.chartAccount.create({ data: { lodgeId, ...seed }, select: { id: true } })).id;
 }
-const chartConflict = (seed: { code: string; name: string }): Fail => ({
+export const chartConflict = (seed: { code: string; name: string }): Fail => ({
   ok: false, status: 409,
   error: `O código ${seed.code} do plano de contas está em uso por uma categoria de outro tipo. Ajuste em Cadastros financeiros (o sistema usa ${seed.code} para "${seed.name}").`,
 });
@@ -84,6 +85,7 @@ export async function createDegreeFeePlan(db: Db, input: CreatePlanInput): Promi
     select: { id: true, name: true, status: true, cpf: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true, candidateProcess: { select: { admissionKind: true } } },
   });
   if (!member) return { ok: false, status: 404, error: 'Irmão não encontrado.' };
+  if (member.status === BLOCKED_STATUS) return { ok: false, status: 409, error: BLOCKED_MESSAGE };
   if (card && !member.cpf) return { ok: false, status: 400, error: 'Para pagar no cartão pelo Asaas, o irmão precisa ter CPF no cadastro.' };
   const eligible = checkEligibility(def.kind, { ...member, admissionKind: member.candidateProcess?.admissionKind ?? null }, input.fourthInstructionDate);
   if (!eligible.ok) return { ok: false, status: 400, error: eligible.error };

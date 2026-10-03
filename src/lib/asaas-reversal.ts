@@ -2,7 +2,7 @@ import type { Prisma } from '@/generated/prisma/client';
 import { todayBR } from '@/lib/date-only';
 import { lockKey } from '@/lib/locks';
 import { coversAmount } from '@/lib/money';
-import { syncMemberArt002Status } from '@/lib/overdue';
+import { syncMemberBlock } from '@/lib/member-block-sync';
 
 type Db = Prisma.TransactionClient;
 
@@ -78,6 +78,6 @@ export async function reverseAsaasPayment(
     if (inv.memberId) result.memberIds.push(inv.memberId);
   }
 
-  for (const memberId of new Set(result.memberIds)) await syncMemberArt002Status(db, lodgeId, memberId);
+  for (const memberId of new Set(result.memberIds)) await syncMemberBlock(db, lodgeId, memberId);
   return result;
 }

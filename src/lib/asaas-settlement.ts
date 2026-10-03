@@ -2,7 +2,7 @@ import type { Prisma } from '@/generated/prisma/client';
 import { logAudit } from '@/lib/audit';
 import { ASAAS_FEE_CHART, feeFromNet } from '@/lib/collection';
 import { coversAmount } from '@/lib/money';
-import { syncMemberArt002Status } from '@/lib/overdue';
+import { syncMemberBlock } from '@/lib/member-block-sync';
 import { lockKey } from '@/lib/locks';
 import { todayBR } from '@/lib/date-only';
 
@@ -121,7 +121,7 @@ export async function settleAsaasInvoicePayment(
     }
   }
   if (memberId) {
-    await syncMemberArt002Status(db, lodgeId, memberId);
+    await syncMemberBlock(db, lodgeId, memberId);
   }
 
   await logAudit(db, {

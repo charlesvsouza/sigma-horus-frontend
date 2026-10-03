@@ -3,7 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
-import { syncMemberArt002Status } from '@/lib/overdue';
+import { syncMemberBlock } from '@/lib/member-block-sync';
 import { coversAmount } from '@/lib/money';
 import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
 import { lateChargeMarker, mainPaymentIdFromMarker } from '@/lib/late-charge';
@@ -71,12 +71,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       if (account.status === 'paid' && nextStatus !== 'paid') {
         await db.invoice.updateMany({ where: { accountId: account.id, status: 'paid' }, data: { status: 'pending' } });
       }
-      await syncMemberArt002Status(db, String(lodgeId), account.memberId);
+      await syncMemberBlock(db, String(lodgeId), account.memberId);
     } else if (account && (await isPlainAccount(db, account))) {
       // Conta simples (sem membro nem cobrança): reabre se a soma dos pagamentos
       // restantes não cobre mais o valor.
       await syncPlainAccountStatus(db, { id: account.id, amount: Number(account.amount), status: account.status });
-      if (payment.memberId) await syncMemberArt002Status(db, String(lodgeId), payment.memberId);
+      if (payment.memberId) await syncMemberBlock(db, String(lodgeId), payment.memberId);
     } else if (account && payment.memberId) {
       // Conta compartilhada entre membros (cobrança em massa): reabre só a
       // Invoice DESTE membro, nunca a dos outros que pagaram de verdade.
@@ -88,7 +88,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       if (!coversAmount(totalPaidByMember, owedByMember)) {
         await db.invoice.updateMany({ where: { accountId: account.id, memberId: payment.memberId, status: 'paid' }, data: { status: 'pending' } });
       }
-      await syncMemberArt002Status(db, String(lodgeId), payment.memberId);
+      await syncMemberBlock(db, String(lodgeId), payment.memberId);
     }
 
     await logAudit(db, {

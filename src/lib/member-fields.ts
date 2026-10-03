@@ -160,10 +160,12 @@ const DATE_FIELD_LABEL: Record<string, string> = {
 // que o form já restringe via <select>/máscara, mas que a API aceita como
 // texto livre (ex.: currentDegree só pode chegar aqui fora do range 4–33 por
 // chamada direta à API ou pela importação de CSV).
-export function validateMemberFields(fields: MemberFields): string | null {
+export function validateMemberFields(fields: MemberFields, existingStatus?: string): string | null {
   if (!fields.name) return 'Nome do membro é obrigatório.';
   // Situação de obreiro só: o candidato nasce e muda em Secretaria → Candidatos (api/candidates).
-  if (!MEMBER_STATUSES.some((s) => s.value === fields.status)) return 'Situação do membro inválida.';
+  // 'Bloqueado' não é escolhido no formulário: só vale para quem JÁ está bloqueado (a situação é mantida).
+  const keepsBlocked = existingStatus === 'blocked' && fields.status === 'blocked';
+  if (!keepsBlocked && !MEMBER_STATUSES.some((s) => s.value === fields.status)) return 'Situação do membro inválida.';
   if (fields.currentDegree && parsePhilosophicalDegree(fields.currentDegree) == null) {
     return 'Grau filosófico inválido — deve ser um número entre 4 e 33.';
   }

@@ -70,7 +70,8 @@ export async function PUT(request: Request, { params }: Ctx) {
   }
 
   const fields = parseMemberFields(body);
-  const validationError = validateMemberFields(fields);
+  const previous = await prismaAdmin.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { status: true } });
+  const validationError = validateMemberFields(fields, previous?.status);
   if (validationError) {
     return NextResponse.json({ error: validationError }, { status: 400 });
   }
@@ -80,6 +81,8 @@ export async function PUT(request: Request, { params }: Ctx) {
     if (!existing) return null;
     // Candidato se edita na ficha dele (Secretaria → Candidatos) e só vira obreiro pela iniciação.
     if (existing.status === CANDIDATE_STATUS) return 'candidate' as const;
+    // Bloqueado só sai do bloqueio pelo acordo quitado (Tesouraria → Acordos de regularização), nunca pela edição.
+    if (existing.status === 'blocked') fields.status = 'blocked';
 
     // Replace-all dos familiares: apaga os atuais e recria a partir do form.
     const updated = await db.member.update({

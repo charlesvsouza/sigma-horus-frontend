@@ -168,9 +168,8 @@ async function main() {
     });
     members.push({ id, name: PORTAL_MEMBER_NAME, late: 'portal' });
   }
-  // Irmão com 3 mensalidades em atraso (>60 dias): enquadrado no Art. 002.
-  const art = members.find((m) => m.late === 'three');
-  if (art) await prismaAdmin.member.update({ where: { id: art.id }, data: { status: 'art_002' } });
+  // O irmão com 3 mensalidades em atraso (>60 dias) já fica enquadrado no Art. 002: o enquadramento é
+  // calculado pelas mensalidades em aberto, não gravado na situação do cadastro. O bloqueio é manual.
 
   // ── 4) Veneralato: cargos ────────────────────────────────────────────────
   const officeId = (name: string) => offices.find((o) => o.name === name)?.id;

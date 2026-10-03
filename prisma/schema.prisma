@@ -141,6 +141,8 @@ model Lodge {
   sessionVisitors SessionVisitor[]
   candidateProcesses CandidateProcess[]
   degreeFeePlans DegreeFeePlan[]
+  memberBlocks   MemberBlock[]
+  memberBlockItems MemberBlockItem[]
   candidateInquirers CandidateInquirer[]
   hospitalityRequests HospitalityRequest[]
   financialAccounts FinancialAccount[]
@@ -243,6 +245,7 @@ model Member {
   proposedCandidates CandidateProcess[] @relation("CandidateProposer")
   candidateInquiries CandidateInquirer[]
   degreeFeePlans     DegreeFeePlan[]
+  memberBlocks       MemberBlock[]
   @@index([lodgeId])
 }
 
@@ -1215,4 +1218,62 @@ model DegreeFeePlan {
   accounts Account[]
   @@index([lodgeId])
   @@index([memberId])
+}
+
+// Bloqueio do cadastro por comunicado à Potência (Art. 002) + acordo de regularização.
+// O bloqueio é ato MANUAL do Venerável/Administrador sobre um irmão já enquadrado no Art. 002; o
+// Art. 002 em si é só informativo (calculado, não grava situação). Ao bloquear, Member.status vira
+// 'blocked' (fora de convocação, cobrança em lote, mensagens e recorrência) e nasce o acordo: o
+// pacote reúne TODA dívida em aberto do irmão (cada uma segue sendo a própria Account) + a taxa de
+// regularização digitada à mão (+ multa/juros opcional). O irmão só volta depois de tudo pago.
+// status: open (bloqueado, acordo em pagamento) | settled (acordo quitado, aguarda o retorno) | lifted
+model MemberBlock {
+  id                   String    @id @default(cuid())
+  lodgeId              String
+  memberId             String
+  status               String    @default("open")
+  blockedAt            DateTime  @default(now())
+  blockedById          String
+  powerProtocol        String?   // nº do protocolo/ofício na Potência
+  powerSentAt          DateTime? // data do comunicado (data-só-dia)
+  note                 String?
+  overdueDaysAtBlock   Int       // fotografia do Art. 002 no momento do bloqueio
+  overdueAmountAtBlock Float
+  debtsTotal           Float     // soma dos saldos em aberto no momento do bloqueio
+  regularizationFee    Float     // taxa de regularização (digitada)
+  extraCharge          Float     @default(0) // multa/juros do acordo (opcional, caso a caso)
+  total                Float     // debtsTotal + taxa + multa/juros
+  installments         Int       @default(1) // 1 = à vista (padrão); no máximo 3
+  firstDueDate         DateTime
+  settledAt            DateTime?
+  brokenAt             DateTime? // 1ª vez que uma parcela venceu sem estar coberta (alerta enviado)
+  liftedAt             DateTime?
+  liftedById           String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  lodge  Lodge             @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  items  MemberBlockItem[]
+  @@index([lodgeId, memberId])
+  @@index([lodgeId, status])
+}
+
+// Item do pacote do acordo. kind: debt (dívida que já existia) | fee (taxa de regularização) |
+// extra (multa/juros do acordo). openAmount = saldo no momento do bloqueio (já descontados pagamentos).
+model MemberBlockItem {
+  id         String  @id @default(cuid())
+  lodgeId    String
+  blockId    String
+  accountId  String
+  kind       String
+  title      String
+  openAmount Float
+  sortOrder  Int     @default(0)
+
+  lodge Lodge       @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  block MemberBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  @@index([lodgeId])
+  @@index([blockId])
+  @@index([accountId])
 }

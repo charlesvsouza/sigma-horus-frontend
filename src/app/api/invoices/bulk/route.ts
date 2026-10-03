@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { NOT_CANDIDATE } from '@/lib/candidate';
+import { CANDIDATE_STATUS } from '@/lib/candidate';
+import { BLOCKED_STATUS } from '@/lib/member-block';
 import { logAudit } from '@/lib/audit';
 import { createChargesWithAccounts } from '@/lib/charges';
 import { withTenant } from '@/lib/prisma';
@@ -34,8 +35,9 @@ export async function POST(request: Request) {
       where: {
         lodgeId: String(lodgeId),
         ...(chart?.isDues ? { duesExempt: false } : {}),
-        // "Todos" = todos os obreiros; candidato é cobrado um a um (taxa de iniciação etc.).
-        ...(scope === 'active' ? { status: 'active' } : NOT_CANDIDATE),
+        // "Todos" = todos os obreiros; candidato é cobrado um a um (taxa de iniciação etc.) e o bloqueado
+        // (comunicado à Potência) só se regulariza pelo acordo.
+        ...(scope === 'active' ? { status: 'active' } : { status: { notIn: [CANDIDATE_STATUS, BLOCKED_STATUS] } }),
       },
       select: { id: true },
       orderBy: { name: 'asc' },

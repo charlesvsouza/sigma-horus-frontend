@@ -14,7 +14,7 @@ interface Member {
 }
 
 const KIND_LABEL: Record<string, string> = { mother: 'Mãe', father: 'Pai', spouse: 'Esposa', son: 'Filho', daughter: 'Filha', child: 'Filho(a)', other: 'Dependente' };
-const STATUS: Record<string, string> = { active: 'Ativo', quit_placet: 'Quit Placet', placet_ex_officio: 'Placet Ex Officio', art_002: 'Art. 002', suspended: 'Suspenso', inactive: 'Inativo' };
+const STATUS: Record<string, string> = { active: 'Ativo', quit_placet: 'Quit Placet', placet_ex_officio: 'Placet Ex Officio', art_002: 'Art. 002', blocked: 'Bloqueado — Potência', suspended: 'Suspenso', inactive: 'Inativo' };
 
 export default function IrmaosConsultaPage() {
   const [members, setMembers] = useState<Member[]>([]);

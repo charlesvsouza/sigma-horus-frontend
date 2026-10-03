@@ -1,6 +1,7 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { lockKey } from '@/lib/locks';
+import { BLOCKED_MESSAGE, BLOCKED_STATUS } from '@/lib/member-block';
 import { isValidMoney } from '@/lib/money';
 import { nextSequenceNumbers } from '@/lib/invoice-number';
 
@@ -59,6 +60,10 @@ export async function createChargesWithAccounts(db: Prisma.TransactionClient, in
   }
   if (memberIds.length === 0) return { ok: false, status: 400, error: 'Nenhum membro para cobrar.' };
   if (Number.isNaN(dueDate.getTime())) return { ok: false, status: 400, error: 'Vencimento inválido.' };
+
+  // Irmão bloqueado (comunicado à Potência) não recebe cobrança nova — só o acordo de regularização.
+  const blocked = await db.member.findFirst({ where: { lodgeId, id: { in: memberIds }, status: BLOCKED_STATUS }, select: { name: true } });
+  if (blocked) return { ok: false, status: 409, error: memberIds.length === 1 ? BLOCKED_MESSAGE : `${blocked.name} está bloqueado (comunicado à Potência) e não pode receber cobrança.` };
 
   // Tronco é doação voluntária (fluxo próprio na Hospitalaria) — não se cobra por aqui.
   const chart = await db.chartAccount.findFirst({

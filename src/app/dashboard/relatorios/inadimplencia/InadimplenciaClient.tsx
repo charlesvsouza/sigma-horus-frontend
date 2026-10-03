@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { csvRow } from '@/lib/csv';
 import { ReportActions, ReportDocument } from '@/components/report/report-document';
-import { MEMBER_STATUSES, memberStatusLabel } from '@/lib/member-status';
+import { MEMBER_FILTER_STATUSES, memberStatusLabel } from '@/lib/member-status';
+import { BLOCKED_STATUS, buildInstallments, MAX_AGREEMENT_INSTALLMENTS } from '@/lib/member-block';
+import Link from 'next/link';
 import { formatDateOnly } from '@/lib/date-only';
 
 interface LateCharge { fee: number; interest: number; total: number; }
@@ -70,6 +72,141 @@ function RenegotiateForm({ memberId, onDone }: { memberId: string; onDone: () =>
   );
 }
 
+interface BlockPreview {
+  canBlock: boolean;
+  reason: string | null;
+  daysOverdue: number;
+  suggestedFee: number | null;
+  debts: { accountId: string | null; title: string; openAmount: number }[];
+  debtsTotal: number;
+}
+
+const parseMoney = (v: string) => (v.trim() === '' ? NaN : Number(v.replace(/\./g, '').replace(',', '.')));
+const todayIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+
+// Bloqueio do cadastro (comunicado à Potência) + acordo de regularização: o Venerável/Administrador
+// marca a caixa, confere o que vai para o acordo, digita a taxa e confirma.
+function BlockForm({ memberId, memberName, onDone }: { memberId: string; memberName: string; onDone: () => void }) {
+  const [preview, setPreview] = useState<BlockPreview | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [fee, setFee] = useState('');
+  const [extra, setExtra] = useState('');
+  const [installments, setInstallments] = useState('1');
+  const [firstDueDate, setFirstDueDate] = useState(todayIso());
+  const [powerProtocol, setPowerProtocol] = useState('');
+  const [powerSentAt, setPowerSentAt] = useState('');
+  const [note, setNote] = useState('');
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/members/${memberId}/block`)
+      .then(async (res) => ({ res, data: await res.json().catch(() => ({})) }))
+      .then(({ res, data }) => {
+        if (!alive) return;
+        if (res.ok) setPreview(data as BlockPreview);
+        else setLoadError(data.error ?? 'Não foi possível carregar o acordo.');
+      })
+      .catch(() => alive && setLoadError('Não foi possível carregar o acordo.'));
+    return () => { alive = false; };
+  }, [memberId]);
+
+  const feeN = parseMoney(fee);
+  const extraN = extra.trim() === '' ? 0 : parseMoney(extra);
+  const total = preview && Number.isFinite(feeN) && Number.isFinite(extraN) ? Math.round((preview.debtsTotal + feeN + extraN) * 100) / 100 : null;
+  const n = Number(installments);
+  const schedule = total != null && total > 0 && firstDueDate ? buildInstallments(total, n, new Date(`${firstDueDate}T00:00:00Z`)) : [];
+
+  async function submit() {
+    setBusy(true);
+    setError('');
+    const res = await fetch(`/api/members/${memberId}/block`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fee: feeN, extra: extraN, installments: n, firstDueDate, powerProtocol, powerSentAt: powerSentAt || undefined, note, confirm }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (res.ok) onDone();
+    else setError(data.error ?? 'Erro ao bloquear.');
+  }
+
+  if (loadError) return <p className="mt-3 rounded-lg border border-rose-400/30 bg-rose-500/10 p-3 text-xs text-rose-200">{loadError}</p>;
+  if (!preview) return <p className="mt-3 text-xs text-sand-dark">Carregando o acordo…</p>;
+  if (!preview.canBlock) return <p className="mt-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-xs text-amber-200">{preview.reason}</p>;
+
+  return (
+    <div className="mt-3 rounded-lg border border-rose-400/30 bg-rose-500/5 p-4">
+      <p className="text-sm font-medium text-sand-light">Bloquear {memberName} — comunicado à Potência</p>
+      <p className="mt-1 text-xs text-sand-dark">
+        O irmão deixa de ser convocado e de receber novos débitos. Tudo o que ele deve à loja vai para o acordo de regularização, e ele só volta depois de
+        pagar o acordo por inteiro. Marque apenas se o comunicado à Potência já foi feito.
+      </p>
+
+      <div className="mt-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-3">
+        <p className="text-xs font-medium text-sand-light">O que entra no acordo (dívidas em aberto, pelo saldo)</p>
+        <ul className="mt-2 space-y-1 text-xs text-sand-dark">
+          {preview.debts.map((d, i) => (
+            <li key={d.accountId ?? i} className="flex justify-between gap-3"><span>{d.title}</span><span className="tabular-nums">{brl(d.openAmount)}</span></li>
+          ))}
+          <li className="flex justify-between gap-3 border-t border-white/10 pt-1 font-medium text-sand-light"><span>Dívidas</span><span className="tabular-nums">{brl(preview.debtsTotal)}</span></li>
+        </ul>
+      </div>
+
+      {error ? <p className="mt-3 text-xs text-rose-300">{error}</p> : null}
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <label className="text-xs text-sand-dark">Taxa de regularização (R$) *
+          <input value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" placeholder={preview.suggestedFee != null ? `ex.: ${String(preview.suggestedFee).replace('.', ',')}` : '0,00'} className={`mt-1 ${inputClass}`} />
+        </label>
+        <label className="text-xs text-sand-dark">Multa e juros (R$) — opcional
+          <input value={extra} onChange={(e) => setExtra(e.target.value)} inputMode="decimal" placeholder="0,00" className={`mt-1 ${inputClass}`} />
+        </label>
+        <label className="text-xs text-sand-dark">Pagamento
+          <select value={installments} onChange={(e) => setInstallments(e.target.value)} className={`mt-1 ${inputClass}`}>
+            <option value="1">À vista (padrão)</option>
+            {Array.from({ length: MAX_AGREEMENT_INSTALLMENTS - 1 }, (_, i) => i + 2).map((k) => <option key={k} value={k}>Em {k} parcelas</option>)}
+          </select>
+        </label>
+        <label className="text-xs text-sand-dark">{n > 1 ? '1º vencimento' : 'Vencimento'}
+          <input type="date" value={firstDueDate} min={todayIso()} onChange={(e) => setFirstDueDate(e.target.value)} className={`mt-1 ${inputClass}`} />
+        </label>
+        <label className="text-xs text-sand-dark">Protocolo na Potência
+          <input value={powerProtocol} onChange={(e) => setPowerProtocol(e.target.value)} placeholder="nº do ofício (opcional)" className={`mt-1 ${inputClass}`} />
+        </label>
+        <label className="text-xs text-sand-dark">Data do comunicado
+          <input type="date" value={powerSentAt} onChange={(e) => setPowerSentAt(e.target.value)} className={`mt-1 ${inputClass}`} />
+        </label>
+      </div>
+      <label className="mt-3 block text-xs text-sand-dark">Observação
+        <input value={note} onChange={(e) => setNote(e.target.value)} className={`mt-1 ${inputClass}`} />
+      </label>
+
+      <div className="mt-3 rounded-lg border border-gold/20 bg-gold/5 p-3 text-xs text-sand">
+        <p>Total do acordo: <strong className="tabular-nums text-gold">{total != null ? brl(total) : '—'}</strong> (sem desconto)</p>
+        {schedule.length > 1 ? (
+          <ul className="mt-1 text-sand-dark">
+            {schedule.map((s) => <li key={s.number}>Parcela {s.number}/{schedule.length}: {brl(s.amount)} em {formatDateOnly(s.dueDate)}</li>)}
+          </ul>
+        ) : null}
+      </div>
+
+      <label className="mt-3 flex items-start gap-2 text-xs text-sand">
+        <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} className="mt-0.5" />
+        Confirmo que o comunicado à Potência já foi feito e que o cadastro deste irmão deve ser bloqueado.
+      </label>
+      <button
+        onClick={() => void submit()}
+        disabled={busy || !confirm || !Number.isFinite(feeN) || total == null || total <= 0}
+        className="mt-3 rounded-full bg-rose-500 px-5 py-2 text-xs font-medium text-white hover:bg-rose-400 disabled:opacity-40"
+      >
+        {busy ? 'Bloqueando…' : 'Bloquear e montar o acordo'}
+      </button>
+    </div>
+  );
+}
+
 type AgingBucket = '1-30' | '31-60' | '61-90' | '90+';
 const AGING_LABEL: Record<AgingBucket, string> = { '1-30': '1 a 30 dias', '31-60': '31 a 60 dias', '61-90': '61 a 90 dias', '90+': 'Mais de 90 dias' };
 
@@ -97,10 +234,11 @@ const num = (n: number) => n.toFixed(2).replace('.', ',');
 const todayLabel = () => new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
 export default function InadimplenciaClient({
-  rows, canRenegotiate, lodgeName, crestUrl, issuedBy,
+  rows, canRenegotiate, mayBlock, lodgeName, crestUrl, issuedBy,
 }: {
   rows: Row[];
   canRenegotiate: boolean;
+  mayBlock: boolean;
   lodgeName: string;
   crestUrl: string | null;
   issuedBy?: string | null;
@@ -108,6 +246,7 @@ export default function InadimplenciaClient({
   const router = useRouter();
   const art002Count = rows.filter((r) => r.art002).length;
   const [renegotiatingId, setRenegotiatingId] = useState<string | null>(null);
+  const [blockingId, setBlockingId] = useState<string | null>(null);
   const [agingFilter, setAgingFilter] = useState<AgingBucket | 'all'>('all');
   const [search, setSearch] = useState('');
   const [enquadramento, setEnquadramento] = useState<Enquadramento>('all');
@@ -121,7 +260,7 @@ export default function InadimplenciaClient({
   });
 
   // Situações cadastrais presentes na lista (o filtro só oferece o que existe).
-  const statusesPresent = MEMBER_STATUSES.filter((s) => rows.some((r) => r.memberStatus === s.value));
+  const statusesPresent = MEMBER_FILTER_STATUSES.filter((s) => rows.some((r) => r.memberStatus === s.value));
 
   const q = search.trim().toLocaleLowerCase('pt-BR');
   const visibleRows = rows.filter((r) =>
@@ -170,7 +309,8 @@ export default function InadimplenciaClient({
           <h1 className="font-display text-2xl font-bold text-sand-light">Inadimplência — Art. 002</h1>
           <p className="mt-1 text-sm text-sand-dark">
             Mensalidades em aberto por membro. O membro é enquadrado no Art. 002 quando a mensalidade em aberto mais
-            antiga passa de 60 dias sem pagamento — o status é atualizado automaticamente pelo sistema.
+            antiga passa de 60 dias sem pagamento. O enquadramento é só um aviso: o irmão continua ativo, convocado e recebendo cobrança. Só o
+            Venerável ou o Administrador, depois de comunicar a Potência, bloqueia o cadastro — aí nasce o acordo de regularização.
           </p>
         </div>
 
@@ -274,16 +414,35 @@ export default function InadimplenciaClient({
                       <Badge variant={row.art002 ? 'overdue' : 'warning'}>
                         {row.art002 ? `Art. 002 — ${row.daysOverdue} dias` : `${row.daysOverdue} dias em aberto`}
                       </Badge>
-                      {canRenegotiate ? (
-                        <Button
-                          className="px-3! py-1! text-xs"
-                          onClick={() => setRenegotiatingId(renegotiatingId === row.memberId ? null : row.memberId)}
-                        >
-                          Negociar
-                        </Button>
-                      ) : null}
+                      {row.memberStatus === BLOCKED_STATUS ? (
+                        <Link href="/dashboard/acordos" className="rounded-full border border-rose-400/40 bg-rose-500/10 px-3 py-1 text-xs text-rose-200 hover:bg-rose-500/20">Bloqueado — ver acordo</Link>
+                      ) : (
+                        <>
+                          {mayBlock && row.art002 && row.memberStatus === 'active' ? (
+                            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-rose-200" title="Marque depois de comunicar a Potência">
+                              <input
+                                type="checkbox"
+                                checked={blockingId === row.memberId}
+                                onChange={(e) => { setBlockingId(e.target.checked ? row.memberId : null); if (e.target.checked) setRenegotiatingId(null); }}
+                              />
+                              Bloquear (Potência)
+                            </label>
+                          ) : null}
+                          {canRenegotiate ? (
+                            <Button
+                              className="px-3! py-1! text-xs"
+                              onClick={() => { setRenegotiatingId(renegotiatingId === row.memberId ? null : row.memberId); setBlockingId(null); }}
+                            >
+                              Negociar
+                            </Button>
+                          ) : null}
+                        </>
+                      )}
                     </div>
                   </div>
+                  {blockingId === row.memberId ? (
+                    <BlockForm memberId={row.memberId} memberName={row.memberName} onDone={() => { setBlockingId(null); router.refresh(); }} />
+                  ) : null}
                   {renegotiatingId === row.memberId ? (
                     <RenegotiateForm memberId={row.memberId} onDone={() => { setRenegotiatingId(null); router.refresh(); }} />
                   ) : null}

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { addInterval, isHeldForArt002, isLegacyGeneratedNumber, pendingOccurrences, recurrenceSummary, descriptionForOccurrence, resolveDescriptionPlaceholders, occurrenceDescriptionsPreview } from './recurring-rules';
+import { addInterval, skipPendingOccurrences, isLegacyGeneratedNumber, pendingOccurrences, recurrenceSummary, descriptionForOccurrence, resolveDescriptionPlaceholders, occurrenceDescriptionsPreview } from './recurring-rules';
 
 const d = (s: string) => new Date(`${s}T00:00:00.000Z`);
 const iso = (x: Date) => x.toISOString().slice(0, 10);
@@ -41,19 +41,21 @@ test('pendingOccurrences: a trava impede laço enorme', () => {
   assert.equal(pendingOccurrences(d('2000-01-10'), 'monthly', null, d('2026-09-19'), 12).length, 12);
 });
 
-test('isHeldForArt002: situação art_002 retém mesmo sem dias em atraso', () => {
-  assert.equal(isHeldForArt002({ status: 'art_002' }, null, true, 60), true);
-  assert.equal(isHeldForArt002({ status: 'art_002' }, 0, false, 60), true);
-});
-
-test('isHeldForArt002: enquadrado pela regra dos 60 dias mesmo com a situação ainda "active"', () => {
-  assert.equal(isHeldForArt002({ status: 'active' }, 61, true, 60), true);
-  assert.equal(isHeldForArt002({ status: 'active' }, 60, true, 60), false);
-  assert.equal(isHeldForArt002({ status: 'active' }, null, true, 60), false);
-});
-
-test('isHeldForArt002: com o Art. 002 desligado na loja, só a situação manual retém', () => {
-  assert.equal(isHeldForArt002({ status: 'active' }, 200, false, 60), false);
+test('skipPendingOccurrences: pula o período bloqueado e recomeça no próximo vencimento depois de hoje', () => {
+  const d = (x: string) => new Date(x + 'T00:00:00Z');
+  const r = skipPendingOccurrences(d('2026-06-10'), 'monthly', null, d('2026-10-04'));
+  assert.equal(r.nextDueDate.toISOString().slice(0, 10), '2026-10-10');
+  assert.equal(r.remaining, null);
+  assert.equal(r.isRecurring, true);
+  const limited = skipPendingOccurrences(d('2026-06-10'), 'monthly', 6, d('2026-10-04')); // pula jun, jul, ago, set (4)
+  assert.equal(limited.remaining, 2);
+  assert.equal(limited.isRecurring, true);
+  const ended = skipPendingOccurrences(d('2026-06-10'), 'monthly', 3, d('2026-10-04')); // acabaria antes de hoje
+  assert.equal(ended.remaining, 0);
+  assert.equal(ended.isRecurring, false);
+  const untouched = skipPendingOccurrences(d('2026-11-10'), 'monthly', 2, d('2026-10-04'));
+  assert.equal(untouched.nextDueDate.toISOString().slice(0, 10), '2026-11-10');
+  assert.equal(untouched.remaining, 2);
 });
 
 test('isLegacyGeneratedNumber: reconhece o sufixo do código antigo e não o número normal', () => {

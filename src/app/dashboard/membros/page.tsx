@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { UserRound } from 'lucide-react';
 import { clampDateYear, fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel, remidoEligibility } from '@/lib/masonic-degree';
-import { MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
+import { BLOCKED_STATUS_DEF, MEMBER_FILTER_STATUSES, MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
 import { Button, EmptyState, Input, MaskedInput, Skeleton, inputClass, Alert, useConfirm } from '@/components/ui';
 import { formatDateOnly } from '@/lib/date-only';
 import { ReportDocument } from '@/components/report/report-document';
@@ -381,7 +381,7 @@ export default function MembrosPage() {
             <div className="flex flex-wrap items-center gap-2">
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${INPUT} w-auto`} aria-label="Filtrar por situação">
                 <option value="all">Todas as situações</option>
-                {MEMBER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.short}</option>)}
+                {MEMBER_FILTER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.short}</option>)}
               </select>
               <input
                 value={query}
@@ -731,8 +731,8 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
         <Input value={form.name} onChange={(e) => { set('name', e.target.value); if (nameError) setNameError(''); }} placeholder="Nome completo *" error={nameError || undefined} aria-label="Nome completo" />
         <input value={form.email} onChange={(e) => set('email', e.target.value)} className={INPUT} placeholder="E-mail" />
         <MaskedInput value={form.phone} onChange={(v) => set('phone', v)} mask={maskPhone} inputMode="tel" className={INPUT} placeholder="Telefone" />
-        <select value={form.status} onChange={(e) => set('status', e.target.value)} className={INPUT}>
-          {MEMBER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+        <select value={form.status} onChange={(e) => set('status', e.target.value)} className={INPUT} disabled={form.status === 'blocked'} title={form.status === 'blocked' ? 'Bloqueado pelo Art. 002: só volta pelo acordo quitado (Tesouraria → Acordos de regularização).' : undefined}>
+          {(form.status === 'blocked' ? [BLOCKED_STATUS_DEF] : MEMBER_STATUSES).map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
         <label className={`${INPUT} flex items-center gap-2 text-sand`}>
           <input type="checkbox" checked={form.deceased === 'true'} onChange={(e) => set('deceased', String(e.target.checked))} />

@@ -45,18 +45,24 @@ export function pendingOccurrences(
 }
 
 /**
- * O membro está retido no Art. 002? Sim quando a situação já é `art_002` OU quando, pela regra
- * dos dias em atraso, ele já se enquadra (a situação é sincronizada só uma vez por dia — não
- * confiamos nela sozinha para decidir se emitimos uma cobrança).
+ * Pula (sem gerar cobrança) as ocorrências já vencidas de uma mãe — usado quando o irmão volta de um
+ * bloqueio: o período em que esteve bloqueado não gera mensalidade, e a recorrência recomeça no
+ * próximo vencimento depois de hoje.
  */
-export function isHeldForArt002(
-  member: { status: string },
-  overdueDays: number | null,
-  art002Enabled: boolean,
-  thresholdDays: number,
-): boolean {
-  if (member.status === 'art_002') return true;
-  return art002Enabled && overdueDays != null && overdueDays > thresholdDays;
+export function skipPendingOccurrences(
+  nextDueDate: Date,
+  interval: string,
+  remaining: number | null,
+  today: Date,
+): { nextDueDate: Date; remaining: number | null; isRecurring: boolean } {
+  let due = nextDueDate;
+  let left = remaining;
+  let guard = 0;
+  while (due.getTime() <= today.getTime() && (left === null || left > 0) && guard++ < 600) {
+    due = addInterval(due, interval);
+    if (left !== null) left -= 1;
+  }
+  return { nextDueDate: due, remaining: left, isRecurring: left === null || left > 0 };
 }
 
 const MONTHS_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];

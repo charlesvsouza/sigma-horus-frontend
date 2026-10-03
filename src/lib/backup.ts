@@ -27,6 +27,8 @@ export const BACKUP_MODELS = [
   'candidateProcess', // depois de member (candidato e proponente)
   'candidateInquirer', // depois de candidateProcess
   'degreeFeePlan', // depois de member; antes de account (a cota aponta para o plano)
+  'memberBlock', // depois de member (bloqueio por comunicado à Potência + acordo)
+  'memberBlockItem', // depois de memberBlock (o item aponta para a conta, sem FK)
   'user',
   'financialAccount',
   'accountTransfer',

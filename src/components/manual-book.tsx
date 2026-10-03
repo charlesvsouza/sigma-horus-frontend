@@ -51,7 +51,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-pagamentos', label: '7.5 Registrar pagamentos' },
       { id: 'tes-relatorios', label: '7.6 Relatórios' },
       { id: 'tes-fechamento', label: '7.7 Fechamento do veneralato' },
-      { id: 'tes-inadimplencia', label: '7.8 Inadimplência, Art. 002 e renegociação' },
+      { id: 'tes-inadimplencia', label: '7.8 Inadimplência, Art. 002, bloqueio e acordo' },
       { id: 'tes-aprovacao', label: '7.9 Aprovação de despesas e multa/juros' },
       { id: 'tes-balancetes', label: '7.10 Balancetes periódicos' },
       { id: 'tes-gerencial', label: '7.11 Fluxo de caixa, orçamento e patrimônio' },
@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.79</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.80</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.79 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.80 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -1009,11 +1009,10 @@ export function ManualBook() {
                   nos próximos 3 dias, e o botão informa quantas foram emitidas e quantas ficaram sem CPF.
                 </p>
                 <p>
-                  <strong>Irmão no Art. 002.</strong> Enquanto o irmão estiver enquadrado no Art. 002 (mensalidade vencida há mais de 60 dias), a recorrência
-                  dele fica <strong>parada</strong> e nada é gerado sozinho. Ele aparece no quadro <UI>Recorrências retidas — Art. 002</UI>, em
-                  Cobranças, com o número de parcelas pendentes e o valor. Depois de negociar com o irmão, o Tesoureiro (ou o Venerável, se a matriz de permissões
-                  der escrita em Contas) clica em <UI>Gerar parcelas pendentes</UI>: todas as parcelas que ficaram para trás são geradas de uma vez, com os vencimentos originais.
-                  Cada geração fica registrada na Auditoria.
+                  <strong>Irmão no Art. 002 e irmão bloqueado.</strong> O irmão que está no Art. 002 (mensalidade vencida há mais de 60 dias) continua
+                  recebendo a recorrência normalmente — o Art. 002 é só um aviso. A recorrência <strong>para</strong> somente quando o Venerável ou o
+                  Administrador <strong>bloqueia</strong> o cadastro por comunicado à Potência (7.8). Ao voltar, com o acordo de regularização quitado,
+                  ela recomeça no <strong>próximo vencimento</strong>: o período em que ele esteve bloqueado não gera mensalidade.
                 </p>
                 <p>
                   <strong>Cobrança em massa:</strong> para cobrar todos os irmãos de uma vez (ex.: mensalidade), use o
@@ -1212,7 +1211,7 @@ export function ManualBook() {
                 </Note>
               </Sub>
 
-              <Sub id="tes-inadimplencia" title="7.8 Inadimplência, Art. 002 e renegociação">
+              <Sub id="tes-inadimplencia" title="7.8 Inadimplência, Art. 002, bloqueio e acordo">
                 <p>
                   O Art. 002 é a sanção regimental de <strong>suspensão dos direitos maçônicos</strong> do membro
                   inadimplente com a mensalidade há mais de <strong>60 dias</strong>. O Sigma Horus acompanha isso
@@ -1258,26 +1257,47 @@ export function ManualBook() {
                   </li>
                 </Steps>
                 <Note>
-                  A situação do membro é atualizada <strong>automaticamente</strong>: ao cruzar 60 dias, o cadastro
-                  passa para &quot;Art. 002&quot;; quando a pendência é paga ou excluída, volta para &quot;Ativo&quot;
-                  sozinho — não é preciso alterar o cadastro manualmente. Enquanto durar, o próprio membro recebe um
-                  aviso no painel pedindo para procurar o Tesoureiro ou o Venerável Mestre (capítulo 10).
+                  O enquadramento no Art. 002 é <strong>só informativo</strong>: o sistema calcula e mostra, mas
+                  <strong> não muda a situação do cadastro</strong>. O irmão enquadrado continua <strong>Ativo</strong>: segue
+                  sendo convocado para as sessões, recebendo as comunicações e os novos boletos, com acesso normal. Enquanto
+                  durar, ele recebe um aviso no painel pedindo para procurar o Tesoureiro ou o Venerável Mestre (capítulo 10),
+                  e a régua de lembretes de cobrança continua. Quando a pendência é paga, o enquadramento some sozinho.
                 </Note>
                 <p>
-                  <strong>Desligar o enquadramento automático:</strong> em <UI>Configurações → Financeiro</UI>
-                  (Administrador), desmarque <UI>Aplicar automaticamente o Art. 002</UI> se a sua loja preferir tratar
-                  a suspensão manualmente (ex.: decisão em sessão, caso a caso) em vez de deixar o sistema mudar a
-                  situação do obreiro sozinho.
+                  <strong>Desligar o Art. 002:</strong> em <UI>Configurações → Financeiro</UI> (Administrador), desmarque
+                  <UI> Aplicar automaticamente o Art. 002</UI> se a sua loja não se preocupa com isso. Com o ajuste desligado o
+                  irmão em atraso não recebe o aviso no painel, e não há enquadramento nem bloqueio; o relatório de Inadimplência
+                  continua mostrando todo mundo em atraso. O padrão de fábrica é <strong>ligado</strong>.
                 </p>
-                <Note>
-                  Desligar esse ajuste <strong>não some com nada</strong>: o relatório de Inadimplência continua
-                  mostrando todo mundo em atraso normalmente, e quem já está em &quot;Art. 002&quot; ainda volta para
-                  &quot;Ativo&quot; sozinho assim que a pendência for paga. O que muda é só que, com o ajuste
-                  desligado, ninguém <strong>novo</strong> é promovido a &quot;Art. 002&quot; automaticamente, e o
-                  membro em atraso não recebe mais o aviso no painel — a decisão de afastar fica manual, pelo
-                  cadastro do membro. O padrão de fábrica é <strong>ligado</strong>, preservando o comportamento
-                  automático de sempre.
-                </Note>
+                <p>
+                  <strong>Bloquear o cadastro (comunicado à Potência):</strong> quando o Venerável Mestre decide comunicar a
+                  inadimplência à Potência, ele (ou o Administrador) bloqueia o cadastro do irmão no próprio relatório de
+                  Inadimplência: na linha de quem está no Art. 002, marque <UI>Bloquear (Potência)</UI>. Só o Venerável e o Administrador veem
+                  essa opção, e só para quem já está enquadrado — entende-se que o comunicado à Potência já foi feito.
+                  O formulário mostra tudo o que entra no <strong>acordo de regularização</strong> e pede:
+                </p>
+                <Bullets>
+                  <li><strong>Taxa de regularização</strong> — digitada à mão (use 0 se a loja não cobrar). Entra na categoria <em>1.1.03 Taxa de Filiação / Regularização</em>.</li>
+                  <li><strong>Multa e juros</strong> — opcional, caso a caso; entra em <em>1.2.06 Multas e Juros por Atraso</em>. Não há desconto.</li>
+                  <li><strong>Pagamento</strong> — <strong>à vista</strong> por padrão, ou em <strong>2 ou 3 parcelas</strong> mensais; protocolo e data do comunicado à Potência são opcionais.</li>
+                </Bullets>
+                <p>
+                  Ao confirmar, o irmão fica <strong>Bloqueado — Potência</strong>: deixa de ser convocado e de receber qualquer cobrança ou lembrete
+                  novo (cobrança em lote, mensalidade recorrente, lançamentos, taxas de grau). <strong>Todas as dívidas que ele tinha com a loja</strong>
+                  (de qualquer categoria, vencidas ou a vencer, pelo saldo em aberto) mais a taxa de regularização formam o acordo. Cada dívida continua sendo
+                  a própria conta — o irmão pode pagar pelo portal normalmente, e o que ele pagar abate o acordo.
+                </p>
+                <p>
+                  Em <UI>Tesouraria → Entradas e Saídas → Acordos de regularização</UI> o Tesoureiro acompanha cada acordo (total, pago, saldo e as parcelas) e usa
+                  <UI> Registrar pagamento do acordo</UI> para dar baixa: o valor é repartido entre os itens (primeiro a taxa, depois a dívida mais antiga), e
+                  cada parte entra na categoria certa do caixa e do DRE. Se uma parcela vencer sem estar paga, o sistema <strong>avisa por e-mail o Tesoureiro, o
+                  Venerável e os Administradores</strong> (acordo quebrado); o irmão segue bloqueado e as medidas cabíveis ficam com eles.
+                </p>
+                <p>
+                  O irmão <strong>só volta com o acordo totalmente pago</strong>. Quitado o último item, o acordo aparece como &quot;Quitado — aguardando retorno&quot; e o
+                  Venerável ou o Administrador clica em <UI>Liberar o irmão</UI>: o cadastro volta a Ativo, ele volta a ser convocado e a mensalidade recomeça no próximo vencimento.
+                  Enquanto bloqueado, o próprio irmão vê no painel o aviso com o total, o pago e o saldo do acordo.
+                </p>
                 <p>
                   <strong>Renegociar a dívida:</strong> no próprio relatório de Inadimplência, clique em <UI>Negociar</UI>
                   na linha do membro. Escolha a data do <strong>1º vencimento</strong> e, se quiser, marque
@@ -1618,8 +1638,9 @@ export function ManualBook() {
                 </Bullets>
                 <p>
                   <strong>Situações (afastamentos):</strong> além de Ativo, Suspenso e Inativo, há os afastamentos maçônicos —
-                  <UI>Quit Placet</UI> (a pedido do membro), <UI>Placet Ex Officio</UI> (por determinação da Loja) e
-                  <UI>Art. 002</UI> (com cobertura de direitos). Apenas membros <strong>Ativos</strong> entram na cobrança em massa.
+                  <UI>Quit Placet</UI> (a pedido do membro) e <UI>Placet Ex Officio</UI> (por determinação da Loja). Há ainda
+                  <UI>Bloqueado — Potência</UI>, que <strong>não se escolhe no cadastro</strong>: nasce do bloqueio do Art. 002 (7.8). O Art. 002 em si
+                  não é uma situação, é um aviso calculado pelas mensalidades em atraso. Apenas membros <strong>Ativos</strong> entram na cobrança em massa.
                 </p>
                 <p>
                   <strong>Relatório em PDF:</strong> use o filtro de situação (ex.: Ativos) e clique em <UI>Relatório PDF</UI>
@@ -1651,7 +1672,7 @@ export function ManualBook() {
                 <Note>
                   O Quadro social é aberto a <strong>todo obreiro</strong>. Quem não tem acesso ao cadastro de Membros (o obreiro comum,
                   por exemplo) vê <strong>somente os ativos</strong> e não enxerga a opção de incluir afastados/suspensos/inativos —
-                  situações como Art. 002, Quit Placet ou suspensão são dado de cadastro e não aparecem no quadro.
+                  situações como Bloqueado, Quit Placet ou suspensão são dado de cadastro e não aparecem no quadro.
                 </Note>
                 <Note>
                   É uma fotografia de <strong>hoje</strong>, não um relatório de admissões/desligamentos no ano — o
@@ -2039,9 +2060,11 @@ export function ManualBook() {
                 Se a sua mensalidade ficar em aberto por mais de <strong>60 dias</strong>, um aviso vermelho aparece por
                 alguns segundos ao entrar no painel, pedindo para você procurar o Tesoureiro ou o Venerável Mestre
                 (situação prevista no Art. 002 do regimento — ver capítulo 7.8). Ele some sozinho assim que a pendência
-                for paga ou excluída pela tesouraria. Esse aviso automático só aparece se a sua loja mantiver o
-                enquadramento automático do Art. 002 ligado em Configurações; algumas lojas preferem tratar isso
-                manualmente.
+                for paga ou excluída pela tesouraria. O aviso só aparece se a sua loja mantiver o Art. 002 ligado em
+                Configurações. Enquanto o aviso aparece, <strong>nada muda no seu acesso</strong>: você continua sendo convocado e
+                recebendo as comunicações. Só se o Venerável Mestre comunicar a Potência e bloquear o seu cadastro é que aparece, no
+                alto do painel, o aviso do <strong>acordo de regularização</strong> (total, pago e saldo) — você continua podendo
+                ver e pagar o que deve pelo portal, e volta quando o acordo estiver pago.
               </Note>
               <Sub id="membro-acesso" title="10.1 Seu acesso e seus dados">
                 <Bullets>

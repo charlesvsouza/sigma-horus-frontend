@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { canBlockMembers } from '@/lib/member-block';
 import { getLodgeOverdueDuesReport } from '@/lib/overdue';
 import InadimplenciaClient from './InadimplenciaClient';
 
@@ -39,6 +40,7 @@ export default async function InadimplenciaPage() {
     <InadimplenciaClient
       rows={serialized}
       canRenegotiate={canWrite}
+      mayBlock={canBlockMembers(role)}
       lodgeName={lodge?.name ?? 'Loja'}
       crestUrl={lodge?.crestUrl ?? null}
       issuedBy={session?.user?.name ?? null}

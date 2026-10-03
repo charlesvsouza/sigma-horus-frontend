@@ -3,7 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
-import { DUES_ACCOUNT_WHERE, sumLateCharges, syncMemberArt002Status, type LateCharge } from '@/lib/overdue';
+import { DUES_ACCOUNT_WHERE, sumLateCharges, type LateCharge } from '@/lib/overdue';
 import { cancelAsaasCharges } from '@/lib/asaas-manual';
 import { todayBR } from '@/lib/date-only';
 import { retargetInvoices } from '@/lib/renegotiation';
@@ -95,7 +95,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       updated.push(acc);
     }
 
-    await syncMemberArt002Status(db, String(lodgeId), memberId);
 
     await logAudit(db, {
       lodgeId: String(lodgeId),

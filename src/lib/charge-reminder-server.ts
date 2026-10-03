@@ -39,7 +39,8 @@ export async function loadReminderContext(lodgeId: string, filter: { scope: Remi
         },
       }),
       db.invoice.findMany({
-        where: { lodgeId, memberId: { not: null }, status: { notIn: CLOSED_INVOICE_STATUSES }, ...(filter.invoiceId ? { id: filter.invoiceId } : {}) },
+        // Irmão bloqueado (comunicado à Potência) não recebe lembrete: a cobrança dele é o acordo de regularização.
+        where: { lodgeId, memberId: { not: null }, member: { is: { status: { not: 'blocked' } } }, status: { notIn: CLOSED_INVOICE_STATUSES }, ...(filter.invoiceId ? { id: filter.invoiceId } : {}) },
         select: {
           id: true, number: true, amount: true, dueDate: true, status: true, description: true, asaasInvoiceUrl: true,
           member: { select: { id: true, name: true, email: true } },

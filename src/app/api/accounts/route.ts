@@ -5,6 +5,7 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { settleAccountAsPaid } from '@/lib/account-status';
 import { isValidMoney, round2 } from '@/lib/money';
+import { blockedMemberError } from '@/lib/member-block-server';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -76,6 +77,12 @@ export async function POST(request: Request) {
     // Trava de período: não permite lançar em veneralato já encerrado.
     const locked = await findClosedTermForDate(db, String(lodgeId), dueDate);
     if (locked) return { locked } as const;
+
+    // Irmão bloqueado (comunicado à Potência) não recebe lançamento novo: a regularização é pelo acordo.
+    if (type === 'RECEIVABLE' && memberId) {
+      const blockedError = await blockedMemberError(db, String(lodgeId), memberId);
+      if (blockedError) return { blockedError } as const;
+    }
 
     // Garante que o plano de contas informado pertence à loja.
     let validChartId: string | null = null;
@@ -154,6 +161,10 @@ export async function POST(request: Request) {
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'account', entityId: created.id, metadata: { title, type, amount, status } });
     return { created } as const;
   });
+
+  if ('blockedError' in result) {
+    return NextResponse.json({ error: result.blockedError }, { status: 409 });
+  }
 
   if ('duesNoMember' in result) {
     return NextResponse.json({ error: 'Mensalidade precisa estar vinculada a um irmão. Escolha o membro em "Vincular a um membro".' }, { status: 400 });

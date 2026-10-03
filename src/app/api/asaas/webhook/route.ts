@@ -3,7 +3,7 @@ import { isDegreeFeeCardRef } from '@/lib/degree-fee';
 import { isGroupRef } from '@/lib/asaas-group';
 import { settleAsaasGroupPayment } from '@/lib/asaas-group-server';
 import { prismaAdmin } from '@/lib/prisma';
-import { syncMemberArt002Status } from '@/lib/overdue';
+import { syncMemberBlock } from '@/lib/member-block-sync';
 import { settleAsaasInvoicePayment } from '@/lib/asaas-settlement';
 import { MONEY_BACK_EVENTS, reverseAsaasPayment, type ReversalResult } from '@/lib/asaas-reversal';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
@@ -171,7 +171,7 @@ async function handleGroupWebhook(request: Request, event: string, payment: NonN
       await prismaAdmin.invoice.update({ where: { id: inv.id }, data: { status: 'pending', ...clear } });
     }
     for (const memberId of new Set(invoices.map((i) => i.memberId).filter((m): m is string => Boolean(m)))) {
-      await syncMemberArt002Status(prismaAdmin, first.lodgeId, memberId);
+      await syncMemberBlock(prismaAdmin, first.lodgeId, memberId);
     }
     return NextResponse.json({ received: true, status: 'reversed', group: invoices.length });
   }
@@ -300,7 +300,7 @@ export async function POST(request: Request) {
       data: { status: 'pending', ...(event === 'PAYMENT_DELETED' ? { asaasPaymentId: null, asaasInvoiceUrl: null } : {}) },
     });
     if (invoice.memberId) {
-      await syncMemberArt002Status(prismaAdmin, invoice.lodgeId, invoice.memberId);
+      await syncMemberBlock(prismaAdmin, invoice.lodgeId, invoice.memberId);
     }
     return NextResponse.json({ received: true, status: 'reversed' });
   }
