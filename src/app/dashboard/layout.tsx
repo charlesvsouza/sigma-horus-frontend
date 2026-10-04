@@ -39,11 +39,11 @@ const NAV: NavGroupDef[] = [
   // qualquer papel (inclusive o obreiro comum), então cada clique a mais
   // pesa proporcionalmente mais aqui do que nas seções de gestão abaixo.
   {
-    category: 'Visão geral',
+    category: 'Início', // grupo solto: "Visão geral" (cargos de gestão), "Meu portal" (todos), calendário e manual
     flat: true,
     items: [
-      // Visão geral = posição financeira (exige ler Contas): sem o Secretário, que não acessa a Tesouraria.
-      { href: '/dashboard', label: 'Visão geral', roles: ['admin', 'venerable', 'treasurer', 'member', 'hospitaller'] },
+      // Visão geral = indicadores da área de cada cargo de gestão (lib/overview-roles). O obreiro comum e o candidato só têm o Meu portal.
+      { href: '/dashboard', label: 'Visão geral', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'hospitaller'] },
       // Candidato (profano em admissão) só tem o portal: meus débitos, meu cadastro, pagar.
       { href: '/dashboard/portal', label: 'Meu portal', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller', 'candidate'] },
       // Todo oficial também é obreiro — o calendário de sessões vale pra

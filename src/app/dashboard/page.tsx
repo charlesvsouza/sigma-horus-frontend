@@ -8,19 +8,26 @@ import { computeFinancialAccountBalances } from '@/lib/financial-accounts';
 import { remainingAmount, sumMoney } from '@/lib/money';
 import { countAccountsByDue, countInvoicesByDue } from '@/lib/dashboard-counts';
 import { todayBR } from '@/lib/date-only';
+import { overviewScope } from '@/lib/overview-roles';
+import { loadOverviewGroups } from '@/lib/overview-server';
+import OverviewGroups from './OverviewGroups';
 import { invoiceOpenBalance } from '@/lib/charge-notice';
 
 export default async function DashboardPage() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
 
+  // Visão geral = cargos de gestão (Administrador, Venerável, Tesoureiro, Secretário, Hospitaleiro), cada um com os
+  // indicadores da sua área (lib/overview-roles). Obreiro comum e candidato só têm o Meu portal: vão direto para ele.
+  const scope = overviewScope(session?.user?.role);
+  if (lodgeId && !scope) redirect('/dashboard/portal');
+
   // Esta tela mostra o resumo financeiro CONSOLIDADO da loja (saldo, a
   // receber/pagar) — vazava pra qualquer papel logado, inclusive Membro, que
   // pelo RBAC só tem acesso a "portal" (não a "accounts"). Quem não pode ler
   // accounts cai direto no próprio portal em vez de ver os números da loja.
-  if (lodgeId && !(await canLodgeAccess(String(lodgeId), session?.user?.role, 'accounts', 'read'))) {
-    redirect('/dashboard/portal');
-  }
+  // Cargo com financeiro na Visão geral, mas sem leitura de Contas liberada (matriz de permissões): vê só os demais indicadores.
+  const financeAllowed = Boolean(lodgeId && scope?.finance && (await canLodgeAccess(String(lodgeId), session?.user?.role, 'accounts', 'read')));
 
   if (!lodgeId) {
     return (
@@ -39,6 +46,38 @@ export default async function DashboardPage() {
           </p>
         </div>
       </main>
+    );
+  }
+
+  // Indicadores por cargo (fora a posição financeira).
+  const role = String(session?.user?.role ?? '').toLowerCase();
+  const groups = await withTenant(String(lodgeId), (db) =>
+    loadOverviewGroups(db, String(lodgeId), scope!, { fundos: ['admin', 'venerable', 'hospitaller', 'treasurer'].includes(role) }),
+  );
+
+  if (!financeAllowed) {
+    const quick = role === 'secretary'
+      ? [{ href: '/dashboard/sessoes', label: 'Sessões', desc: 'Convocação, presença e balaústre' }, { href: '/dashboard/membros', label: 'Membros', desc: 'Cadastro e vínculos' }, { href: '/dashboard/candidatos', label: 'Candidatos', desc: 'Processos de admissão' }]
+      : [{ href: '/dashboard/hospitalaria/campanhas', label: 'Campanhas', desc: 'Benemerência e auxílios' }, { href: '/dashboard/hospitalaria/fundos', label: 'Fundos', desc: 'Tronco de Solidariedade' }, { href: '/dashboard/hospitalaria/irmaos', label: 'Irmãos (consulta)', desc: 'Contato para visitas' }];
+    return (
+      <div className="mx-auto max-w-6xl space-y-8 px-6 py-8 lg:px-8">
+        <div className="animate-slide-up">
+          <h1 className="font-display text-2xl font-bold text-sand-light">Visão geral</h1>
+          <p className="mt-1 text-sm text-sand-dark">{role === 'secretary' ? 'O que pede atenção na Secretaria' : 'O que pede atenção na Hospitalaria'}</p>
+        </div>
+        <OverviewGroups groups={groups} />
+        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
+          <h2 className="text-base font-semibold text-sand-light">Ações rápidas</h2>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {quick.map((item) => (
+              <Link key={item.href} href={item.href} className="group rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4 transition-colors hover:border-white/10">
+                <p className="text-sm font-medium text-sand/80 transition-colors group-hover:text-sand-light">{item.label}</p>
+                <p className="text-xs text-sand-dark/60">{item.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -215,6 +254,8 @@ export default async function DashboardPage() {
           </section>
         </div>
       </div>
+
+      <OverviewGroups groups={groups} />
     </div>
   );
 }

@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.89</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.90</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.89 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.90 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -496,7 +496,7 @@ export function ManualBook() {
                 que espelham os quatro cargos de gestão da loja (mesma divisão dos capítulos 6 a 9 deste manual).
               </p>
               <Bullets>
-                <li><strong>Itens soltos (Visão geral):</strong> <UI>Visão geral</UI> (posição financeira: saldo em caixa e o que há a receber e a pagar), <UI>Meu portal</UI>, <UI>Calendário de sessões</UI> (vale pra todo oficial, não só o obreiro) e <UI>Manual &amp; ajuda</UI>.</li>
+                <li><strong>Itens soltos (Início):</strong> <UI>Visão geral</UI> (só para os cargos de gestão — Administrador, Venerável, Tesoureiro, Secretário e Hospitaleiro —, com os indicadores da <strong>área de cada cargo</strong>, sempre conforme as permissões: o Tesoureiro vê a posição financeira e as pendências de Contas e Cobranças; o Venerável, o financeiro, o visto de despesas, o Art. 002 e os acordos; o Secretário, sessões, balaústres, candidatos, cadastros incompletos e aniversariantes; o Hospitaleiro, campanhas, pedidos de auxílio e o Tronco; todos veem as <strong>faltas seguidas</strong> da sua área e o saldo do Tronco, sem doador; o Administrador vê tudo, mais a assinatura. Cada indicador é um atalho para a tela já filtrada. O obreiro comum e o candidato não têm Visão geral: o <strong>Meu portal</strong> é a página inicial deles), <UI>Meu portal</UI>, <UI>Calendário de sessões</UI> (vale pra todo oficial, não só o obreiro) e <UI>Manual &amp; ajuda</UI>.</li>
                 <li>
                   <strong>Social:</strong> os quadros da loja, <strong>abertos a todo obreiro</strong> —
                   <UI> Quadro social</UI>, <UI>Galeria de Veneráveis</UI>, <UI>Quadro da Gestão</UI> e
@@ -539,7 +539,7 @@ export function ManualBook() {
               <p>
                 <strong>Uma categoria por vez:</strong> ao abrir uma seção (Secretaria, Tesouraria, Hospitalaria ou
                 Administração), a anterior se fecha sozinha — assim a lista não fica longa e poluída. A seção da tela
-                em que você está já abre automaticamente. Os <strong>itens soltos</strong> de Visão geral não entram
+                em que você está já abre automaticamente. Os <strong>itens soltos</strong> do grupo Início não entram
                 nesse acordeão — ficam sempre à mostra, sem nenhum clique.
               </p>
               <p>
@@ -1938,7 +1938,7 @@ export function ManualBook() {
                   problema, usa <UI>Registrar ocorrência</UI> no material (ou no bloco <UI>Ocorrências de inventário</UI>).
                   Escolha o tipo — <UI>Desgaste</UI>, <UI>Dano irreversível</UI> ou <UI>Perda</UI> —, a quantidade afetada e, se
                   for o caso, marque <UI>Solicitar reposição</UI>: o Administrador, o Venerável e o Secretário recebem um e-mail e a
-                  pendência aparece em <UI>Visão geral → Precisa de atenção</UI>.
+                  pendência aparece em <UI>Visão geral → Precisa de atenção</UI> (no Tesoureiro, Venerável e Administrador).
                 </p>
                 <Bullets>
                   <li><strong>Dano ou perda pendentes</strong> saem do <em>disponível</em> na hora — não dá para fornecer um avental rasgado. Desgaste apenas sinaliza, sem tirar o item de uso.</li>
@@ -2077,12 +2077,13 @@ export function ManualBook() {
                 O Venerável tem visão gerencial completa, sem lançar baixas financeiras. Acompanhe:
               </p>
               <Bullets>
-                <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> (<UI>Contas vencidas</UI>, <UI>Contas a vencer</UI>, <UI>Cobranças vencidas</UI> e <UI>Cobranças a vencer</UI> — contadas pelo vencimento e pelo saldo em aberto, no calendário de Brasília; <strong>cada linha é um atalho</strong>: um clique abre a tela certa já filtrada, só com o que foi contado) e <strong>Ações rápidas</strong>: o pulso da loja.</li>
+                <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> (<UI>Contas vencidas</UI>, <UI>Contas a vencer</UI>, <UI>Cobranças vencidas</UI> e <UI>Cobranças a vencer</UI> — contadas pelo vencimento e pelo saldo em aberto, no calendário de Brasília; <strong>cada linha é um atalho</strong>: um clique abre a tela certa já filtrada, só com o que foi contado) e <strong>Ações rápidas</strong>: o pulso da loja. Abaixo, os indicadores de governança: <strong>despesas aguardando o seu visto</strong>, <strong>irmãos no Art. 002</strong> (informativo), <strong>acordos de regularização</strong> em andamento ou com parcela atrasada, <strong>próxima sessão</strong>, <strong>balaústres sem arquivo</strong>, <strong>candidatos em processo</strong>, <strong>campanhas e pedidos de auxílio</strong> e as <strong>faltas seguidas</strong>.</li>
                 <li><UI>Relatórios</UI>: arrecadação, inadimplência, fluxo de caixa e frequência por período.</li>
                 <li><UI>Histórico de pagamentos</UI> (7.19): o que cada irmão pagou, com recibos — para conferir uma reclamação sem depender de terceiros.</li>
                 <li><UI>Declaração de regularidade</UI> (7.20): a declaração de &quot;nada consta&quot; financeiro, que você assina com o Tesoureiro — para transferência, elevação, filiação ou candidatura.</li>
                 <li><UI>Acordos de regularização</UI> (7.8): é o Venerável (ou o Administrador) que <strong>bloqueia o cadastro</strong> de quem está no Art. 002 depois do comunicado à Potência, define a taxa de regularização (valor aberto) e as parcelas, <strong>assina o termo</strong> do acordo e <strong>libera o irmão</strong> quando o acordo é quitado. Você também recebe o e-mail de acordo quebrado.</li>
                 <li><UI>Taxas de grau</UI> (7.21): cria e acompanha os planos de iniciação, elevação, exaltação, filiação e regularização, com entrada opcional, e assina o contrato.</li>
+                <li><strong>Faltas seguidas:</strong> o irmão ativo que chega a <strong>3 ou mais ausências seguidas</strong> nas últimas sessões (ordinárias, magnas e extraordinárias com presença registrada; falta é falta, sem justificativa) aparece em <UI>Visão geral → Frequência</UI> e você recebe um <strong>e-mail</strong> (junto com o Hospitaleiro), uma vez por sequência: se ele continuar faltando não repete; só volta a avisar depois que comparecer e faltar 3 vezes de novo. Presença não registrada não conta como falta.</li>
                 <li><strong>Aviso de fim de recorrência:</strong> 30 dias antes de acabar o período programado das mensalidades recorrentes, você recebe um e-mail (junto com o Tesoureiro e o Administrador) perguntando se a loja renova ou cria outro período — quem renova é o Tesoureiro ou o Administrador (7.3).</li>
                 <li><UI>Auditoria</UI> (se o Administrador liberar em 6.4): a trilha imutável de quem fez o quê e quando — base para pareceres e aprovações.</li>
               </Bullets>
@@ -2092,7 +2093,7 @@ export function ManualBook() {
             <Chapter id="membro" num="10" title="Guia do Membro (obreiro)">
               <p>
                 O membro tem uma área self-service: o <strong>portal do obreiro</strong>. Acesse pelo menu
-                <UI>Visão geral → Meu portal</UI>. Lá você encontra:
+                <UI>Início → Meu portal</UI> (é a primeira tela ao entrar). Lá você encontra:
               </p>
               <Bullets>
                 <li><strong>Resumo do obreiro:</strong> seus dados — nome, e-mail, telefone, <strong>grau atual</strong> e loja de origem.</li>
@@ -2135,7 +2136,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="membro-secretaria" title="10.2 Secretaria: o calendário de sessões">
                 <p>
-                  Em <UI>Visão geral → Calendário de sessões</UI> (ao lado de <UI>Meu portal</UI> — todo oficial
+                  Em <UI>Início → Calendário de sessões</UI> (ao lado de <UI>Meu portal</UI> — todo oficial
                   também é obreiro, então vale pra todos os papéis) você vê um <strong>calendário mensal</strong>,
                   como uma agenda de parede: cada dia com sessão marcada mostra um chip com o horário e o título. No topo, o destaque
                   <UI> Próxima convocação</UI> traz a data, hora e ordem do dia da <strong>próxima sessão</strong> de

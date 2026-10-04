@@ -1,3 +1,4 @@
+import { alertAbsenceStreaks } from '@/lib/attendance-streak-server';
 import { alertBrokenAgreements } from '@/lib/member-block-server';
 import { runDailyNotifications } from '@/lib/notifications';
 import { NextResponse } from 'next/server';
@@ -14,7 +15,12 @@ async function run() {
     console.error('acordos de regularização: falha no alerta diário', err);
     return null;
   });
-  return { ...notifications, agreements };
+  // 3 ou mais faltas seguidas: e-mail ao Venerável e ao Hospitaleiro (uma vez por sequência).
+  const absences = await alertAbsenceStreaks().catch((err) => {
+    console.error('faltas seguidas: falha no alerta diário', err);
+    return null;
+  });
+  return { ...notifications, agreements, absences };
 }
 
 export async function GET(request: Request) {
