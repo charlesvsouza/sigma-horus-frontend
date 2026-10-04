@@ -1,11 +1,13 @@
 "use client";
 
-import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { FormEvent, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
-import { MemberLink } from '@/components/quick-nav';
-import { daysOverdueBR, formatDateOnly } from '@/lib/date-only';
+import { MemberLink, useQuickNav } from '@/components/quick-nav';
+import AccountsFilterBar, { FilterSummary } from '@/components/accounts-filter-bar';
+import { applyFilters, isDefaultFilters, parseFilters, serializeFilters, type Filters, type FilterAccount } from '@/lib/accounts-filter';
+import { daysOverdueBR, formatDateOnly, todayBR } from '@/lib/date-only';
 
 interface ChartAccountOption { id: string; code: string; name: string; type: string; isDues?: boolean; }
 interface MemberOption { id: string; name: string; }
@@ -25,6 +27,10 @@ interface AccountItem {
   isDues: boolean;
   approvalStatus: string;
   awaitingAsaas?: boolean;
+  paid?: number;
+  chartAccountId?: string | null;
+  chartName?: string | null;
+  personHidden?: boolean;
   member?: MemberOption | null;
   counterparty?: CounterpartyOption | null;
   bankAccount?: FinancialAccountOption | null;
@@ -47,6 +53,35 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   // entre um lançamento e outro. Em /contas (só a lista) abre ao editar uma conta; sem contas ainda, já vem aberto.
   const [formOpen, setFormOpen] = useState(startWithForm || accounts.length === 0);
   const [search, setSearch] = useState('');
+
+  // Filtros novos (navegação rápida ligada): estado na URL, sem recarregar a página (history.replaceState).
+  const { enabled: betaOn } = useQuickNav();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [filters, setFilters] = useState<Filters>(() => parseFilters(searchParams));
+  // Quem chega por um link já filtrado (ex.: "Contas vencidas" da Visão geral) vê a barra de filtros mesmo sem a navegação rápida ligada.
+  const [arrivedFiltered] = useState(() => !isDefaultFilters(parseFilters(searchParams)));
+  const newFilters = betaOn || arrivedFiltered;
+  const today = useMemo(() => todayBR(), []);
+  const filterRows = useMemo<FilterAccount[]>(() => accounts.map((a) => ({
+    id: a.id, title: a.title, type: a.type, amount: a.amount, paid: a.paid ?? 0, dueDate: a.dueDate, status: a.status, isDues: a.isDues,
+    description: a.description ?? null, chartAccountId: a.chartAccountId ?? null, chartName: a.chartName ?? null, bankAccountId: a.bankAccount?.id ?? null,
+    personId: a.personHidden ? null : (a.member?.id ?? a.counterparty?.id ?? null), personName: a.member?.name ?? a.counterparty?.name ?? null,
+  })), [accounts]);
+  const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+  const personOptions = useMemo(() => [...members, ...counterparties].map((p) => ({ id: p.id, name: p.name })).sort((x, y) => x.name.localeCompare(y.name, 'pt-BR')), [members, counterparties]);
+  const shownRows = useMemo(() => (newFilters ? applyFilters(filterRows, filters, today) : []), [newFilters, filterRows, filters, today]);
+
+  function changeFilters(next: Filters) {
+    setFilters(next);
+    try {
+      const params = new URLSearchParams(window.location.search);
+      for (const k of ['tipo', 'sit', 'amin', 'amax', 'de', 'ate', 'pessoa', 'cat', 'conta', 'mens', 'min', 'max', 'q', 'ord']) params.delete(k);
+      const mine = serializeFilters(next);
+      const qs = [params.toString(), mine].filter(Boolean).join('&');
+      window.history.replaceState(null, '', qs ? `${pathname}?${qs}` : pathname);
+    } catch {}
+  }
 
   function startEdit(account: AccountItem) {
     setEditingId(account.id);
@@ -165,7 +200,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   );
 
   const q = search.trim().toLowerCase();
-  const filteredAccounts = q
+  const filteredAccounts = newFilters
+    ? shownRows.map((r) => accountById.get(r.id)!).filter(Boolean)
+    : q
     ? accounts.filter((a) => a.title.toLowerCase().includes(q) || a.member?.name.toLowerCase().includes(q) || a.counterparty?.name.toLowerCase().includes(q) || a.status.toLowerCase().includes(q))
     : accounts;
 
@@ -278,15 +315,29 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
 
         <CollapsibleCard
           title="Contas cadastradas"
-          count={accounts.length}
+          count={newFilters ? filteredAccounts.length : accounts.length}
           defaultOpen={accounts.length > 0}
-          headerAction={accounts.length > 0 ? <input aria-label="Buscar por título, membro ou status" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por título, membro ou status…" className={`${INPUT_CLASS} max-w-xs`} /> : undefined}
+          headerAction={accounts.length > 0 && !newFilters ? <input aria-label="Buscar por título, membro ou status" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por título, membro ou status…" className={`${INPUT_CLASS} max-w-xs`} /> : undefined}
         >
           <div className="space-y-3">
+            {newFilters && accounts.length > 0 ? (
+              <div className="space-y-3 pb-2">
+                <AccountsFilterBar
+                  accounts={filterRows}
+                  filters={filters}
+                  onChange={changeFilters}
+                  today={today}
+                  people={personOptions}
+                  categories={chartAccounts.map((c) => ({ id: c.id, name: `${c.code} ${c.name}` }))}
+                  banks={financialAccounts.map((b) => ({ id: b.id, name: b.name }))}
+                />
+                <FilterSummary rows={shownRows} />
+              </div>
+            ) : null}
             {accounts.length === 0 ? (
               <EmptyState title="Nenhum lançamento. O Livro está limpo." description="Lance a primeira conta a receber ou a pagar para acompanhar vencimentos e o fluxo de caixa." />
             ) : filteredAccounts.length === 0 ? (
-              <p className="text-sm text-sand-dark">Nenhuma conta encontrada para &quot;{search}&quot;.</p>
+              <p className="text-sm text-sand-dark">{newFilters && !isDefaultFilters(filters) ? 'Nenhuma conta com esses filtros. Tire algum filtro ou use “limpar filtros”.' : `Nenhuma conta encontrada para “${search}”.`}</p>
             ) : filteredAccounts.map((account) => (
               <div key={account.id} className="grid items-center gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto] rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>

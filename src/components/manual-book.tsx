@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.87</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.88</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.87 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.88 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -972,6 +972,14 @@ export function ManualBook() {
                   <li>Opcional: <UI>Vincular a um membro</UI> ou <UI>Vincular a um cliente/fornecedor</UI> (cadastro de quem não é membro — ver 7.13), escolher a <UI>Conta bancária/caixa prevista</UI> (ver 7.14) e escrever uma <UI>Descrição</UI>.</li>
                   <li>Clique em <UI>Salvar conta</UI>. A conta aparece na lista <UI>Contas cadastradas</UI> e o formulário fica limpo e aberto para o próximo lançamento; use <UI>Remover</UI> para excluir.</li>
                 </Steps>
+                <p>
+                  <strong>Filtros da lista de Contas.</strong> Com a <UI>Navegação rápida</UI> ligada (capítulo 4) — ou ao chegar por um atalho já filtrado, como os da Visão geral — a lista ganha a barra de filtros:
+                  <UI>Todas / A receber / A pagar</UI>; a <strong>situação</strong> (<UI>Todas</UI>, <UI>Em aberto</UI>, <UI>Vencidas</UI>, <UI>A vencer</UI>, <UI>Pagas</UI>), cada uma com a quantidade e o valor que o clique traria;
+                  as <strong>faixas de atraso</strong> (1 a 30, 31 a 60, 61 a 90 e mais de 90 dias), clicáveis; o <strong>vencimento</strong> com atalhos (<UI>Este mês</UI>, <UI>Próximos 30 dias</UI>, <UI>Este ano</UI>) ou datas exatas; a <strong>pessoa</strong>, que se escolhe digitando o nome;
+                  e <UI>Mais filtros</UI> (categoria, conta bancária, só mensalidades, valor mínimo e máximo). Há ainda as <strong>vistas rápidas</strong> — <UI>Vencidas há mais de 30 dias</UI>, <UI>Mensalidades do mês</UI>, <UI>Vencem em 7 dias</UI>, <UI>A pagar vencidas</UI> e <UI>Sem categoria</UI>.
+                  O filtro age na hora, o resumo embaixo mostra quantos lançamentos e quanto há a receber e a pagar, cada filtro em uso vira uma etiqueta que se tira com o ✕ e <UI>limpar filtros</UI> volta ao início. O filtro fica no endereço da página: recarregar mantém, e o link pode ser guardado ou enviado.
+                  Conta <strong>vencida</strong> é a que não foi paga e já passou do vencimento (dia de Brasília); pagamento parcial entra pelo saldo.
+                </p>
                 <Bullets>
                   <li><strong>Editar:</strong> clique em <UI>Editar</UI> na linha da conta para corrigir valor, vencimento, título ou vínculo — não precisa excluir e recriar. Contas de um veneralato já encerrado não podem ser editadas nem excluídas.</li>
                   <li><strong>Buscar:</strong> o campo de busca acima da lista filtra por título, membro ou status.</li>
@@ -2069,7 +2077,7 @@ export function ManualBook() {
                 O Venerável tem visão gerencial completa, sem lançar baixas financeiras. Acompanhe:
               </p>
               <Bullets>
-                <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> (<UI>Contas vencidas</UI>, <UI>Contas a vencer</UI>, <UI>Cobranças vencidas</UI> e <UI>Cobranças a vencer</UI> — contadas pelo vencimento e pelo saldo em aberto, no calendário de Brasília) e <strong>Ações rápidas</strong>: o pulso da loja.</li>
+                <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> (<UI>Contas vencidas</UI>, <UI>Contas a vencer</UI>, <UI>Cobranças vencidas</UI> e <UI>Cobranças a vencer</UI> — contadas pelo vencimento e pelo saldo em aberto, no calendário de Brasília; <strong>cada linha é um atalho</strong>: um clique abre a tela certa já filtrada, só com o que foi contado) e <strong>Ações rápidas</strong>: o pulso da loja.</li>
                 <li><UI>Relatórios</UI>: arrecadação, inadimplência, fluxo de caixa e frequência por período.</li>
                 <li><UI>Histórico de pagamentos</UI> (7.19): o que cada irmão pagou, com recibos — para conferir uma reclamação sem depender de terceiros.</li>
                 <li><UI>Declaração de regularidade</UI> (7.20): a declaração de &quot;nada consta&quot; financeiro, que você assina com o Tesoureiro — para transferência, elevação, filiação ou candidatura.</li>

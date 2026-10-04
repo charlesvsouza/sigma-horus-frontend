@@ -3,7 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { occurrenceDescriptionsPreview, recurrenceSummary } from '@/lib/recurring-rules';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { fetchWhatsAppShare, WhatsAppSendDialog, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
 import { fetchReceiptContext, RegisterReceiptDialog, type ReceiptContext } from '@/components/register-receipt-dialog';
@@ -35,7 +35,7 @@ interface InvoiceItem {
 
 interface OpenSummary { invoices: number; members: number; total: number; overdue: number; withoutEmail: number }
 
-type ListFilter = 'open' | 'overdue' | 'paid' | 'all';
+type ListFilter = 'open' | 'overdue' | 'upcoming' | 'paid' | 'all';
 
 
 interface CollectionInfo { mode: 'lodge' | 'asaas'; settlementName: string | null; balance: number | null; instructions: string | null }
@@ -53,7 +53,9 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [search, setSearch] = useState('');
   // Lista abre nas cobranças em aberto (o que o Tesoureiro acompanha no dia a dia).
-  const [listFilter, setListFilter] = useState<ListFilter>('open');
+  // O filtro inicial pode vir na URL (?filtro=overdue|upcoming|open|paid|all), como nos atalhos da Visão geral.
+  const urlFilter = useSearchParams().get('filtro');
+  const [listFilter, setListFilter] = useState<ListFilter>(() => (urlFilter && ['open', 'overdue', 'upcoming', 'paid', 'all'].includes(urlFilter) ? (urlFilter as ListFilter) : 'open'));
   const [reminderOpen, setReminderOpen] = useState(false);
   // Envio pelo WhatsApp (só Modo Loja): diálogo da cobrança e atalho logo após criar uma avulsa.
   const [share, setShare] = useState<WhatsAppShare | null>(null);
@@ -204,6 +206,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
   const matchesFilter: Record<ListFilter, (i: InvoiceItem) => boolean> = {
     open: isOpen,
     overdue: (i) => isOpen(i) && i.overdue,
+    upcoming: (i) => isOpen(i) && !i.overdue,
     paid: (i) => !isOpen(i),
     all: () => true,
   };
@@ -214,6 +217,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
   const FILTERS: { value: ListFilter; label: string }[] = [
     { value: 'open', label: 'Em aberto' },
     { value: 'overdue', label: 'Vencidas' },
+    { value: 'upcoming', label: 'A vencer' },
     { value: 'paid', label: 'Pagas' },
     { value: 'all', label: 'Todas' },
   ];

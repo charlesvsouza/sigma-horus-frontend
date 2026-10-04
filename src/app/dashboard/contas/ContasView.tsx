@@ -24,7 +24,8 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
             member: { select: { id: true, name: true } },
             counterparty: { select: { id: true, name: true, kind: true } },
             bankAccount: { select: { id: true, name: true, kind: true } },
-            chartAccount: { select: { isSolidarity: true, isDues: true } },
+            chartAccount: { select: { name: true, isSolidarity: true, isDues: true } },
+            payments: { select: { amount: true } },
             // Cobrança emitida e ainda aberta no Asaas → "Aguardando Asaas".
             invoices: { where: { asaasPaymentId: { not: null }, status: { in: ['billed', 'overdue'] } }, select: { id: true }, take: 1 },
           },
@@ -69,6 +70,11 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
       isDues: a.isDues || Boolean(a.chartAccount?.isDues),
       approvalStatus: a.approvalStatus,
       awaitingAsaas: a.invoices.length > 0,
+      paid: a.payments.reduce((sum, p) => sum + Number(p.amount), 0),
+      chartAccountId: a.chartAccountId ?? null,
+      chartName: a.chartAccount?.name ?? null,
+      // Doador do Tronco cujo nome está mascarado para este cargo: nem o filtro por pessoa pode revelar quem é.
+      personHidden: Boolean(isSolidarity && ((a.member && donorDisplayName(a.member.name, isSolidarity, role) !== a.member.name) || (a.counterparty && donorDisplayName(a.counterparty.name, isSolidarity, role) !== a.counterparty.name))),
       member: a.member ? { id: a.member.id, name: donorDisplayName(a.member.name, isSolidarity, role)! } : null,
       counterparty: a.counterparty ? { id: a.counterparty.id, name: donorDisplayName(a.counterparty.name, isSolidarity, role)!, kind: a.counterparty.kind } : null,
       bankAccount: a.bankAccount ? { id: a.bankAccount.id, name: a.bankAccount.name, kind: a.bankAccount.kind } : null,

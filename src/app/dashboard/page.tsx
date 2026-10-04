@@ -106,10 +106,10 @@ export default async function DashboardPage() {
     : 0;
 
   const attention = [
-    { href: '/dashboard/contas', label: 'Contas vencidas', value: overdueAccounts, tone: 'rose' as const },
-    { href: '/dashboard/contas', label: 'Contas a vencer', value: pendingAccounts, tone: 'gold' as const },
-    { href: '/dashboard/cobrancas', label: 'Cobranças vencidas', value: overdueInvoices, tone: 'rose' as const },
-    { href: '/dashboard/cobrancas', label: 'Cobranças a vencer', value: pendingInvoices, tone: 'muted' as const },
+    { href: '/dashboard/contas?sit=overdue', label: 'Contas vencidas', value: overdueAccounts, tone: 'rose' as const },
+    { href: '/dashboard/contas?sit=upcoming', label: 'Contas a vencer', value: pendingAccounts, tone: 'gold' as const },
+    { href: '/dashboard/cobrancas?filtro=overdue', label: 'Cobranças vencidas', value: overdueInvoices, tone: 'rose' as const },
+    { href: '/dashboard/cobrancas?filtro=upcoming', label: 'Cobranças a vencer', value: pendingInvoices, tone: 'muted' as const },
     ...(canDecideInventory ? [{ href: '/dashboard/materiais', label: 'Ocorrências de inventário', value: pendingIncidents, tone: 'gold' as const }] : []),
   ];
   const toneText: Record<string, string> = { rose: 'text-rose-300', gold: 'text-gold', muted: 'text-sand' };
