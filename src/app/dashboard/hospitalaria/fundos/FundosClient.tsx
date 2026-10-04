@@ -74,7 +74,7 @@ function BucketTable({ rows, empty, head }: { rows: Bucket[]; empty: string; hea
 }
 
 export default function FundosClient({
-  fund, fundLabels, lodgeName, crestUrl, issuedBy, signatures, from, to, accounts, report, campaigns, canSeeDonors, canRecord, members, sessions, canConfirm = true, activeSessionId = null,
+  fund, fundLabels, lodgeName, crestUrl, issuedBy, signatures, from, to, accounts, report, campaigns, canSeeDonors, canRecord, members, sessions, canConfirm = true, activeSessionId = null, startOpen = false,
 }: {
   fund: FundPurpose;
   fundLabels: Record<FundPurpose, string>;
@@ -93,11 +93,13 @@ export default function FundosClient({
   sessions: { id: string; label: string; date?: string }[];
   canConfirm?: boolean;
   activeSessionId?: string | null;
+  /** Abre o formulário de aporte já na carga (link "Lançar nesta sessão"). */
+  startOpen?: boolean;
 }) {
   const router = useRouter();
   const [fromVal, setFromVal] = useState(from);
   const [toVal, setToVal] = useState(to);
-  const [showContribution, setShowContribution] = useState(false);
+  const [showContribution, setShowContribution] = useState(startOpen);
 
   const go = (f: string, t: string, fu: FundPurpose = fund) => router.push(`/dashboard/hospitalaria/fundos?fund=${fu}&from=${f}&to=${t}`);
   const today = new Date();

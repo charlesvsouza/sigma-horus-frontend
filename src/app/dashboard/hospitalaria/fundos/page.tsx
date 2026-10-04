@@ -8,7 +8,7 @@ import { FUND_LABELS, fundChartWhere, isFundPurpose, type FundPurpose } from '@/
 import { buildFundReport, type FundMovementRow } from '@/lib/funds-report';
 import { getReportSignatories } from '@/lib/report-signatories';
 import { activeSessionFor, canConfirmTronco } from '@/lib/tronco-session';
-import { loadTroncoBySession } from '@/lib/tronco-server';
+import { findStatementMatches, loadTroncoBySession } from '@/lib/tronco-server';
 import FundosClient from './FundosClient';
 import TroncoPorSessao from './TroncoPorSessao';
 
@@ -19,7 +19,7 @@ const fmtBR = (d: Date) => d.toLocaleDateString('pt-BR', { timeZone: BR });
 // — saldo, extrato, entradas por origem, saídas, doadores e campanhas. O fundo é uma
 // CATEGORIA do plano de contas: entram todos os pagamentos lançados nas categorias dele,
 // em qualquer banco/caixa da loja.
-export default async function FundosPage(props: { searchParams: Promise<{ fund?: string; from?: string; to?: string }> }) {
+export default async function FundosPage(props: { searchParams: Promise<{ fund?: string; from?: string; to?: string; lancar?: string }> }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const role = normalizeRole(session?.user?.role);
@@ -90,7 +90,17 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
       canRecord ? db.financialAccount.findMany({ where: { lodgeId: lid, active: true }, select: { id: true, name: true, isDefault: true }, orderBy: [{ isDefault: 'desc' }, { name: 'asc' }] }) : Promise.resolve([]),
     ]);
 
-    const troncoSessions = fund === 'tronco' ? await loadTroncoBySession(db, lid, { limit: 30 }) : [];
+    const troncoSessionsRaw = fund === 'tronco' ? await loadTroncoBySession(db, lid, { limit: 30 }) : [];
+    // Sessões com QR da loja impresso (identificador) entram mesmo sem nada lançado ainda: é o que o Tesoureiro monitora no extrato.
+    const lodgeQrs = fund === 'tronco' ? await db.troncoSessionQr.findMany({ where: { lodgeId: lid, provider: 'lodge' }, select: { sessionId: true, source: true, identifier: true } }) : [];
+    const haveIds = new Set(troncoSessionsRaw.map((r) => r.sessionId));
+    const extraIds = [...new Set(lodgeQrs.map((q) => q.sessionId))].filter((id) => !haveIds.has(id));
+    const extraSessions = extraIds.length ? await db.session.findMany({ where: { lodgeId: lid, id: { in: extraIds } }, select: { id: true, title: true, date: true } }) : [];
+    const troncoSessions = [
+      ...troncoSessionsRaw,
+      ...extraSessions.map((x) => ({ sessionId: x.id, title: x.title, date: x.date, confirmed: 0, pending: 0, bySource: { members: 0, visitors: 0, mixed: 0 } })),
+    ].sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
+    const statementMatches = fund === 'tronco' ? await findStatementMatches(db, lid, troncoSessions.map((r) => r.sessionId!)) : [];
     const pendingIntakes = fund === 'tronco'
       ? await db.troncoIntake.findMany({ where: { lodgeId: lid, status: 'pending' }, orderBy: { declaredAt: 'desc' }, take: 50, include: { session: { select: { title: true, date: true } } } })
       : [];
@@ -103,7 +113,7 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
     const donationCampaign = new Map<string, string>();
     for (const c of campaigns) for (const dn of c.donations) if (dn.paymentId) donationCampaign.set(dn.paymentId, c.title);
 
-    return { lodge, payments, members, recentSessions, bankAccounts, campaigns, donationCampaign, troncoSessions, pendingIntakes };
+    return { lodge, payments, members, recentSessions, bankAccounts, campaigns, donationCampaign, troncoSessions, pendingIntakes, lodgeQrs, statementMatches };
   });
 
   const movements: FundMovementRow[] = data.payments.map((p) => {
@@ -165,13 +175,14 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
       members={data.members}
       sessions={data.recentSessions.map((x) => ({ id: x.id, label: `${fmtBR(x.date)} — ${x.title}`, date: new Date(x.date.getTime() - 3 * 3_600_000).toISOString().slice(0, 10) }))}
       canConfirm={canConfirm}
-      activeSessionId={activeSession?.id ?? null}
+      activeSessionId={sp.lancar && data.recentSessions.some((x) => x.id === sp.lancar) ? sp.lancar : (activeSession?.id ?? null)}
+      startOpen={Boolean(sp.lancar) && canRecord}
       canSeeDonors={role === 'admin' || role === 'venerable' || role === 'treasurer'}
     />
     {fund === 'tronco' ? (
       <TroncoPorSessao
-        sessions={data.troncoSessions.map((r) => ({ sessionId: r.sessionId!, title: r.title, date: r.date ? r.date.toISOString() : null, confirmed: r.confirmed, pending: r.pending, members: r.bySource.members, visitors: r.bySource.visitors, mixed: r.bySource.mixed }))}
-        pending={data.pendingIntakes.map((p) => ({ id: p.id, code: p.code, amount: Number(p.amount), channel: p.channel, sessionLabel: p.session ? `${fmtBR(p.session.date)} — ${p.session.title}` : null, declaredBy: p.declaredByName, declaredAt: p.declaredAt.toISOString() }))}
+        sessions={data.troncoSessions.map((r) => ({ sessionId: r.sessionId!, title: r.title, date: r.date ? r.date.toISOString() : null, confirmed: r.confirmed, pending: r.pending, members: r.bySource.members, visitors: r.bySource.visitors, mixed: r.bySource.mixed, identifiers: data.lodgeQrs.filter((q) => q.sessionId === r.sessionId).map((q) => ({ source: q.source, identifier: q.identifier ?? '' })), statements: data.statementMatches.filter((m) => m.sessionId === r.sessionId).map((m) => ({ source: m.source, identifier: m.identifier, total: m.total, count: m.count })) }))}
+        pending={data.pendingIntakes.map((p) => ({ id: p.id, code: p.code, amount: Number(p.amount), channel: p.channel, sessionLabel: p.session ? `${fmtBR(p.session.date)} — ${p.session.title}` : null, declaredBy: p.channel === 'pix_portal' && !(role === 'admin' || role === 'venerable' || role === 'treasurer') ? 'Irmão (portal)' : p.declaredByName, declaredAt: p.declaredAt.toISOString() }))}
         accounts={data.bankAccounts}
         canConfirm={canConfirm}
         settlementAccountId={data.lodge?.asaasSettlementAccountId ?? null}

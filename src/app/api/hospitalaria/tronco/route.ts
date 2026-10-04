@@ -10,11 +10,15 @@ import { NextResponse } from 'next/server';
 import { isValidMoney } from '@/lib/money';
 import { lockKey } from '@/lib/locks';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
-import { activeSessionFor } from '@/lib/tronco-session';
+import { activeSessionFor, generateTroncoCode } from '@/lib/tronco-session';
+import { donationTxid } from '@/lib/tronco-loja-pix';
+import { buildPixPayload } from '@/lib/pix';
+import QRCode from 'qrcode';
 import { nextSequenceNumbers } from '@/lib/invoice-number';
 
-// Pelo Asaas, doações a partir de R$ 50,00 (a tarifa por Pix recebido pesa em valores pequenos). Abaixo disso: Pix na chave da
-// loja ou o tronco passado na sessão.
+// Pelo Asaas, doações a partir de R$ 50,00 (a tarifa por Pix recebido pesa em valores pequenos). Abaixo disso, e em toda loja no
+// Modo Loja: Pix da CHAVE DA LOJA (BR Code estático com o valor e um DNA no txid), que o irmão avisa com "Já doei" e a Tesouraria
+// confere no extrato.
 export const MIN_ASAAS_DONATION = 50;
 const PRESET_AMOUNTS = [50, 100, 200, 500];
 
@@ -49,22 +53,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Informe um valor de doação válido (maior que zero, com no máximo 2 casas decimais).' }, { status: 400 });
   }
 
-  if (amount < MIN_ASAAS_DONATION) {
-    return NextResponse.json({ error: `Pelo Pix do Asaas, as doações começam em R$ ${MIN_ASAAS_DONATION},00. Para valores menores, doe na chave Pix da loja ou no tronco da sessão.` }, { status: 400 });
-  }
-
   const ctx = await withTenant(String(lodgeId), async (db) => {
     const [lodge, member, tronco] = await Promise.all([
-      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { asaasApiKeyEnc: true, asaasEnv: true, collectionMode: true } }),
+      db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { asaasApiKeyEnc: true, asaasEnv: true, collectionMode: true, pixKey: true, tradeName: true, name: true, city: true } }),
       db.member.findUnique({ where: { id: String(memberId) } }),
       findFundChart(db, String(lodgeId), 'tronco', 'REVENUE'),
     ]);
     return { lodge, member, tronco };
   });
 
-  // Modo Loja: o dinheiro entra direto na conta da loja — não se emite no Asaas, mesmo com chave conectada.
-  if (!isAsaasMode(ctx.lodge)) {
-    return NextResponse.json({ error: 'Esta loja recebe no Modo Loja: a doação por Pix pelo portal exige o Modo Asaas. Doe direto na chave Pix da loja ou com a Hospitalaria.' }, { status: 409 });
+  // Modo Loja (ou valor abaixo do piso do Asaas): Pix da chave da loja, com o valor e o DNA da doação no txid.
+  if (!isAsaasMode(ctx.lodge) || amount < MIN_ASAAS_DONATION) {
+    if (!ctx.lodge?.pixKey?.trim()) {
+      return NextResponse.json({ error: isAsaasMode(ctx.lodge) ? `Pelo Pix do Asaas, as doações começam em R$ ${MIN_ASAAS_DONATION},00. Para valores menores, doe no tronco da sessão (a loja ainda não cadastrou a chave Pix).` : 'A loja ainda não cadastrou a chave Pix. Doe no tronco da sessão ou fale com a Tesouraria.' }, { status: 409 });
+    }
+    const dna = generateTroncoCode();
+    const pixCopyPaste = buildPixPayload({ key: ctx.lodge.pixKey, name: ctx.lodge.tradeName || ctx.lodge.name, city: ctx.lodge.city, amount, txid: donationTxid(dna) });
+    const pixQrImage = await QRCode.toDataURL(pixCopyPaste, { margin: 1, width: 240 });
+    return NextResponse.json({ lojaPix: true, code: dna, amount, pixCopyPaste, pixQrImage });
   }
   const config = buildLodgeAsaasConfig(ctx.lodge);
   if (!config) {

@@ -24,6 +24,6 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   if (!data) return denied('Sessão não encontrada.');
   // QR Pix do Tronco da sessão (Modo Asaas): impresso na folha para o doador escanear. Vale até 00:00 do dia da sessão.
   const qr = await ensureSessionQr(lodgeId, id, 'visitors');
-  const troncoQr = qr.state === 'active' && qr.dataUrl && qr.expiresAt ? { dataUrl: qr.dataUrl, expiresAt: qr.expiresAt.toISOString() } : null;
+  const troncoQr = qr.state === 'active' && qr.dataUrl && qr.expiresAt ? { dataUrl: qr.dataUrl, expiresAt: qr.expiresAt.toISOString(), identifier: qr.identifier ?? null, provider: qr.provider ?? 'asaas' } : null;
   return <SessionSheetClient kind="visitors" sessionId={id} data={data} issuedBy={session?.user?.name ?? null} filled={filled} troncoQr={filled ? null : troncoQr} />;
 }

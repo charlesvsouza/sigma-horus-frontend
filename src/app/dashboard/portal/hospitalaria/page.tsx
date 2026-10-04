@@ -16,8 +16,7 @@ interface CampaignItem {
 }
 
 const STATUS_LABEL: Record<string, string> = { active: 'Ativa', completed: 'Concluída', canceled: 'Cancelada' };
-const DONATION_PRESETS = [50, 100, 200, 500];
-const MIN_DONATION = 50; // pelo Pix do Asaas (valores menores: chave Pix da loja ou o tronco na sessão)
+const DONATION_PRESETS = [10, 20, 50, 100, 200];
 
 export default function HospitalariaPortalPage() {
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
@@ -31,7 +30,9 @@ export default function HospitalariaPortalPage() {
   const [donationAmount, setDonationAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [generatingDonation, setGeneratingDonation] = useState(false);
-  const [donationResult, setDonationResult] = useState<{ pixCopyPaste: string | null; pixQrImage: string | null; invoiceUrl: string | null } | null>(null);
+  const [donationResult, setDonationResult] = useState<{ pixCopyPaste: string | null; pixQrImage: string | null; invoiceUrl: string | null; lojaPix?: boolean; code?: string; amount?: number } | null>(null);
+  const [declaring, setDeclaring] = useState(false);
+  const [declared, setDeclared] = useState(false);
   const [donationError, setDonationError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,14 +67,22 @@ export default function HospitalariaPortalPage() {
     }
   }
 
+  // Pix da chave da loja: o irmão avisa que pagou; a Tesouraria confere no extrato e lança no caixa.
+  async function declareDonation() {
+    if (!donationResult?.code || !donationResult.amount) return;
+    setDeclaring(true);
+    setDonationError(null);
+    const res = await fetch('/api/hospitalaria/tronco/declare', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: donationResult.code, amount: donationResult.amount }) });
+    const data = await res.json().catch(() => ({}));
+    setDeclaring(false);
+    if (res.ok) setDeclared(true);
+    else setDonationError(data.error ?? 'Não foi possível registrar o aviso.');
+  }
+
   async function generateDonation() {
     const amount = donationAmount ?? Number(customAmount.replace(',', '.'));
     if (!amount || Number.isNaN(amount) || amount <= 0) {
       setDonationError('Escolha um valor ou digite um valor válido.');
-      return;
-    }
-    if (amount < MIN_DONATION) {
-      setDonationError(`Pelo Pix do Asaas, as doações começam em R$ ${MIN_DONATION},00. Para valores menores, doe na chave Pix da loja ou no tronco da sessão.`);
       return;
     }
     setGeneratingDonation(true);
@@ -87,7 +96,8 @@ export default function HospitalariaPortalPage() {
     const data = await res.json().catch(() => ({}));
     setGeneratingDonation(false);
     if (res.ok) {
-      setDonationResult({ pixCopyPaste: data.pixCopyPaste ?? null, pixQrImage: data.pixQrImage ?? null, invoiceUrl: data.invoiceUrl ?? null });
+      setDeclared(false);
+      setDonationResult({ pixCopyPaste: data.pixCopyPaste ?? null, pixQrImage: data.pixQrImage ?? null, invoiceUrl: data.invoiceUrl ?? null, lojaPix: Boolean(data.lojaPix), code: data.code, amount: data.amount });
     } else {
       setDonationError(data.error ?? 'Erro ao gerar a doação.');
     }
@@ -153,7 +163,7 @@ export default function HospitalariaPortalPage() {
           </Button>
           {donationResult ? (
             <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-200">
-              <p>Doação gerada — pague via Pix para confirmar.</p>
+              <p>{donationResult.lojaPix ? 'Pix para a chave da loja gerado — pague no app do banco e depois toque em “Já doei”.' : 'Doação gerada — pague via Pix para confirmar.'}</p>
               {donationResult.invoiceUrl ? (
                 <a href={donationResult.invoiceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-medium text-emerald-100 underline">
                   Abrir cobrança Pix
@@ -165,6 +175,16 @@ export default function HospitalariaPortalPage() {
               ) : null}
               {donationResult.pixCopyPaste ? (
                 <textarea readOnly value={donationResult.pixCopyPaste} onClick={(e) => e.currentTarget.select()} className={`${inputClass} mt-2 text-xs`} rows={3} />
+              ) : null}
+              {donationResult.lojaPix ? (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs text-emerald-100/80">Código da doação: <strong className="font-mono">{donationResult.code}</strong></p>
+                  {declared ? (
+                    <p className="font-medium text-emerald-100">Obrigado! Sua doação foi avisada e será confirmada pela Tesouraria.</p>
+                  ) : (
+                    <Button type="button" onClick={declareDonation} disabled={declaring}>{declaring ? 'Avisando…' : 'Já doei'}</Button>
+                  )}
+                </div>
               ) : null}
             </div>
           ) : null}

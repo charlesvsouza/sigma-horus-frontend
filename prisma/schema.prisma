@@ -1356,7 +1356,9 @@ model TroncoSessionQr {
   lodgeId   String
   sessionId String
   source    String   // members | visitors
-  asaasQrId String   @unique
+  asaasQrId String   @unique // id do QR no Asaas; no Modo Loja: "loja:" + identifier (Pix estático da chave da loja)
+  provider  String   @default("asaas") // asaas | lodge
+  identifier String? // Modo Loja: txid do Pix (identificador da sessão que o Tesoureiro procura no extrato)
   payload   String   // copia e cola (EMV)
   expiresAt DateTime
   createdAt DateTime @default(now())

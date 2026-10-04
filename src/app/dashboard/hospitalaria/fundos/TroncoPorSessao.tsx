@@ -2,11 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Alert, Button, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { TRONCO_CHANNEL_LABEL, type TroncoChannel } from '@/lib/tronco-session';
 
-export interface TroncoSessionItem { sessionId: string; title: string | null; date: string | null; confirmed: number; pending: number; members: number; visitors: number; mixed: number }
+export interface TroncoSessionItem {
+  sessionId: string; title: string | null; date: string | null; confirmed: number; pending: number; members: number; visitors: number; mixed: number;
+  /** Modo Loja: identificador (txid) do QR de cada origem, para procurar no extrato. */
+  identifiers?: { source: string; identifier: string }[];
+  /** Créditos do extrato (sem conciliar) que trazem o identificador. */
+  statements?: { source: string; identifier: string; total: number; count: number }[];
+}
 export interface PendingIntake { id: string; code: string; amount: number; channel: string; sessionLabel: string | null; declaredBy: string | null; declaredAt: string }
 
 const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '—');
@@ -45,6 +52,17 @@ export default function TroncoPorSessao({
     router.refresh();
   }
   const total = sessions.reduce((s, r) => s + r.confirmed, 0);
+
+  async function postStatement(r: TroncoSessionItem, source: string) {
+    setBusy(`st-${r.sessionId}-${source}`);
+    setMessage(null);
+    const res = await fetch('/api/tronco/statement-post', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: r.sessionId, source, bankAccountId: bank[`st-${r.sessionId}`] ?? defaultBank }) });
+    const data = await res.json().catch(() => ({}));
+    setBusy(null);
+    if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Não foi possível lançar.' }); return; }
+    setMessage({ kind: 'ok', text: `Lançado ${brl(data.total)} (${data.count} crédito${data.count === 1 ? '' : 's'} do extrato) no Tronco.` });
+    router.refresh();
+  }
 
   async function act(id: string, kind: 'confirm' | 'reject') {
     setBusy(id);
@@ -87,7 +105,21 @@ export default function TroncoPorSessao({
               <tbody>
                 {sessions.map((r) => (
                   <tr key={r.sessionId}>
-                    <td className="border-b border-white/5 px-2 py-2 text-sand">{fmtDate(r.date)} — {r.title ?? 'Sessão'}</td>
+                    <td className="border-b border-white/5 px-2 py-2 text-sand">
+                      {fmtDate(r.date)} — {r.title ?? 'Sessão'}
+                      {r.identifiers && r.identifiers.length > 0 ? (
+                        <span className="mt-0.5 block text-xs text-sand-dark">
+                          Identificador no extrato: {r.identifiers.map((i) => <span key={i.identifier} className="mr-3">{i.source === 'visitors' ? 'visitantes' : 'obreiros'} <span className="font-mono text-sand-light">{i.identifier}</span></span>)}
+                        </span>
+                      ) : null}
+                      {(r.statements ?? []).map((st) => (
+                        <span key={st.identifier} className="mt-1 flex flex-wrap items-center gap-2 text-xs text-amber-300">
+                          No extrato ({st.source === 'visitors' ? 'visitantes' : 'obreiros'}): {brl(st.total)} em {st.count} crédito{st.count === 1 ? '' : 's'} sem conciliar
+                          {canConfirm ? <Button size="sm" variant="secondary" disabled={busy === `st-${r.sessionId}-${st.source}`} onClick={() => void postStatement(r, st.source)}>{busy === `st-${r.sessionId}-${st.source}` ? '…' : 'Lançar do extrato'}</Button> : null}
+                        </span>
+                      ))}
+                      {canConfirm ? <Link href={`/dashboard/hospitalaria/fundos?lancar=${r.sessionId}`} className="mt-1 inline-block text-xs text-gold underline underline-offset-2">Lançar nesta sessão</Link> : null}
+                    </td>
                     <td className="border-b border-white/5 px-2 py-2 text-right tabular-nums text-sand-light">{brl(r.confirmed)}</td>
                     <td className="border-b border-white/5 px-2 py-2 text-right tabular-nums text-sand-dark">{brl(r.members)}</td>
                     <td className="border-b border-white/5 px-2 py-2 text-right tabular-nums text-sand-dark">{brl(r.visitors)}</td>

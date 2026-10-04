@@ -7,6 +7,8 @@ import { prismaAdmin, withTenant } from '@/lib/prisma';
 import {
   QR_PAID_STATUSES, asaasExpiration, qrDescription, qrExpiryFor, qrExternalReference, qrState, type QrSource, type QrState,
 } from '@/lib/tronco-qr';
+import { buildPixPayload } from '@/lib/pix';
+import { sessionTxid } from '@/lib/tronco-loja-pix';
 import { generateTroncoCode } from '@/lib/tronco-session';
 
 type Db = Prisma.TransactionClient;
@@ -19,6 +21,9 @@ export interface SessionQrView {
   /** PNG em data URL, pronto para <img>. */
   dataUrl?: string;
   expiresAt?: Date;
+  /** Modo Loja: txid do Pix (o que o Tesoureiro procura no extrato). */
+  identifier?: string | null;
+  provider?: 'asaas' | 'lodge';
 }
 
 /**
@@ -27,21 +32,35 @@ export interface SessionQrView {
  */
 export async function ensureSessionQr(lodgeId: string, sessionId: string, source: QrSource, now: Date = new Date()): Promise<SessionQrView> {
   const ctx = await withTenant(lodgeId, async (db) => ({
-    lodge: await db.lodge.findUnique({ where: { id: lodgeId }, select: { collectionMode: true, asaasApiKeyEnc: true, asaasEnv: true } }),
+    lodge: await db.lodge.findUnique({ where: { id: lodgeId }, select: { collectionMode: true, asaasApiKeyEnc: true, asaasEnv: true, pixKey: true, tradeName: true, name: true, city: true } }),
     session: await db.session.findFirst({ where: { id: sessionId, lodgeId }, select: { id: true, title: true, date: true } }),
     qr: await db.troncoSessionQr.findUnique({ where: { sessionId_source: { sessionId, source } } }),
   }));
   if (!ctx.session) return { state: 'unavailable', reason: 'Sessão não encontrada.' };
-  const render = async (payload: string, expiresAt: Date): Promise<SessionQrView> => ({
+  const render = async (payload: string, expiresAt: Date, extra: { identifier?: string | null; provider?: string } = {}): Promise<SessionQrView> => ({
     state: qrState(expiresAt, now), payload, expiresAt, dataUrl: await QRCode.toDataURL(payload, { margin: 1, width: 240 }),
+    identifier: extra.identifier ?? null, provider: extra.provider === 'lodge' ? 'lodge' : 'asaas',
   });
-  if (ctx.qr) return render(ctx.qr.payload, ctx.qr.expiresAt);
+  if (ctx.qr) return render(ctx.qr.payload, ctx.qr.expiresAt, { identifier: ctx.qr.identifier, provider: ctx.qr.provider });
 
-  if (!isAsaasMode(ctx.lodge)) return { state: 'unavailable', reason: 'QR por sessão exige o Modo Asaas.' };
-  const config = buildLodgeAsaasConfig(ctx.lodge);
-  if (!config) return { state: 'unavailable', reason: 'Asaas não conectado.' };
   const expiresAt = qrExpiryFor(ctx.session.date);
   if (qrState(expiresAt, now) === 'expired') return { state: 'expired', expiresAt };
+  const config = isAsaasMode(ctx.lodge) ? buildLodgeAsaasConfig(ctx.lodge) : null;
+
+  // Modo Loja (ou Asaas sem a chave conectada): Pix estático da CHAVE DA LOJA, com o identificador da sessão no txid. Não vence
+  // no banco (o QR vale para sempre); o Tesoureiro monitora a conta pelo identificador e lança no Tronco manualmente.
+  if (!config) {
+    if (!ctx.lodge?.pixKey?.trim()) return { state: 'unavailable', reason: 'Cadastre a chave Pix da loja em Configurações para gerar o QR do Tronco.' };
+    const identifier = sessionTxid(sessionId, source);
+    const payload = buildPixPayload({ key: ctx.lodge.pixKey, name: ctx.lodge.tradeName || ctx.lodge.name, city: ctx.lodge.city, txid: identifier });
+    try {
+      await withTenant(lodgeId, (db) => db.troncoSessionQr.create({ data: { lodgeId, sessionId, source, provider: 'lodge', identifier, asaasQrId: `loja:${identifier}`, payload, expiresAt } }));
+    } catch {
+      const other = await withTenant(lodgeId, (db) => db.troncoSessionQr.findUnique({ where: { sessionId_source: { sessionId, source } } }));
+      if (other) return render(other.payload, other.expiresAt, { identifier: other.identifier, provider: other.provider });
+    }
+    return render(payload, expiresAt, { identifier, provider: 'lodge' });
+  }
 
   try {
     const addressKey = await getActivePixAddressKey(config);
@@ -54,10 +73,10 @@ export async function ensureSessionQr(lodgeId: string, sessionId: string, source
     } catch {
       // Duas aberturas ao mesmo tempo: a outra gravou primeiro; usa a dela.
       const other = await withTenant(lodgeId, (db) => db.troncoSessionQr.findUnique({ where: { sessionId_source: { sessionId, source } } }));
-      if (other) return render(other.payload, other.expiresAt);
+      if (other) return render(other.payload, other.expiresAt, { identifier: other.identifier, provider: other.provider });
       throw new Error('qr duplicado e não encontrado');
     }
-    return render(created.payload, expiresAt);
+    return render(created.payload, expiresAt, { provider: 'asaas' });
   } catch (err) {
     console.error('tronco qr: falha ao criar o QR no Asaas', { lodgeId, sessionId, err });
     return { state: 'unavailable', reason: 'Não foi possível gerar o QR agora (Asaas indisponível).' };
@@ -91,7 +110,7 @@ export async function reconcileLodgeQrs(lodgeId: string, now: Date = new Date())
   const since = new Date(now.getTime() - 3 * 86_400_000);
   const ctx = await withTenant(lodgeId, async (db) => ({
     lodge: await db.lodge.findUnique({ where: { id: lodgeId }, select: { asaasApiKeyEnc: true, asaasEnv: true } }),
-    qrs: await db.troncoSessionQr.findMany({ where: { lodgeId, expiresAt: { gte: since } } }),
+    qrs: await db.troncoSessionQr.findMany({ where: { lodgeId, provider: 'asaas', expiresAt: { gte: since } } }),
   }));
   const config = buildLodgeAsaasConfig(ctx.lodge);
   if (!config || ctx.qrs.length === 0) return { qrs: ctx.qrs.length, created: 0 };
@@ -110,7 +129,7 @@ export async function reconcileLodgeQrs(lodgeId: string, now: Date = new Date())
 /** Cron diário: confere os QR de todas as lojas com QR recente. */
 export async function reconcileAllTroncoQrs(now: Date = new Date()): Promise<{ lodges: number; created: number }> {
   const since = new Date(now.getTime() - 3 * 86_400_000);
-  const lodges = await prismaAdmin.troncoSessionQr.findMany({ where: { expiresAt: { gte: since } }, select: { lodgeId: true }, distinct: ['lodgeId'] });
+  const lodges = await prismaAdmin.troncoSessionQr.findMany({ where: { provider: 'asaas', expiresAt: { gte: since } }, select: { lodgeId: true }, distinct: ['lodgeId'] });
   let created = 0;
   for (const { lodgeId } of lodges) {
     try { created += (await reconcileLodgeQrs(lodgeId, now)).created; } catch (err) { console.error('tronco qr: falha ao conferir', { lodgeId, err }); }

@@ -2,6 +2,9 @@ import type { Prisma } from '@/generated/prisma/client';
 import { logAudit } from '@/lib/audit';
 import { findFundChart, fundChartWhere, resolveBankAccount } from '@/lib/funds';
 import { ASAAS_FEE_CHART } from '@/lib/collection';
+import { parseBRDateTimeLocal } from '@/lib/br-time';
+import { dateOnlyUTC, todayBR } from '@/lib/date-only';
+import { identifierInText } from '@/lib/tronco-loja-pix';
 import { isValidMoney } from '@/lib/money';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import {
@@ -133,6 +136,51 @@ export async function rejectTronco(db: Db, lodgeId: string, intakeId: string, us
   await db.troncoIntake.update({ where: { id: intake.id }, data: { status: 'rejected', rejectReason: reason.trim().slice(0, 300), confirmedById: user.id, confirmedAt: new Date() } });
   await logAudit(db, { lodgeId, userId: user.id, action: 'UPDATE', entity: 'tronco-intake', entityId: intake.id, metadata: { code: intake.code, rejected: true, reason: reason.trim().slice(0, 300) } });
   return { ok: true };
+}
+
+export interface StatementMatch { sessionId: string; source: 'members' | 'visitors'; identifier: string; total: number; count: number; ids: string[] }
+
+/**
+ * Créditos do extrato (OFX importado, ainda sem conciliar) que trazem o identificador de uma sessão (txid do QR da loja) na
+ * descrição — o que o Tesoureiro monitora no Modo Loja. Só vale se o banco da loja devolve o identificador no extrato.
+ */
+export async function findStatementMatches(db: Db, lodgeId: string, sessionIds: string[]): Promise<StatementMatch[]> {
+  if (sessionIds.length === 0) return [];
+  const qrs = await db.troncoSessionQr.findMany({ where: { lodgeId, sessionId: { in: sessionIds }, provider: 'lodge', identifier: { not: null } }, select: { sessionId: true, source: true, identifier: true } });
+  if (qrs.length === 0) return [];
+  const credits = await db.bankTransaction.findMany({ where: { lodgeId, status: 'unmatched', amount: { gt: 0 } }, select: { id: true, amount: true, description: true } });
+  const out: StatementMatch[] = [];
+  for (const q of qrs) {
+    const hit = credits.filter((c) => identifierInText(c.description, q.identifier!));
+    if (hit.length === 0) continue;
+    out.push({ sessionId: q.sessionId, source: q.source as 'members' | 'visitors', identifier: q.identifier!, total: Math.round(hit.reduce((sum, c) => sum + Math.round(Number(c.amount) * 100), 0)) / 100, count: hit.length, ids: hit.map((c) => c.id) });
+  }
+  return out;
+}
+
+/**
+ * "Lançar do extrato": soma os créditos do extrato com o identificador da sessão e lança no caixa do Tronco (confirmado, ligado à
+ * sessão e à origem), conciliando as linhas do extrato com o lançamento. Só quem confirma o Tronco.
+ */
+export async function postStatementCredits(
+  db: Db, lodgeId: string, user: TroncoUser, input: { sessionId: string; source: 'members' | 'visitors'; bankAccountId: string | null },
+): Promise<{ ok: true; total: number; count: number; paymentId: string } | Fail> {
+  if (!canConfirmTronco(user.role)) return { ok: false, status: 403, error: 'Só o Tesoureiro, o Venerável e o Administrador lançam o Tronco.' };
+  const matches = await findStatementMatches(db, lodgeId, [input.sessionId]);
+  const m = matches.find((x) => x.source === input.source);
+  if (!m) return { ok: false, status: 404, error: 'Nenhum crédito sem conciliar com o identificador desta sessão. Importe o extrato em Conciliação bancária.' };
+  const txs = await db.bankTransaction.findMany({ where: { id: { in: m.ids }, lodgeId, status: 'unmatched' }, select: { id: true, date: true } });
+  const last = txs.reduce((a, b) => (a > b.date ? a : b.date), txs[0].date);
+  const date = dateOnlyUTC(last);
+  if (date.getTime() > todayBR().getTime()) return { ok: false, status: 400, error: 'Há crédito com data futura no extrato.' };
+  const paidAt = parseBRDateTimeLocal(`${date.toISOString().slice(0, 10)}T12:00:00`);
+  const rec = await recordTronco(db, {
+    lodgeId, user, amount: m.total, date, paidAt, method: 'pix', channel: 'pix', source: input.source, sessionId: input.sessionId,
+    bankAccountId: input.bankAccountId, note: `Extrato: ${m.count} crédito(s) com o identificador ${m.identifier}`,
+  });
+  if (!rec.ok) return rec;
+  if (rec.paymentId) await db.bankTransaction.updateMany({ where: { id: { in: txs.map((t) => t.id) }, lodgeId, status: 'unmatched' }, data: { status: 'matched', matchedPaymentId: rec.paymentId } });
+  return { ok: true, total: m.total, count: m.count, paymentId: rec.paymentId! };
 }
 
 export interface TroncoSessionTotals extends TroncoSessionRow { title: string | null; date: Date | null }
