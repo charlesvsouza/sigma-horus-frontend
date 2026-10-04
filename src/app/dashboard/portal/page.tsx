@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { UserRound } from 'lucide-react';
 import { degreeShort } from '@/lib/masonic-degree';
-import { clampDateYear, fetchCep, maskCEP, maskPhone } from '@/lib/masks';
+import { clampDateYear, fetchCep, maskCEP, maskCPF, maskPhone } from '@/lib/masks';
 import { ACCOUNT_STATUS_LABEL, DOCUMENT_KIND_LABEL } from '@/lib/status-labels';
 import { Alert, Button, MaskedInput, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
@@ -17,6 +17,7 @@ interface MemberSummary {
   id: string;
   name: string;
   email?: string | null;
+  hasCpf?: boolean;
   phone?: string | null;
   status: string;
   currentDegree?: string | null;
@@ -96,6 +97,7 @@ const emptyRel = (kind: RelativeKind): RelativeData => ({ kind, name: '', birthD
 const dateVal = (iso?: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
 
 interface EditForm {
+  cpf: string;
   email: string;
   phone: string;
   zipCode: string;
@@ -113,6 +115,7 @@ interface EditForm {
 // só o Administrador/Secretaria mexe neles (ver manual, cap. 10).
 function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; onSaved: () => void; onCancel: () => void }) {
   const [form, setForm] = useState<EditForm>({
+    cpf: '',
     email: member.email ?? '',
     phone: member.phone ?? '',
     zipCode: member.zipCode ?? '',
@@ -206,6 +209,7 @@ function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; on
         <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Contato</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <input value={form.email} onChange={(e) => set('email', e.target.value)} className={inputClass} placeholder="E-mail" type="email" />
+          {member.hasCpf === false ? <MaskedInput value={form.cpf} onChange={(v) => set('cpf', v)} mask={maskCPF} inputMode="numeric" className={inputClass} placeholder="CPF (falta no seu cadastro)" /> : null}
           <MaskedInput value={form.phone} onChange={(v) => set('phone', v)} mask={maskPhone} className={inputClass} placeholder="Telefone" />
         </div>
       </div>

@@ -4,6 +4,7 @@ import { logAudit } from '@/lib/audit';
 import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, parseSelfEditFields, validateMemberFields, validateRelatives } from '@/lib/member-fields';
 import { withTenant, prismaAdmin } from '@/lib/prisma';
 import { adminEmails, memberEmailIsAdminMessage, normalizeEmail } from '@/lib/admin-policy';
+import { isValidCPF, maskCPF, onlyDigits } from '@/lib/masks';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
@@ -52,22 +53,34 @@ export async function PUT(request: Request, { params }: Ctx) {
 
   if (isSelf) {
     const fields = parseSelfEditFields(body);
-    const item = await withTenant(String(lodgeId), async (db) => {
-      const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true } });
-      if (!existing) return null;
+    // CPF: o irmão só PREENCHE o que está vazio (nunca troca um CPF já cadastrado) — é o dado que a cobrança exige.
+    const rawCpf = typeof (body as { cpf?: unknown })?.cpf === 'string' ? String((body as { cpf: string }).cpf) : '';
+    const cpfDigits = onlyDigits(rawCpf);
+    const outcome = await withTenant(String(lodgeId), async (db) => {
+      const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, cpf: true } });
+      if (!existing) return { notFound: true } as const;
+      let cpfData: { cpf?: string } = {};
+      if (cpfDigits && !onlyDigits(existing.cpf ?? '')) {
+        if (!isValidCPF(cpfDigits)) return { error: 'CPF inválido. Confira os 11 dígitos.' } as const;
+        const others = await db.member.findMany({ where: { lodgeId: String(lodgeId), id: { not: id }, cpf: { not: null } }, select: { cpf: true } });
+        if (others.some((o) => onlyDigits(o.cpf ?? '') === cpfDigits)) return { error: 'Este CPF já está cadastrado para outro irmão. Procure a Secretaria.' } as const;
+        cpfData = { cpf: maskCPF(cpfDigits) };
+      }
       const updated = await db.member.update({
         where: { id },
         data: {
           ...fields,
+          ...cpfData,
           relatives: { deleteMany: {}, create: relatives.map((r) => ({ lodgeId: String(lodgeId), ...r })) },
         },
         include: MEMBER_LIST_INCLUDE,
       });
-      await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { selfEdit: true } });
-      return updated;
+      await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { selfEdit: true, ...(cpfData.cpf ? { cpfFilled: true } : {}) } });
+      return { item: updated } as const;
     });
-    if (!item) return NextResponse.json({ error: 'Membro não encontrado.' }, { status: 404 });
-    return NextResponse.json({ item });
+    if ('notFound' in outcome) return NextResponse.json({ error: 'Membro não encontrado.' }, { status: 404 });
+    if ('error' in outcome) return NextResponse.json({ error: outcome.error }, { status: 400 });
+    return NextResponse.json({ item: outcome.item });
   }
 
   const fields = parseMemberFields(body);
