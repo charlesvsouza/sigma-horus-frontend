@@ -1,3 +1,4 @@
+import { MASKED_DONOR_NAME } from '@/lib/donor-mask';
 import type { Prisma } from '@/generated/prisma/client';
 import { fundChartWhere } from '@/lib/funds';
 import { sumMoney } from '@/lib/money';
@@ -63,5 +64,5 @@ export function canSeeDonorIdentity(role: string | undefined | null) {
 export function donorDisplayName(name: string | null | undefined, isSolidarity: boolean, role: string | undefined | null): string | null {
   if (!name) return name ?? null;
   if (!isSolidarity || canSeeDonorIdentity(role)) return name;
-  return 'Doação (irmão)';
+  return MASKED_DONOR_NAME;
 }

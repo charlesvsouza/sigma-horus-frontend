@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.86</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.87</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.86 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.87 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -522,6 +522,10 @@ export function ManualBook() {
                 <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Importar cadastros</UI>, <UI>Importar backup financeiro</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
               </Bullets>
               <p>O topo mostra o nome da loja, o usuário logado e o status da assinatura (teste, ativa ou pendente).</p>
+              <p>
+                <strong>Navegação rápida (beta).</strong> O botão <UI>Navegação rápida</UI> (⚡), no topo, liga dois atalhos <strong>só para você</strong> (vale para o seu navegador; quem não liga vê o sistema como sempre foi, e desligar volta ao normal na hora):
+                a <strong>barra de telas irmãs</strong> — no alto de cada tela aparecem as outras telas do mesmo grupo do menu (por exemplo, em Cobranças: Contas, Lançamento, Taxas de grau, Acordos, Pagamentos…), com a atual marcada, para trocar sem abrir o menu — e o <strong>painel do irmão</strong>: nas listas de <UI>Cobranças</UI>, <UI>Contas</UI> e <UI>Pagamentos</UI> o nome do irmão fica sublinhado; clique nele para abrir, por cima da lista, o painel com o saldo devedor, o vencido, o crédito, as pendências, o plano de taxa (com a entrada, se houver), os últimos pagamentos e o contato, e atalhos para o histórico de pagamentos, a declaração de regularidade e uma nova taxa de grau. <UI>Esc</UI> ou o X fecham o painel e você continua na mesma tela. O painel só mostra o que o seu cargo já pode ver: Tesoureiro, Venerável e Administrador veem o financeiro; o Secretário vê só contato e situação, sem dinheiro; lançamentos do Tronco não aparecem. É somente consulta — nada é gravado por ele.
+              </p>
               <p>
                 <strong>Cada item tem um ícone</strong> para você reconhecer a tela de relance, e o item da página
                 em que você está fica destacado em ouro.

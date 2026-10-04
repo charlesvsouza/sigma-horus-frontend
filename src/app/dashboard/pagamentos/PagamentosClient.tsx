@@ -5,6 +5,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { MemberLink } from '@/components/quick-nav';
 import { formatDateOnly, todayBR } from '@/lib/date-only';
 
 interface MemberOption { id: string; name: string; }
@@ -468,7 +469,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
               <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{payment.account?.title ?? 'Conta removida'}</p>
-                  <p className="mt-1 text-xs text-sand-dark">{payment.member?.name ?? 'Sem vínculo'} • {payment.method}{payment.bankAccount ? ` • ${payment.bankAccount.name}` : ''}</p>
+                  <p className="mt-1 text-xs text-sand-dark">{payment.member ? <MemberLink id={payment.member.id} name={payment.member.name} /> : 'Sem vínculo'} • {payment.method}{payment.bankAccount ? ` • ${payment.bankAccount.name}` : ''}</p>
                 </div>
                 <div className="text-right text-xs text-sand-dark">
                   <p className="tabular-nums">Valor: {brl(payment.amount)}</p>

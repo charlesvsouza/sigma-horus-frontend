@@ -8,6 +8,7 @@ import { ReactNode, useEffect, useMemo, useState } from 'react';
 import CommandPalette, { type Command } from '@/components/command-palette';
 import { ConfirmProvider } from '@/components/ui';
 import Art002Alert from '@/components/art002-alert';
+import { QuickNavProvider, QuickNavToggle, SiblingNav } from '@/components/quick-nav';
 import { candidateMayVisit, isCandidateRole } from '@/lib/candidate';
 import {
   LayoutDashboard, CircleUser, BookOpen, Users, Database, Briefcase, Crown, Wallet,
@@ -233,6 +234,7 @@ export default function DashboardShell({ groups, extraCommands = [], lodgeName, 
   }, [pathname, hrefLabel]);
 
   return (
+    <QuickNavProvider role={role}>
     <div className="min-h-screen bg-sigma-blue-deep text-sand">
       <a
         href="#conteudo"
@@ -388,6 +390,7 @@ export default function DashboardShell({ groups, extraCommands = [], lodgeName, 
             </div>
 
             <div className="flex items-center gap-3">
+              <QuickNavToggle />
               <button
                 onClick={() => window.dispatchEvent(new Event('sigma:open-cmdk'))}
                 className="hidden items-center gap-2 rounded-full border border-white/8 px-3 py-1.5 text-xs text-sand-dark transition hover:border-gold/40 hover:text-sand sm:flex"
@@ -439,11 +442,13 @@ export default function DashboardShell({ groups, extraCommands = [], lodgeName, 
           ) : null}
 
           <div className="fio-de-prumo mx-5 lg:mx-8" />
+          <SiblingNav groups={groups} />
           <div id="conteudo" tabIndex={-1} className="flex-1 bg-sigma-app outline-none"><ConfirmProvider>{candidateBlocked ? null : children}</ConfirmProvider></div>
         </div>
       </div>
       <CommandPalette commands={commands} />
       {art002DaysOverdue != null ? <Art002Alert daysOverdue={art002DaysOverdue} /> : null}
     </div>
+    </QuickNavProvider>
   );
 }

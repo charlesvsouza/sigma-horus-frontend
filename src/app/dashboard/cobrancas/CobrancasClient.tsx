@@ -9,6 +9,7 @@ import { fetchWhatsAppShare, WhatsAppSendDialog, type WhatsAppShare } from '@/co
 import { fetchReceiptContext, RegisterReceiptDialog, type ReceiptContext } from '@/components/register-receipt-dialog';
 import { ChargeReminderDialog } from '@/components/charge-reminder-dialog';
 import { brl } from '@/lib/currency';
+import { MemberLink } from '@/components/quick-nav';
 import { formatDateOnly } from '@/lib/date-only';
 
 interface MemberOption { id: string; name: string; }
@@ -431,7 +432,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
               <div key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
                 <div>
                   <p className="text-sm font-medium text-sand-light">{invoice.number}</p>
-                  <p className="mt-1 text-xs text-sand-dark">{invoice.account?.title ?? 'Conta sem título'} • {invoice.member?.name ?? 'Sem membro'}</p>
+                  <p className="mt-1 text-xs text-sand-dark">{invoice.account?.title ?? 'Conta sem título'} • {invoice.member ? <MemberLink id={invoice.member.id} name={invoice.member.name} /> : 'Sem membro'}</p>
                   <span className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${invoice.status === 'paid' ? 'bg-emerald-500/12 text-emerald-300 border border-emerald-500/20' : invoice.status === 'billed' ? 'bg-sky-500/12 text-sky-200 border border-sky-500/20' : invoice.status === 'overdue' || invoice.overdue ? 'bg-rose-500/12 text-rose-300 border border-rose-500/20' : 'bg-gold/10 text-gold border border-gold/15'}`}>
                     {invoice.status === 'paid' ? 'Paga' : invoice.status === 'overdue' || invoice.overdue ? 'Vencida' : invoice.status === 'billed' ? 'Emitida' : 'Pendente'}
                   </span>

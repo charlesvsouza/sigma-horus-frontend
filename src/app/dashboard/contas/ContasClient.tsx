@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
+import { MemberLink } from '@/components/quick-nav';
 import { formatDateOnly } from '@/lib/date-only';
 
 interface ChartAccountOption { id: string; code: string; name: string; type: string; isDues?: boolean; }
@@ -296,7 +297,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                     {account.approvalStatus === 'pending' ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">Aguardando aprovação</span> : null}
                   </p>
                   <p className="mt-1 text-xs text-sand-dark">
-                    {account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} • {account.member?.name ?? account.counterparty?.name ?? 'Sem vínculo'}
+                    {account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} • {account.member ? <MemberLink id={account.member.id} name={account.member.name} /> : (account.counterparty?.name ?? 'Sem vínculo')}
                   </p>
                 </div>
                 <div className="min-w-28 text-right">
