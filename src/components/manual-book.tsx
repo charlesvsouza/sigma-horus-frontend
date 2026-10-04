@@ -1256,7 +1256,7 @@ export function ManualBook() {
                     dos 60 dias — cobranças pontuais (evento, campanha, taxas de Iniciação/Elevação/Exaltação) não contam.
                   </li>
                   <li>
-                    Em <UI>Tesouraria → Relatórios → Inadimplência (Art. 002)</UI>, veja todos os membros com
+                    Para ver o comportamento do mês (mensalidades pagas até o vencimento × pagas depois × não pagas, em percentual, com a lista de irmãos de cada grupo), use <UI>Relatórios → Pontualidade das mensalidades</UI>, também resumido na <UI>Visão geral</UI> para Tesoureiro, Venerável e Administrador; ele conta por mensalidade e ignora isentos e canceladas. Em <UI>Tesouraria → Relatórios → Inadimplência (Art. 002)</UI>, veja todos os membros com
                     mensalidade em aberto: quantidade de parcelas, valor total, vencimento mais antigo, dias de
                     atraso e, se configurada (7.9), a <strong>multa/juros estimados</strong>. Os enquadrados no
                     Art. 002 aparecem destacados. Em <UI>Ordenar por</UI>, a lista (e o PDF/CSV) pode vir por

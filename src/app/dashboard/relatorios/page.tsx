@@ -24,6 +24,7 @@ const SECTIONS: { title: string; items: { href: string; label: string; descripti
   {
     title: 'Inadimplência e regularidade',
     items: [
+      { href: '/dashboard/relatorios/pontualidade', label: 'Pontualidade das mensalidades', description: 'Pagas até o vencimento, após e não pagas no mês.' },
       { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', description: 'Mensalidades em atraso e enquadramento.' },
       { href: '/dashboard/relatorios/historico-pagamentos', label: 'Histórico de pagamentos', description: 'Pagamentos por irmão.' },
       { href: '/dashboard/relatorios/declaracao-regularidade', label: 'Declaração de regularidade', description: 'Situação do irmão perante a Tesouraria.' },

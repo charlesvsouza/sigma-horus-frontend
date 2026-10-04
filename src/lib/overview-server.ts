@@ -5,6 +5,7 @@ import { formatDateOnly, todayBR } from '@/lib/date-only';
 import { getTroncoBalance } from '@/lib/hospitalaria';
 import { getLodgeOverdueDuesReport, isArt002Enabled } from '@/lib/overdue';
 import { birthdayWithin, type OverviewScope } from '@/lib/overview-roles';
+import { loadDuesPunctuality } from '@/lib/dues-punctuality-server';
 import { loadEndingMothers } from '@/lib/recurring-renewal';
 import { loadTroncoBySession } from '@/lib/tronco-server';
 import { STREAK_SESSION_TYPES } from '@/lib/attendance-streak';
@@ -58,6 +59,16 @@ export async function loadOverviewGroups(
     }
     treasuryItems.push({ key: 'acordos', label: 'Acordos de regularização em andamento', value: open, href: '/dashboard/acordos', tone: 'muted' });
     treasuryItems.push({ key: 'acordos-atrasados', label: 'Acordos com parcela atrasada', value: broken, href: '/dashboard/acordos', tone: 'rose' });
+  }
+  if (scope.finance) {
+    const p = await loadDuesPunctuality(db, lodgeId, today.toISOString().slice(0, 7), now);
+    if (p.summary.total > 0) {
+      const { counts, percent } = p.summary;
+      treasuryItems.unshift({
+        key: 'pontualidade', label: 'Mensalidades do mês: pagas em dia', value: `${percent.on_time}%`, href: '/dashboard/relatorios/pontualidade', tone: percent.open_overdue > 0 ? 'gold' : 'emerald',
+        hint: `${percent.late}% após o vencimento · ${percent.open_overdue + percent.open_upcoming}% não pagas (${counts.open_overdue} vencidas) · ${p.summary.total} mensalidades`,
+      });
+    }
   }
   if (treasuryItems.length > 0) groups.push({ title: 'Tesouraria e conformidade', items: treasuryItems });
 
