@@ -1,8 +1,14 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PlansSection } from '@/components/plans-section';
 import { Reveal } from '@/components/reveal';
 import { FOUNDER_PRICE_LOCK_MONTHS, FOUNDER_SLOTS, countPaidLodges, foundersLeft } from '@/lib/founders';
+import { PLANS, TRIAL_DAYS } from '@/lib/plans';
+import { jsonLdString, landingJsonLd } from '@/lib/seo';
+
+// URL canônica da landing: os links de divulgação com ?utm_… e ?ref=… contam como esta mesma página nos buscadores.
+export const metadata: Metadata = { alternates: { canonical: '/' } };
 
 // O contador de vagas de Lojas Fundadoras lê o banco: revalida a cada 10 minutos (sem pesar a página).
 export const revalidate = 600;
@@ -42,7 +48,10 @@ const brotherBenefits = [
   { title: 'Recebe o lembrete certo', detail: 'Aviso antes do vencimento por e-mail, WhatsApp ou SMS, já com o link para pagar.' },
 ];
 
+const brl0 = (cents: number) => `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`;
+
 const faq = [
+  { q: 'Quanto custa?', a: `Três planos, pelo número de membros ativos: ${Object.values(PLANS).map((p) => `${p.name} (${p.description.replace(/^Para lojas /, '').replace(/\.$/, '')}) a ${brl0(p.price)} por mês`).join('; ')}. Há desconto no plano anual e teste grátis de ${TRIAL_DAYS} dias.` },
   { q: 'Preciso instalar alguma coisa?', a: 'Não. Funciona no navegador do computador e do celular. Cada irmão entra com o próprio e-mail e senha.' },
   { q: 'Quanto tempo dura o teste grátis?', a: 'Dez dias, com todos os módulos do plano escolhido. O cartão é cadastrado no início, mas a primeira cobrança só acontece ao fim do teste — cancele antes e nada é cobrado.' },
   { q: 'Como os irmãos pagam?', a: 'A loja escolhe: direto na conta da loja, com o Pix da chave da loja (sem tarifa do sistema), ou pelo Asaas, com Pix ou boleto e baixa automática. Nos dois casos o irmão paga pelo portal.' },
@@ -63,6 +72,7 @@ const pillars = [
 export default function Home() {
   return (
     <main className="relative">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(landingJsonLd(faq)) }} />
       {/* Fundo egípcio FIXO — sempre visível; o conteúdo rola por cima.
           Véu mais leve para revelar as pirâmides e os camelos ao fundo. */}
       <div aria-hidden="true" className="fixed inset-0 -z-10">

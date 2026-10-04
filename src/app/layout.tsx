@@ -33,6 +33,9 @@ export const metadata: Metadata = {
     "Sistema para loja maçônica: tesouraria com Pix e baixa automática, portal do irmão, mensalidades e inadimplência, secretaria, chancelaria e hospitalaria — com prestação de contas pronta e LGPD.",
   keywords: ["sistema para loja maçônica", "tesouraria de loja maçônica", "gestão de loja maçônica", "mensalidade loja maçônica", "software maçonaria"],
   applicationName: "Sigma Horus",
+  // Verificação do Google Search Console / Bing Webmaster: preencha as variáveis na Vercel (ver divulgacao/SEO.md).
+  verification: { google: process.env.GOOGLE_SITE_VERIFICATION || undefined },
+  other: process.env.BING_SITE_VERIFICATION ? { 'msvalidate.01': process.env.BING_SITE_VERIFICATION } : undefined,
   openGraph: {
     type: "website",
     locale: "pt_BR",

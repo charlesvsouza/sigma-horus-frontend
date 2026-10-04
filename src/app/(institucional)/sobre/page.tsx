@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { LegalDoc, Section } from '@/components/legal-doc';
 
 export const metadata: Metadata = {
-  title: 'Sobre — Sigma Horus',
+  title: 'Sobre',
+  alternates: { canonical: '/sobre' },
   description: 'O que é o Sigma Horus, sua missão e a quem se destina.',
 };
 

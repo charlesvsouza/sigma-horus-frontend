@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { LegalDoc, Section } from '@/components/legal-doc';
 
 export const metadata: Metadata = {
-  title: 'Privacidade & LGPD — Sigma Horus',
+  title: 'Privacidade & LGPD',
+  alternates: { canonical: '/privacidade' },
   description: 'Como o Sigma Horus trata dados pessoais conforme a LGPD.',
 };
 

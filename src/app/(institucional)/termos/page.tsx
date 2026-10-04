@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { LegalDoc, Section } from '@/components/legal-doc';
 
 export const metadata: Metadata = {
-  title: 'Termos de Uso — Sigma Horus',
+  title: 'Termos de Uso',
+  alternates: { canonical: '/termos' },
   description: 'Condições de uso da plataforma Sigma Horus.',
 };
 

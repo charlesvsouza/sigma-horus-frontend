@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { LegalDoc, Section } from '@/components/legal-doc';
 
 export const metadata: Metadata = {
-  title: 'Compliance & Transparência — Sigma Horus',
+  title: 'Compliance & Transparência',
+  alternates: { canonical: '/compliance' },
   description: 'Práticas de conformidade, segurança e transparência do Sigma Horus.',
 };
 
