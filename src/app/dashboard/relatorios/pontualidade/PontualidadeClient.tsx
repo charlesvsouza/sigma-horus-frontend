@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChargeReminderDialog } from '@/components/charge-reminder-dialog';
 import { EmptyState } from '@/components/ui';
 import { ReportActions, ReportDocument, type Signatory } from '@/components/report/report-document';
 import { brl } from '@/lib/currency';
@@ -15,6 +17,7 @@ const monthLabel = (m: string) => new Date(`${m}-01T12:00:00Z`).toLocaleDateStri
 
 export default function PontualidadeClient({ lodgeName, crestUrl, issuedBy, signatures, month, rows, summary }: { lodgeName: string; crestUrl: string | null; issuedBy?: string | null; signatures: Signatory[]; month: string; rows: PunctualityRow[]; summary: PunctualitySummary }) {
   const router = useRouter();
+  const [remindOpen, setRemindOpen] = useState(false);
   const amountOf = (b: PunctualityBucket) => rows.filter((r) => r.bucket === b).reduce((s, r) => s + r.amount, 0);
 
   return (
@@ -34,6 +37,12 @@ export default function PontualidadeClient({ lodgeName, crestUrl, issuedBy, sign
           <EmptyState title="Nenhuma mensalidade com vencimento neste mês." description="Escolha outro mês ou lance as mensalidades em Cobranças." />
         ) : (
           <>
+            {summary.unpaid.count > 0 ? (
+              <div className="rpt-noprint flex flex-wrap items-center gap-3">
+                <button type="button" onClick={() => setRemindOpen(true)} className="rounded-full border border-gold/50 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:bg-gold/20">Lembrar por e-mail quem não pagou ({summary.unpaid.count})</button>
+                <span className="text-xs text-sand-dark">Um e-mail por irmão, com o Pix ou link de cada mensalidade. Você confere a lista antes de enviar.</span>
+              </div>
+            ) : null}
             <ReportActions csv={() => ({ filename: `pontualidade_${month}`, rows: [['Irmão', 'Vencimento', 'Pago em', 'Valor', 'Situação'], ...rows.map((r) => [r.memberName, formatDateOnly(r.dueDay), r.paidDay ? formatDateOnly(r.paidDay) : '', r.amount, BUCKET_LABEL[r.bucket]])] })} />
             <ReportDocument lodgeName={lodgeName} crestUrl={crestUrl} title={`Pontualidade das mensalidades — ${monthLabel(month)}`} details={[`${summary.total} mensalidades`, 'por quantidade', 'posição na data de emissão']} issuedBy={issuedBy} signatures={signatures}>
               <div className="rpt-section mb-6">
@@ -87,6 +96,7 @@ export default function PontualidadeClient({ lodgeName, crestUrl, issuedBy, sign
           </>
         )}
       </div>
+      {remindOpen ? <ChargeReminderDialog month={month} onClose={() => setRemindOpen(false)} /> : null}
     </main>
   );
 }

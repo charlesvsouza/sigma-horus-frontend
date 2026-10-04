@@ -17,9 +17,9 @@ interface SendResult { sent: number; failed: number; skipped: number; failures: 
 
 const eligible = (m: PreviewMember) => !!m.email && !m.sentToday;
 
-async function fetchPreview(scope: ReminderScope): Promise<{ ok: true; preview: Preview } | { ok: false; error: string }> {
+async function fetchPreview(scope: ReminderScope, month?: string): Promise<{ ok: true; preview: Preview } | { ok: false; error: string }> {
   try {
-    const res = await fetch('/api/invoices/remind-all', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'preview', scope }) });
+    const res = await fetch('/api/invoices/remind-all', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'preview', scope, month }) });
     const data = await res.json().catch(() => ({}));
     return res.ok ? { ok: true, preview: data as Preview } : { ok: false, error: data.error ?? 'Erro ao montar a lista de envio.' };
   } catch {
@@ -27,7 +27,7 @@ async function fetchPreview(scope: ReminderScope): Promise<{ ok: true; preview: 
   }
 }
 
-export function ChargeReminderDialog({ onClose }: { onClose: () => void }) {
+export function ChargeReminderDialog({ onClose, month }: { onClose: () => void; /** 'AAAA-MM': só as mensalidades que vencem nesse mês (relatório de Pontualidade). */ month?: string }) {
   const [scope, setScope] = useState<ReminderScope>('all');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +38,7 @@ export function ChargeReminderDialog({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     let alive = true;
-    void fetchPreview(scope).then((r) => {
+    void fetchPreview(scope, month).then((r) => {
       if (!alive) return;
       setLoading(false);
       if (!r.ok) { setError(r.error); setPreview(null); return; }
@@ -47,7 +47,7 @@ export function ChargeReminderDialog({ onClose }: { onClose: () => void }) {
       setSelected(new Set(r.preview.members.filter(eligible).map((m) => m.memberId)));
     });
     return () => { alive = false; };
-  }, [scope]);
+  }, [scope, month]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !sending) onClose(); };
@@ -85,13 +85,13 @@ export function ChargeReminderDialog({ onClose }: { onClose: () => void }) {
       const res = await fetch('/api/invoices/remind-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'send', scope, memberIds: [...selected] }),
+        body: JSON.stringify({ action: 'send', scope, month, memberIds: [...selected] }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setError(data.error ?? 'Erro ao enviar os lembretes.'); return; }
       setResult(data as SendResult);
       // Atualiza a marcação "já recebeu hoje" de quem acabou de receber.
-      const r = await fetchPreview(scope);
+      const r = await fetchPreview(scope, month);
       if (r.ok) { setPreview(r.preview); setSelected(new Set()); }
     } catch {
       setError('Sem conexão com o servidor. Confira em Comunicação o que chegou a sair antes de tentar de novo.');
@@ -107,7 +107,7 @@ export function ChargeReminderDialog({ onClose }: { onClose: () => void }) {
           <div>
             <h2 id="reminder-dialog-title" className="text-base font-semibold text-sand-light">Lembretes por e-mail</h2>
             <p className="mt-1 text-xs text-sand-dark">
-              Um e-mail por irmão, com todas as cobranças dele. Cada cobrança vai com o próprio {preview?.asaasMode ? 'link de pagamento (ou o portal, se ainda não foi emitida no Asaas)' : 'Pix copia e cola'} — ele pode pagar uma sem a outra.
+              {month ? `Mensalidades com vencimento em ${month.slice(5)}/${month.slice(0, 4)} ainda não pagas. Só entram as que têm cobrança emitida. ` : ''}Um e-mail por irmão, com todas as cobranças dele. Cada cobrança vai com o próprio {preview?.asaasMode ? 'link de pagamento (ou o portal, se ainda não foi emitida no Asaas)' : 'Pix copia e cola'} — ele pode pagar uma sem a outra.
             </p>
           </div>
           <button type="button" onClick={onClose} disabled={sending} aria-label="Fechar" className="text-sm text-sand-dark transition hover:text-sand-light disabled:opacity-40">✕</button>

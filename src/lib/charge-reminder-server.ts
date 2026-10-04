@@ -5,6 +5,8 @@ import {
 } from '@/lib/charge-reminder';
 import { isAsaasMode, paymentInstructions, portalPayUrl } from '@/lib/collection';
 import { brl } from '@/lib/currency';
+import { monthRange } from '@/lib/dues-punctuality';
+import { DUES_ACCOUNT_WHERE } from '@/lib/overdue';
 import { lateChargeConfig, lateChargeSentence, pixAmount } from '@/lib/late-charge';
 import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
 import { channelsAvailable, dispatch, type LodgeChannels, type SendResult } from '@/lib/messaging';
@@ -27,7 +29,7 @@ export interface ReminderContext {
   groups: ReminderGroup[];
 }
 
-export async function loadReminderContext(lodgeId: string, filter: { scope: ReminderScope; invoiceId?: string; minDaysOverdue?: number }, now: Date = new Date()): Promise<ReminderContext | null> {
+export async function loadReminderContext(lodgeId: string, filter: { scope: ReminderScope; invoiceId?: string; minDaysOverdue?: number; dueMonth?: string }, now: Date = new Date()): Promise<ReminderContext | null> {
   const data = await withTenant(lodgeId, async (db) => {
     const [lodge, invoices] = await Promise.all([
       db.lodge.findUnique({
@@ -40,7 +42,12 @@ export async function loadReminderContext(lodgeId: string, filter: { scope: Remi
       }),
       db.invoice.findMany({
         // Irmão bloqueado (comunicado à Potência) não recebe lembrete: a cobrança dele é o acordo de regularização.
-        where: { lodgeId, memberId: { not: null }, member: { is: { status: { not: 'blocked' } } }, status: { notIn: CLOSED_INVOICE_STATUSES }, ...(filter.invoiceId ? { id: filter.invoiceId } : {}) },
+        // dueMonth (relatório de Pontualidade): só mensalidades com vencimento naquele mês, de irmãos não isentos.
+        where: {
+          lodgeId, memberId: { not: null }, status: { notIn: CLOSED_INVOICE_STATUSES }, ...(filter.invoiceId ? { id: filter.invoiceId } : {}),
+          member: { is: { status: { not: 'blocked' }, ...(filter.dueMonth ? { duesExempt: false } : {}) } },
+          ...(filter.dueMonth ? { account: { is: { ...DUES_ACCOUNT_WHERE, dueDate: { gte: monthRange(filter.dueMonth).start, lt: monthRange(filter.dueMonth).end } } } } : {}),
+        },
         select: {
           id: true, number: true, amount: true, dueDate: true, status: true, description: true, asaasInvoiceUrl: true,
           member: { select: { id: true, name: true, email: true } },

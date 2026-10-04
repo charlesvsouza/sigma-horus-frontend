@@ -26,7 +26,9 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const scope = normalizeReminderScope(body?.scope);
-  const ctx = await loadReminderContext(lodgeId, { scope });
+  // `month` ('AAAA-MM'): lembrar só as mensalidades que vencem naquele mês (relatório de Pontualidade).
+  const dueMonth = typeof body?.month === 'string' && /^d{4}-(0[1-9]|1[0-2])$/.test(body.month) ? body.month : undefined;
+  const ctx = await loadReminderContext(lodgeId, { scope, dueMonth });
   if (!ctx) return NextResponse.json({ error: 'Loja não encontrada.' }, { status: 404 });
 
   const since = startOfTodayBR();
