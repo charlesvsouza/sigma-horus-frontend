@@ -2069,7 +2069,7 @@ export function ManualBook() {
                 O Venerável tem visão gerencial completa, sem lançar baixas financeiras. Acompanhe:
               </p>
               <Bullets>
-                <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> e <strong>Ações rápidas</strong>: o pulso da loja.</li>
+                <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> (<UI>Contas vencidas</UI>, <UI>Contas a vencer</UI>, <UI>Cobranças vencidas</UI> e <UI>Cobranças a vencer</UI> — contadas pelo vencimento e pelo saldo em aberto, no calendário de Brasília) e <strong>Ações rápidas</strong>: o pulso da loja.</li>
                 <li><UI>Relatórios</UI>: arrecadação, inadimplência, fluxo de caixa e frequência por período.</li>
                 <li><UI>Histórico de pagamentos</UI> (7.19): o que cada irmão pagou, com recibos — para conferir uma reclamação sem depender de terceiros.</li>
                 <li><UI>Declaração de regularidade</UI> (7.20): a declaração de &quot;nada consta&quot; financeiro, que você assina com o Tesoureiro — para transferência, elevação, filiação ou candidatura.</li>

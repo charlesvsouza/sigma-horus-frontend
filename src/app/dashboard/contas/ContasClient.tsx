@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { MemberLink } from '@/components/quick-nav';
-import { formatDateOnly } from '@/lib/date-only';
+import { daysOverdueBR, formatDateOnly } from '@/lib/date-only';
 
 interface ChartAccountOption { id: string; code: string; name: string; type: string; isDues?: boolean; }
 interface MemberOption { id: string; name: string; }
 interface CounterpartyOption { id: string; name: string; kind: string; }
 interface FinancialAccountOption { id: string; name: string; kind: string; }
+// Vencida = não paga e com o vencimento (dia civil de Brasília) já passado. O status gravado quase nunca vira "overdue".
+const isOverdue = (a: { status: string; dueDate: string }) => a.status === 'overdue' || (a.status !== 'paid' && daysOverdueBR(a.dueDate) > 0);
+
 interface AccountItem {
   id: string;
   title: string;
@@ -290,8 +293,8 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                   <p className="text-sm font-medium text-sand-light">
                     {account.title}
                     {account.isDues ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">Mensalidade</span> : null}
-                    <span className={`ml-2 rounded-full border px-2 py-0.5 text-xs font-medium ${account.status === 'paid' ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300' : account.status === 'overdue' ? 'border-rose-500/20 bg-rose-500/12 text-rose-300' : 'border-gold/15 bg-gold/10 text-gold'}`}>
-                      {account.status === 'paid' ? (account.type === 'RECEIVABLE' ? 'Recebida' : 'Paga') : account.status === 'overdue' ? 'Vencida' : 'Em aberto'}
+                    <span className={`ml-2 rounded-full border px-2 py-0.5 text-xs font-medium ${account.status === 'paid' ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300' : isOverdue(account) ? 'border-rose-500/20 bg-rose-500/12 text-rose-300' : 'border-gold/15 bg-gold/10 text-gold'}`}>
+                      {account.status === 'paid' ? (account.type === 'RECEIVABLE' ? 'Recebida' : 'Paga') : isOverdue(account) ? 'Vencida' : 'Em aberto'}
                     </span>
                     {account.awaitingAsaas && account.status !== 'paid' ? <span className="ml-2 rounded-full border border-sky-500/20 bg-sky-500/12 px-2 py-0.5 text-xs font-medium text-sky-200">Aguardando Asaas</span> : null}
                     {account.approvalStatus === 'pending' ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">Aguardando aprovação</span> : null}

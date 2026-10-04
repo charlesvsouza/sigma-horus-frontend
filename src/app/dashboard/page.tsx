@@ -6,6 +6,8 @@ import { canLodgeAccess, canLodgeAccessFor } from '@/lib/rbac';
 import { brl } from '@/lib/currency';
 import { computeFinancialAccountBalances } from '@/lib/financial-accounts';
 import { remainingAmount, sumMoney } from '@/lib/money';
+import { countAccountsByDue, countInvoicesByDue } from '@/lib/dashboard-counts';
+import { todayBR } from '@/lib/date-only';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -43,11 +45,11 @@ export default async function DashboardPage() {
     Promise.all([
       db.account.findMany({
         where: { lodgeId: String(lodgeId) },
-        select: { id: true, type: true, amount: true, status: true, approvalStatus: true },
+        select: { id: true, type: true, amount: true, dueDate: true, status: true, approvalStatus: true },
       }),
       db.invoice.findMany({
         where: { lodgeId: String(lodgeId) },
-        select: { id: true, amount: true, status: true },
+        select: { id: true, amount: true, status: true, dueDate: true },
       }),
       db.payment.findMany({
         where: { lodgeId: String(lodgeId) },
@@ -82,9 +84,14 @@ export default async function DashboardPage() {
   );
 
   const receivedTotal = sumMoney(payments.filter((p) => p.account?.type === 'RECEIVABLE').map((p) => Number(p.amount ?? 0)));
-  const pendingAccounts = accounts.filter((a) => a.status === 'pending').length;
-  const overdueAccounts = accounts.filter((a) => a.status === 'overdue').length;
-  const pendingInvoices = invoices.filter((i) => i.status === 'pending').length;
+  // Vencida/pendente pelo VENCIMENTO e pelo saldo em aberto, não pelo status gravado (a conta fica "pending" depois de vencer).
+  const today = todayBR();
+  const { overdue: overdueAccounts, pending: pendingAccounts } = countAccountsByDue(
+    accounts.map((a) => ({ id: a.id, amount: Number(a.amount ?? 0), dueDate: a.dueDate, status: a.status, approvalStatus: a.approvalStatus })),
+    paidByAccount,
+    today,
+  );
+  const { overdue: overdueInvoices, pending: pendingInvoices } = countInvoicesByDue(invoices.map((i) => ({ status: i.status, dueDate: i.dueDate })), today);
   const netBalance = sumMoney([receivableTotal, -payableTotal]);
 
   // Ocorrências de inventário (Arquiteto) aguardando decisão de baixa/reposição —
@@ -100,12 +107,13 @@ export default async function DashboardPage() {
 
   const attention = [
     { href: '/dashboard/contas', label: 'Contas vencidas', value: overdueAccounts, tone: 'rose' as const },
-    { href: '/dashboard/contas', label: 'Contas pendentes', value: pendingAccounts, tone: 'gold' as const },
-    { href: '/dashboard/cobrancas', label: 'Cobranças pendentes', value: pendingInvoices, tone: 'muted' as const },
+    { href: '/dashboard/contas', label: 'Contas a vencer', value: pendingAccounts, tone: 'gold' as const },
+    { href: '/dashboard/cobrancas', label: 'Cobranças vencidas', value: overdueInvoices, tone: 'rose' as const },
+    { href: '/dashboard/cobrancas', label: 'Cobranças a vencer', value: pendingInvoices, tone: 'muted' as const },
     ...(canDecideInventory ? [{ href: '/dashboard/materiais', label: 'Ocorrências de inventário', value: pendingIncidents, tone: 'gold' as const }] : []),
   ];
   const toneText: Record<string, string> = { rose: 'text-rose-300', gold: 'text-gold', muted: 'text-sand' };
-  const nothingPending = overdueAccounts === 0 && pendingAccounts === 0 && pendingInvoices === 0 && pendingIncidents === 0;
+  const nothingPending = overdueAccounts === 0 && pendingAccounts === 0 && overdueInvoices === 0 && pendingInvoices === 0 && pendingIncidents === 0;
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-6 py-8 lg:px-8">
