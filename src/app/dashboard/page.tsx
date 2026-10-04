@@ -8,6 +8,7 @@ import { computeFinancialAccountBalances } from '@/lib/financial-accounts';
 import { remainingAmount, sumMoney } from '@/lib/money';
 import { countAccountsByDue, countInvoicesByDue } from '@/lib/dashboard-counts';
 import { todayBR } from '@/lib/date-only';
+import { invoiceOpenBalance } from '@/lib/charge-notice';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -49,7 +50,7 @@ export default async function DashboardPage() {
       }),
       db.invoice.findMany({
         where: { lodgeId: String(lodgeId) },
-        select: { id: true, amount: true, status: true, dueDate: true },
+        select: { id: true, accountId: true, amount: true, status: true, dueDate: true },
       }),
       db.payment.findMany({
         where: { lodgeId: String(lodgeId) },
@@ -91,7 +92,13 @@ export default async function DashboardPage() {
     paidByAccount,
     today,
   );
-  const { overdue: overdueInvoices, pending: pendingInvoices } = countInvoicesByDue(invoices.map((i) => ({ status: i.status, dueDate: i.dueDate })), today);
+  const { overdue: overdueInvoices, pending: pendingInvoices } = countInvoicesByDue(
+    invoices.map((i) => {
+      const account = accounts.find((a) => a.id === i.accountId);
+      return { status: i.status, dueDate: i.dueDate, openBalance: invoiceOpenBalance(Number(i.amount ?? 0), account ? { amount: Number(account.amount ?? 0), status: account.status, payments: [{ amount: paidByAccount.get(account.id) ?? 0 }] } : null) };
+    }),
+    today,
+  );
   const netBalance = sumMoney([receivableTotal, -payableTotal]);
 
   // Ocorrências de inventário (Arquiteto) aguardando decisão de baixa/reposição —

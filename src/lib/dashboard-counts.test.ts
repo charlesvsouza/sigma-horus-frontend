@@ -25,14 +25,15 @@ test('contas: lista vazia e conta paga em parte antes do vencimento', () => {
   assert.deepEqual(countAccountsByDue([{ id: 'x', amount: 100, dueDate: d('2026-12-01'), status: 'pending' }], new Map([['x', 30]]), TODAY), { overdue: 0, pending: 1 });
 });
 
-test('cobranças: vencida = não fechada e vencimento antes de hoje', () => {
+test('cobranças: vencida = não fechada, com saldo e vencimento antes de hoje (como na tela Cobranças)', () => {
   const inv = [
-    { status: 'pending', dueDate: d('2026-09-30') },
-    { status: 'overdue', dueDate: d('2026-09-01') },
-    { status: 'pending', dueDate: d('2026-10-05') },
-    { status: 'pending', dueDate: d('2026-11-01') },
-    { status: 'paid', dueDate: d('2026-09-01') },
-    { status: 'cancelled', dueDate: d('2026-09-01') },
+    { status: 'pending', dueDate: d('2026-09-30'), openBalance: 140 },
+    { status: 'overdue', dueDate: d('2026-09-01'), openBalance: 140 },
+    { status: 'pending', dueDate: d('2026-10-05'), openBalance: 140 },
+    { status: 'pending', dueDate: d('2026-11-01'), openBalance: 140 },
+    { status: 'paid', dueDate: d('2026-09-01'), openBalance: 0 },
+    { status: 'cancelled', dueDate: d('2026-09-01'), openBalance: 140 },
+    { status: 'pending', dueDate: d('2026-09-01'), openBalance: 0 }, // conta já quitada por pagamentos: não conta
   ];
   assert.deepEqual(countInvoicesByDue(inv, TODAY), { overdue: 2, pending: 2 });
 });

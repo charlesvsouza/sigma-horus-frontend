@@ -25,11 +25,14 @@ export function countAccountsByDue(accounts: DashAccount[], paidByAccount: Map<s
 
 const CLOSED = ['paid', 'cancelled', 'canceled'];
 
-/** Cobranças em aberto, separadas em vencidas (venceram antes de hoje) e a vencer/vencendo hoje. */
-export function countInvoicesByDue(invoices: { status: string; dueDate: Date }[], today: Date): { overdue: number; pending: number } {
+/**
+ * Cobranças em aberto, separadas em vencidas (venceram antes de hoje) e a vencer/vencendo hoje. Mesmo critério da tela
+ * Cobranças: só conta a que ainda tem saldo em aberto (`openBalance`, com pagamento parcial da conta já descontado).
+ */
+export function countInvoicesByDue(invoices: { status: string; dueDate: Date; openBalance: number }[], today: Date): { overdue: number; pending: number } {
   let overdue = 0, pending = 0;
   for (const i of invoices) {
-    if (CLOSED.includes(i.status)) continue;
+    if (CLOSED.includes(i.status) || !(i.openBalance > 0)) continue;
     if (dayOf(i.dueDate) < today.getTime()) overdue++;
     else pending++;
   }
