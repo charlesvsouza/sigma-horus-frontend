@@ -5,6 +5,7 @@ import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, parseSelfEditFi
 import { withTenant, prismaAdmin } from '@/lib/prisma';
 import { adminEmails, memberEmailIsAdminMessage, normalizeEmail } from '@/lib/admin-policy';
 import { isValidCPF, maskCPF, onlyDigits } from '@/lib/masks';
+import { canGrantDuesBenefit } from '@/lib/dues-benefit';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
@@ -91,12 +92,15 @@ export async function PUT(request: Request, { params }: Ctx) {
   }
 
   const item = await withTenant(String(lodgeId), async (db) => {
-    const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, status: true } });
+    const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, status: true, duesExempt: true, duesPotencyOnly: true, duesPotencyReason: true } });
     if (!existing) return null;
     // Candidato se edita na ficha dele (Secretaria → Candidatos) e só vira obreiro pela iniciação.
     if (existing.status === CANDIDATE_STATUS) return 'candidate' as const;
     // Bloqueado só sai do bloqueio pelo acordo quitado (Tesouraria → Acordos de regularização), nunca pela edição.
     if (existing.status === 'blocked') fields.status = 'blocked';
+    // Benefício de mensalidade: só o Venerável e o Administrador concedem ou retiram; os demais preservam o que está gravado.
+    if (!canGrantDuesBenefit(role)) Object.assign(fields, { duesExempt: existing.duesExempt, duesPotencyOnly: existing.duesPotencyOnly, duesPotencyReason: existing.duesPotencyReason });
+    const benefitChanged = fields.duesExempt !== existing.duesExempt || fields.duesPotencyOnly !== existing.duesPotencyOnly || fields.duesPotencyReason !== existing.duesPotencyReason;
 
     // Replace-all dos familiares: apaga os atuais e recria a partir do form.
     const updated = await db.member.update({
@@ -110,7 +114,7 @@ export async function PUT(request: Request, { params }: Ctx) {
       },
       include: MEMBER_LIST_INCLUDE,
     });
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { name: fields.name } });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { name: fields.name, ...(benefitChanged ? { duesBenefit: { exempt: fields.duesExempt, potencyOnly: fields.duesPotencyOnly, reason: fields.duesPotencyReason } } : {}) } });
     return updated;
   });
 

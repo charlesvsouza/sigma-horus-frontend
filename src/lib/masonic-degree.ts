@@ -184,3 +184,9 @@ export function tenureMilestoneForYear(initiationDate?: string | Date | null, re
   const years = todayYmd(ref).y - markYmd(start).y;
   return TENURE_MILESTONES.includes(years) ? years : null;
 }
+
+/** Idade em anos completos na data `ref` (null sem data de nascimento válida). */
+export function ageInYears(birthDate?: string | Date | null, ref: Date = new Date()): number | null {
+  const birth = toDate(birthDate);
+  return birth && birth <= ref ? fullYearsBetween(birth, ref) : null;
+}

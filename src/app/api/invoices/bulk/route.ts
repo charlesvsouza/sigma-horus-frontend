@@ -3,6 +3,8 @@ import { CANDIDATE_STATUS } from '@/lib/candidate';
 import { BLOCKED_STATUS } from '@/lib/member-block';
 import { logAudit } from '@/lib/audit';
 import { createChargesWithAccounts } from '@/lib/charges';
+import { duesAmountFor } from '@/lib/dues-benefit';
+import { isValidMoney } from '@/lib/money';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
@@ -40,23 +42,39 @@ export async function POST(request: Request) {
         // (comunicado à Potência) só se regulariza pelo acordo.
         ...(scope === 'active' ? { status: 'active' } : { status: { notIn: [CANDIDATE_STATUS, BLOCKED_STATUS] } }),
       },
-      select: { id: true },
+      select: { id: true, duesPotencyOnly: true },
       orderBy: { name: 'asc' },
     });
     if (members.length === 0) return { ok: true, created: 0, members: 0 } as const;
 
-    const created = await createChargesWithAccounts(db, {
-      lodgeId: String(lodgeId),
-      chartAccountId,
-      memberIds: members.map((m) => m.id),
-      amount,
-      dueDate,
-      description: String(body?.description ?? ''),
-      isRecurring: Boolean(body?.isRecurring),
-      recurringInterval: typeof body?.recurringInterval === 'string' ? body.recurringInterval : 'monthly',
-      recurringCount,
-    });
-    if (!created.ok) return created;
+    // Benefício "só a Potência": a mensalidade desses irmãos nasce no valor da Potência (Configurações da loja).
+    const potencyMembers = chart?.isDues ? members.filter((m) => m.duesPotencyOnly) : [];
+    const potencyAmount = potencyMembers.length > 0 ? (await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { powerDuesAmount: true } }))?.powerDuesAmount ?? null : null;
+    if (potencyMembers.length > 0 && !(potencyAmount != null && isValidMoney(potencyAmount))) {
+      return { ok: false, status: 400, error: `${potencyMembers.length} irmão(s) têm o benefício "só a parte da Potência". Informe o valor da Potência em Configurações da loja antes de cobrar a mensalidade.` } as const;
+    }
+    const groups = new Map<number, string[]>();
+    for (const m of members) {
+      const value = duesAmountFor(m, amount, potencyAmount);
+      groups.set(value, [...(groups.get(value) ?? []), m.id]);
+    }
+
+    const invoiceIds: string[] = [];
+    for (const [groupAmount, memberIds] of groups) {
+      const created = await createChargesWithAccounts(db, {
+        lodgeId: String(lodgeId),
+        chartAccountId,
+        memberIds,
+        amount: groupAmount,
+        dueDate,
+        description: String(body?.description ?? ''),
+        isRecurring: Boolean(body?.isRecurring),
+        recurringInterval: typeof body?.recurringInterval === 'string' ? body.recurringInterval : 'monthly',
+        recurringCount,
+      });
+      if (!created.ok) return created;
+      invoiceIds.push(...created.invoiceIds);
+    }
 
     await logAudit(db, {
       lodgeId: String(lodgeId),
@@ -64,9 +82,9 @@ export async function POST(request: Request) {
       action: 'CREATE',
       entity: 'invoice-bulk',
       entityId: String(lodgeId),
-      metadata: { created: created.invoiceIds.length, scope, amount, chartAccountId, isRecurring: Boolean(body?.isRecurring) },
+      metadata: { created: invoiceIds.length, potencyOnly: potencyMembers.length, scope, amount, chartAccountId, isRecurring: Boolean(body?.isRecurring) },
     });
-    return { ok: true, created: created.invoiceIds.length, members: members.length } as const;
+    return { ok: true, created: invoiceIds.length, members: members.length } as const;
   });
 
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });

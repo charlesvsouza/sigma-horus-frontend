@@ -62,6 +62,7 @@ model Lodge {
   elevationFee             Float?
   exaltationFee            Float?
   affiliationFee           Float?  // filiação / regularização
+  powerDuesAmount          Float?  // parte da Potência na mensalidade: valor que paga o irmão com benefício "só a Potência"
   // Cartão parcelado nas taxas de grau (só Modo Asaas): a tarifa do cartão é repassada
   // ao irmão (o valor cobrado é ajustado para a loja receber a taxa cheia). Os percentuais
   // e o valor fixo são os do contrato da loja com o Asaas (variam por conta).
@@ -185,6 +186,8 @@ model Member {
   status             String   @default("active")
   deceased           Boolean  @default(false) // falecido — exclui de felicitações de aniversário/jubileu automáticas
   duesExempt         Boolean  @default(false) // isento de mensalidade (ex.: Maçom Remido) — fora da cobrança em massa e do Art. 002
+  duesPotencyOnly    Boolean  @default(false) // benefício: isento da parte da loja, paga só a parte da Potência (Lodge.powerDuesAmount)
+  duesPotencyReason  String?  // motivo do benefício: age_tenure | age70 | lodge
   riteId             String?
   powerId            String?
   originPowerId      String?  // potência de origem (bloco "Origem"), distinta da potência atual

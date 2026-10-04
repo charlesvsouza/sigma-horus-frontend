@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { UserRound } from 'lucide-react';
 import { clampDateYear, fetchCep, maskCEP, maskCPF, maskPhone, maskRG } from '@/lib/masks';
+import { canGrantDuesBenefit, eligibleForAgeConcession, POTENCY_REASONS } from '@/lib/dues-benefit';
 import { PHILOSOPHICAL_DEGREES, degreeShort, philosophicalDegree, symbolicSituation, timeInOrderLabel, remidoEligibility } from '@/lib/masonic-degree';
 import { BLOCKED_STATUS_DEF, MEMBER_FILTER_STATUSES, MEMBER_STATUSES, memberStatusFull, memberStatusLabel, memberStatusTone } from '@/lib/member-status';
 import { Button, EmptyState, Input, MaskedInput, Skeleton, inputClass, Alert, useConfirm, Toast } from '@/components/ui';
@@ -30,6 +31,8 @@ interface Member {
   phone?: string | null;
   status: string;
   duesExempt?: boolean;
+  duesPotencyOnly?: boolean;
+  duesPotencyReason?: string | null;
   deceased?: boolean;
   gradeName?: string | null;
   riteId?: string | null;
@@ -81,7 +84,7 @@ type FormState = Record<string, string>;
 const INPUT = inputClass; // fonte única do design system (src/components/ui/field-styles)
 
 const emptyForm: FormState = {
-  name: '', email: '', phone: '', status: 'active', duesExempt: 'false', deceased: 'false', riteId: '', powerId: '', originPowerId: '',
+  name: '', email: '', phone: '', status: 'active', duesExempt: 'false', duesPotencyOnly: 'false', duesPotencyReason: '', deceased: 'false', riteId: '', powerId: '', originPowerId: '',
   birthDate: '', cpf: '', rg: '', maritalStatus: '', occupation: '', nationality: '',
   addressLine: '', addressNumber: '', complement: '', neighborhood: '', city: '', state: '',
   zipCode: '', country: '', initiationDate: '', elevationDate: '', exaltationDate: '',
@@ -153,6 +156,7 @@ export default function MembrosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canGrantBenefit, setCanGrantBenefit] = useState(false);
   const [grantingId, setGrantingId] = useState<string | null>(null);
   const [recordShare, setRecordShare] = useState<WhatsAppShare | null>(null);
 
@@ -170,6 +174,7 @@ export default function MembrosPage() {
       .then((s) => {
         const role = String(s?.user?.role ?? '').toLowerCase();
         setIsAdmin(role === 'admin');
+        setCanGrantBenefit(canGrantDuesBenefit(role));
         setUserName(s?.user?.name ?? null);
         // Foto do irmão (Galeria de Veneráveis/Quadro da Gestão): prerrogativa
         // do Secretário, Venerável e Administrador.
@@ -378,7 +383,7 @@ export default function MembrosPage() {
         {creating ? (
           <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
             <h2 className="text-base font-semibold text-sand-light">Novo membro</h2>
-            <MemberForm initial={emptyForm} initialRelatives={[]} rites={rites} powers={powers} lodgeName={lodgeName} saving={saving} submitLabel="Salvar membro" onSubmit={createMember} onCancel={() => setCreating(false)} />
+            <MemberForm initial={emptyForm} initialRelatives={[]} rites={rites} powers={powers} lodgeName={lodgeName} canGrantBenefit={canGrantBenefit} saving={saving} submitLabel="Salvar membro" onSubmit={createMember} onCancel={() => setCreating(false)} />
           </section>
         ) : null}
 
@@ -496,7 +501,7 @@ export default function MembrosPage() {
                           ) : null}
                         </div>
                         {editingId === m.id ? (
-                          <MemberForm initial={memberToForm(m)} initialRelatives={m.relatives ?? []} rites={rites} powers={powers} lodgeName={lodgeName} saving={saving} submitLabel="Salvar alterações" onSubmit={(form, rels) => updateMember(m.id, form, rels)} onCancel={() => setEditingId(null)} />
+                          <MemberForm initial={memberToForm(m)} initialRelatives={m.relatives ?? []} rites={rites} powers={powers} lodgeName={lodgeName} canGrantBenefit={canGrantBenefit} saving={saving} submitLabel="Salvar alterações" onSubmit={(form, rels) => updateMember(m.id, form, rels)} onCancel={() => setEditingId(null)} />
                         ) : (
                           <div className="space-y-4 text-sm">
                             <div className="grid gap-3 md:grid-cols-2">
@@ -650,12 +655,13 @@ function LodgeNameField({ value, onChange, lodgeName, placeholder }: { value: st
   );
 }
 
-function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, saving, submitLabel, onSubmit, onCancel }: {
+function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, canGrantBenefit, saving, submitLabel, onSubmit, onCancel }: {
   initial: FormState;
   initialRelatives: RelativeData[];
   rites: Option[];
   powers: Option[];
   lodgeName: string;
+  canGrantBenefit: boolean;
   saving: boolean;
   submitLabel: string;
   onSubmit: (form: FormState, relatives: RelativeData[]) => void;
@@ -681,6 +687,9 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
     initiationDate: form.initiationDate || null,
     exaltationDate: form.exaltationDate || null,
   });
+
+  const benefit = form.duesExempt === 'true' ? 'exempt' : form.duesPotencyOnly === 'true' ? 'potency' : 'none';
+  const age70 = eligibleForAgeConcession(form.birthDate || null);
 
   // Família: slots fixos (mãe/pai/esposa) + dependentes dinâmicos.
   const pick = (kind: RelativeKind): RelativeData => {
@@ -882,18 +891,44 @@ function MemberForm({ initial, initialRelatives, rites, powers, lodgeName, savin
             <input value={form.masonicNumber} onChange={(e) => set('masonicNumber', e.target.value)} className={INPUT} placeholder="Número maçônico (CIM)" />
             <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} className={`${INPUT} md:col-span-2`} placeholder="Observações maçônicas e administrativas" rows={3} />
           </div>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/6 bg-sigma-blue-deep/40 px-4 py-3">
-            <label className="flex items-center gap-2 text-sm text-sand">
-              <input type="checkbox" checked={form.duesExempt === 'true'} onChange={(e) => set('duesExempt', String(e.target.checked))} />
-              Isento de mensalidade (Maçom Remido)
-            </label>
-            {remido.eligible ? (
-              <span className="rounded-full border border-gold/20 bg-gold/10 px-2.5 py-0.5 text-xs text-gold">
-                Elegível{remido.byAgeAndTenure ? ` (${remido.age} anos, ${remido.yearsAsMestre} como Mestre)` : ` (${remido.yearsInOrder} anos de Ordem)`}
-              </span>
-            ) : (
-              <span className="text-xs text-sand-dark">Não elegível pelos critérios usuais (65 anos + 15 de Mestre, ou 25 anos de Ordem)</span>
-            )}
+          <div className="mt-3 space-y-3 rounded-lg border border-white/6 bg-sigma-blue-deep/40 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label className="flex flex-wrap items-center gap-2 text-sm text-sand">
+                Benefício de mensalidade
+                <select
+                  value={benefit}
+                  disabled={!canGrantBenefit}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setForm((p) => ({ ...p, duesExempt: String(v === 'exempt'), duesPotencyOnly: String(v === 'potency'), duesPotencyReason: v === 'potency' ? (p.duesPotencyReason || (age70 ? 'age70' : 'lodge')) : '' }));
+                  }}
+                  className={`${INPUT} w-auto disabled:opacity-70`}
+                >
+                  <option value="none">Nenhum (paga o valor cheio)</option>
+                  <option value="exempt">Isento de mensalidade (Maçom Remido)</option>
+                  <option value="potency">Isento da parte da loja — paga só a parte da Potência</option>
+                </select>
+              </label>
+              {remido.eligible ? (
+                <span className="rounded-full border border-gold/20 bg-gold/10 px-2.5 py-0.5 text-xs text-gold">
+                  Elegível a Remido{remido.byAgeAndTenure ? ` (${remido.age} anos, ${remido.yearsAsMestre} como Mestre)` : ` (${remido.yearsInOrder} anos de Ordem)`}
+                </span>
+              ) : age70 ? (
+                <span className="rounded-full border border-gold/20 bg-gold/10 px-2.5 py-0.5 text-xs text-gold">Mais de 70 anos: pode receber a concessão da loja</span>
+              ) : (
+                <span className="text-xs text-sand-dark">Remido: 65 anos + 15 de Mestre, ou 25 anos de Ordem. Concessão da loja: a partir de 70 anos.</span>
+              )}
+            </div>
+            {benefit === 'potency' ? (
+              <label className="flex flex-wrap items-center gap-2 text-sm text-sand">
+                Motivo
+                <select value={form.duesPotencyReason || 'lodge'} disabled={!canGrantBenefit} onChange={(e) => set('duesPotencyReason', e.target.value)} className={`${INPUT} w-auto disabled:opacity-70`}>
+                  {Object.entries(POTENCY_REASONS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+                </select>
+                <span className="text-xs text-sand-dark">A mensalidade vem no valor da Potência definido em Configurações da loja.</span>
+              </label>
+            ) : null}
+            {!canGrantBenefit ? <p className="text-xs text-sand-dark">Somente o Venerável ou o Administrador concede ou retira o benefício.</p> : null}
           </div>
         </div>
       </Collapsible>

@@ -4,6 +4,7 @@ import { logAudit } from '@/lib/audit';
 import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, validateMemberFields, validateRelatives } from '@/lib/member-fields';
 import { withTenant } from '@/lib/prisma';
 import { adminEmails, memberEmailIsAdminMessage, normalizeEmail } from '@/lib/admin-policy';
+import { canGrantDuesBenefit } from '@/lib/dues-benefit';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
@@ -50,6 +51,8 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const fields = parseMemberFields(body);
+  // Benefício de mensalidade: só o Venerável e o Administrador concedem.
+  if (!canGrantDuesBenefit(role)) Object.assign(fields, { duesExempt: false, duesPotencyOnly: false, duesPotencyReason: null });
   const relatives = parseRelatives(body);
 
   const validationError = validateMemberFields(fields) ?? validateRelatives(relatives);

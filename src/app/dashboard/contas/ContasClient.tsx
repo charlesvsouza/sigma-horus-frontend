@@ -91,7 +91,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
     setForm({
       title: account.title,
       type: account.type,
-      chartAccountId: '',
+      chartAccountId: account.chartAccountId ?? '',
       amount: String(account.amount),
       dueDate: account.dueDate.slice(0, 10),
       status: account.status,
@@ -126,12 +126,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
     event.preventDefault();
     setSubmitting(true);
     try {
-      // No modo edição, a categoria (chartAccountId) não vem pré-carregada no
-      // form — omitir do payload evita apagar por engano o vínculo já existente.
-      const { chartAccountId, ...rest } = form;
+      // A categoria vem pré-carregada na edição (startEdit), então o que está no form é o que vale.
       const payload = {
-        ...rest,
-        ...(editingId ? {} : { chartAccountId }),
+        ...form,
         amount: Number(form.amount),
         // A caixa só aparece em conta a receber de um irmão: fora disso, nunca é mensalidade.
         isDues: form.isDues && form.type === 'RECEIVABLE' && Boolean(form.memberId),

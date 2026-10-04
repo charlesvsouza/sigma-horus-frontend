@@ -376,6 +376,13 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
               <Field label="Multa por atraso (%)" value={form.lateFeePercent} onChange={(v) => set('lateFeePercent', v)} type="number" inputMode="decimal" step="0.1" min="0" placeholder="Ex.: 2" />
               <Field label="Juros de mora ao mês (%)" value={form.lateInterestPercentMonth} onChange={(v) => set('lateInterestPercentMonth', v)} type="number" inputMode="decimal" step="0.1" min="0" placeholder="Ex.: 1" />
             </div>
+            <div className="mt-5 max-w-sm">
+              <Field label="Parte da Potência na mensalidade (R$)" value={form.powerDuesAmount} onChange={(v) => set('powerDuesAmount', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 110" />
+              <p className="mt-1 text-xs text-sand-dark">
+                Valor da mensalidade dos irmãos com o benefício &quot;só a parte da Potência&quot; (definido no cadastro do irmão pelo Venerável ou
+                Administrador). Na cobrança em lote, esses irmãos recebem este valor em vez do valor cheio.
+              </p>
+            </div>
             <div className="mt-5">
               <p className="text-sm font-medium text-sand-light">Taxas de grau</p>
               <p className="mt-0.5 text-xs text-sand-dark">

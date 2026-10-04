@@ -3,6 +3,7 @@
 
 import { parsePhilosophicalDegree } from './masonic-degree';
 import { MEMBER_STATUSES } from './member-status';
+import { normalizeBenefit } from './dues-benefit';
 
 type Body = Record<string, unknown>;
 
@@ -19,6 +20,8 @@ export interface MemberFields {
   status: string;
   deceased: boolean;
   duesExempt: boolean;
+  duesPotencyOnly: boolean;
+  duesPotencyReason: string | null;
   riteId: string | null;
   powerId: string | null;
   originPowerId: string | null;
@@ -63,7 +66,7 @@ export function parseMemberFields(body: Body): MemberFields {
     phone: str(body?.phone),
     status: String(body?.status ?? 'active'),
     deceased: String(body?.deceased) === 'true',
-    duesExempt: String(body?.duesExempt) === 'true',
+    ...normalizeBenefit(body),
     riteId: str(body?.riteId),
     powerId: str(body?.powerId),
     originPowerId: str(body?.originPowerId),

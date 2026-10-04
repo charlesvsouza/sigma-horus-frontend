@@ -1350,6 +1350,14 @@ export function ManualBook() {
                   critérios usuais: 65 anos + 15 de Mestre, ou 25 anos de Ordem) nunca entram na regra do Art. 002 nem
                   na cobrança em massa de mensalidade.
                 </p>
+                <p>
+                  <strong>Só a parte da Potência:</strong> no mesmo lugar do cadastro (<UI>Benefício de mensalidade</UI>) o
+                  Venerável ou o Administrador pode marcar <UI>Isento da parte da loja — paga só a parte da Potência</UI>,
+                  informando o motivo (idade e tempo de Ordem, concessão da loja para maior de 70 anos ou outro motivo da
+                  loja). O valor da Potência fica em <UI>Configurações da loja → Financeiro</UI>. Na cobrança em massa de
+                  mensalidade, esses irmãos recebem a mensalidade já nesse valor; continuam cobrados e na regra do Art. 002.
+                  Mensalidades já lançadas não mudam sozinhas. Os demais cargos veem o benefício, mas não o alteram.
+                </p>
               </Sub>
 
               <Sub id="tes-aprovacao" title="7.9 Aprovação de despesas e multa/juros de mora">
