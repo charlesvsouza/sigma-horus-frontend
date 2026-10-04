@@ -6,7 +6,8 @@ import { Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useCo
 import { brl } from '@/lib/currency';
 import { MemberLink, useQuickNav } from '@/components/quick-nav';
 import AccountsFilterBar, { FilterSummary } from '@/components/accounts-filter-bar';
-import { applyFilters, isDefaultFilters, parseFilters, serializeFilters, type Filters, type FilterAccount } from '@/lib/accounts-filter';
+import AccountsReport from '@/components/accounts-report';
+import { applyFilters, describeFilters, isDefaultFilters, parseFilters, serializeFilters, type Filters, type FilterAccount } from '@/lib/accounts-filter';
 import { daysOverdueBR, formatDateOnly, todayBR } from '@/lib/date-only';
 
 interface ChartAccountOption { id: string; code: string; name: string; type: string; isDues?: boolean; }
@@ -38,7 +39,7 @@ interface AccountItem {
 
 const INPUT_CLASS = inputClass; // fonte única do design system
 
-export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, role, startWithForm = false, art002Enabled = true }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string; startWithForm?: boolean; art002Enabled?: boolean }) {
+export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, role, startWithForm = false, art002Enabled = true, lodgeName = 'Loja', crestUrl = null, issuedBy = null }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string; startWithForm?: boolean; art002Enabled?: boolean; lodgeName?: string; crestUrl?: string | null; issuedBy?: string | null }) {
   const canApprove = role === 'venerable' || role === 'admin';
   const router = useRouter();
   const askConfirm = useConfirm();
@@ -53,6 +54,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   // entre um lançamento e outro. Em /contas (só a lista) abre ao editar uma conta; sem contas ainda, já vem aberto.
   const [formOpen, setFormOpen] = useState(startWithForm || accounts.length === 0);
   const [search, setSearch] = useState('');
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Filtros novos (navegação rápida ligada): estado na URL, sem recarregar a página (history.replaceState).
   const { enabled: betaOn } = useQuickNav();
@@ -331,7 +333,10 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                   categories={chartAccounts.map((c) => ({ id: c.id, name: `${c.code} ${c.name}` }))}
                   banks={financialAccounts.map((b) => ({ id: b.id, name: b.name }))}
                 />
-                <FilterSummary rows={shownRows} />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <FilterSummary rows={shownRows} />
+                  <button type="button" onClick={() => setReportOpen((v) => !v)} aria-expanded={reportOpen} className="rounded-full border border-gold/40 px-4 py-1.5 text-xs font-medium text-gold hover:text-gold-light">{reportOpen ? 'Fechar relatório' : 'Relatório / Imprimir'}</button>
+                </div>
               </div>
             ) : null}
             {accounts.length === 0 ? (
@@ -371,6 +376,18 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
             ))}
           </div>
         </CollapsibleCard>
+
+        {newFilters && reportOpen ? (
+          <AccountsReport
+            rows={shownRows}
+            filters={filters}
+            details={describeFilters(filters, { people: personOptions, categories: chartAccounts.map((c) => ({ id: c.id, name: `${c.code} ${c.name}` })), banks: financialAccounts.map((b) => ({ id: b.id, name: b.name })) })}
+            today={today}
+            lodgeName={lodgeName}
+            crestUrl={crestUrl}
+            issuedBy={issuedBy}
+          />
+        ) : null}
       </div>
     </main>
   );

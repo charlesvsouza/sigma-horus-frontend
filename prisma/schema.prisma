@@ -145,6 +145,7 @@ model Lodge {
   memberBlockItems MemberBlockItem[]
   sessionMinutes SessionMinutes[]
   memberBlockSignatures MemberBlockSignature[]
+  paymentReceiptSignatures PaymentReceiptSignature[]
   candidateInquirers CandidateInquirer[]
   hospitalityRequests HospitalityRequest[]
   financialAccounts FinancialAccount[]
@@ -511,6 +512,7 @@ model Payment {
   member       Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
   bankAccount  FinancialAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   bankTransactions BankTransaction[]
+  receiptSignature PaymentReceiptSignature?
 
   @@index([bankAccountId])
   @@index([lodgeId])
@@ -1311,6 +1313,24 @@ model SessionMinutes {
 // Assinatura digital do Termo de acordo de regularização: ao clicar em "Assinar", o sistema grava a marca
 // (quem, quando, hash do conteúdo do acordo e um código de verificação). Partes: venerable (Venerável ou
 // Administrador), treasurer e member (o próprio irmão). Uma assinatura por parte por acordo.
+// Assinatura digital do recibo de pagamento: só Tesoureiro ou Venerável, uma por pagamento (ver lib/receipt-signature.ts).
+model PaymentReceiptSignature {
+  id           String   @id @default(cuid())
+  lodgeId      String
+  paymentId    String   @unique
+  signerUserId String
+  signerName   String
+  signerRole   String   // Tesoureiro | Venerável Mestre
+  signedAt     DateTime @default(now())
+  contentHash  String   // sha256 do conteúdo do recibo no momento da assinatura
+  code         String   @unique // código público de verificação (RC-XXXX-XXXX)
+  ip           String?
+
+  lodge   Lodge   @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  @@index([lodgeId])
+}
+
 model MemberBlockSignature {
   id             String   @id @default(cuid())
   lodgeId        String

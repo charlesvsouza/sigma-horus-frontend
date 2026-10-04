@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { getReportSignatories } from '@/lib/report-signatories';
+import { receiptSignerRole } from '@/lib/receipt-signature';
 import ReciboClient from './ReciboClient';
 
 // Server Component: recibo imprimível de um pagamento (mesmo padrão de
@@ -37,12 +38,14 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
         account: { select: { title: true, type: true, member: { select: { name: true, cpf: true } } } },
         member: { select: { name: true, cpf: true } },
         lodge: { select: { name: true, cnpj: true, addressLine: true, addressNumber: true, city: true, state: true, crestUrl: true } },
+        receiptSignature: { select: { signerName: true, signerRole: true, signedAt: true, code: true } },
       },
     }),
   );
   if (!payment) notFound();
 
-  // Tesoureiro em exercício na data do pagamento (o Venerável não assina recibo).
+  // Recibo sem assinatura digital (baixa automática, registrada por outro cargo, ou anterior a este recurso): mostra o
+  // Tesoureiro em exercício na data do pagamento e, para quem pode assinar, o botão "Assinar recibo".
   const [treasurer] = await withTenant(String(lodgeId), (db) => getReportSignatories(db, String(lodgeId), { at: payment.paidAt }));
 
   return (
@@ -59,6 +62,8 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
         lodge: payment.lodge,
       }}
       treasurerName={treasurer?.name ?? null}
+      signature={payment.receiptSignature ? { signerName: payment.receiptSignature.signerName, signerRole: payment.receiptSignature.signerRole, signedAt: payment.receiptSignature.signedAt.toISOString(), code: payment.receiptSignature.code } : null}
+      canSign={!ownOnly && receiptSignerRole(role) !== null}
       issuedBy={session?.user?.name ?? null}
     />
   );

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  AGING_BUCKETS, EMPTY_FILTERS, QUICK_VIEWS, agingFacets, applyFilters, daysLate, isDefaultFilters, lineValue, parseFilters, serializeFilters,
+  AGING_BUCKETS, EMPTY_FILTERS, QUICK_VIEWS, agingFacets, applyFilters, daysLate, describeFilters, isDefaultFilters, reportTitleFor, lineValue, parseFilters, serializeFilters,
   situationFacets, situationOf, type FilterAccount, type Filters,
 } from './accounts-filter.ts';
 
@@ -112,4 +112,16 @@ test('URL: ida e volta, só o que difere do padrão, valores inválidos ignorado
   assert.deepEqual(parseFilters(new URLSearchParams(qs)), f);
   const bad = parseFilters(new URLSearchParams('tipo=XX&sit=hack&de=ontem&amin=abc&ord=zzz'));
   assert.deepEqual(bad, EMPTY_FILTERS);
+});
+
+test('descrição dos filtros para o cabeçalho do relatório', () => {
+  const lookups = { people: [{ id: 'p1', name: 'Carlos' }], categories: [{ id: 'c1', name: '1.1.01 Mensalidades' }], banks: [{ id: 'b1', name: 'Caixa' }] };
+  assert.deepEqual(describeFilters(EMPTY_FILTERS, lookups), []);
+  const lines = describeFilters(F({ tipo: 'RECEIVABLE', sit: 'overdue', daysMin: 31, daysMax: 60, from: '2026-10-01', person: 'p1', cat: 'c1', dues: true, min: '100', q: ' ouro ' }), lookups);
+  assert.deepEqual(lines, [
+    'Somente contas a receber', 'Situação: vencidas', 'Atraso: 31 a 60 dias', 'Vencimento: 01/10/2026 a sem limite', 'Pessoa: Carlos',
+    'Categoria: 1.1.01 Mensalidades', 'Somente mensalidades', 'Valor de R$ 100,00', 'Busca: “ouro”',
+  ]);
+  assert.equal(reportTitleFor('PAYABLE'), 'Contas a pagar');
+  assert.equal(reportTitleFor('all'), 'Contas a receber e a pagar');
 });

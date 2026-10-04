@@ -12,6 +12,7 @@ import { buildLodgeChannels } from '@/lib/lodge-channels';
 import { brl } from '@/lib/currency';
 import { NextResponse } from 'next/server';
 import { lockKey } from '@/lib/locks';
+import { autoSignReceipt } from '@/lib/receipt-signature-server';
 import { formatDayMixed } from '@/lib/date-only';
 import { LATE_CHARGE_CHART, lateChargeMarker } from '@/lib/late-charge';
 
@@ -162,6 +163,9 @@ export async function POST(request: Request) {
       },
     });
 
+    // Recibo assinado digitalmente no ato da baixa, quando quem registra é o Tesoureiro ou o Venerável.
+    await autoSignReceipt(db, String(lodgeId), created.id, session?.user?.id ? String(session.user.id) : null);
+
     // Acréscimo por atraso: conta a receber já paga, na categoria própria, mesma data/banco/método.
     if (lateCharge > 0) {
       const chart =
@@ -182,7 +186,7 @@ export async function POST(request: Request) {
         },
         select: { id: true },
       });
-      await db.payment.create({
+      const latePayment = await db.payment.create({
         data: {
           lodgeId: String(lodgeId),
           accountId: lateAccount.id,
@@ -193,7 +197,9 @@ export async function POST(request: Request) {
           method: method || 'manual',
           note: `Multa e juros por atraso recebidos junto com "${account.title}".`,
         },
+        select: { id: true },
       });
+      await autoSignReceipt(db, String(lodgeId), latePayment.id, session?.user?.id ? String(session.user.id) : null);
     }
 
     // Linha do extrato: só concilia crédito ainda livre e do mesmo valor (com o acréscimo, o crédito é

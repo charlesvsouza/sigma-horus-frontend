@@ -51,7 +51,7 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
           select: { id: true, name: true, kind: true, purpose: true },
           orderBy: { name: 'asc' },
         }),
-        lodge: await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { art002Enabled: true } }),
+        lodge: await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { art002Enabled: true, name: true, crestUrl: true } }),
       }))
     : { accounts: [], members: [], chartAccounts: [], counterparties: [], financialAccounts: [], lodge: null, hiddenOld: 0 };
 
@@ -92,7 +92,7 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
   return (
     <>
       <HistoryWindowNote full={fullHistory} hidden={data.hiddenOld} noun="lançamentos" basePath={basePath} />
-      <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} startWithForm={startWithForm} art002Enabled={isArt002Enabled(data.lodge)} />
+      <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} startWithForm={startWithForm} lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} issuedBy={session?.user?.name ?? null} art002Enabled={isArt002Enabled(data.lodge)} />
     </>
   );
 }

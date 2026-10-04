@@ -14,6 +14,7 @@ import { getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import { prismaAdmin, withTenant } from '@/lib/prisma';
 import { skipPendingOccurrences } from '@/lib/recurring-rules';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { autoSignReceipt } from '@/lib/receipt-signature-server';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 
 type Db = Prisma.TransactionClient;
@@ -256,12 +257,14 @@ export async function recordAgreementPayment(
       const account = await db.account.findFirst({ where: { id: a.accountId, lodgeId }, select: { id: true, amount: true } });
       if (!account) continue;
       await lockKey(db, `account:${account.id}`);
-      await db.payment.create({
+      const agreementPayment = await db.payment.create({
         data: {
           lodgeId, accountId: account.id, memberId, bankAccountId: bank.id, amount: a.amount, paidAt: input.paidAt,
           method: input.method || 'manual', note: input.note || 'Pagamento do acordo de regularização',
         },
+        select: { id: true },
       });
+      await autoSignReceipt(db, lodgeId, agreementPayment.id, actorId);
       const agg = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: account.id } });
       const paid = coversAmount(Number(agg._sum.amount ?? 0), Number(account.amount));
       await db.account.update({ where: { id: account.id }, data: { status: paid ? 'paid' : 'pending' } });

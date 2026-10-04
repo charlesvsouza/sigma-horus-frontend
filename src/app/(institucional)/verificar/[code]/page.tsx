@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { hashAgreement, normalizeSignatureCode, partyLabel } from '@/lib/agreement-signature';
+import { brDay, hashReceipt, normalizeReceiptCode } from '@/lib/receipt-signature';
 import { normalizeVerificationCode } from '@/lib/certificate';
 import { longDateBR } from '@/lib/letterhead';
 import { prismaAdmin } from '@/lib/prisma';
@@ -61,6 +62,52 @@ export default async function VerificarPage({ params }: { params: Promise<{ code
           <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/5 p-6">
             <h1 className="text-xl font-semibold text-rose-200">Assinatura não encontrada</h1>
             <p className="mt-2 text-sm text-sand">O código <strong className="font-mono">{sigCode}</strong> não corresponde a nenhuma assinatura registrada. Confira a digitação ou fale com a loja.</p>
+          </div>
+        )}
+        <Link href="/" className="mt-8 inline-block text-xs text-gold hover:text-gold-light">Sigma Horus — gestão para lojas maçônicas</Link>
+      </div>
+    );
+  }
+
+  // Código de assinatura digital de RECIBO (RC-XXXX-XXXX): confirma quem assinou, quando e se o recibo continua igual ao
+  // assinado. Não mostra o pagador nem o valor.
+  const receiptCode = normalizeReceiptCode(raw);
+  if (receiptCode) {
+    const sig = await prismaAdmin.paymentReceiptSignature.findUnique({
+      where: { code: receiptCode },
+      select: {
+        signerName: true, signerRole: true, signedAt: true, contentHash: true,
+        lodge: { select: { name: true, city: true, state: true } },
+        payment: { select: { id: true, accountId: true, amount: true, paidAt: true, method: true, member: { select: { name: true } }, account: { select: { title: true, member: { select: { name: true } } } }, lodge: { select: { name: true } } } },
+      },
+    });
+    const intact = sig
+      ? hashReceipt({
+          paymentId: sig.payment.id, accountId: sig.payment.accountId, lodgeName: sig.payment.lodge.name, accountTitle: sig.payment.account?.title ?? '—',
+          payerName: (sig.payment.member ?? sig.payment.account?.member)?.name ?? null, amount: Number(sig.payment.amount), paidDay: brDay(sig.payment.paidAt), method: sig.payment.method,
+        }) === sig.contentHash
+      : false;
+    return (
+      <div className="mx-auto max-w-xl px-6 py-16">
+        <p className="text-xs uppercase tracking-[0.3em] text-gold">Verificação de assinatura digital</p>
+        {sig ? (
+          <div className={`mt-4 rounded-xl border p-6 ${intact ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
+            <h1 className={`text-xl font-semibold ${intact ? 'text-emerald-200' : 'text-amber-200'}`}>{intact ? 'Assinatura válida' : 'Assinatura encontrada, mas o recibo foi alterado'}</h1>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div><dt className="text-sand-dark">Documento</dt><dd className="text-sand-light">Recibo de pagamento</dd></div>
+              <div><dt className="text-sand-dark">Assinado por</dt><dd className="text-sand-light">{sig.signerName} — {sig.signerRole}</dd></div>
+              <div><dt className="text-sand-dark">Em</dt><dd className="text-sand-light">{sig.signedAt.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'long', timeStyle: 'medium' })}</dd></div>
+              <div><dt className="text-sand-dark">Loja</dt><dd className="text-sand-light">{sig.lodge.name}{sig.lodge.city ? ` — Oriente de ${sig.lodge.city}${sig.lodge.state ? `/${sig.lodge.state}` : ''}` : ''}</dd></div>
+              <div><dt className="text-sand-dark">Resumo (hash)</dt><dd className="font-mono text-xs text-sand-light">{sig.contentHash.slice(0, 16)}…</dd></div>
+            </dl>
+            <p className="mt-4 text-xs text-sand-dark">
+              {intact ? 'O conteúdo do recibo é o mesmo que foi assinado.' : 'O conteúdo do recibo é diferente do que existia no momento da assinatura: procure a Tesouraria da loja.'}
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/5 p-6">
+            <h1 className="text-xl font-semibold text-rose-200">Assinatura não encontrada</h1>
+            <p className="mt-2 text-sm text-sand">O código <strong className="font-mono">{receiptCode}</strong> não corresponde a nenhuma assinatura registrada. Confira a digitação ou fale com a loja.</p>
           </div>
         )}
         <Link href="/" className="mt-8 inline-block text-xs text-gold hover:text-gold-light">Sigma Horus — gestão para lojas maçônicas</Link>

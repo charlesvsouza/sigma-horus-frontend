@@ -48,6 +48,7 @@ export const BACKUP_MODELS = [
   'materialLoan', // depois de account: a venda aponta para a conta a receber
   'invoice',
   'payment',
+  'paymentReceiptSignature', // depois de payment (assinatura digital do recibo)
   'asset',
   'bankTransaction',
   'document',

@@ -244,3 +244,36 @@ export function serializeFilters(f: Filters): string {
 }
 
 export const isDefaultFilters = (f: Filters) => serializeFilters(f) === '';
+
+// ---------------------------------------------------------------------------
+// Descrição dos filtros (cabeçalho do relatório impresso)
+// ---------------------------------------------------------------------------
+
+const SIT_NAME: Record<Situation, string> = { all: 'todas as situações', open: 'em aberto', overdue: 'vencidas', upcoming: 'a vencer', paid: 'pagas' };
+const brMoney = (v: string) => `R$ ${(Number(v.replace(',', '.')) || 0).toFixed(2).replace('.', ',')}`;
+const brDate = (iso: string) => iso.split('-').reverse().join('/');
+
+/** Linhas em português que descrevem o filtro em uso (vão no cabeçalho do relatório). Vazio = sem filtro além do padrão. */
+export function describeFilters(
+  f: Filters,
+  lookups: { people: { id: string; name: string }[]; categories: { id: string; name: string }[]; banks: { id: string; name: string }[] },
+): string[] {
+  const out: string[] = [];
+  if (f.tipo !== 'all') out.push(f.tipo === 'RECEIVABLE' ? 'Somente contas a receber' : 'Somente contas a pagar');
+  if (f.sit !== 'all') out.push(`Situação: ${SIT_NAME[f.sit]}`);
+  if (f.daysMin !== null || f.daysMax !== null) {
+    const b = AGING_BUCKETS.find((x) => x.min === f.daysMin && x.max === f.daysMax);
+    out.push(`Atraso: ${b ? b.label : `${f.daysMin ?? 1}${f.daysMax !== null ? ` a ${f.daysMax}` : ' ou mais'} dias`}`);
+  }
+  if (f.from || f.to) out.push(`Vencimento: ${f.from ? brDate(f.from) : 'início'} a ${f.to ? brDate(f.to) : 'sem limite'}`);
+  if (f.person) out.push(`Pessoa: ${lookups.people.find((p) => p.id === f.person)?.name ?? '—'}`);
+  if (f.cat) out.push(f.cat === 'none' ? 'Sem categoria' : `Categoria: ${lookups.categories.find((c) => c.id === f.cat)?.name ?? '—'}`);
+  if (f.bank) out.push(f.bank === 'none' ? 'Sem conta bancária prevista' : `Conta: ${lookups.banks.find((c) => c.id === f.bank)?.name ?? '—'}`);
+  if (f.dues) out.push('Somente mensalidades');
+  if (f.min || f.max) out.push(`Valor${f.min ? ` de ${brMoney(f.min)}` : ''}${f.max ? ` até ${brMoney(f.max)}` : ''}`);
+  if (f.q.trim()) out.push(`Busca: “${f.q.trim()}”`);
+  return out;
+}
+
+/** Título do relatório conforme o tipo escolhido. */
+export const reportTitleFor = (tipo: Filters['tipo']) => (tipo === 'RECEIVABLE' ? 'Contas a receber' : tipo === 'PAYABLE' ? 'Contas a pagar' : 'Contas a receber e a pagar');

@@ -9,6 +9,7 @@ import { coversAmount, remainingAmount, round2 } from '@/lib/money';
 import { suggestAccounts, type Suggestion } from '@/lib/bank-suggest';
 import { withTenant } from '@/lib/prisma';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { autoSignReceipt } from '@/lib/receipt-signature-server';
 
 type Db = Prisma.TransactionClient;
 
@@ -100,6 +101,8 @@ export async function settleFromBankLine(
       },
       select: { id: true },
     });
+
+    await autoSignReceipt(db, lodgeId, payment.id, userId);
 
     // Mesmas regras da baixa manual (api/payments): quita a conta e as cobranças dela, e ressincroniza o bloqueio.
     if (account.memberId) {

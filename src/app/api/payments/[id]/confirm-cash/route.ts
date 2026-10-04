@@ -4,6 +4,7 @@ import { ASAAS_CASH_CONFIRMED_ENTITY, ASAAS_CASH_METHOD } from '@/lib/asaas-cash
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { autoSignReceipt } from '@/lib/receipt-signature-server';
 import { NextResponse } from 'next/server';
 
 // A Tesouraria confirma um recebimento "em dinheiro" que foi marcado no painel do Asaas: o sistema já
@@ -36,6 +37,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (locked) return { error: 'locked', title: locked.title } as const;
       await db.payment.update({ where: { id }, data: { bankAccountId: bank.id } });
     }
+    // A confirmação do Tesoureiro é a aprovação: o recibo do recebimento em dinheiro é assinado agora.
+    await autoSignReceipt(db, String(lodgeId), id, String(session.user.id));
     await logAudit(db, {
       lodgeId: String(lodgeId), userId: String(session.user.id), action: 'UPDATE', entity: ASAAS_CASH_CONFIRMED_ENTITY, entityId: id,
       before: { bankAccountId: payment.bankAccountId }, metadata: { bankAccountId: bank.id, bank: bank.name, amount: payment.amount },
