@@ -4,16 +4,19 @@ import { findFundChart } from '@/lib/funds';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { fetchPixQr } from '@/lib/asaas-charge';
 import { isAsaasMode } from '@/lib/collection';
-import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { isValidMoney } from '@/lib/money';
 import { lockKey } from '@/lib/locks';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
+import { activeSessionFor } from '@/lib/tronco-session';
 import { nextSequenceNumbers } from '@/lib/invoice-number';
 
-const PRESET_AMOUNTS = [5, 10, 20, 50, 100];
+// Pelo Asaas, doações a partir de R$ 50,00 (a tarifa por Pix recebido pesa em valores pequenos). Abaixo disso: Pix na chave da
+// loja ou o tronco passado na sessão.
+export const MIN_ASAAS_DONATION = 50;
+const PRESET_AMOUNTS = [50, 100, 200, 500];
 
 // Número de referência da doação, mesmo esquema de nextInvoiceNumber em
 // api/invoices/route.ts (COB-AAAAMM-NNNN), com prefixo próprio (DOA-) pra não
@@ -46,6 +49,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Informe um valor de doação válido (maior que zero, com no máximo 2 casas decimais).' }, { status: 400 });
   }
 
+  if (amount < MIN_ASAAS_DONATION) {
+    return NextResponse.json({ error: `Pelo Pix do Asaas, as doações começam em R$ ${MIN_ASAAS_DONATION},00. Para valores menores, doe na chave Pix da loja ou no tronco da sessão.` }, { status: 400 });
+  }
+
   const ctx = await withTenant(String(lodgeId), async (db) => {
     const [lodge, member, tronco] = await Promise.all([
       db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { asaasApiKeyEnc: true, asaasEnv: true, collectionMode: true } }),
@@ -75,15 +82,15 @@ export async function POST(request: Request) {
   }
   const cpf = member.cpf;
 
-  // Sessão de hoje (horário de Brasília) — a doação fica vinculada a ela
-  // quando existir; se não houver sessão marcada pra hoje, a doação segue
-  // sem vínculo (não é bloqueada por isso).
-  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
-  const startOfDay = parseBRDateTimeLocal(`${todayStr}T00:00`);
-  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-  const todaySession = await withTenant(String(lodgeId), (db) =>
-    db.session.findFirst({ where: { lodgeId: String(lodgeId), date: { gte: startOfDay, lt: endOfDay } }, select: { id: true } }),
+  // Sessão em curso agora (janela: 2 h antes até o fim + 3 h; sem nenhuma, a do mesmo dia). A doação fica ligada a ela; sem sessão
+  // marcada para hoje, segue sem vínculo (não é bloqueada por isso).
+  const nearby = await withTenant(String(lodgeId), (db) =>
+    db.session.findMany({
+      where: { lodgeId: String(lodgeId), date: { gte: new Date(Date.now() - 36 * 3_600_000), lte: new Date(Date.now() + 36 * 3_600_000) } },
+      select: { id: true, title: true, date: true, endDate: true },
+    }),
   );
+  const todaySession = activeSessionFor(nearby, new Date());
 
   // 1) Grava Account + Invoice (só banco, rápido) — dentro da transação.
   const dueDate = new Date();

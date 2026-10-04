@@ -16,7 +16,8 @@ interface CampaignItem {
 }
 
 const STATUS_LABEL: Record<string, string> = { active: 'Ativa', completed: 'Concluída', canceled: 'Cancelada' };
-const DONATION_PRESETS = [5, 10, 20, 50, 100];
+const DONATION_PRESETS = [50, 100, 200, 500];
+const MIN_DONATION = 50; // pelo Pix do Asaas (valores menores: chave Pix da loja ou o tronco na sessão)
 
 export default function HospitalariaPortalPage() {
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
@@ -69,6 +70,10 @@ export default function HospitalariaPortalPage() {
     const amount = donationAmount ?? Number(customAmount.replace(',', '.'));
     if (!amount || Number.isNaN(amount) || amount <= 0) {
       setDonationError('Escolha um valor ou digite um valor válido.');
+      return;
+    }
+    if (amount < MIN_DONATION) {
+      setDonationError(`Pelo Pix do Asaas, as doações começam em R$ ${MIN_DONATION},00. Para valores menores, doe na chave Pix da loja ou no tronco da sessão.`);
       return;
     }
     setGeneratingDonation(true);

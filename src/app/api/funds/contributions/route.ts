@@ -7,6 +7,8 @@ import { FUND_LABELS, findFundChart, isFundPurpose, resolveBankAccount } from '@
 import { isValidMoney, round2 } from '@/lib/money';
 import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { todayBR } from '@/lib/date-only';
+import { recordTronco } from '@/lib/tronco-server';
+import { canConfirmTronco, canDeclareTronco, isTroncoSource } from '@/lib/tronco-session';
 import { NextResponse } from 'next/server';
 
 const METHODS: Record<string, string> = { cash: 'Dinheiro', pix: 'Pix', transfer: 'Transferência', other: 'Outro' };
@@ -55,6 +57,25 @@ export async function POST(request: Request) {
   if (Number.isNaN(dueDate.getTime())) return NextResponse.json({ error: 'Data inválida.' }, { status: 400 });
   if (dueDate.getTime() > todayBR().getTime()) return NextResponse.json({ error: 'A data do aporte não pode ser futura.' }, { status: 400 });
   const paidAt = dateStr === todayBR().toISOString().slice(0, 10) ? new Date() : parseBRDateTimeLocal(`${dateStr}T12:00:00`);
+
+  // Tronco: o Secretário não lança nem vê valores; o Hospitaleiro declara a entrada (fica aguardando confirmação); o Tesoureiro,
+  // o Venerável e o Administrador lançam no caixa. Entrada SEM doador identificado segue o fluxo novo (com DNA e sessão); com
+  // doador identificado (irmão, nome ou anônimo) só quem confirma registra.
+  if (fund === 'tronco') {
+    if (!canDeclareTronco(role)) return NextResponse.json({ error: 'Só o Tesoureiro, o Venerável, o Administrador e o Hospitaleiro registram o Tronco.' }, { status: 403 });
+    if (!memberId && !donorName && !anonymous) {
+      const recorded = await withTenant(String(lodgeId), (db) =>
+        recordTronco(db, {
+          lodgeId: String(lodgeId), user: { id: String(session.user.id), name: String(session.user.name ?? 'Usuário'), role },
+          amount, date: dueDate, paidAt, method: method as 'cash' | 'pix' | 'transfer' | 'other', source: isTroncoSource(body?.source) ? body.source : 'mixed',
+          sessionId, bankAccountId, note,
+        }),
+      );
+      if (!recorded.ok) return NextResponse.json({ error: recorded.error }, { status: recorded.status });
+      return NextResponse.json({ ok: true, paymentId: recorded.paymentId, code: recorded.code, pending: recorded.status === 'pending' });
+    }
+    if (!canConfirmTronco(role)) return NextResponse.json({ error: 'O Hospitaleiro registra o Tronco sem identificar o doador; a identificação é do Tesoureiro, do Venerável ou do Administrador.' }, { status: 403 });
+  }
 
   const result = await withTenant(String(lodgeId), async (db) => {
     const lid = String(lodgeId);

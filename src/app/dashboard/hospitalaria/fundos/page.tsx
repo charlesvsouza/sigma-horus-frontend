@@ -7,7 +7,10 @@ import { todayBR } from '@/lib/date-only';
 import { FUND_LABELS, fundChartWhere, isFundPurpose, type FundPurpose } from '@/lib/funds';
 import { buildFundReport, type FundMovementRow } from '@/lib/funds-report';
 import { getReportSignatories } from '@/lib/report-signatories';
+import { activeSessionFor, canConfirmTronco } from '@/lib/tronco-session';
+import { loadTroncoBySession } from '@/lib/tronco-server';
 import FundosClient from './FundosClient';
+import TroncoPorSessao from './TroncoPorSessao';
 
 const BR = 'America/Sao_Paulo';
 const fmtBR = (d: Date) => d.toLocaleDateString('pt-BR', { timeZone: BR });
@@ -83,9 +86,14 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
         },
       }),
       canRecord ? db.member.findMany({ where: { lodgeId: lid, status: 'active' }, select: { id: true, name: true }, orderBy: { name: 'asc' } }) : Promise.resolve([]),
-      canRecord ? db.session.findMany({ where: { lodgeId: lid, date: { lte: new Date() } }, select: { id: true, title: true, date: true }, orderBy: { date: 'desc' }, take: 20 }) : Promise.resolve([]),
+      canRecord ? db.session.findMany({ where: { lodgeId: lid, date: { lte: new Date(new Date().getTime() + 6 * 3_600_000) } }, select: { id: true, title: true, date: true, endDate: true }, orderBy: { date: 'desc' }, take: 20 }) : Promise.resolve([]),
       canRecord ? db.financialAccount.findMany({ where: { lodgeId: lid, active: true }, select: { id: true, name: true, isDefault: true }, orderBy: [{ isDefault: 'desc' }, { name: 'asc' }] }) : Promise.resolve([]),
     ]);
+
+    const troncoSessions = fund === 'tronco' ? await loadTroncoBySession(db, lid, { limit: 30 }) : [];
+    const pendingIntakes = fund === 'tronco'
+      ? await db.troncoIntake.findMany({ where: { lodgeId: lid, status: 'pending' }, orderBy: { declaredAt: 'desc' }, take: 50, include: { session: { select: { title: true, date: true } } } })
+      : [];
 
     const campaigns =
       fund === 'tronco'
@@ -95,7 +103,7 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
     const donationCampaign = new Map<string, string>();
     for (const c of campaigns) for (const dn of c.donations) if (dn.paymentId) donationCampaign.set(dn.paymentId, c.title);
 
-    return { lodge, payments, members, recentSessions, bankAccounts, campaigns, donationCampaign };
+    return { lodge, payments, members, recentSessions, bankAccounts, campaigns, donationCampaign, troncoSessions, pendingIntakes };
   });
 
   const movements: FundMovementRow[] = data.payments.map((p) => {
@@ -136,7 +144,11 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
 
   const signatures = await withTenant(String(lodgeId), (db) => getReportSignatories(db, String(lodgeId), { at: to }));
 
+  const activeSession = activeSessionFor(data.recentSessions, new Date());
+  const canConfirm = canConfirmTronco(role);
+
   return (
+    <>
     <FundosClient
       fund={fund}
       fundLabels={FUND_LABELS}
@@ -151,8 +163,19 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
       campaigns={campaignRows}
       canRecord={canRecord}
       members={data.members}
-      sessions={data.recentSessions.map((x) => ({ id: x.id, label: `${fmtBR(x.date)} — ${x.title}` }))}
+      sessions={data.recentSessions.map((x) => ({ id: x.id, label: `${fmtBR(x.date)} — ${x.title}`, date: new Date(x.date.getTime() - 3 * 3_600_000).toISOString().slice(0, 10) }))}
+      canConfirm={canConfirm}
+      activeSessionId={activeSession?.id ?? null}
       canSeeDonors={role === 'admin' || role === 'venerable' || role === 'treasurer'}
     />
+    {fund === 'tronco' ? (
+      <TroncoPorSessao
+        sessions={data.troncoSessions.map((r) => ({ sessionId: r.sessionId!, title: r.title, date: r.date ? r.date.toISOString() : null, confirmed: r.confirmed, pending: r.pending, members: r.bySource.members, visitors: r.bySource.visitors, mixed: r.bySource.mixed }))}
+        pending={data.pendingIntakes.map((p) => ({ id: p.id, code: p.code, amount: Number(p.amount), channel: p.channel, sessionLabel: p.session ? `${fmtBR(p.session.date)} — ${p.session.title}` : null, declaredBy: p.declaredByName, declaredAt: p.declaredAt.toISOString() }))}
+        accounts={data.bankAccounts}
+        canConfirm={canConfirm}
+      />
+    ) : null}
+    </>
   );
 }

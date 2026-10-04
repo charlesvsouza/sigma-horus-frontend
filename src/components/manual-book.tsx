@@ -264,7 +264,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.90</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 3 de outubro de 2026 · versão 1.91</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.90 — 3 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.91 — 3 de outubro de 2026</p>
               </div>
             </div>
 
@@ -2164,9 +2164,9 @@ export function ManualBook() {
                   e a Administração da loja (chega por e-mail), que decidem se formalizam uma campanha a partir dele.
                 </p>
                 <p>
-                  <strong>Doar ao Tronco:</strong> se a loja recebe pelo Asaas (Modo Asaas), escolha um valor sugerido ou digite outro e
+                  <strong>Doar ao Tronco:</strong> se a loja recebe pelo Asaas (Modo Asaas), escolha um valor sugerido (R$ 50, 100, 200 ou 500) ou digite outro — <strong>pelo Asaas, a partir de R$ 50,00</strong>, porque a tarifa por Pix recebido pesaria em valores pequenos — e
                   clique para gerar o Pix — aparecem o QR Code e o <em>copia e cola</em>, e a doação entra sozinha no Tronco quando o Pix
-                  é confirmado. O Asaas exige CPF no cadastro (peça à Secretaria, se faltar). No Modo Loja, doe direto na chave Pix da
+                  é confirmado. O Asaas exige CPF no cadastro (peça à Secretaria, se faltar). A doação fica ligada à <strong>sessão em curso</strong> (ou à do dia). Para valores menores, doe na chave Pix da loja ou no tronco passado na sessão. No Modo Loja, doe direto na chave Pix da
                   loja ou com a Hospitalaria.
                 </p>
               </Sub>
@@ -2290,13 +2290,14 @@ export function ManualBook() {
                   cobrança — o tronco passado na sessão, uma doação em espécie, um Pix direto na conta — abra o fundo em
                   <UI> Hospitalaria → Fundos (Tronco e Doações)</UI> e clique em <UI>Registrar aporte</UI>. Informe o
                   <UI> valor</UI>, a <UI>data do recebimento</UI> (não pode ser futura) e a <UI>forma</UI> (dinheiro, Pix,
-                  transferência ou outro). No Tronco, escolha a <UI>origem</UI>: <em>tronco passado em sessão</em> (selecione a
-                  sessão) ou <em>outra origem</em>. Em <UI>Quem doou</UI> marque não identificado (tronco coletivo), um irmão
+                  transferência ou outro). No Tronco, escolha a <UI>origem</UI>: <em>tronco passado em sessão</em> (a <strong>sessão em curso já vem selecionada</strong>; ao escolher uma sessão passada, a data acompanha a da sessão — é assim que se registram os valores antigos: &ldquo;o tronco de R$ X foi doado na sessão Y&rdquo;) ou <em>outra origem</em>, e a <UI>origem do dinheiro</UI> (<em>obreiros</em>, <em>visitantes</em> ou <em>sem divisão</em>). Em <UI>Quem doou</UI> marque não identificado (tronco coletivo, o padrão), um irmão
                   da loja, outra pessoa/instituição ou anônimo, e escolha a <UI>conta ou caixa que recebeu</UI> — o banco ou o
                   Caixa da loja onde o dinheiro realmente entrou. O aporte entra na hora no saldo do fundo, nas <em>entradas por
-                  origem</em>, no extrato da conta escolhida, no livro-caixa e no DRE. Podem registrar o Administrador, o Venerável,
-                  o Secretário, o Tesoureiro e o Hospitaleiro; não é possível lançar com data dentro de um veneralato já
+                  origem</em>, no extrato da conta escolhida, no livro-caixa e no DRE, e a entrada sem doador ganha um <strong>DNA</strong> (<em>TR-XXXX-XXXX</em>). <strong>Quem lança no caixa:</strong> o Tesoureiro, o Venerável e o Administrador. O <strong>Hospitaleiro</strong> declara a entrada (<UI>Declarar entrada</UI>, sem doador e sem escolher conta) e ela fica <strong>aguardando confirmação</strong>. O <strong>Secretário</strong> não lança nem confirma o Tronco. Não é possível lançar com data dentro de um veneralato já
                   encerrado, e cada aporte fica na auditoria.
+                </p>
+                <p>
+                  <strong>Tronco por sessão:</strong> abaixo do extrato, o quadro <UI>Tronco por sessão</UI> mostra, sessão a sessão, o <strong>lançado</strong>, a divisão entre obreiros, visitantes e sem divisão e o que está <strong>aguardando</strong>, sem identificar doadores. Em <UI>Entradas aguardando confirmação</UI>, o Tesoureiro, o Venerável ou o Administrador escolhe a conta que recebeu e clica em <UI>Lançar no caixa</UI> (ou recusa, com o motivo). O total da sessão aparece também no card <UI>Tronco de Solidariedade desta sessão</UI>, na página da sessão, e em <UI>Visão geral → Tronco na última sessão</UI> — <strong>todos os cargos de gestão veem o total</strong>; só confirmar é restrito.
                 </p>
                 <p><strong>Em que conta o dinheiro entra:</strong></p>
                 <Bullets>

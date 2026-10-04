@@ -74,7 +74,7 @@ function BucketTable({ rows, empty, head }: { rows: Bucket[]; empty: string; hea
 }
 
 export default function FundosClient({
-  fund, fundLabels, lodgeName, crestUrl, issuedBy, signatures, from, to, accounts, report, campaigns, canSeeDonors, canRecord, members, sessions,
+  fund, fundLabels, lodgeName, crestUrl, issuedBy, signatures, from, to, accounts, report, campaigns, canSeeDonors, canRecord, members, sessions, canConfirm = true, activeSessionId = null,
 }: {
   fund: FundPurpose;
   fundLabels: Record<FundPurpose, string>;
@@ -90,7 +90,9 @@ export default function FundosClient({
   canSeeDonors: boolean;
   canRecord: boolean;
   members: { id: string; name: string }[];
-  sessions: { id: string; label: string }[];
+  sessions: { id: string; label: string; date?: string }[];
+  canConfirm?: boolean;
+  activeSessionId?: string | null;
 }) {
   const router = useRouter();
   const [fromVal, setFromVal] = useState(from);
@@ -178,6 +180,8 @@ export default function FundosClient({
                 accounts={accounts}
                 members={members}
                 sessions={sessions}
+                canConfirm={canConfirm}
+                activeSessionId={activeSessionId}
                 onClose={() => setShowContribution(false)}
               />
             ) : null}

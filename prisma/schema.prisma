@@ -146,6 +146,7 @@ model Lodge {
   sessionMinutes SessionMinutes[]
   memberBlockSignatures MemberBlockSignature[]
   paymentReceiptSignatures PaymentReceiptSignature[]
+  troncoIntakes TroncoIntake[]
   candidateInquirers CandidateInquirer[]
   hospitalityRequests HospitalityRequest[]
   financialAccounts FinancialAccount[]
@@ -513,6 +514,7 @@ model Payment {
   bankAccount  FinancialAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   bankTransactions BankTransaction[]
   receiptSignature PaymentReceiptSignature?
+  troncoIntake TroncoIntake?
 
   @@index([bankAccountId])
   @@index([lodgeId])
@@ -835,6 +837,7 @@ model Session {
   accounts   Account[]
   visitors   SessionVisitor[]
   minutesFiles SessionMinutes[]
+  troncoIntakes TroncoIntake[]
   @@index([lodgeId, date])
 }
 
@@ -1313,6 +1316,35 @@ model SessionMinutes {
 // Assinatura digital do Termo de acordo de regularização: ao clicar em "Assinar", o sistema grava a marca
 // (quem, quando, hash do conteúdo do acordo e um código de verificação). Partes: venerable (Venerável ou
 // Administrador), treasurer e member (o próprio irmão). Uma assinatura por parte por acordo.
+// Entrada do Tronco de Solidariedade da sessão (sem identificar o doador). `pending` = declarada (ex.: contagem da sacola pelo
+// Hospitaleiro, ou Pix do QR da sessão) e ainda não lançada no caixa; `confirmed` = Tesoureiro, Venerável ou Administrador
+// lançou no caixa (Account + Payment em `paymentId`); `rejected` = recusada. `code` é o DNA da entrada (TR-XXXX-XXXX).
+model TroncoIntake {
+  id             String    @id @default(cuid())
+  lodgeId        String
+  sessionId      String?
+  source         String    @default("mixed") // members | visitors | mixed
+  channel        String    @default("cash") // cash | pix | pix_qr | pix_portal | other
+  amount         Float
+  status         String    @default("pending") // pending | confirmed | rejected
+  code           String    @unique
+  externalRef    String?   @unique // identificador externo (ex.: pagamento do QR Pix da sessão)
+  note           String?
+  declaredById   String?
+  declaredByName String?
+  declaredAt     DateTime  @default(now())
+  confirmedById  String?
+  confirmedAt    DateTime?
+  rejectReason   String?
+  paymentId      String?   @unique
+
+  lodge   Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  session Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  @@index([lodgeId, sessionId])
+  @@index([lodgeId, status])
+}
+
 // Assinatura digital do recibo de pagamento: só Tesoureiro ou Venerável, uma por pagamento (ver lib/receipt-signature.ts).
 model PaymentReceiptSignature {
   id           String   @id @default(cuid())

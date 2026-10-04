@@ -11,6 +11,7 @@ import { SessionDegreePicker } from '@/components/session-degree-picker';
 import { minutesDegreeLabel } from '@/lib/session-minutes';
 import { ConvocationPanel } from './ConvocationPanel';
 import { VisitorsPanel, type SessionVisit } from './VisitorsPanel';
+import SessionTroncoCard from './SessionTroncoCard';
 
 interface Member { id: string; name: string; }
 interface SessionInfo {
@@ -264,6 +265,8 @@ export default function SessionDetailClient({
             </div>
           ) : null}
         </section>
+
+        <SessionTroncoCard sessionId={session.id} />
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Impressos da sessão</h2>

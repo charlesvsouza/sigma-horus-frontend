@@ -6,6 +6,7 @@ import { getTroncoBalance } from '@/lib/hospitalaria';
 import { getLodgeOverdueDuesReport, isArt002Enabled } from '@/lib/overdue';
 import { birthdayWithin, type OverviewScope } from '@/lib/overview-roles';
 import { loadEndingMothers } from '@/lib/recurring-renewal';
+import { loadTroncoBySession } from '@/lib/tronco-server';
 import { STREAK_SESSION_TYPES } from '@/lib/attendance-streak';
 
 type Db = Prisma.TransactionClient;
@@ -96,7 +97,15 @@ export async function loadOverviewGroups(
   // --- Hospitalaria + Tronco (o saldo é de todos os cargos de gestão)
   const hospItems: OverviewItem[] = [];
   const tronco = await getTroncoBalance(db, lodgeId);
-  if (tronco.configured) hospItems.push({ key: 'tronco', label: 'Saldo do Tronco de Solidariedade', value: brl(tronco.balance), href: links.fundos ? '/dashboard/hospitalaria/fundos' : undefined, tone: 'emerald' });
+  if (tronco.configured) {
+    hospItems.push({ key: 'tronco', label: 'Saldo do Tronco de Solidariedade', value: brl(tronco.balance), href: links.fundos ? '/dashboard/hospitalaria/fundos' : undefined, tone: 'emerald' });
+    // Quanto entrou na última sessão (de todos os cargos de gestão; sem doador).
+    const last = await db.session.findFirst({ where: { lodgeId, date: { lte: now } }, orderBy: { date: 'desc' }, select: { id: true, title: true, date: true } });
+    if (last) {
+      const [row] = await loadTroncoBySession(db, lodgeId, { sessionIds: [last.id] });
+      hospItems.push({ key: 'tronco-sessao', label: 'Tronco na última sessão', value: brl(row?.confirmed ?? 0), href: links.fundos ? '/dashboard/hospitalaria/fundos' : undefined, tone: 'emerald', hint: `${formatDateOnly(last.date.toISOString())} — ${last.title}${row && row.pending > 0 ? ` · aguardando ${brl(row.pending)}` : ''}` });
+    }
+  }
   if (scope.hospitality) {
     const [campaigns, requests] = await Promise.all([
       db.campaign.count({ where: { lodgeId, status: 'active' } }),
