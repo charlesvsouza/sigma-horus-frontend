@@ -89,6 +89,7 @@ const todayIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Ameri
 function BlockForm({ memberId, memberName, onDone }: { memberId: string; memberName: string; onDone: () => void }) {
   const [preview, setPreview] = useState<BlockPreview | null>(null);
   const [loadError, setLoadError] = useState('');
+  const [kind, setKind] = useState<'' | 'settlement' | 'regularization'>('');
   const [fee, setFee] = useState('');
   const [extra, setExtra] = useState('');
   const [installments, setInstallments] = useState('1');
@@ -113,7 +114,8 @@ function BlockForm({ memberId, memberName, onDone }: { memberId: string; memberN
     return () => { alive = false; };
   }, [memberId]);
 
-  const feeN = parseMoney(fee);
+  // Quitação de dívidas não tem taxa de regularização.
+  const feeN = kind === 'settlement' ? 0 : parseMoney(fee);
   const extraN = extra.trim() === '' ? 0 : parseMoney(extra);
   const total = preview && Number.isFinite(feeN) && Number.isFinite(extraN) ? Math.round((preview.debtsTotal + feeN + extraN) * 100) / 100 : null;
   const n = Number(installments);
@@ -125,7 +127,7 @@ function BlockForm({ memberId, memberName, onDone }: { memberId: string; memberN
     const res = await fetch(`/api/members/${memberId}/block`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fee: feeN, extra: extraN, installments: n, firstDueDate, powerProtocol, powerSentAt: powerSentAt || undefined, note, confirm }),
+      body: JSON.stringify({ kind, fee: feeN, extra: extraN, installments: n, firstDueDate, powerProtocol, powerSentAt: powerSentAt || undefined, note, confirm }),
     });
     const data = await res.json().catch(() => ({}));
     setBusy(false);
@@ -141,9 +143,20 @@ function BlockForm({ memberId, memberName, onDone }: { memberId: string; memberN
     <div className="mt-3 rounded-lg border border-rose-400/30 bg-rose-500/5 p-4">
       <p className="text-sm font-medium text-sand-light">Bloquear {memberName} — comunicado à Potência</p>
       <p className="mt-1 text-xs text-sand-dark">
-        O irmão deixa de ser convocado e de receber novos débitos. Tudo o que ele deve à loja vai para o acordo de regularização, e ele só volta depois de
-        pagar o acordo por inteiro. Marque apenas se o comunicado à Potência já foi feito.
+        O irmão deixa de ser convocado e de receber novos débitos. Tudo o que ele deve à loja vai para o acordo. Marque apenas se o comunicado à Potência já foi feito.
       </p>
+
+      <fieldset className="mt-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-3">
+        <legend className="px-1 text-xs font-medium text-sand-light">Tipo de acordo *</legend>
+        <label className="flex cursor-pointer items-start gap-2 text-xs text-sand">
+          <input type="radio" name={`kind-${memberId}`} checked={kind === 'settlement'} onChange={() => setKind('settlement')} className="mt-0.5" />
+          <span><strong>Quitação de dívidas com a loja</strong> — sem taxa de regularização. O irmão paga o que deve e segue bloqueado: depois pode pedir o Placet ou regularizar.</span>
+        </label>
+        <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs text-sand">
+          <input type="radio" name={`kind-${memberId}`} checked={kind === 'regularization'} onChange={() => setKind('regularization')} className="mt-0.5" />
+          <span><strong>Regularização</strong> — dívidas mais a taxa de regularização (pode ser zero). Pago o acordo, o irmão pode ser liberado.</span>
+        </label>
+      </fieldset>
 
       <div className="mt-3 rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-3">
         <p className="text-xs font-medium text-sand-light">O que entra no acordo (dívidas em aberto, pelo saldo)</p>
@@ -157,9 +170,11 @@ function BlockForm({ memberId, memberName, onDone }: { memberId: string; memberN
 
       {error ? <p className="mt-3 text-xs text-rose-300">{error}</p> : null}
       <div className="mt-3 grid gap-3 md:grid-cols-3">
-        <label className="text-xs text-sand-dark">Taxa de regularização (R$) *
-          <input value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" placeholder={preview.suggestedFee != null ? `ex.: ${String(preview.suggestedFee).replace('.', ',')}` : '0,00'} className={`mt-1 ${inputClass}`} />
-        </label>
+        {kind === 'regularization' ? (
+          <label className="text-xs text-sand-dark">Taxa de regularização (R$) *
+            <input value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" placeholder={preview.suggestedFee != null ? `ex.: ${String(preview.suggestedFee).replace('.', ',')}` : '0,00'} className={`mt-1 ${inputClass}`} />
+          </label>
+        ) : null}
         <label className="text-xs text-sand-dark">Multa e juros (R$) — opcional
           <input value={extra} onChange={(e) => setExtra(e.target.value)} inputMode="decimal" placeholder="0,00" className={`mt-1 ${inputClass}`} />
         </label>
@@ -198,10 +213,10 @@ function BlockForm({ memberId, memberName, onDone }: { memberId: string; memberN
       </label>
       <button
         onClick={() => void submit()}
-        disabled={busy || !confirm || !Number.isFinite(feeN) || total == null || total <= 0}
+        disabled={busy || !confirm || !kind || !Number.isFinite(feeN) || total == null || total <= 0}
         className="mt-3 rounded-full bg-rose-500 px-5 py-2 text-xs font-medium text-white hover:bg-rose-400 disabled:opacity-40"
       >
-        {busy ? 'Bloqueando…' : 'Bloquear e montar o acordo'}
+        {busy ? 'Bloqueando…' : kind === 'settlement' ? 'Bloquear e montar o acordo de quitação' : 'Bloquear e montar o acordo'}
       </button>
     </div>
   );
@@ -310,7 +325,7 @@ export default function InadimplenciaClient({
           <p className="mt-1 text-sm text-sand-dark">
             Mensalidades em aberto por membro. O membro é enquadrado no Art. 002 quando a mensalidade em aberto mais
             antiga passa de 60 dias sem pagamento. O enquadramento é só um aviso: o irmão continua ativo, convocado e recebendo cobrança. Só o
-            Venerável ou o Administrador, depois de comunicar a Potência, bloqueia o cadastro — aí nasce o acordo de regularização.
+            Venerável ou o Administrador, depois de comunicar a Potência, bloqueia o cadastro — aí nasce o acordo (de quitação das dívidas ou de regularização).
           </p>
         </div>
 

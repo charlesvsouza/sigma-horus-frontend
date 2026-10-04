@@ -113,7 +113,7 @@ const NAV: NavGroupDef[] = [
           // Planos de pagamento das taxas de iniciação/elevação/exaltação (decisão do dono: os três). Ver lib/degree-fee.ts.
           { href: '/dashboard/taxas-de-grau', label: 'Taxas de grau', roles: ['admin', 'venerable', 'treasurer'] },
           // Irmãos bloqueados por comunicado à Potência (Art. 002) e o acordo de regularização. Ver lib/member-block.ts.
-          { href: '/dashboard/acordos', label: 'Acordos de regularização', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/acordos', label: 'Acordos (quitação e regularização)', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
           { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/extratos', label: 'Extratos de contas', roles: ['admin', 'venerable', 'treasurer'] },
@@ -185,7 +185,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     pendingPlanEffectiveAt: Date | null;
   } | null = null;
   let art002DaysOverdue: number | null = null;
-  let blockInfo: { id: string; total: number; paid: number; remaining: number; installments: number; settled: boolean } | null = null;
+  let blockInfo: { id: string; total: number; paid: number; remaining: number; installments: number; settled: boolean; settlement: boolean } | null = null;
   const memberId = session?.user?.memberId;
   if (lodgeId) {
     const data = await withTenant(String(lodgeId), async (db) => {
@@ -209,7 +209,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     // e a loja tem a régua automática ligada; mensalidade em atraso mas ainda
     // dentro do prazo, ou loja com o Art. 002 desligado, não dispara o popup.
     if (data.block) {
-      blockInfo = { id: data.block.id, total: data.block.total, paid: data.block.paid, remaining: data.block.remaining, installments: data.block.installments, settled: data.block.status === 'settled' };
+      blockInfo = { id: data.block.id, total: data.block.total, paid: data.block.paid, remaining: data.block.remaining, installments: data.block.installments, settled: data.block.status === 'settled', settlement: data.block.kind === 'settlement' };
     } else if (isArt002Enabled(data.lodge) && data.dues && data.dues.daysOverdue > ART_002_THRESHOLD_DAYS) {
       art002DaysOverdue = data.dues.daysOverdue;
     }
@@ -278,8 +278,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       {blockInfo ? (
         <Alert variant="banner" intent="danger">
           {blockInfo.settled
-            ? 'Seu acordo de regularização está quitado. Aguarde o Venerável Mestre liberar o seu cadastro.'
-            : `Seu cadastro está bloqueado por comunicação à Potência (Art. 002). Para voltar, quite o acordo de regularização: total ${brl(blockInfo.total)}, pago ${brl(blockInfo.paid)}, saldo ${brl(blockInfo.remaining)}${blockInfo.installments > 1 ? ` (em até ${blockInfo.installments} parcelas)` : ' (à vista)'}. Procure o Tesoureiro ou o Venerável Mestre.`}{' '}
+            ? (blockInfo.settlement
+              ? 'As suas dívidas com a Loja estão quitadas. A regularização do cadastro (ou o Placet) é tratada com o Venerável Mestre.'
+              : 'Seu acordo de regularização está quitado. Aguarde o Venerável Mestre liberar o seu cadastro.')
+            : `Seu cadastro está bloqueado por comunicação à Potência (Art. 002). ${blockInfo.settlement ? 'Para quitar as suas dívidas com a Loja, pague o acordo' : 'Para voltar, quite o acordo de regularização'}: total ${brl(blockInfo.total)}, pago ${brl(blockInfo.paid)}, saldo ${brl(blockInfo.remaining)}${blockInfo.installments > 1 ? ` (em até ${blockInfo.installments} parcelas)` : ' (à vista)'}. Procure o Tesoureiro ou o Venerável Mestre.`}{' '}
           <a href={`/dashboard/acordos/${blockInfo.id}/termo`} className="font-medium underline hover:text-rose-100">Ver e assinar o termo de acordo</a>
         </Alert>
       ) : null}

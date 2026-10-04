@@ -6,6 +6,7 @@ import { OfficialDocument } from '@/components/report/official-document';
 import { ReportActions, type Signatory } from '@/components/report/report-document';
 import { Button, Toast, useConfirm, type ToastMessage } from '@/components/ui';
 import { partyLabel } from '@/lib/agreement-signature';
+import { isSettlementKind } from '@/lib/member-block';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 import type { Letterhead } from '@/lib/letterhead';
@@ -16,11 +17,12 @@ const KIND: Record<string, string> = { debt: 'Dívida', fee: 'Taxa de regulariza
 const stamp = (iso: string) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 export default function TermoAcordoClient({
-  letterhead, memberId, memberName, status, blockedAt, powerProtocol, powerSentAt, total, installments, items, schedule, parties, canSignAs, issuedBy,
+  letterhead, memberId, memberName, kind, status, blockedAt, powerProtocol, powerSentAt, total, installments, items, schedule, parties, canSignAs, issuedBy,
 }: {
   letterhead: Letterhead;
   memberId: string;
   memberName: string;
+  kind: string;
   status: string;
   blockedAt: string;
   powerProtocol: string | null;
@@ -35,6 +37,7 @@ export default function TermoAcordoClient({
 }) {
   const router = useRouter();
   const askConfirm = useConfirm();
+  const settlement = isSettlementKind(kind);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<ToastMessage>(null);
   const signed = parties.filter((p) => p.signedAt).length;
@@ -80,7 +83,7 @@ export default function TermoAcordoClient({
 
         <OfficialDocument
           letterhead={letterhead}
-          title="Termo de acordo de regularização"
+          title={settlement ? 'Termo de acordo de quitação de dívidas' : 'Termo de acordo de regularização'}
           subtitle={`Art. 002 — ${installments === 1 ? 'pagamento à vista' : `pagamento em ${installments} parcelas`}`}
           issuedBy={issuedBy}
           signatures={signatures}
@@ -88,7 +91,7 @@ export default function TermoAcordoClient({
           <div className="space-y-4 text-[0.95rem] leading-relaxed text-sand">
             <p className="indent-8">
               Pelo presente termo, o Ir∴ <strong>{memberName}</strong>, doravante IRMÃO, e a <strong>{letterhead.name}</strong>, por seus representantes abaixo
-              assinados, reconhecem as pendências financeiras do IRMÃO junto à Loja e ajustam a sua regularização, em decorrência do comunicado à Potência
+              assinados, reconhecem as pendências financeiras do IRMÃO junto à Loja e ajustam {settlement ? 'o pagamento dessas pendências' : 'a sua regularização'}, em decorrência do comunicado à Potência
               {powerSentAt ? <> feito em <strong>{formatDateOnly(powerSentAt)}</strong></> : null}
               {powerProtocol ? <> (protocolo <strong>{powerProtocol}</strong>)</> : null}, com bloqueio do cadastro em <strong>{formatDateOnly(blockedAt)}</strong>.
             </p>
@@ -110,11 +113,15 @@ export default function TermoAcordoClient({
               </tbody>
             </table>
             <ol className="list-decimal space-y-2 pl-6">
-              <li>O valor do acordo fica <strong>fixado na data do bloqueio</strong> e compreende todas as dívidas do IRMÃO com a Loja então em aberto, vencidas ou a vencer, mais a taxa de regularização e, quando houver, multa e juros. Não há desconto.</li>
-              <li>O pagamento é feito à vista ou, quando ajustado, nas parcelas acima, até o limite de três. O que for pago é aplicado primeiro à taxa de regularização e, depois, às dívidas, da mais antiga para a mais nova.</li>
+              <li>{settlement
+                ? <>O valor do acordo fica <strong>fixado na data do bloqueio</strong> e compreende todas as dívidas do IRMÃO com a Loja então em aberto, vencidas ou a vencer e, quando houver, multa e juros. <strong>Não há taxa de regularização</strong> neste acordo, nem desconto.</>
+                : <>O valor do acordo fica <strong>fixado na data do bloqueio</strong> e compreende todas as dívidas do IRMÃO com a Loja então em aberto, vencidas ou a vencer, mais a taxa de regularização e, quando houver, multa e juros. Não há desconto.</>}</li>
+              <li>O pagamento é feito à vista ou, quando ajustado, nas parcelas acima, até o limite de três. {settlement ? 'O que for pago é aplicado às dívidas, da mais antiga para a mais nova.' : 'O que for pago é aplicado primeiro à taxa de regularização e, depois, às dívidas, da mais antiga para a mais nova.'}</li>
               <li>Enquanto o acordo não estiver <strong>integralmente pago</strong>, o cadastro do IRMÃO permanece bloqueado: ele não é convocado para as sessões e não recebe novos débitos.</li>
               <li>O atraso de qualquer parcela caracteriza o descumprimento do acordo. O Tesoureiro, o Venerável Mestre e os Administradores serão avisados para as medidas cabíveis, mantendo-se o bloqueio.</li>
-              <li>Quitado o acordo, o Venerável Mestre libera o cadastro do IRMÃO, que volta a ser convocado, e a mensalidade recomeça no próximo vencimento.</li>
+              <li>{settlement
+                ? 'A quitação das dívidas com a Loja não regulariza o cadastro do IRMÃO. Quitado o acordo, o IRMÃO poderá regularizar a sua situação, em novo acordo com a taxa de regularização, ou solicitar o Placet; até lá, o cadastro permanece bloqueado.'
+                : 'Quitado o acordo, o Venerável Mestre libera o cadastro do IRMÃO, que volta a ser convocado, e a mensalidade recomeça no próximo vencimento.'}</li>
               <li>As assinaturas digitais deste termo registram quem assinou, quando e o resumo criptográfico (hash) do que foi acordado; qualquer alteração posterior do acordo pode ser detectada pelo código de verificação impresso em cada assinatura.</li>
             </ol>
           </div>

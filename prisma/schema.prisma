@@ -1257,6 +1257,7 @@ model MemberBlock {
   overdueDaysAtBlock   Int       // fotografia do Art. 002 no momento do bloqueio
   overdueAmountAtBlock Float
   debtsTotal           Float     // soma dos saldos em aberto no momento do bloqueio
+  kind                 String    @default("regularization") // regularization (com taxa) | settlement (só quitação das dívidas com a loja, sem taxa)
   regularizationFee    Float     // taxa de regularização (digitada)
   extraCharge          Float     @default(0) // multa/juros do acordo (opcional, caso a caso)
   total                Float     // debtsTotal + taxa + multa/juros

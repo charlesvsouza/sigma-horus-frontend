@@ -6,6 +6,7 @@ import { Alert, Badge, Button, Card, EmptyState, inputClass, useConfirm } from '
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 import { AGREEMENT_PARTIES, partyLabel } from '@/lib/agreement-signature';
+import { agreementKindLabel, buildInstallments, isSettlementKind, MAX_AGREEMENT_INSTALLMENTS } from '@/lib/member-block';
 import Link from 'next/link';
 
 export interface AgreementView {
@@ -13,6 +14,7 @@ export interface AgreementView {
   signedParties: string[];
   canSignAs: string | null;
   memberId: string;
+  kind: string; // regularization | settlement
   memberName: string;
   status: string; // open | settled | lifted
   blockedAt: string;
@@ -93,10 +95,73 @@ function PaymentForm({ a, banks, onDone }: { a: AgreementView; banks: Bank[]; on
         </label>
       </div>
       <p className="mt-2 text-xs text-sand-dark">
-        O valor é repartido entre os itens do acordo: primeiro a taxa de regularização, depois a dívida mais antiga. Cada parte entra na categoria certa do caixa e do DRE.
+        {isSettlementKind(a.kind)
+          ? 'O valor é repartido entre as dívidas do acordo, da mais antiga para a mais nova. Cada parte entra na categoria certa do caixa e do DRE.'
+          : 'O valor é repartido entre os itens do acordo: primeiro a taxa de regularização, depois a dívida mais antiga. Cada parte entra na categoria certa do caixa e do DRE.'}
       </p>
       <Button type="button" className="mt-3" onClick={() => void send(false)} disabled={busy || !bankAccountId || !(parseMoney(amount) > 0)}>
         {busy ? 'Registrando…' : 'Registrar pagamento'}
+      </Button>
+    </div>
+  );
+}
+
+function RegularizeForm({ a, onDone }: { a: AgreementView; onDone: (msg: string) => void }) {
+  const [fee, setFee] = useState('');
+  const [extra, setExtra] = useState('');
+  const [installments, setInstallments] = useState('1');
+  const [firstDueDate, setFirstDueDate] = useState(todayIso());
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const feeN = parseMoney(fee);
+  const extraN = extra.trim() === '' ? 0 : parseMoney(extra);
+  const total = Number.isFinite(feeN) && Number.isFinite(extraN) ? Math.round((feeN + extraN) * 100) / 100 : null;
+  const n = Number(installments);
+  const schedule = total != null && total > 0 && firstDueDate ? buildInstallments(total, n, new Date(`${firstDueDate}T00:00:00Z`)) : [];
+
+  async function submit() {
+    setBusy(true);
+    setError('');
+    const res = await fetch(`/api/members/${a.memberId}/block/regularize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fee: feeN, extra: extraN, installments: n, firstDueDate }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (res.ok) onDone('Acordo de regularização aberto. O irmão segue bloqueado até pagar a taxa.');
+    else setError(data.error ?? 'Erro ao abrir o acordo de regularização.');
+  }
+
+  return (
+    <div className="mt-3 rounded-lg border border-gold/20 bg-gold/5 p-3">
+      <p className="text-xs text-sand-dark">As dívidas já foram quitadas. Informe a taxa de regularização: nasce um acordo de regularização e o irmão só volta depois de pagá-lo.</p>
+      {error ? <p className="mt-2 text-xs text-rose-300">{error}</p> : null}
+      <div className="mt-3 grid gap-3 md:grid-cols-4">
+        <label className="text-xs text-sand-dark">Taxa de regularização (R$) *
+          <input value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" placeholder="0,00" className={`mt-1 ${inputClass}`} />
+        </label>
+        <label className="text-xs text-sand-dark">Multa e juros (R$) — opcional
+          <input value={extra} onChange={(e) => setExtra(e.target.value)} inputMode="decimal" placeholder="0,00" className={`mt-1 ${inputClass}`} />
+        </label>
+        <label className="text-xs text-sand-dark">Pagamento
+          <select value={installments} onChange={(e) => setInstallments(e.target.value)} className={`mt-1 ${inputClass}`}>
+            <option value="1">À vista (padrão)</option>
+            {Array.from({ length: MAX_AGREEMENT_INSTALLMENTS - 1 }, (_, i) => i + 2).map((k) => <option key={k} value={k}>Em {k} parcelas</option>)}
+          </select>
+        </label>
+        <label className="text-xs text-sand-dark">{n > 1 ? '1º vencimento' : 'Vencimento'}
+          <input type="date" value={firstDueDate} min={todayIso()} onChange={(e) => setFirstDueDate(e.target.value)} className={`mt-1 ${inputClass}`} />
+        </label>
+      </div>
+      <p className="mt-2 text-xs text-sand">Total: <strong className="tabular-nums text-gold">{total != null ? brl(total) : '—'}</strong></p>
+      {schedule.length > 1 ? (
+        <ul className="mt-1 text-xs text-sand-dark">
+          {schedule.map((s) => <li key={s.number}>Parcela {s.number}/{schedule.length}: {brl(s.amount)} em {formatDateOnly(s.dueDate)}</li>)}
+        </ul>
+      ) : null}
+      <Button type="button" className="mt-3" onClick={() => void submit()} disabled={busy || total == null || total <= 0}>
+        {busy ? 'Abrindo…' : 'Abrir acordo de regularização'}
       </Button>
     </div>
   );
@@ -106,6 +171,8 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
   const router = useRouter();
   const askConfirm = useConfirm();
   const [paying, setPaying] = useState(false);
+  const [regularizing, setRegularizing] = useState(false);
+  const settlement = isSettlementKind(a.kind);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const late = a.status === 'open' && a.schedule.some((p) => p.late);
   const pct = a.total > 0 ? Math.min(100, Math.round((a.paid / a.total) * 100)) : 0;
@@ -114,7 +181,7 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
     const label = a.canSignAs ? partyLabel(a.canSignAs) : '';
     if (!(await askConfirm({
       title: 'Assinar o termo de acordo',
-      message: `Você assina digitalmente o Termo de acordo de regularização de ${a.memberName} como ${label}. A assinatura registra quem assinou, quando e o resumo do acordo, e não pode ser desfeita. Antes, leia o termo (botão "Abrir termo").`,
+      message: `Você assina digitalmente o Termo de ${agreementKindLabel(a.kind).toLowerCase()} de ${a.memberName} como ${label}. A assinatura registra quem assinou, quando e o resumo do acordo, e não pode ser desfeita. Antes, leia o termo (botão "Abrir termo").`,
       confirmLabel: 'Assinar digitalmente',
     }))) return;
     const res = await fetch(`/api/members/${a.memberId}/block/sign`, { method: 'POST' });
@@ -123,20 +190,23 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
     else setMessage({ kind: 'error', text: data.error ?? 'Não foi possível assinar.' });
   }
 
-  async function lift() {
+  async function lift(outcome: 'active' | 'placet' = 'active') {
+    const placet = outcome === 'placet';
     if (!(await askConfirm({
-      title: 'Liberar o irmão',
-      message: `O acordo de ${a.memberName} está quitado. Liberar o cadastro: ele volta a ser convocado e a receber cobranças (a mensalidade recomeça no próximo vencimento). Confirme que a Potência também foi informada.`,
-      confirmLabel: 'Liberar o irmão',
+      title: placet ? 'Concluir com Placet' : 'Liberar o irmão',
+      message: placet
+        ? `O acordo de quitação de ${a.memberName} está pago e ele não vai regularizar. A situação do cadastro passa a "Quit Placet" e o acordo é encerrado. Confirme que o Placet foi solicitado/informado à Potência.`
+        : `O acordo de ${a.memberName} está quitado. Liberar o cadastro: ele volta a ser convocado e a receber cobranças (a mensalidade recomeça no próximo vencimento). Confirme que a Potência também foi informada.`,
+      confirmLabel: placet ? 'Concluir com Placet' : 'Liberar o irmão',
     }))) return;
-    const res = await fetch(`/api/members/${a.memberId}/block/lift`, { method: 'POST' });
+    const res = await fetch(`/api/members/${a.memberId}/block/lift`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ outcome }) });
     const data = await res.json().catch(() => ({}));
-    if (res.ok) { setMessage({ kind: 'ok', text: 'Irmão liberado.' }); router.refresh(); }
-    else setMessage({ kind: 'error', text: data.error ?? 'Erro ao liberar.' });
+    if (res.ok) { setMessage({ kind: 'ok', text: placet ? 'Acordo encerrado: irmão em Quit Placet.' : 'Irmão liberado.' }); router.refresh(); }
+    else setMessage({ kind: 'error', text: data.error ?? 'Erro ao concluir.' });
   }
 
   const badge = a.status === 'lifted' ? <Badge variant="success">Liberado</Badge>
-    : a.status === 'settled' ? <Badge variant="success">Quitado — aguardando retorno</Badge>
+    : a.status === 'settled' ? <Badge variant="success">{settlement ? 'Dívidas quitadas — aguardando regularização ou Placet' : 'Quitado — aguardando retorno'}</Badge>
     : late ? <Badge variant="overdue">Parcela em atraso</Badge>
     : <Badge variant="warning">Bloqueado — acordo em andamento</Badge>;
 
@@ -145,6 +215,7 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-sand-light">{a.memberName}</h2>
+          <p className="mt-0.5 text-xs font-medium text-gold">{agreementKindLabel(a.kind)}</p>
           <p className="mt-1 text-xs text-sand-dark">
             Bloqueado em {formatDateOnly(a.blockedAt)} · {a.overdueDaysAtBlock} dias de atraso na época
             {a.powerProtocol ? ` · protocolo ${a.powerProtocol}` : ''}{a.powerSentAt ? ` · comunicado em ${formatDateOnly(a.powerSentAt)}` : ''}
@@ -212,11 +283,19 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
       {a.status !== 'lifted' ? (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {a.status === 'open' && canPay ? <Button type="button" onClick={() => setPaying((v) => !v)}>{paying ? 'Fechar' : 'Registrar pagamento do acordo'}</Button> : null}
-          {a.status === 'settled' && mayLift ? <Button type="button" onClick={() => void lift()}>Liberar o irmão</Button> : null}
-          {a.status === 'settled' && !mayLift ? <p className="text-xs text-sand-dark">Acordo quitado. Só o Venerável ou o Administrador libera o irmão.</p> : null}
-          {a.status === 'open' ? <p className="text-xs text-sand-dark">O irmão só volta com o acordo totalmente pago.</p> : null}
+          {a.status === 'settled' && mayLift && settlement ? (
+            <>
+              <Button type="button" onClick={() => setRegularizing((v) => !v)}>{regularizing ? 'Fechar' : 'Regularizar agora'}</Button>
+              <Button type="button" onClick={() => void lift('placet')}>Concluir com Placet</Button>
+              <Button type="button" onClick={() => void lift()}>Liberar o irmão</Button>
+            </>
+          ) : null}
+          {a.status === 'settled' && mayLift && !settlement ? <Button type="button" onClick={() => void lift()}>Liberar o irmão</Button> : null}
+          {a.status === 'settled' && !mayLift ? <p className="text-xs text-sand-dark">Acordo quitado. Só o Venerável ou o Administrador decide o que acontece com o irmão.</p> : null}
+          {a.status === 'open' ? <p className="text-xs text-sand-dark">{settlement ? 'As dívidas com a loja precisam ser totalmente pagas; a regularização fica para depois.' : 'O irmão só volta com o acordo totalmente pago.'}</p> : null}
         </div>
       ) : null}
+      {regularizing && a.status === 'settled' && settlement ? <RegularizeForm a={a} onDone={(text) => { setRegularizing(false); setMessage({ kind: 'ok', text }); router.refresh(); }} /> : null}
       {paying && a.status === 'open' ? <PaymentForm a={a} banks={banks} onDone={(text) => { setPaying(false); setMessage({ kind: 'ok', text }); router.refresh(); }} /> : null}
     </Card>
   );
@@ -231,15 +310,15 @@ export default function AcordosClient({ agreements, banks, canPay, mayLift }: { 
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-5xl space-y-6">
         <div>
-          <h1 className="font-display text-2xl font-bold text-sand-light">Acordos de regularização</h1>
+          <h1 className="font-display text-2xl font-bold text-sand-light">Acordos de quitação e regularização</h1>
           <p className="mt-1 text-sm text-sand-dark">
             Irmãos bloqueados por comunicado à Potência (Art. 002). O bloqueio é feito pelo Venerável ou pelo Administrador em Relatórios → Inadimplência.
-            Aqui ficam as dívidas e a taxa de regularização de cada um: pago o acordo, o irmão pode ser liberado.
+            O acordo pode ser de <strong>quitação de dívidas</strong> com a loja (sem taxa; o irmão segue bloqueado, podendo pedir o Placet ou regularizar depois) ou de <strong>regularização</strong> (dívidas mais a taxa; pago o acordo, o irmão pode ser liberado).
           </p>
         </div>
 
         {active.length === 0 ? (
-          <EmptyState title="Nenhum irmão bloqueado." description="Quando o Venerável bloquear um irmão do Art. 002, o acordo de regularização aparece aqui." />
+          <EmptyState title="Nenhum irmão bloqueado." description="Quando o Venerável bloquear um irmão do Art. 002, o acordo (de quitação ou de regularização) aparece aqui." />
         ) : active.map((a) => <AgreementCard key={a.id} a={a} banks={banks} canPay={canPay} mayLift={mayLift} />)}
 
         {history.length > 0 ? (

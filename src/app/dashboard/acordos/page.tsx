@@ -47,6 +47,7 @@ export default async function AcordosPage() {
     // Em nome de qual parte o usuário logado ainda pode assinar (nenhuma = já assinou, não é parte, ou o acordo acabou).
     canSignAs: (() => { const p = partyForSigner(role, ownMemberId === b.memberId); return p && s.status !== 'lifted' && !b.signatures.some((x) => x.party === p) ? p : null; })(),
     memberId: s.memberId,
+    kind: s.kind,
     memberName: b.member.name,
     status: s.status,
     blockedAt: s.blockedAt.toISOString(),

@@ -45,6 +45,16 @@ test('buildPackage: taxa 0 e sem multa → só as dívidas; inclui a vencer', ()
   assert.equal(total, 50);
 });
 
+test('parseBlockInput: quitação ignora a taxa; regularização continua exigindo (0 vale)', () => {
+  const q = parseBlockInput({ kind: 'settlement', fee: '150', installments: 2 }, TODAY);
+  assert.deepEqual(q.ok && { kind: q.value.kind, fee: q.value.fee, n: q.value.installments }, { kind: 'settlement', fee: 0, n: 2 });
+  assert.equal(parseBlockInput({ kind: 'settlement' }, TODAY).ok, true); // sem campo de taxa
+  const r = parseBlockInput({ kind: 'regularization', fee: 0 }, TODAY);
+  assert.deepEqual(r.ok && { kind: r.value.kind, fee: r.value.fee }, { kind: 'regularization', fee: 0 });
+  assert.equal(parseBlockInput({ kind: 'regularization' }, TODAY).ok, false);
+  assert.equal(parseBlockInput({ fee: 10 }, TODAY).ok && parseBlockInput({ fee: 10 }, TODAY).ok, true); // sem kind = regularização
+});
+
 test('parseBlockInput: taxa obrigatória (0 vale), padrão à vista, máximo 3 parcelas', () => {
   const ok = parseBlockInput({ fee: '150' }, TODAY);
   assert.deepEqual(ok.ok && { fee: ok.value.fee, extra: ok.value.extra, n: ok.value.installments, due: ok.value.firstDueDate.toISOString() }, { fee: 150, extra: 0, n: 1, due: TODAY.toISOString() });

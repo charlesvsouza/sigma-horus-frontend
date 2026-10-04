@@ -8,7 +8,7 @@ import { formatDateOnly, todayBR } from '@/lib/date-only';
 import { LATE_CHARGE_CHART } from '@/lib/late-charge';
 import { lockKey } from '@/lib/locks';
 import { itemRemainders, syncMemberBlock } from '@/lib/member-block-sync';
-import { buildInstallments, buildPackage, allocatePayment, BLOCKED_MESSAGE, BLOCKED_STATUS, checkCanBlock, installmentStates, paidSoFar, type BlockInput, type DebtInput, type InstallmentState } from '@/lib/member-block';
+import { agreementKindLabel, buildInstallments, buildPackage, allocatePayment, BLOCKED_MESSAGE, BLOCKED_STATUS, checkCanBlock, installmentStates, isSettlementKind, paidSoFar, type BlockInput, type DebtInput, type InstallmentState, type PackageItemDraft } from '@/lib/member-block';
 import { coversAmount, isValidMoney, round2 } from '@/lib/money';
 import { getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import { prismaAdmin, withTenant } from '@/lib/prisma';
@@ -70,6 +70,26 @@ export async function previewBlock(db: Db, lodgeId: string, memberId: string, no
 
 export type BlockResult = { ok: true; blockId: string } | Fail;
 
+/** Cria as contas a receber da taxa de regularização e da multa/juros (itens sem conta própria ainda). */
+async function createFeeAccounts(
+  db: Db, lodgeId: string, memberId: string, items: PackageItemDraft[], dueDate: Date, note: string,
+): Promise<{ ok: true; ids: Record<'fee' | 'extra', string | null> } | Fail> {
+  const ids: Record<'fee' | 'extra', string | null> = { fee: null, extra: null };
+  for (const kind of ['fee', 'extra'] as const) {
+    const draft = items.find((i) => i.kind === kind);
+    if (!draft) continue;
+    const seed = kind === 'fee' ? FEE_CHART : LATE_CHARGE_CHART;
+    const chartAccountId = await ensureChart(db, lodgeId, seed);
+    if (!chartAccountId) return chartConflict(seed);
+    const account = await db.account.create({
+      data: { lodgeId, type: 'RECEIVABLE', title: draft.title, amount: draft.openAmount, dueDate, memberId, chartAccountId, description: note },
+      select: { id: true },
+    });
+    ids[kind] = account.id;
+  }
+  return { ok: true, ids };
+}
+
 /** Bloqueia o irmão (comunicado à Potência) e monta o acordo na mesma transação. */
 export async function blockMember(
   lodgeId: string,
@@ -98,24 +118,14 @@ export async function blockMember(
     if (locked) return { ok: false, status: 409, error: `Período encerrado (${locked.title}). O vencimento do acordo não pode cair num veneralato já fechado.` };
 
     const today = todayBR(now);
-    const note = `Acordo de regularização — bloqueio de ${formatDateOnly(today)}`;
-    const itemsByKind: Record<'fee' | 'extra', string | null> = { fee: null, extra: null };
-    for (const kind of ['fee', 'extra'] as const) {
-      const draft = pkg.items.find((i) => i.kind === kind);
-      if (!draft) continue;
-      const seed = kind === 'fee' ? FEE_CHART : LATE_CHARGE_CHART;
-      const chartAccountId = await ensureChart(db, lodgeId, seed);
-      if (!chartAccountId) return chartConflict(seed);
-      const account = await db.account.create({
-        data: { lodgeId, type: 'RECEIVABLE', title: draft.title, amount: draft.openAmount, dueDate: input.firstDueDate, memberId, chartAccountId, description: note },
-        select: { id: true },
-      });
-      itemsByKind[kind] = account.id;
-    }
+    const note = `${agreementKindLabel(input.kind)} — bloqueio de ${formatDateOnly(today)}`;
+    const created = await createFeeAccounts(db, lodgeId, memberId, pkg.items, input.firstDueDate, note);
+    if (!created.ok) return created;
+    const itemsByKind = created.ids;
 
     const block = await db.memberBlock.create({
       data: {
-        lodgeId, memberId, blockedById: actorId,
+        lodgeId, memberId, blockedById: actorId, kind: input.kind,
         powerProtocol: extra.powerProtocol?.trim() || null,
         powerSentAt: extra.powerSentAt ?? null,
         note: extra.note?.trim() || null,
@@ -140,7 +150,7 @@ export async function blockMember(
     await db.member.update({ where: { id: memberId }, data: { status: BLOCKED_STATUS } });
     await logAudit(db, {
       lodgeId, userId: actorId, action: 'UPDATE', entity: 'member-block', entityId: block.id,
-      metadata: { action: 'block', memberId, total: pkg.total, fee: input.fee, extra: input.extra, installments: input.installments, items: pkg.items.length, protocol: extra.powerProtocol ?? null },
+      metadata: { action: 'block', kind: input.kind, memberId, total: pkg.total, fee: input.fee, extra: input.extra, installments: input.installments, items: pkg.items.length, protocol: extra.powerProtocol ?? null },
     });
     return { ok: true, blockId: block.id };
   });
@@ -161,6 +171,7 @@ export interface BlockItemView {
 export interface BlockSummary {
   id: string;
   memberId: string;
+  kind: string;
   status: string;
   blockedAt: Date;
   powerProtocol: string | null;
@@ -193,7 +204,7 @@ export async function summarizeBlock(db: Db, block: BlockWithItems, now: Date = 
   const remaining = round2(items.reduce((s, i) => s + i.remaining, 0));
   const schedule = installmentStates(buildInstallments(Number(block.total), block.installments, block.firstDueDate), paid, todayBR(now));
   return {
-    id: block.id, memberId: block.memberId, status: block.status, blockedAt: block.blockedAt,
+    id: block.id, memberId: block.memberId, kind: block.kind, status: block.status, blockedAt: block.blockedAt,
     powerProtocol: block.powerProtocol, powerSentAt: block.powerSentAt, note: block.note,
     overdueDaysAtBlock: block.overdueDaysAtBlock, debtsTotal: Number(block.debtsTotal),
     regularizationFee: Number(block.regularizationFee), extraCharge: Number(block.extraCharge),
@@ -260,7 +271,7 @@ export async function recordAgreementPayment(
       const agreementPayment = await db.payment.create({
         data: {
           lodgeId, accountId: account.id, memberId, bankAccountId: bank.id, amount: a.amount, paidAt: input.paidAt,
-          method: input.method || 'manual', note: input.note || 'Pagamento do acordo de regularização',
+          method: input.method || 'manual', note: input.note || `Pagamento do ${agreementKindLabel(block.kind).toLowerCase()}`,
         },
         select: { id: true },
       });
@@ -285,14 +296,19 @@ export async function recordAgreementPayment(
 
 // ── Retorno do irmão ──────────────────────────────────────────────────────────
 
-/** O irmão volta (depois do acordo quitado): situação "Ativo" e a recorrência recomeça no próximo vencimento. */
-export async function liftBlock(lodgeId: string, memberId: string, actorId: string, now: Date = new Date()): Promise<{ ok: true } | Fail> {
+/**
+ * Encerra o bloqueio depois do acordo quitado. Padrão ("active"): o irmão volta — situação "Ativo" e a
+ * recorrência recomeça no próximo vencimento. "placet": só para o acordo de QUITAÇÃO — o irmão pagou o que
+ * devia à loja, não vai regularizar e pediu o Placet: a situação vira "Quit Placet".
+ */
+export async function liftBlock(lodgeId: string, memberId: string, actorId: string, now: Date = new Date(), outcome: 'active' | 'placet' = 'active'): Promise<{ ok: true } | Fail> {
   return withTenant(lodgeId, async (db): Promise<{ ok: true } | Fail> => {
     await lockKey(db, `member-block:${memberId}`);
     await syncMemberBlock(db, lodgeId, memberId, now);
     const block = await db.memberBlock.findFirst({ where: { lodgeId, memberId, status: { in: ['open', 'settled'] } } });
     if (!block) return { ok: false, status: 404, error: 'Este irmão não está bloqueado.' };
     if (block.status !== 'settled') return { ok: false, status: 409, error: 'O irmão só volta depois que o acordo estiver totalmente pago.' };
+    if (outcome === 'placet' && !isSettlementKind(block.kind)) return { ok: false, status: 409, error: 'O Placet por este caminho vale só para o acordo de quitação de dívidas.' };
 
     const today = todayBR(now);
     // O período bloqueado não gera mensalidade: pula as ocorrências vencidas das recorrências do irmão.
@@ -306,9 +322,65 @@ export async function liftBlock(lodgeId: string, memberId: string, actorId: stri
     }
 
     await db.memberBlock.update({ where: { id: block.id }, data: { status: 'lifted', liftedAt: now, liftedById: actorId } });
-    await db.member.update({ where: { id: memberId }, data: { status: 'active' } });
-    await logAudit(db, { lodgeId, userId: actorId, action: 'UPDATE', entity: 'member-block', entityId: block.id, metadata: { action: 'lift', memberId, skippedRecurrences: templates.length } });
+    await db.member.update({ where: { id: memberId }, data: { status: outcome === 'placet' ? 'quit_placet' : 'active' } });
+    await logAudit(db, { lodgeId, userId: actorId, action: 'UPDATE', entity: 'member-block', entityId: block.id, metadata: { action: outcome === 'placet' ? 'placet' : 'lift', memberId, skippedRecurrences: templates.length } });
     return { ok: true };
+  });
+}
+
+/**
+ * Depois de quitar as dívidas (acordo de quitação), o irmão decide regularizar: abre-se um acordo de
+ * REGULARIZAÇÃO só com a taxa (e multa/juros, se houver). O acordo de quitação é encerrado e o irmão
+ * segue bloqueado até pagar a taxa. Protocolo e data do comunicado à Potência acompanham.
+ */
+export async function regularizeSettledBlock(
+  lodgeId: string,
+  memberId: string,
+  actorId: string,
+  input: BlockInput,
+  now: Date = new Date(),
+): Promise<BlockResult> {
+  return withTenant(lodgeId, async (db): Promise<BlockResult> => {
+    await lockKey(db, `member-block:${memberId}`);
+    await syncMemberBlock(db, lodgeId, memberId, now);
+    const previous = await db.memberBlock.findFirst({ where: { lodgeId, memberId, status: 'settled', kind: 'settlement' } });
+    if (!previous) return { ok: false, status: 409, error: 'Só um acordo de quitação já pago pode virar acordo de regularização.' };
+    if (input.fee + input.extra <= 0) return { ok: false, status: 400, error: 'Informe a taxa de regularização (maior que zero).' };
+
+    const locked = await findClosedTermForDate(db, lodgeId, input.firstDueDate);
+    if (locked) return { ok: false, status: 409, error: `Período encerrado (${locked.title}). O vencimento do acordo não pode cair num veneralato já fechado.` };
+
+    // Dívidas novas (se houver) entram junto; as quitadas já saíram do saldo.
+    const debts = await loadMemberDebts(db, lodgeId, memberId);
+    const pkg = buildPackage(debts, input.fee, input.extra);
+    const note = `${agreementKindLabel('regularization')} — após quitação de ${formatDateOnly(todayBR(now))}`;
+    const created = await createFeeAccounts(db, lodgeId, memberId, pkg.items, input.firstDueDate, note);
+    if (!created.ok) return created;
+
+    const block = await db.memberBlock.create({
+      data: {
+        lodgeId, memberId, blockedById: actorId, kind: 'regularization',
+        powerProtocol: previous.powerProtocol, powerSentAt: previous.powerSentAt, note: previous.note,
+        overdueDaysAtBlock: previous.overdueDaysAtBlock, overdueAmountAtBlock: previous.overdueAmountAtBlock,
+        debtsTotal: pkg.debtsTotal, regularizationFee: input.fee, extraCharge: input.extra, total: pkg.total,
+        installments: input.installments, firstDueDate: input.firstDueDate,
+        items: {
+          create: pkg.items.map((i) => ({
+            lodgeId,
+            accountId: i.accountId ?? (i.kind === 'fee' ? created.ids.fee! : created.ids.extra!),
+            kind: i.kind, title: i.title, openAmount: i.openAmount, sortOrder: i.sortOrder,
+          })),
+        },
+      },
+      select: { id: true },
+    });
+    // O acordo de quitação se encerra; o irmão NÃO volta (segue bloqueado até a regularização).
+    await db.memberBlock.update({ where: { id: previous.id }, data: { status: 'lifted', liftedAt: now, liftedById: actorId } });
+    await logAudit(db, {
+      lodgeId, userId: actorId, action: 'UPDATE', entity: 'member-block', entityId: block.id,
+      metadata: { action: 'regularize-after-settlement', memberId, previousBlockId: previous.id, fee: input.fee, extra: input.extra, installments: input.installments },
+    });
+    return { ok: true, blockId: block.id };
   });
 }
 
@@ -336,17 +408,17 @@ export async function alertBrokenAgreements(now: Date = new Date()): Promise<{ c
           db.lodge.findUnique({ where: { id: ref.lodgeId }, select: { name: true } }),
           db.user.findMany({ where: { lodgeId: ref.lodgeId, role: { in: ['treasurer', 'venerable', 'admin'] }, status: 'active' }, select: { email: true } }),
         ]);
-        return { summary, late, member, lodge, staff };
+        return { summary, late, member, lodge, staff, kindLabel: agreementKindLabel(block.kind) };
       });
       if (!ctx) continue;
       stats.broken++;
-      const { summary, late, member, lodge, staff } = ctx;
+      const { summary, late, member, lodge, staff, kindLabel } = ctx;
       const lines = late.map((s) => `• Parcela ${s.number}/${summary.installments}: ${brl(s.amount)} com vencimento em ${formatDateOnly(s.dueDate)}`).join('\n');
-      const subject = `Acordo de regularização em atraso — ${member?.name ?? 'irmão'}`;
+      const subject = `${kindLabel} em atraso — ${member?.name ?? 'irmão'}`;
       const body =
-        `O acordo de regularização do irmão ${member?.name ?? ''} (${lodge?.name ?? ''}) está com parcela vencida e não paga.\n\n${lines}\n\n` +
+        `O ${kindLabel.toLowerCase()} do irmão ${member?.name ?? ''} (${lodge?.name ?? ''}) está com parcela vencida e não paga.\n\n${lines}\n\n` +
         `Total do acordo: ${brl(summary.total)} · Pago: ${brl(summary.paid)} · Saldo: ${brl(summary.remaining)}.\n` +
-        `O irmão continua bloqueado. Providencie as medidas cabíveis em Tesouraria → Acordos de regularização.`;
+        `O irmão continua bloqueado. Providencie as medidas cabíveis em Tesouraria → Acordos.`;
       for (const to of new Set(staff.map((u) => u.email).filter(Boolean))) {
         const r = await dispatch('email', to, subject, body, EMPTY_CHANNELS).catch(() => null);
         if (r?.status === 'sent') stats.emails++;

@@ -5,8 +5,8 @@
 //    segue ativo, convocado e recebendo cobrança. Nada é gravado no cadastro.
 //  - Bloqueio: ato MANUAL do Venerável/Administrador, sobre irmão que já está no Art. 002, por já ter
 //    comunicado a Potência. Member.status vira 'blocked': sem convocação, sem cobrança nova.
-//  - Acordo: nasce no bloqueio. Reúne TODA dívida em aberto + a taxa de regularização (digitada) e,
-//    se a loja quiser, multa/juros. Padrão à vista, sem desconto; até 3 parcelas. O irmão só volta
+//  - Acordo: nasce no bloqueio. Reúne TODA dívida em aberto + a taxa de regularização (digitada; só no
+//    acordo de REGULARIZAÇÃO — o de QUITAÇÃO não tem taxa) e, se a loja quiser, multa/juros. Padrão à vista, sem desconto; até 3 parcelas. O irmão só volta
 //    com tudo pago.
 
 import { hasAtMostCents, remainingAmount, round2 } from './money';
@@ -18,7 +18,14 @@ export const MAX_AGREEMENT_INSTALLMENTS = 3;
 export type BlockStatus = 'open' | 'settled' | 'lifted';
 export type ItemKind = 'debt' | 'fee' | 'extra';
 
-export const BLOCKED_MESSAGE = 'Irmão bloqueado por comunicação à Potência. A regularização é feita pelo acordo, em Tesouraria → Acordos de regularização.';
+// Tipo do acordo: regularização (dívidas + taxa de regularização) ou quitação (só as dívidas com a loja,
+// sem taxa — o irmão não regulariza agora e pode pedir o Placet ou regularizar depois).
+export type AgreementKind = 'regularization' | 'settlement';
+export const AGREEMENT_KIND_LABEL: Record<AgreementKind, string> = { regularization: 'Acordo de regularização', settlement: 'Acordo de quitação de dívidas' };
+export const isSettlementKind = (kind: string | null | undefined) => kind === 'settlement';
+export const agreementKindLabel = (kind: string | null | undefined) => AGREEMENT_KIND_LABEL[isSettlementKind(kind) ? 'settlement' : 'regularization'];
+
+export const BLOCKED_MESSAGE = 'Irmão bloqueado por comunicação à Potência. O acordo (quitação ou regularização) é feito em Tesouraria → Acordos.';
 
 export const isBlockedStatus = (status: string | null | undefined) => status === BLOCKED_STATUS;
 
@@ -89,6 +96,7 @@ export function buildPackage(
 }
 
 export interface BlockInput {
+  kind: AgreementKind;
   fee: number;
   extra: number;
   installments: number;
@@ -97,10 +105,12 @@ export interface BlockInput {
 
 /** Valida e normaliza o que o Venerável digitou. `total` é o que sobra depois das dívidas. */
 export function parseBlockInput(
-  raw: { fee?: unknown; extra?: unknown; installments?: unknown; firstDueDate?: unknown },
+  raw: { kind?: unknown; fee?: unknown; extra?: unknown; installments?: unknown; firstDueDate?: unknown },
   today: Date,
 ): { ok: true; value: BlockInput } | { ok: false; error: string } {
-  const fee = raw.fee === '' || raw.fee == null ? NaN : Number(raw.fee);
+  const kind: AgreementKind = raw.kind === 'settlement' ? 'settlement' : 'regularization';
+  // Quitação de dívidas não tem taxa de regularização: o valor é sempre zero, mesmo que venha preenchido.
+  const fee = kind === 'settlement' ? 0 : raw.fee === '' || raw.fee == null ? NaN : Number(raw.fee);
   if (!Number.isFinite(fee) || fee < 0 || !hasAtMostCents(fee)) {
     return { ok: false, error: 'Informe a taxa de regularização (use 0 se não houver), com até 2 casas decimais.' };
   }
@@ -119,7 +129,7 @@ export function parseBlockInput(
     if (parsed.getTime() < today.getTime()) return { ok: false, error: 'O vencimento da 1ª parcela não pode ser anterior a hoje.' };
     firstDueDate = parsed;
   }
-  return { ok: true, value: { fee: round2(fee), extra: round2(extraRaw), installments, firstDueDate } };
+  return { ok: true, value: { kind, fee: round2(fee), extra: round2(extraRaw), installments, firstDueDate } };
 }
 
 // ── Parcelas ──────────────────────────────────────────────────────────────────

@@ -1303,10 +1303,14 @@ export function ManualBook() {
                   inadimplência à Potência, ele (ou o Administrador) bloqueia o cadastro do irmão no próprio relatório de
                   Inadimplência: na linha de quem está no Art. 002, marque <UI>Bloquear (Potência)</UI>. Só o Venerável e o Administrador veem
                   essa opção, e só para quem já está enquadrado — entende-se que o comunicado à Potência já foi feito.
-                  O formulário mostra tudo o que entra no <strong>acordo de regularização</strong> e pede:
+                  O formulário começa pela escolha do <strong>tipo de acordo</strong> e mostra tudo o que entra nele:
                 </p>
                 <Bullets>
-                  <li><strong>Taxa de regularização</strong> — valor aberto, negociado e digitado à mão (use 0 se a loja não cobrar). Entra na categoria própria <em>1.1.10 Taxa de Regularização</em>, separada da taxa de filiação (1.1.03).</li>
+                  <li><strong>Quitação de dívidas com a loja</strong> — sem taxa de regularização: o irmão só paga o que deve e <strong>segue bloqueado</strong>. Pago o acordo, o Venerável ou o Administrador escolhe: <UI>Regularizar agora</UI> (abre um acordo de regularização só com a taxa), <UI>Concluir com Placet</UI> (a situação vira Quit Placet) ou <UI>Liberar o irmão</UI>. Para o irmão ainda <em>ativo</em> que só quer reparcelar a dívida, sem bloquear, use <UI>Negociar</UI> na Inadimplência.</li>
+                  <li><strong>Regularização</strong> — dívidas mais a taxa de regularização; pago o acordo, o irmão pode ser liberado. Itens do acordo:</li>
+                </Bullets>
+                <Bullets>
+                  <li><strong>Taxa de regularização</strong> (só na regularização) — valor aberto, negociado e digitado à mão (use 0 se a loja não cobrar). Entra na categoria própria <em>1.1.10 Taxa de Regularização</em>, separada da taxa de filiação (1.1.03).</li>
                   <li><strong>Multa e juros</strong> — opcional, caso a caso; entra em <em>1.2.06 Multas e Juros por Atraso</em>. Não há desconto.</li>
                   <li><strong>Pagamento</strong> — <strong>à vista</strong> por padrão, ou em <strong>2 ou 3 parcelas</strong> mensais; protocolo e data do comunicado à Potência são opcionais.</li>
                 </Bullets>

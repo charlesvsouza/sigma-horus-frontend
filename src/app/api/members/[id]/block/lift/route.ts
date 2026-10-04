@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 
 // O irmão volta: só com o acordo totalmente pago, por decisão do Venerável Mestre ou do Administrador
 // (é quem também comunica a Potência). A recorrência dele recomeça no próximo vencimento.
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,7 +17,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const result = await liftBlock(String(lodgeId), id, String(session.user.id));
+  // outcome "placet": acordo de quitação pago e o irmão pediu o Placet (em vez de voltar ou regularizar).
+  const body = await request.json().catch(() => ({}));
+  const outcome = body?.outcome === 'placet' ? 'placet' : 'active';
+  const result = await liftBlock(String(lodgeId), id, String(session.user.id), new Date(), outcome);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ ok: true });
 }

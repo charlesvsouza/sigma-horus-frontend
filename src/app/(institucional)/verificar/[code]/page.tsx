@@ -30,7 +30,7 @@ export default async function VerificarPage({ params }: { params: Promise<{ code
       select: {
         party: true, signerName: true, signerRole: true, signedAt: true, contentHash: true,
         lodge: { select: { name: true, city: true, state: true } },
-        block: { select: { id: true, memberId: true, total: true, regularizationFee: true, extraCharge: true, installments: true, firstDueDate: true, member: { select: { name: true } }, items: { select: { kind: true, title: true, openAmount: true, sortOrder: true } } } },
+        block: { select: { id: true, kind: true, memberId: true, total: true, regularizationFee: true, extraCharge: true, installments: true, firstDueDate: true, member: { select: { name: true } }, items: { select: { kind: true, title: true, openAmount: true, sortOrder: true } } } },
       },
     });
     const intact = sig
@@ -48,7 +48,7 @@ export default async function VerificarPage({ params }: { params: Promise<{ code
           <div className={`mt-4 rounded-xl border p-6 ${intact ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
             <h1 className={`text-xl font-semibold ${intact ? 'text-emerald-200' : 'text-amber-200'}`}>{intact ? 'Assinatura válida' : 'Assinatura encontrada, mas o acordo foi alterado'}</h1>
             <dl className="mt-4 space-y-2 text-sm">
-              <div><dt className="text-sand-dark">Documento</dt><dd className="text-sand-light">Termo de acordo de regularização</dd></div>
+              <div><dt className="text-sand-dark">Documento</dt><dd className="text-sand-light">{sig.block.kind === 'settlement' ? 'Termo de acordo de quitação de dívidas' : 'Termo de acordo de regularização'}</dd></div>
               <div><dt className="text-sand-dark">Assinado por</dt><dd className="text-sand-light">{sig.signerName} — {sig.signerRole || partyLabel(sig.party)}</dd></div>
               <div><dt className="text-sand-dark">Em</dt><dd className="text-sand-light">{sig.signedAt.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'long', timeStyle: 'short' })}</dd></div>
               <div><dt className="text-sand-dark">Loja</dt><dd className="text-sand-light">{sig.lodge.name}{sig.lodge.city ? ` — Oriente de ${sig.lodge.city}${sig.lodge.state ? `/${sig.lodge.state}` : ''}` : ''}</dd></div>

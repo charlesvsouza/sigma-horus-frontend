@@ -7,7 +7,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import TermoAcordoClient from './TermoAcordoClient';
 
-// Termo de acordo de regularização (para assinar digitalmente e arquivar). Abre para a Tesouraria/gestão e
+// Termo de acordo de quitação ou de regularização (para assinar digitalmente e arquivar). Abre para a Tesouraria/gestão e
 // para o próprio irmão do acordo (pelo portal). Cada parte assina com um clique: a marca fica gravada
 // (quem, quando, hash do acordo e código de verificação).
 export default async function TermoAcordoPage({ params }: { params: Promise<{ blockId: string }> }) {
@@ -39,6 +39,7 @@ export default async function TermoAcordoPage({ params }: { params: Promise<{ bl
       letterhead={data.letterhead}
       memberId={block.memberId}
       memberName={block.member.name}
+      kind={block.kind}
       status={block.status}
       blockedAt={block.blockedAt.toISOString()}
       powerProtocol={block.powerProtocol}

@@ -118,7 +118,7 @@ const ROLE_LABEL: Record<string, string> = {
 // Rótulos de segmentos de rota para a trilha (breadcrumb) que não vêm do menu.
 const SEGMENT_LABELS: Record<string, string> = {
   configuracoes: 'Configurações da loja', relatorios: 'Relatórios', resumo: 'Resumo financeiro', hospitalaria: 'Hospitalaria',
-  sessoes: 'Sessões', contrato: 'Contrato', 'taxas-de-grau': 'Taxas de grau', acordos: 'Acordos de regularização', usuarios: 'Usuários & acessos', 'minha-conta': 'Minha conta', permissoes: 'Permissões', 'importar-financeiro': 'Importar backup financeiro',
+  sessoes: 'Sessões', contrato: 'Contrato', 'taxas-de-grau': 'Taxas de grau', acordos: 'Acordos', usuarios: 'Usuários & acessos', 'minha-conta': 'Minha conta', permissoes: 'Permissões', 'importar-financeiro': 'Importar backup financeiro',
   fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', tarifas: 'Tarifas de cobrança (Asaas)', fundos: 'Fundos (Tronco e Doações)', portal: 'Meu portal', secretaria: 'Secretaria',
   inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos', categorias: 'Razão por categoria', 'historico-pagamentos': 'Histórico de pagamentos', historico: 'Meu histórico de pagamentos', 'declaracao-regularidade': 'Declaração de regularidade', declaracao: 'Declaração de regularidade',
   'fluxo-caixa': 'Fluxo de caixa projetado', orcamento: 'Orçamento anual',
