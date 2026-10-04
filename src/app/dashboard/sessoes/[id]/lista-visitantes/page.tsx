@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { loadSessionSheet } from '@/lib/session-sheets-server';
+import { ensureSessionQr } from '@/lib/tronco-qr-server';
 import SessionSheetClient from '../SessionSheetClient';
 
 // Lista de presença de visitantes (em branco) para os irmãos visitantes preencherem na sessão.
@@ -21,5 +22,8 @@ export default async function Page({ params, searchParams }: { params: Promise<{
 
   const data = await loadSessionSheet(lodgeId, id);
   if (!data) return denied('Sessão não encontrada.');
-  return <SessionSheetClient kind="visitors" sessionId={id} data={data} issuedBy={session?.user?.name ?? null} filled={filled} />;
+  // QR Pix do Tronco da sessão (Modo Asaas): impresso na folha para o doador escanear. Vale até 00:00 do dia da sessão.
+  const qr = await ensureSessionQr(lodgeId, id, 'visitors');
+  const troncoQr = qr.state === 'active' && qr.dataUrl && qr.expiresAt ? { dataUrl: qr.dataUrl, expiresAt: qr.expiresAt.toISOString() } : null;
+  return <SessionSheetClient kind="visitors" sessionId={id} data={data} issuedBy={session?.user?.name ?? null} filled={filled} troncoQr={filled ? null : troncoQr} />;
 }

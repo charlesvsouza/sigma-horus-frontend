@@ -4,6 +4,8 @@ const SANDBOX_URL = 'https://sandbox.asaas.com/api/v3';
 export type AsaasConfig = { apiKey: string; baseUrl: string };
 
 export function asaasBaseUrl(env?: string | null) {
+  // Só para testes automatizados fora de produção: aponta a API para um servidor falso local.
+  if (process.env.NODE_ENV !== 'production' && process.env.ASAAS_TEST_BASE_URL) return process.env.ASAAS_TEST_BASE_URL;
   return env === 'production' ? PROD_URL : SANDBOX_URL;
 }
 
@@ -77,6 +79,8 @@ export type AsaasWebhookEvent = {
     billingType?: string;
     /** Valor líquido após a tarifa do Asaas (a tarifa real = value − netValue). */
     netValue?: number;
+    /** Id do QR Code Pix estático que originou o recebimento (Tronco por sessão). */
+    pixQrCodeId?: string | null;
   };
 };
 
@@ -162,4 +166,42 @@ export async function deleteInstallment(config: AsaasConfig, installmentId: stri
   const res = await fetch(`${config.baseUrl}/installments/${installmentId}`, { method: 'DELETE', headers: headers(config) });
   if (!res.ok) throw new Error(`Asaas delete installment error: ${res.status} ${await res.text()}`);
   return res.json();
+}
+
+// ── QR Code Pix estático (Tronco de Solidariedade por sessão) ────────────────────────────────────────────────
+// POST /pix/qrCodes/static: valor livre (sem `value`, o pagador digita), vários pagamentos (`allowsMultiplePayments`) e
+// expiração opcional ("YYYY-MM-DD HH:mm:ss"). Cada recebimento vira uma cobrança com `pixQrCodeId` (conferido na sandbox).
+
+/** Chave Pix ativa da conta Asaas (a que recebe o QR). */
+export async function getActivePixAddressKey(config: AsaasConfig): Promise<string | null> {
+  const res = await fetch(`${config.baseUrl}/pix/addressKeys`, { headers: headers(config) });
+  if (!res.ok) throw new Error(`Asaas pix keys error: ${res.status} ${await res.text()}`);
+  const body = (await res.json()) as { data?: { key: string; status: string }[] };
+  return body.data?.find((k) => k.status === 'ACTIVE')?.key ?? null;
+}
+
+export async function createStaticPixQrCode(
+  config: AsaasConfig,
+  data: { addressKey: string; description: string; expirationDate: string; externalReference?: string },
+): Promise<{ id: string; payload: string; encodedImage: string; expirationDate?: string | null }> {
+  const res = await fetch(`${config.baseUrl}/pix/qrCodes/static`, {
+    method: 'POST', headers: headers(config), body: JSON.stringify({ ...data, allowsMultiplePayments: true, format: 'ALL' }),
+  });
+  if (!res.ok) throw new Error(`Asaas static qr error: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+/** Cobranças geradas pelos pagamentos de um QR estático. */
+export async function listPaymentsByPixQrCode(config: AsaasConfig, pixQrCodeId: string): Promise<{ id: string; status: string; value: number; netValue?: number; billingType?: string; confirmedDate?: string | null; paymentDate?: string | null; pixQrCodeId?: string | null }[]> {
+  const out: { id: string; status: string; value: number; netValue?: number }[] = [];
+  let offset = 0;
+  for (let page = 0; page < 20; page++) {
+    const res = await fetch(`${config.baseUrl}/payments?pixQrCodeId=${encodeURIComponent(pixQrCodeId)}&limit=100&offset=${offset}`, { headers: headers(config) });
+    if (!res.ok) throw new Error(`Asaas list qr payments error: ${res.status} ${await res.text()}`);
+    const body = (await res.json()) as { data?: typeof out; hasMore?: boolean };
+    out.push(...(body.data ?? []));
+    if (!body.hasMore) break;
+    offset += 100;
+  }
+  return out;
 }

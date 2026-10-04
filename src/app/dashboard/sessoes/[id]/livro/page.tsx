@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { loadSessionSheet } from '@/lib/session-sheets-server';
+import { ensureSessionQr } from '@/lib/tronco-qr-server';
 import SessionSheetClient from '../SessionSheetClient';
 
 // Livro de presença da sessão: os convocados pelos graus, cargos primeiro, com linha de assinatura.
@@ -19,5 +20,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   const data = await loadSessionSheet(lodgeId, id);
   if (!data) return denied('Sessão não encontrada.');
-  return <SessionSheetClient kind="book" sessionId={id} data={data} issuedBy={session?.user?.name ?? null} />;
+  // QR Pix do Tronco da sessão (Modo Asaas): impresso na folha para o doador escanear. Vale até 00:00 do dia da sessão.
+  const qr = await ensureSessionQr(lodgeId, id, 'members');
+  const troncoQr = qr.state === 'active' && qr.dataUrl && qr.expiresAt ? { dataUrl: qr.dataUrl, expiresAt: qr.expiresAt.toISOString() } : null;
+  return <SessionSheetClient kind="book" sessionId={id} data={data} issuedBy={session?.user?.name ?? null} troncoQr={troncoQr} />;
 }

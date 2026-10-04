@@ -1,5 +1,6 @@
 import { alertAbsenceStreaks } from '@/lib/attendance-streak-server';
 import { alertBrokenAgreements } from '@/lib/member-block-server';
+import { reconcileAllTroncoQrs } from '@/lib/tronco-qr-server';
 import { runDailyNotifications } from '@/lib/notifications';
 import { NextResponse } from 'next/server';
 import { cronAuthorized } from '@/lib/platform-auth';
@@ -20,7 +21,12 @@ async function run() {
     console.error('faltas seguidas: falha no alerta diário', err);
     return null;
   });
-  return { ...notifications, agreements, absences };
+  // Confere os QR Pix do Tronco das sessões recentes (pagamentos que o webhook possa ter perdido).
+  const troncoQr = await reconcileAllTroncoQrs().catch((err) => {
+    console.error('tronco qr: falha na conferência diária', err);
+    return null;
+  });
+  return { ...notifications, agreements, absences, troncoQr };
 }
 
 export async function GET(request: Request) {

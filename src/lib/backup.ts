@@ -50,6 +50,7 @@ export const BACKUP_MODELS = [
   'payment',
   'paymentReceiptSignature', // depois de payment (assinatura digital do recibo)
   'troncoIntake', // depois de session e payment (entradas do Tronco por sessão)
+  'troncoSessionQr', // depois de session (QR Pix da sessão para o Tronco)
   'asset',
   'bankTransaction',
   'document',

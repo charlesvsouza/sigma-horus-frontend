@@ -30,7 +30,7 @@ function when(date: string, endDate: string | null): string {
   return endDate ? `${day}, das ${time(start)} às ${time(new Date(endDate))}` : `${day}, às ${time(start)}`;
 }
 
-export default function SessionSheetClient({ kind, sessionId, data, issuedBy, filled = false }: { kind: 'book' | 'visitors'; sessionId: string; data: SessionSheetData; issuedBy: string | null; filled?: boolean }) {
+export default function SessionSheetClient({ kind, sessionId, data, issuedBy, filled = false, troncoQr = null }: { kind: 'book' | 'visitors'; sessionId: string; data: SessionSheetData; issuedBy: string | null; filled?: boolean; troncoQr?: { dataUrl: string; expiresAt: string } | null }) {
   const { scope } = data;
   const isBook = kind === 'book';
   // Lista preenchida (para arquivo): os visitantes digitados e poucas linhas em branco.
@@ -148,6 +148,18 @@ export default function SessionSheetClient({ kind, sessionId, data, issuedBy, fi
               </>
             )}
           </table>
+
+          {troncoQr ? (
+            <div className="mt-5 flex items-center gap-4 rounded-lg border border-white/10 p-3 [break-inside:avoid]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={troncoQr.dataUrl} alt="QR Code Pix do Tronco de Solidariedade desta sessão" width={110} height={110} className="h-[110px] w-[110px] shrink-0 bg-white p-1" />
+              <div className="text-xs leading-relaxed text-sand">
+                <p className="text-sm font-semibold text-sand-light">Tronco de Solidariedade — doe pelo Pix</p>
+                <p>Aponte a câmera do app do banco para o QR e informe o valor que desejar. A doação é anônima e fica registrada nesta sessão ({isBook ? 'obreiros' : 'visitantes'}).</p>
+                <p className="text-sand-dark">QR válido até 00:00 de {new Date(troncoQr.expiresAt).toLocaleDateString('pt-BR', { timeZone: TZ })}.</p>
+              </div>
+            </div>
+          ) : null}
 
           {isBook ? (
             <p className="mt-4 text-sm text-sand">Total de presentes: ________</p>

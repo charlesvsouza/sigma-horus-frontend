@@ -1,6 +1,7 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { logAudit } from '@/lib/audit';
 import { findFundChart, fundChartWhere, resolveBankAccount } from '@/lib/funds';
+import { ASAAS_FEE_CHART } from '@/lib/collection';
 import { isValidMoney } from '@/lib/money';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import {
@@ -35,7 +36,7 @@ const METHOD_LABEL: Record<string, string> = { cash: 'Dinheiro', pix: 'Pix', tra
 async function postToCashbox(
   db: Db,
   p: { lodgeId: string; amount: number; date: Date; paidAt: Date; method: string; sessionId: string | null; bankAccountId: string | null; note: string | null; code: string },
-): Promise<{ ok: true; paymentId: string } | Fail> {
+): Promise<{ ok: true; paymentId: string; bankId: string } | Fail> {
   const locked = await findClosedTermForDate(db, p.lodgeId, p.date);
   if (locked) return { ok: false, status: 409, error: `Período encerrado (${locked.title}). Não é possível lançar com data dentro de um veneralato já fechado.` };
   const chart = await findFundChart(db, p.lodgeId, 'tronco', 'REVENUE');
@@ -55,7 +56,17 @@ async function postToCashbox(
     data: { lodgeId: p.lodgeId, accountId: account.id, memberId: null, bankAccountId: bank.id, amount: p.amount, paidAt: p.paidAt, method: 'donation', note: detail },
     select: { id: true },
   });
-  return { ok: true, paymentId: payment.id };
+  return { ok: true, paymentId: payment.id, bankId: bank.id };
+}
+
+/** Tarifa real cobrada pelo Asaas sobre o Pix do QR: despesa na mesma conta (como nas cobranças), absorvida pela loja. */
+async function postAsaasFee(db: Db, lodgeId: string, fee: number, bankId: string, date: Date, code: string): Promise<void> {
+  const chart = (await db.chartAccount.findFirst({ where: { lodgeId, code: ASAAS_FEE_CHART.code }, select: { id: true } })) ?? (await db.chartAccount.create({ data: { lodgeId, ...ASAAS_FEE_CHART }, select: { id: true } }));
+  const account = await db.account.create({
+    data: { lodgeId, type: 'PAYABLE', title: `Tarifa Asaas — Tronco ${code}`, amount: fee, dueDate: date, status: 'paid', chartAccountId: chart.id, bankAccountId: bankId, counterpartyName: 'Asaas', description: `Tarifa do Asaas sobre o Pix do QR da sessão (${code}), absorvida pela loja` },
+    select: { id: true },
+  });
+  await db.payment.create({ data: { lodgeId, accountId: account.id, bankAccountId: bankId, amount: fee, method: 'asaas-fee', paidAt: date, note: `Tarifa Asaas (${code})` } });
 }
 
 /**
@@ -99,8 +110,15 @@ export async function confirmTronco(
   if (!intake) return { ok: false, status: 404, error: 'Entrada não encontrada.' };
   if (intake.status !== 'pending') return { ok: false, status: 409, error: intake.status === 'confirmed' ? 'Esta entrada já foi lançada no caixa.' : 'Esta entrada foi recusada.' };
   const method = intake.channel === 'cash' ? 'cash' : intake.channel.startsWith('pix') ? 'pix' : 'other';
-  const posted = await postToCashbox(db, { lodgeId, amount: Number(intake.amount), date: input.date, paidAt: input.paidAt, method, sessionId: intake.sessionId, bankAccountId: input.bankAccountId, note: intake.note, code: intake.code });
+  // Pix do QR da sessão: o dinheiro está no Asaas; sem conta escolhida, vai para a conta de repasse da loja.
+  let bankAccountId = input.bankAccountId;
+  if (!bankAccountId && intake.channel === 'pix_qr') {
+    const lodge = await db.lodge.findUnique({ where: { id: lodgeId }, select: { asaasSettlementAccountId: true } });
+    bankAccountId = lodge?.asaasSettlementAccountId ?? null;
+  }
+  const posted = await postToCashbox(db, { lodgeId, amount: Number(intake.amount), date: input.date, paidAt: input.paidAt, method, sessionId: intake.sessionId, bankAccountId, note: intake.note, code: intake.code });
   if (!posted.ok) return posted;
+  if (intake.fee && intake.fee > 0) await postAsaasFee(db, lodgeId, Number(intake.fee), posted.bankId, input.date, intake.code);
   await db.troncoIntake.update({ where: { id: intake.id }, data: { status: 'confirmed', confirmedById: user.id, confirmedAt: new Date(), paymentId: posted.paymentId } });
   await logAudit(db, { lodgeId, userId: user.id, action: 'UPDATE', entity: 'tronco-intake', entityId: intake.id, metadata: { code: intake.code, confirmed: true, amount: Number(intake.amount) } });
   return { ok: true, paymentId: posted.paymentId };

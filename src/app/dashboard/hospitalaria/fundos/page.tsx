@@ -61,7 +61,7 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
   const data = await withTenant(String(lodgeId), async (db) => {
     const lid = String(lodgeId);
     const [lodge, payments, members, recentSessions, bankAccounts] = await Promise.all([
-      db.lodge.findUnique({ where: { id: lid }, select: { name: true, crestUrl: true } }),
+      db.lodge.findUnique({ where: { id: lid }, select: { name: true, crestUrl: true, collectionMode: true, asaasSettlementAccountId: true } }),
       db.payment.findMany({
         where: { lodgeId: lid, account: { chartAccount: fundChartWhere(fund) } },
         select: {
@@ -174,6 +174,8 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
         pending={data.pendingIntakes.map((p) => ({ id: p.id, code: p.code, amount: Number(p.amount), channel: p.channel, sessionLabel: p.session ? `${fmtBR(p.session.date)} — ${p.session.title}` : null, declaredBy: p.declaredByName, declaredAt: p.declaredAt.toISOString() }))}
         accounts={data.bankAccounts}
         canConfirm={canConfirm}
+        settlementAccountId={data.lodge?.asaasSettlementAccountId ?? null}
+        asaasQr={data.lodge?.collectionMode === 'asaas'}
       />
     ) : null}
     </>

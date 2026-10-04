@@ -147,6 +147,7 @@ model Lodge {
   memberBlockSignatures MemberBlockSignature[]
   paymentReceiptSignatures PaymentReceiptSignature[]
   troncoIntakes TroncoIntake[]
+  troncoSessionQrs TroncoSessionQr[]
   candidateInquirers CandidateInquirer[]
   hospitalityRequests HospitalityRequest[]
   financialAccounts FinancialAccount[]
@@ -838,6 +839,7 @@ model Session {
   visitors   SessionVisitor[]
   minutesFiles SessionMinutes[]
   troncoIntakes TroncoIntake[]
+  troncoQrs TroncoSessionQr[]
   @@index([lodgeId, date])
 }
 
@@ -1336,6 +1338,7 @@ model TroncoIntake {
   confirmedById  String?
   confirmedAt    DateTime?
   rejectReason   String?
+  fee            Float?    // tarifa do Asaas sobre o Pix recebido pelo QR da sessão (valor − líquido); lançada como despesa ao confirmar
   paymentId      String?   @unique
 
   lodge   Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
@@ -1343,6 +1346,25 @@ model TroncoIntake {
   payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   @@index([lodgeId, sessionId])
   @@index([lodgeId, status])
+}
+
+// QR Pix estático do Asaas de uma sessão para o Tronco de Solidariedade (valor livre, vários pagamentos). Um por sessão e origem
+// (obreiros / visitantes), impresso no livro de presença e na lista de visitantes; expira à meia-noite (Brasília) do dia da
+// sessão. Cada pagamento recebido chega com `pixQrCodeId` = `asaasQrId` e vira uma TroncoIntake pendente.
+model TroncoSessionQr {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  sessionId String
+  source    String   // members | visitors
+  asaasQrId String   @unique
+  payload   String   // copia e cola (EMV)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  lodge   Lodge   @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@unique([sessionId, source])
+  @@index([lodgeId])
 }
 
 // Assinatura digital do recibo de pagamento: só Tesoureiro ou Venerável, uma por pagamento (ver lib/receipt-signature.ts).

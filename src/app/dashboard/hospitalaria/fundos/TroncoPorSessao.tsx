@@ -14,12 +14,16 @@ const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(
 // Tronco de Solidariedade por sessão (sem doador): o confirmado, o que ainda aguarda lançamento e a divisão por origem.
 // Todos os cargos que abrem o fundo veem os totais; lançar no caixa ou recusar é do Tesoureiro, do Venerável e do Administrador.
 export default function TroncoPorSessao({
-  sessions, pending, accounts, canConfirm,
+  sessions, pending, accounts, canConfirm, settlementAccountId = null, asaasQr = false,
 }: {
   sessions: TroncoSessionItem[];
   pending: PendingIntake[];
   accounts: { id: string; name: string; isDefault: boolean }[];
   canConfirm: boolean;
+  /** Conta de repasse do Asaas: padrão para lançar entradas vindas do QR da sessão. */
+  settlementAccountId?: string | null;
+  /** A loja usa o Asaas: mostra "Atualizar do Asaas". */
+  asaasQr?: boolean;
 }) {
   const router = useRouter();
   const [bank, setBank] = useState<Record<string, string>>({});
@@ -27,12 +31,26 @@ export default function TroncoPorSessao({
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const defaultBank = (accounts.find((a) => a.isDefault) ?? accounts[0])?.id ?? '';
+  const bankFor = (p: PendingIntake) => bank[p.id] ?? (p.channel === 'pix_qr' && settlementAccountId && accounts.some((a) => a.id === settlementAccountId) ? settlementAccountId : defaultBank);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function refreshFromAsaas() {
+    setRefreshing(true);
+    setMessage(null);
+    const res = await fetch('/api/tronco/qr/reconcile', { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    setRefreshing(false);
+    if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Não foi possível atualizar.' }); return; }
+    setMessage({ kind: 'ok', text: data.created > 0 ? `${data.created} entrada(s) nova(s) trazida(s) do Asaas.` : 'Nada novo no Asaas.' });
+    router.refresh();
+  }
   const total = sessions.reduce((s, r) => s + r.confirmed, 0);
 
   async function act(id: string, kind: 'confirm' | 'reject') {
     setBusy(id);
     setMessage(null);
-    const body = kind === 'confirm' ? { bankAccountId: bank[id] ?? defaultBank } : { reason: reason[id] ?? '' };
+    const item = pending.find((x) => x.id === id);
+    const body = kind === 'confirm' ? { bankAccountId: item ? bankFor(item) : defaultBank } : { reason: reason[id] ?? '' };
     const res = await fetch(`/api/tronco/intakes/${id}/${kind}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json().catch(() => ({}));
     setBusy(null);
@@ -44,7 +62,10 @@ export default function TroncoPorSessao({
   return (
     <section aria-labelledby="tronco-sessao" className="mx-auto max-w-6xl space-y-4 px-6 pb-12">
       <div className="rounded-xl border border-white/6 bg-sigma-card p-6">
-        <h2 id="tronco-sessao" className="text-base font-semibold text-sand-light">Tronco por sessão</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="tronco-sessao" className="text-base font-semibold text-sand-light">Tronco por sessão</h2>
+          {canConfirm && asaasQr ? <Button size="sm" variant="secondary" disabled={refreshing} onClick={() => void refreshFromAsaas()}>{refreshing ? 'Atualizando…' : 'Atualizar do Asaas'}</Button> : null}
+        </div>
         <p className="mt-1 text-xs text-sand-dark">Quanto entrou no Tronco em cada sessão, sem identificar doadores. Soma lançada: <strong className="tabular-nums text-gold">{brl(total)}</strong>.</p>
         {message ? <div className="mt-3"><Alert intent={message.kind === 'ok' ? 'ok' : 'danger'}>{message.text}</Alert></div> : null}
 
@@ -93,7 +114,7 @@ export default function TroncoPorSessao({
                 </div>
                 {canConfirm ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    <select aria-label={`Conta que recebeu — ${p.code}`} value={bank[p.id] ?? defaultBank} onChange={(e) => setBank((b) => ({ ...b, [p.id]: e.target.value }))} className={`${inputClass} w-auto`}>
+                    <select aria-label={`Conta que recebeu — ${p.code}`} value={bankFor(p)} onChange={(e) => setBank((b) => ({ ...b, [p.id]: e.target.value }))} className={`${inputClass} w-auto`}>
                       {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
                     <Button size="sm" disabled={busy === p.id} onClick={() => void act(p.id, 'confirm')}>{busy === p.id ? '…' : 'Lançar no caixa'}</Button>

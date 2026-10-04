@@ -9,6 +9,7 @@ import { MONEY_BACK_EVENTS, reverseAsaasPayment, type ReversalResult } from '@/l
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { brl } from '@/lib/currency';
 import { logAudit } from '@/lib/audit';
+import { ingestQrPayment } from '@/lib/tronco-qr-server';
 import { NextResponse } from 'next/server';
 
 // Eventos do Asaas que significam "dinheiro recebido" → baixa automática.
@@ -200,6 +201,37 @@ async function handleGroupWebhook(request: Request, event: string, payment: NonN
   return NextResponse.json({ received: true, ignored: event });
 }
 
+/**
+ * Pagamento recebido por um QR Pix estático do Tronco da sessão (`payment.pixQrCodeId`): vira uma entrada PENDENTE do Tronco,
+ * ligada à sessão e à origem do QR (obreiros/visitantes); o Tesoureiro, o Venerável ou o Administrador lança no caixa. Estorno
+ * de entrada ainda pendente a recusa; de entrada já lançada fica registrado na auditoria para a Tesouraria tratar.
+ */
+async function handleTroncoQrWebhook(
+  request: Request,
+  event: string,
+  payment: NonNullable<ReturnType<typeof processWebhook>['payment']>,
+  qr: { lodgeId: string; sessionId: string; source: string; lodge: { asaasWebhookToken: string | null } },
+) {
+  if (!isWebhookAuthorized(request.headers.get('asaas-access-token'), qr.lodge.asaasWebhookToken)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (PAID_EVENTS.has(event)) {
+    const result = await prismaAdmin.$transaction((tx) => ingestQrPayment(tx, qr, { id: payment.id, status: payment.status, value: Number(payment.value), netValue: payment.netValue ?? null }));
+    return NextResponse.json({ received: true, tronco: result });
+  }
+  if (MONEY_BACK_EVENTS.has(event) || event === 'PAYMENT_DELETED') {
+    const intake = await prismaAdmin.troncoIntake.findUnique({ where: { externalRef: payment.id } });
+    if (!intake) return NextResponse.json({ received: true, ignored: 'intake not found' });
+    if (intake.status === 'pending') {
+      await prismaAdmin.troncoIntake.update({ where: { id: intake.id }, data: { status: 'rejected', rejectReason: 'Estornado ou cancelado no Asaas', confirmedAt: new Date() } });
+      return NextResponse.json({ received: true, tronco: 'rejected' });
+    }
+    await prismaAdmin.auditLog.create({ data: { lodgeId: intake.lodgeId, userId: null, action: 'UPDATE', entity: 'tronco-qr-refund', entityId: intake.id, after: JSON.stringify({ event, asaasPaymentId: payment.id, amount: payment.value, code: intake.code }) } });
+    return NextResponse.json({ received: true, tronco: 'refund-flagged' });
+  }
+  return NextResponse.json({ received: true, ignored: event });
+}
+
 export async function POST(request: Request) {
   let payload;
   try {
@@ -211,6 +243,12 @@ export async function POST(request: Request) {
   const { event, payment } = payload;
   if (!event || !payment) {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+  }
+
+  // Pagamento de um QR estático do Tronco da sessão: não tem cobrança nossa; é identificado pelo `pixQrCodeId`.
+  if (payment.pixQrCodeId) {
+    const qr = await prismaAdmin.troncoSessionQr.findUnique({ where: { asaasQrId: payment.pixQrCodeId }, include: { lodge: { select: { asaasWebhookToken: true } } } });
+    if (qr) return handleTroncoQrWebhook(request, event, payment, qr);
   }
 
   // Ligação com o registro local: enviamos Invoice.id como externalReference ao criar a cobrança.
