@@ -66,6 +66,27 @@ export async function fetchWhatsAppShare(invoiceId: string): Promise<{ ok: true;
   };
 }
 
+export async function fetchRecordShare(memberId: string): Promise<{ ok: true; share: WhatsAppShare } | { ok: false; error: string }> {
+  const res = await fetch(`/api/members/${memberId}/whatsapp-data`);
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) return { ok: false, error: d.error ?? 'Erro ao preparar a mensagem.' };
+  return {
+    ok: true,
+    share: {
+      key: d.memberId,
+      heading: 'Pedir CPF e e-mail pelo WhatsApp',
+      recipientName: d.memberName,
+      phone: d.phone,
+      rawPhone: d.rawPhone,
+      details: `falta: ${(d.missing as string[]).join(' e ')}${d.lastSentAt ? ` · último pedido em ${new Date(d.lastSentAt).toLocaleDateString('pt-BR')}` : ''}`,
+      text: d.text,
+      itemNoun: 'o pedido',
+      endpoint: `/api/members/${d.memberId}/whatsapp-data`,
+      footnote: 'O irmão responde na própria conversa e a Secretaria registra o dado em Membros. Quando CPF e e-mail estiverem preenchidos, o cadastro deixa de aparecer como incompleto e o pedido some.',
+    },
+  };
+}
+
 async function qrBlob(dataUrl: string): Promise<Blob> {
   return (await fetch(dataUrl)).blob();
 }

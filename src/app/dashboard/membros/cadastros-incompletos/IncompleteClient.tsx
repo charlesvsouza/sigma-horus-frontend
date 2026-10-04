@@ -1,12 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { fetchRecordShare, WhatsAppSendDialog, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
 import { Alert, EmptyState } from '@/components/ui';
 import { ReportActions, ReportDocument, type Signatory } from '@/components/report/report-document';
 
 interface Row { id: string; name: string; noCpf: boolean; noEmail: boolean; phone: string | null }
 
 export default function IncompleteClient({ lodgeName, crestUrl, issuedBy, signatures, total, rows }: { lodgeName: string; crestUrl: string | null; issuedBy?: string | null; signatures: Signatory[]; total: number; rows: Row[] }) {
+  const [share, setShare] = useState<WhatsAppShare | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  async function ask(id: string) {
+    setError(null);
+    const r = await fetchRecordShare(id);
+    if (r.ok) setShare(r.share); else setError(r.error);
+  }
   const noCpf = rows.filter((r) => r.noCpf).length;
   const noEmail = rows.filter((r) => r.noEmail).length;
   const mark = (missing: boolean) => (missing ? 'FALTA' : 'ok');
@@ -23,6 +32,7 @@ export default function IncompleteClient({ lodgeName, crestUrl, issuedBy, signat
         <Alert intent="warn" className="rpt-noprint">
           <strong>Providência urgente.</strong> O e-mail é por onde saem as cobranças, os lembretes e as convocações, e o CPF é exigido para emitir cobrança pelo Asaas. Sem eles o irmão não recebe e a Tesouraria não consegue cobrar. Imprima a lista, colete os dados com cada irmão e atualize o cadastro em Membros.
         </Alert>
+        {error ? <Alert intent="danger" className="rpt-noprint">{error}</Alert> : null}
 
         {rows.length === 0 ? (
           <EmptyState title="Nenhum cadastro pendente." description={`Os ${total} irmãos ativos têm CPF e e-mail.`} />
@@ -45,6 +55,7 @@ export default function IncompleteClient({ lodgeName, crestUrl, issuedBy, signat
                       <th className="border-b border-white/10 px-2 py-2">CPF</th>
                       <th className="border-b border-white/10 px-2 py-2">E-mail</th>
                       <th className="border-b border-white/10 px-2 py-2">Telefone (para contato)</th>
+                      <th className="rpt-noprint border-b border-white/10 px-2 py-2" />
                     </tr>
                   </thead>
                   <tbody>
@@ -54,6 +65,7 @@ export default function IncompleteClient({ lodgeName, crestUrl, issuedBy, signat
                         <td className={`border-b border-white/5 px-2 py-2 ${r.noCpf ? 'font-semibold text-rose-300' : 'text-sand-dark'}`}>{mark(r.noCpf)}</td>
                         <td className={`border-b border-white/5 px-2 py-2 ${r.noEmail ? 'font-semibold text-rose-300' : 'text-sand-dark'}`}>{mark(r.noEmail)}</td>
                         <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{r.phone ?? '—'}</td>
+                        <td className="rpt-noprint border-b border-white/5 px-2 py-2 text-right"><button type="button" onClick={() => void ask(r.id)} className="rounded-full border border-amber-500/40 px-3 py-1 text-xs text-amber-300 hover:border-amber-500/60">Pedir pelo WhatsApp</button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -63,6 +75,7 @@ export default function IncompleteClient({ lodgeName, crestUrl, issuedBy, signat
           </>
         )}
       </div>
+      {share ? <WhatsAppSendDialog key={share.key} share={share} onClose={() => setShare(null)} /> : null}
     </main>
   );
 }

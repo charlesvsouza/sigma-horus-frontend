@@ -8,6 +8,8 @@ import { BLOCKED_STATUS_DEF, MEMBER_FILTER_STATUSES, MEMBER_STATUSES, memberStat
 import { Button, EmptyState, Input, MaskedInput, Skeleton, inputClass, Alert, useConfirm, Toast } from '@/components/ui';
 import { formatDateOnly } from '@/lib/date-only';
 import { ReportDocument } from '@/components/report/report-document';
+import { fetchRecordShare, WhatsAppSendDialog, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
+import { isIncompleteRecord, missingRecordFields } from '@/lib/incomplete-record';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -152,6 +154,13 @@ export default function MembrosPage() {
   const [saving, setSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [grantingId, setGrantingId] = useState<string | null>(null);
+  const [recordShare, setRecordShare] = useState<WhatsAppShare | null>(null);
+
+  async function askRecordByWhatsApp(m: Member) {
+    const r = await fetchRecordShare(m.id);
+    if (r.ok) setRecordShare(r.share);
+    else setMessage({ kind: 'error', text: r.error });
+  }
   const [canManagePhoto, setCanManagePhoto] = useState(false);
   const [photoUploadingId, setPhotoUploadingId] = useState<string | null>(null);
 
@@ -358,6 +367,7 @@ export default function MembrosPage() {
         </div>
 
         <Toast message={message} onClose={() => setMessage(null)} />
+        {recordShare ? <WhatsAppSendDialog key={recordShare.key} share={recordShare} onClose={() => setRecordShare(null)} onChange={(_k, ev) => { if (ev === 'sent') setMessage({ kind: 'ok', text: 'Pedido registrado como enviado.' }); }} /> : null}
         {loadError ? (
           <Alert intent="danger">
             {loadError}{' '}
@@ -446,7 +456,7 @@ export default function MembrosPage() {
                         ) : null}
                       </span>
                       <span className="text-xs text-sand-dark md:text-sm md:text-sand">{degreeShort(m)}</span>
-                      <span className="text-xs"><span className={`rounded-full px-2 py-0.5 ${TONE_BADGE[memberStatusTone(m.status)]}`}>{memberStatusLabel(m.status)}</span></span>
+                      <span className="text-xs"><span className={`rounded-full px-2 py-0.5 ${TONE_BADGE[memberStatusTone(m.status)]}`}>{memberStatusLabel(m.status)}</span>{isIncompleteRecord(m) ? <span title={`Falta: ${missingRecordFields(m).join(' e ')}`} className="ml-1.5 rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-300">Incompleto</span> : null}</span>
                       <span className="text-xs text-sand-dark md:text-sm">{m.rite?.name ?? '—'}</span>
                       <span className="text-xs text-sand-dark md:text-sm">{m.phone || '—'}</span>
                       <span className="hidden text-right text-xs text-gold/70 md:block">{open ? 'fechar' : 'detalhes'}</span>
@@ -533,6 +543,9 @@ export default function MembrosPage() {
                                 </button>
                               ) : null}
                               {m.user ? <span className="text-xs text-emerald-300/80">✓ acesso ativo{m.user.mustChangePassword ? ' (senha provisória)' : ''}</span> : null}
+                              {isIncompleteRecord(m) ? (
+                                <button onClick={() => void askRecordByWhatsApp(m)} title={`Falta ${missingRecordFields(m).join(' e ')}: pede pelo WhatsApp do irmão`} className="rounded-full border border-amber-500/40 px-4 py-2 text-xs font-medium text-amber-300 transition-all hover:border-amber-500/60 hover:text-amber-200">Pedir {missingRecordFields(m).join(' e ')} pelo WhatsApp</button>
+              ) : null}
                               <button onClick={() => deleteMember(m)} className="rounded-full border border-rose-500/40 px-4 py-2 text-xs font-medium text-rose-300 transition-all hover:border-rose-500/60 hover:text-rose-200">Excluir cadastro</button>
                             </div>
                           </div>
