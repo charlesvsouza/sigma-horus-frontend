@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { agreementDebtAccountIds } from '@/lib/agreement-items';
 import { auth } from '@/lib/auth';
 import { getPayment } from '@/lib/asaas';
 import { fetchPixQr } from '@/lib/asaas-charge';
@@ -56,6 +57,8 @@ export async function POST(request: Request) {
     }),
   }));
   const { accounts, lodge } = ctx;
+  const inAgreement = await withTenant(lodgeId, (db) => agreementDebtAccountIds(db, lodgeId, memberId));
+  if (accounts.some((a) => inAgreement.has(a.id))) return NextResponse.json({ error: 'Alguma das contas faz parte do seu acordo com a Loja. Pague as parcelas do acordo em “Meu acordo”.' }, { status: 409 });
   if (!lodge || accounts.length !== accountIds.length) return NextResponse.json({ error: 'Alguma das contas não foi encontrada.' }, { status: 404 });
 
   const items = accounts.map((a) => ({ account: a, balance: openBalance(a, a.payments) }));

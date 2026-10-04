@@ -8,6 +8,8 @@ import { formatDateOnly } from '@/lib/date-only';
 import { AGREEMENT_PARTIES, partyLabel } from '@/lib/agreement-signature';
 import { agreementKindLabel, buildInstallments, isSettlementKind, MAX_AGREEMENT_INSTALLMENTS } from '@/lib/member-block';
 import Link from 'next/link';
+import AgreementChargePanel from './AgreementChargePanel';
+import type { ChargeRow } from '@/lib/agreement-charge-server';
 
 export interface AgreementView {
   id: string;
@@ -15,6 +17,7 @@ export interface AgreementView {
   canSignAs: string | null;
   memberId: string;
   kind: string; // regularization | settlement
+  charges: ChargeRow[];
   memberName: string;
   status: string; // open | settled | lifted
   blockedAt: string;
@@ -167,7 +170,86 @@ function RegularizeForm({ a, onDone }: { a: AgreementView; onDone: (msg: string)
   );
 }
 
-function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks: Bank[]; canPay: boolean; mayLift: boolean }) {
+// Lista do mês: parcelas que vencem até o fim deste mês (inclui as atrasadas) de todos os acordos em aberto, com a marca
+// de envio — o Tesoureiro passa por aqui todo mês para enviar o QR / Pix copia e cola.
+function MonthWorklist({ agreements }: { agreements: AgreementView[] }) {
+  const router = useRouter();
+  const [open, setOpen] = useState<string | null>(null);
+  const now = new Date();
+  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  const rows = agreements
+    .filter((a) => a.status === 'open')
+    .flatMap((a) => a.charges.filter((c) => c.target !== 'balance' && new Date(c.dueDate).getTime() < endOfMonth.getTime()).map((c) => ({ a, c })))
+    .sort((x, y) => new Date(x.c.dueDate).getTime() - new Date(y.c.dueDate).getTime() || x.a.memberName.localeCompare(y.a.memberName, 'pt-BR'));
+  if (rows.length === 0) return null;
+  const done = (c: ChargeRow) => Boolean(c.sentAt || c.emailedAt);
+  return (
+    <Card>
+      <h2 className="text-base font-semibold text-sand-light">Parcelas a cobrar neste mês</h2>
+      <p className="mt-1 text-xs text-sand-dark">Vencem até o fim do mês ou já estão atrasadas. Gere a cobrança de cada uma e envie por WhatsApp ou e-mail; o envio fica marcado aqui.</p>
+      <ul className="mt-3 divide-y divide-white/5">
+        {rows.map(({ a, c }) => {
+          const key = `${a.id}:${c.target}`;
+          return (
+            <li key={key} className="py-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="text-sand">
+                  {a.memberName} · parcela {c.number}/{a.installments} · <span className="tabular-nums">{brl(c.amount)}</span> · vence {formatDateOnly(c.dueDate)}
+                  {c.late ? <span className="ml-1 text-rose-300">· atrasada</span> : null}
+                </span>
+                <span className="flex items-center gap-2">
+                  {c.noticeAt ? <Badge variant="warning">Irmão avisou que pagou</Badge> : null}
+                  {done(c) ? <Badge variant="success">Enviada</Badge> : c.openedAt ? <Badge variant="warning">WhatsApp sem confirmação</Badge> : <Badge variant="overdue">Não enviada</Badge>}
+                  <Button type="button" size="sm" onClick={() => setOpen(open === key ? null : key)}>{open === key ? 'Fechar' : 'Gerar cobrança'}</Button>
+                </span>
+              </div>
+              {open === key ? <AgreementChargePanel memberId={a.memberId} target={c.target} label={`${a.memberName} — parcela ${c.number}/${a.installments} — ${brl(c.amount)}`} onClose={() => setOpen(null)} onSent={() => router.refresh()} /> : null}
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
+  );
+}
+
+function ChargesSection({ a }: { a: AgreementView }) {
+  const router = useRouter();
+  const [openTarget, setOpenTarget] = useState<string | null>(null);
+  if (a.charges.length === 0) return null;
+  const mark = (c: AgreementView['charges'][number]) => {
+    const bits: string[] = [];
+    if (c.sentAt) bits.push(`WhatsApp enviado em ${formatDateOnly(c.sentAt)}`);
+    else if (c.openedAt) bits.push(`WhatsApp aberto em ${formatDateOnly(c.openedAt)} (sem confirmação)`);
+    if (c.emailedAt) bits.push(`e-mail em ${formatDateOnly(c.emailedAt)}`);
+    return bits.join(' · ');
+  };
+  return (
+    <div className="mt-4 rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-3">
+      <p className="text-xs font-medium text-sand-light">Cobrar (Pix da chave da loja — WhatsApp ou e-mail)</p>
+      <ul className="mt-2 space-y-2">
+        {a.charges.map((c) => {
+          const label = c.target === 'balance' ? 'Quitar o saldo todo do acordo' : `Parcela ${c.number}/${a.installments}`;
+          return (
+            <li key={c.target}>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-sand">
+                  {label} · <span className="tabular-nums">{brl(c.amount)}</span> · {c.target === 'balance' ? 'até' : 'vence'} {formatDateOnly(c.dueDate)}
+                  {c.late ? <span className="ml-1 text-rose-300">· atrasada</span> : null}
+                </span>
+                <Button type="button" size="sm" onClick={() => setOpenTarget(openTarget === c.target ? null : c.target)}>{openTarget === c.target ? 'Fechar' : 'Gerar cobrança'}</Button>
+              </div>
+              {mark(c) ? <p className="text-[11px] text-sand-dark">{mark(c)}</p> : null}
+              {c.noticeAt ? <p className="text-[11px] text-emerald-300">O irmão avisou que pagou em {formatDateOnly(c.noticeAt)} — confira o recebimento e registre o pagamento.</p> : null}
+              {openTarget === c.target ? <AgreementChargePanel memberId={a.memberId} target={c.target} label={`${label} — ${brl(c.amount)}`} onClose={() => setOpenTarget(null)} onSent={() => router.refresh()} /> : null}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function AgreementCard({ a, banks, canPay, canCharge, mayLift }: { a: AgreementView; banks: Bank[]; canPay: boolean; canCharge: boolean; mayLift: boolean }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [paying, setPaying] = useState(false);
@@ -280,6 +362,8 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
         </span>
       </div>
 
+      {a.status === 'open' && canCharge ? <ChargesSection a={a} /> : null}
+
       {a.status !== 'lifted' ? (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {a.status === 'open' && canPay ? <Button type="button" onClick={() => setPaying((v) => !v)}>{paying ? 'Fechar' : 'Registrar pagamento do acordo'}</Button> : null}
@@ -301,7 +385,7 @@ function AgreementCard({ a, banks, canPay, mayLift }: { a: AgreementView; banks:
   );
 }
 
-export default function AcordosClient({ agreements, banks, canPay, mayLift }: { agreements: AgreementView[]; banks: Bank[]; canPay: boolean; mayLift: boolean }) {
+export default function AcordosClient({ agreements, banks, canPay, canCharge, mayLift }: { agreements: AgreementView[]; banks: Bank[]; canPay: boolean; canCharge: boolean; mayLift: boolean }) {
   const active = agreements.filter((a) => a.status !== 'lifted');
   const history = agreements.filter((a) => a.status === 'lifted');
   const [showHistory, setShowHistory] = useState(false);
@@ -317,16 +401,18 @@ export default function AcordosClient({ agreements, banks, canPay, mayLift }: { 
           </p>
         </div>
 
+        {canCharge ? <MonthWorklist agreements={active} /> : null}
+
         {active.length === 0 ? (
           <EmptyState title="Nenhum irmão bloqueado." description="Quando o Venerável bloquear um irmão do Art. 002, o acordo (de quitação ou de regularização) aparece aqui." />
-        ) : active.map((a) => <AgreementCard key={a.id} a={a} banks={banks} canPay={canPay} mayLift={mayLift} />)}
+        ) : active.map((a) => <AgreementCard key={a.id} a={a} banks={banks} canPay={canPay} canCharge={canCharge} mayLift={mayLift} />)}
 
         {history.length > 0 ? (
           <section>
             <button type="button" onClick={() => setShowHistory((v) => !v)} className="text-sm text-gold/80 hover:text-gold">
               {showHistory ? 'Ocultar' : 'Ver'} histórico ({history.length} liberado{history.length > 1 ? 's' : ''})
             </button>
-            {showHistory ? <div className="mt-4 space-y-6">{history.map((a) => <AgreementCard key={a.id} a={a} banks={banks} canPay={false} mayLift={false} />)}</div> : null}
+            {showHistory ? <div className="mt-4 space-y-6">{history.map((a) => <AgreementCard key={a.id} a={a} banks={banks} canPay={false} canCharge={false} mayLift={false} />)}</div> : null}
           </section>
         ) : null}
       </div>

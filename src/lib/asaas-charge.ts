@@ -1,3 +1,4 @@
+import { AGREEMENT_ITEM_MESSAGE, agreementDebtAccountIds } from '@/lib/agreement-items';
 import { createCustomer, createPayment, deletePayment, getPixQrCode, type AsaasConfig } from '@/lib/asaas';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { logAudit } from '@/lib/audit';
@@ -57,7 +58,8 @@ export async function emitInvoiceCharge(params: {
       select: { asaasApiKeyEnc: true, asaasEnv: true, collectionMode: true, asaasSettlementAccountId: true, asaasBillingType: true },
     });
     const invoice = await db.invoice.findFirst({ where: { id: invoiceId, lodgeId }, include: { member: true, account: { select: { degreeFeePlan: { select: { paymentMethod: true } } } } } });
-    return { lodge, invoice };
+    const inAgreement = invoice ? (await agreementDebtAccountIds(db, lodgeId)).has(invoice.accountId) : false;
+    return { lodge, invoice, inAgreement };
   });
 
   // Modo de recebimento é escolha da loja: fora do Modo Asaas não se emite no Asaas.
@@ -80,6 +82,7 @@ export async function emitInvoiceCharge(params: {
   if (invoice.account?.degreeFeePlan?.paymentMethod === 'card') {
     return { ok: false, status: 409, error: 'Esta cota é de um parcelamento no cartão de crédito: o irmão paga pelo link do cartão (Taxas de grau).' };
   }
+  if (ctx.inAgreement) return { ok: false, status: 409, error: AGREEMENT_ITEM_MESSAGE };
   const member = invoice.member;
   if (!member) return { ok: false, status: 400, error: 'A cobrança precisa estar vinculada a um membro.' };
   if (!member.cpf) return { ok: false, status: 400, error: params.missingCpfError ?? 'O membro precisa ter CPF/CNPJ cadastrado para emitir no Asaas.' };

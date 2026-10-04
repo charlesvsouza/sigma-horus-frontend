@@ -1327,6 +1327,23 @@ export function ManualBook() {
                   Venerável e os Administradores</strong> (acordo quebrado); o irmão segue bloqueado e as medidas cabíveis ficam com eles.
                 </p>
                 <p>
+                  <strong>Cobrar as parcelas do acordo (Pix da loja):</strong> o acordo é <strong>sempre</strong> cobrado pelo Pix da chave da loja, em
+                  qualquer modo de recebimento (inclusive loja no Modo Asaas) — o Asaas não emite cobrança de acordo. Em <UI>Acordos</UI>, cada acordo em aberto
+                  lista as parcelas com <UI>Gerar cobrança</UI>: aparece o <strong>QR e o Pix copia e cola</strong> com o valor exato, e dá para <UI>Copiar Pix</UI>,
+                  <UI> Enviar por WhatsApp</UI> (abre o WhatsApp com o texto pronto; quem envia é você, e depois confirma &quot;Sim, enviei&quot;) ou
+                  <UI> Enviar por e-mail</UI> (com o QR em anexo). Existe também a cobrança para <strong>quitar o saldo todo de uma vez</strong>. No alto da tela,
+                  <UI> Parcelas a cobrar neste mês</UI> lista o que vence no mês ou está atrasado, com a marca do que já foi enviado. Podem gerar e enviar o
+                  <strong> Tesoureiro, o Venerável e o Administrador</strong>; os três também registram o pagamento (<UI>Registrar pagamento do acordo</UI>). O Pix
+                  cai direto na conta da loja e o sistema não fica sabendo: a baixa é manual, ou pela <UI>Conciliação bancária</UI>, que sugere o acordo quando o
+                  valor ou o nome do pagador conferem. Ao bloquear o irmão, as cobranças que as dívidas dele tinham abertas no Asaas são canceladas: dali em
+                  diante ele paga só pelas parcelas do acordo, que ficam no histórico.
+                </p>
+                <p>
+                  <strong>Para o irmão (portal):</strong> o cartão <UI>Meu acordo</UI> mostra o saldo e as parcelas, cada uma com o botão <UI>Pagar</UI> (QR e Pix
+                  copia e cola) e <UI>Já paguei</UI>, que avisa a Tesouraria, o Venerável e o Administrador por e-mail. As dívidas incluídas no acordo deixam de
+                  aparecer como pendências avulsas.
+                </p>
+                <p>
                   <strong>Termo de acordo e assinatura digital:</strong> cada acordo tem um <UI>Termo de acordo de regularização</UI> em papel timbrado (<UI>Acordos de regularização → Abrir termo / assinar</UI>),
                   com o que foi acordado, as parcelas e as cláusulas. Assinam o <strong>Venerável Mestre</strong> (ou o Administrador, pela Loja), o <strong>Tesoureiro</strong> e o próprio
                   <strong> irmão</strong> (pelo portal, no aviso do acordo). Cada acordo mostra, no próprio cartão, <UI>Abrir termo</UI> e o botão <UI>Assinar como Venerável Mestre</UI> / <UI>Tesoureiro</UI> (para o irmão, no portal) — o botão só aparece para quem pode assinar. O sistema pede uma <strong>confirmação</strong> (<UI>Assinar digitalmente</UI>) antes de gravar a marca — quem assinou, quando, o resumo
@@ -2089,7 +2106,7 @@ export function ManualBook() {
                 O Venerável tem visão gerencial completa, sem lançar baixas financeiras. Acompanhe:
               </p>
               <Bullets>
-                <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> (<UI>Contas vencidas</UI>, <UI>Contas a vencer</UI>, <UI>Cobranças vencidas</UI> e <UI>Cobranças a vencer</UI> — contadas pelo vencimento e pelo saldo em aberto, no calendário de Brasília; <strong>cada linha é um atalho</strong>: um clique abre a tela certa já filtrada, só com o que foi contado) e <strong>Ações rápidas</strong>: o pulso da loja. Abaixo, os indicadores de governança: <strong>despesas aguardando o seu visto</strong>, <strong>irmãos no Art. 002</strong> (informativo), <strong>acordos de regularização</strong> em andamento ou com parcela atrasada, <strong>próxima sessão</strong>, <strong>balaústres sem arquivo</strong>, <strong>candidatos em processo</strong>, <strong>campanhas e pedidos de auxílio</strong> e as <strong>faltas seguidas</strong>.</li>
+                <li><UI>Visão geral</UI>: <strong>Posição financeira</strong> — o <strong>Saldo em caixa</strong> (soma de todos os caixas e contas bancárias, aberto conta por conta logo abaixo, com o total) e o <strong>A receber menos a pagar</strong>, calculado só sobre o que ainda está em aberto (conta já recebida ou paga não entra) — além de <strong>Precisa de atenção</strong> (<UI>Contas vencidas</UI>, <UI>Contas a vencer</UI>, <UI>Cobranças vencidas</UI> e <UI>Cobranças a vencer</UI> — contadas pelo vencimento e pelo saldo em aberto, no calendário de Brasília; <strong>cada linha é um atalho</strong>: um clique abre a tela certa já filtrada, só com o que foi contado) e <strong>Ações rápidas</strong>: o pulso da loja. Abaixo, os indicadores de governança: <strong>despesas aguardando o seu visto</strong>, <strong>irmãos no Art. 002</strong> (informativo), <strong>acordos de regularização</strong> em andamento ou com parcela atrasada, <strong>próxima sessão</strong>, <strong>balaústres sem arquivo</strong>, <strong>candidatos em processo</strong>, <strong>campanhas e pedidos de auxílio</strong> e as <strong>faltas seguidas</strong>.</li>
                 <li><UI>Relatórios</UI>: arrecadação, inadimplência, fluxo de caixa e frequência por período.</li>
                 <li><UI>Histórico de pagamentos</UI> (7.19): o que cada irmão pagou, com recibos — para conferir uma reclamação sem depender de terceiros.</li>
                 <li><UI>Declaração de regularidade</UI> (7.20): a declaração de &quot;nada consta&quot; financeiro, que você assina com o Tesoureiro — para transferência, elevação, filiação ou candidatura.</li>

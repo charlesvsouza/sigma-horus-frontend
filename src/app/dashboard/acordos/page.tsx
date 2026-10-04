@@ -1,5 +1,7 @@
 import { auth } from '@/lib/auth';
 import { partyForSigner } from '@/lib/agreement-signature';
+import { canHandleAgreementCharge } from '@/lib/agreement-charge';
+import { agreementChargeRows } from '@/lib/agreement-charge-server';
 import { canBlockMembers } from '@/lib/member-block';
 import { summarizeBlock } from '@/lib/member-block-server';
 import { syncMemberBlock } from '@/lib/member-block-sync';
@@ -21,7 +23,8 @@ export default async function AcordosPage() {
   const role = session?.user?.role;
   const access = await requireLodgeAccess(lodgeId, role, 'accounts', 'read');
   if (!access.ok) return denied('Acesso negado.');
-  const canPay = (await requireLodgeAccess(lodgeId, role, 'accounts', 'write')).ok;
+  // Registram o pagamento do acordo: Tesoureiro/Administrador (accounts:write) e o Venerável.
+  const canPay = (await requireLodgeAccess(lodgeId, role, 'accounts', 'write')).ok || canBlockMembers(role);
   const ownMemberId = session?.user?.memberId ? String(session.user.memberId) : null;
 
   const data = await withTenant(lodgeId, async (db) => {
@@ -36,18 +39,22 @@ export default async function AcordosPage() {
     const fresh = blocks.length
       ? await db.memberBlock.findMany({ where: { id: { in: blocks.map((b) => b.id) } }, include: { items: true, member: { select: { id: true, name: true } }, signatures: { select: { party: true } } }, orderBy: { blockedAt: 'desc' } })
       : [];
-    const summaries = await Promise.all(fresh.map(async (b) => ({ b, s: await summarizeBlock(db, b) })));
+    const summaries = await Promise.all(fresh.map(async (b) => {
+      const s = await summarizeBlock(db, b);
+      return { b, s, charges: await agreementChargeRows(db, lodgeId, s) };
+    }));
     const banks = await db.financialAccount.findMany({ where: { lodgeId, active: true }, select: { id: true, name: true, kind: true, isDefault: true }, orderBy: { name: 'asc' } });
     return { summaries, banks };
   });
 
-  const agreements: AgreementView[] = data.summaries.map(({ b, s }) => ({
+  const agreements: AgreementView[] = data.summaries.map(({ b, s, charges }) => ({
     id: s.id,
     signedParties: b.signatures.map((x) => x.party),
     // Em nome de qual parte o usuário logado ainda pode assinar (nenhuma = já assinou, não é parte, ou o acordo acabou).
     canSignAs: (() => { const p = partyForSigner(role, ownMemberId === b.memberId); return p && s.status !== 'lifted' && !b.signatures.some((x) => x.party === p) ? p : null; })(),
     memberId: s.memberId,
     kind: s.kind,
+    charges,
     memberName: b.member.name,
     status: s.status,
     blockedAt: s.blockedAt.toISOString(),
@@ -66,5 +73,5 @@ export default async function AcordosPage() {
     schedule: s.schedule.map((p) => ({ number: p.number, dueDate: p.dueDate.toISOString(), amount: p.amount, covered: p.covered, late: p.late })),
   }));
 
-  return <AcordosClient agreements={agreements} banks={data.banks} canPay={canPay} mayLift={canBlockMembers(role)} />;
+  return <AcordosClient agreements={agreements} banks={data.banks} canPay={canPay} canCharge={canHandleAgreementCharge(role)} mayLift={canBlockMembers(role)} />;
 }

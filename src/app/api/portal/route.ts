@@ -1,4 +1,6 @@
 import { auth } from '@/lib/auth';
+import { agreementDebtAccountIds } from '@/lib/agreement-items';
+import { portalAgreementView } from '@/lib/agreement-charge-server';
 import { PLAN_INCLUDE, presentPlan } from '@/lib/degree-fee-server';
 import { isCandidateRole } from '@/lib/candidate';
 import { degreeAllowsDocument, memberDocumentRank } from '@/lib/documents';
@@ -133,6 +135,12 @@ export async function GET() {
     lastRejection.set(r.entityId, { at: r.createdAt, reason });
   }
 
+  // Acordo em aberto: as dívidas dele são cobradas só pelas parcelas ("Meu acordo"), não avulsas.
+  const { inAgreement, agreement } = await withTenant(String(lodgeId), async (db) => ({
+    inAgreement: await agreementDebtAccountIds(db, String(lodgeId), String(memberId)),
+    agreement: await portalAgreementView(db, String(lodgeId), String(memberId)),
+  }));
+
   const now = new Date();
   const items = accounts.map(({ memberId: owner, approvalStatus, ...a }) => {
     const balance = openBalance(a, a.payments);
@@ -140,7 +148,8 @@ export async function GET() {
       ...a,
       effectiveStatus: effectiveStatus(a, now),
       balance,
-      payable: canPay({ ...a, memberId: owner, approvalStatus }, String(memberId), balance),
+      payable: !inAgreement.has(a.id) && canPay({ ...a, memberId: owner, approvalStatus }, String(memberId), balance),
+      inAgreement: inAgreement.has(a.id),
       paidNoticeAt: lastNotice.get(a.id) ?? null,
       // Só enquanto não houver aviso novo: depois dele, a recusa antiga é história.
       paidNoticeRejected: !lastNotice.has(a.id) && lastRejection.has(a.id) ? lastRejection.get(a.id)! : null,
@@ -171,6 +180,7 @@ export async function GET() {
     institutionalDocuments: visibleInstitutional,
     summary,
     degreeFeePlans,
+    agreement,
     isCandidate: candidate,
   });
 }

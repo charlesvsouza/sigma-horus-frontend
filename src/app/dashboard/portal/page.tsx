@@ -10,6 +10,7 @@ import { Alert, Button, MaskedInput, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 import { ReportDocument } from '@/components/report/report-document';
+import { AcordoCard, type PortalAgreementView } from './AcordoCard';
 import { PendenciasCard, type CollectionInfo } from './PendenciasCard';
 import { CpfLookupCard } from './CpfLookupCard';
 
@@ -269,6 +270,7 @@ export default function PortalPage() {
   const [institutionalDocuments, setInstitutionalDocuments] = useState<DocumentItem[]>([]);
   const [lodge, setLodge] = useState<{ name: string; crestUrl: string | null } | null>(null);
   const [collection, setCollection] = useState<CollectionInfo | null>(null);
+  const [agreement, setAgreement] = useState<PortalAgreementView | null>(null);
   const [canLookupCpf, setCanLookupCpf] = useState(false);
   const [summary, setSummary] = useState({ totalReceivables: 0, totalPayables: 0, overdue: 0 });
   const [loading, setLoading] = useState(true);
@@ -302,6 +304,7 @@ export default function PortalPage() {
       setInstitutionalDocuments(data.institutionalDocuments ?? []);
       setLodge(data.lodge ?? null);
       setCollection(data.collection ?? null);
+      setAgreement(data.agreement ?? null);
       setCanLookupCpf(Boolean(data.canLookupCpf));
       setIsCandidate(Boolean(data.isCandidate));
       setDegreeFeePlans(data.degreeFeePlans ?? []);
@@ -388,6 +391,8 @@ export default function PortalPage() {
             ) : null}
           </section>
         ) : null}
+
+        {!loading && member && agreement ? <AcordoCard agreement={agreement} onChanged={() => void load()} /> : null}
 
         {!loading && member ? (
           <PendenciasCard accounts={payableAccounts} collection={collection} onChanged={() => void load()} />

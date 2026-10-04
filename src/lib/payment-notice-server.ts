@@ -1,3 +1,4 @@
+import { agreementDebtAccountIds } from '@/lib/agreement-items';
 import { logAudit } from '@/lib/audit';
 import { isAsaasMode } from '@/lib/collection';
 import { brl } from '@/lib/currency';
@@ -79,10 +80,11 @@ export async function submitPaymentNotice(params: {
       db.user.findMany({ where: { lodgeId, role: { in: ['treasurer', 'admin', 'venerable'] }, status: 'active' }, select: { id: true, email: true } }),
       db.invoice.findMany({ where: { lodgeId, accountId: { in: accountIds } }, select: { number: true } }),
     ]);
-    return { accounts, lodge, member, last: withoutRejected(notices, rejections)[0] ?? null, staff, invoices };
+    return { accounts, lodge, member, last: withoutRejected(notices, rejections)[0] ?? null, staff, invoices, inAgreement: await agreementDebtAccountIds(db, lodgeId, memberId) };
   });
 
   const { accounts, lodge, member, last, staff, invoices } = ctx;
+  if (accounts.some((a) => ctx.inAgreement.has(a.id))) return { ok: false, status: 409, error: 'Esta conta faz parte de um acordo em aberto: avise o pagamento da parcela do acordo.' };
   if (accounts.length !== accountIds.length || !lodge || !member) return { ok: false, status: 404, error: 'Conta não encontrada.' };
   if (isAsaasMode(lodge)) {
     return { ok: false, status: 409, error: 'Nesta loja o pagamento pelo portal é confirmado automaticamente — não é preciso avisar.' };

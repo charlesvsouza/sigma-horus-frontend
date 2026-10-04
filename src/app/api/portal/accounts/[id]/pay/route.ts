@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { agreementDebtAccountIds } from '@/lib/agreement-items';
 import { auth } from '@/lib/auth';
 import { getPayment } from '@/lib/asaas';
 import { emitInvoiceCharge, fetchPixQr, type PixQr } from '@/lib/asaas-charge';
@@ -59,11 +60,14 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
         chargeLateFeesOnPix: true, lateFeePercent: true, lateInterestPercentMonth: true,
       },
     });
-    return { account, lodge };
+    const inAgreement = (await agreementDebtAccountIds(db, lodgeId, memberId)).has(id);
+    return { account, lodge, inAgreement };
   });
 
   const { account, lodge } = ctx;
   if (!account || !lodge) return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });
+
+  if (ctx.inAgreement) return NextResponse.json({ error: 'Esta conta faz parte do seu acordo com a Loja. Pague as parcelas do acordo em “Meu acordo”.' }, { status: 409 });
 
   const balance = openBalance(account, account.payments);
   if (!canPay(account, memberId, balance)) {

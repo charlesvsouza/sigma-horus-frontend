@@ -1,17 +1,25 @@
 import { auth } from '@/lib/auth';
 import { recordAgreementPayment } from '@/lib/member-block-server';
+import { canBlockMembers } from '@/lib/member-block';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { requireActiveSubscription } from '@/lib/subscription-guard';
 import { round2 } from '@/lib/money';
 import { NextResponse } from 'next/server';
 
 // Registra um pagamento do acordo de regularização (à vista ou parcela) e o reparte entre os itens do
-// pacote: taxa primeiro, depois a dívida mais antiga. É a Tesouraria quem registra (accounts:write).
+// pacote: taxa primeiro, depois a dívida mais antiga. Registram o Tesoureiro/Administrador (accounts:write) e o
+// Venerável (decisão do dono, 2026-10-04: o acordo é gerido pelos três).
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const access = await requireLodgeAccess(String(lodgeId), session.user.role, 'accounts', 'write');
+  const access = await requireLodgeAccess(String(lodgeId), session.user.role, 'accounts', 'read');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
+  const write = await requireLodgeAccess(String(lodgeId), session.user.role, 'accounts', 'write');
+  if (!write.ok && !canBlockMembers(session.user.role)) return NextResponse.json({ error: write.error }, { status: write.status });
+  // O Venerável não tem accounts:write, então a assinatura vigente é conferida aqui (a baixa é escrita).
+  const sub = await requireActiveSubscription(String(lodgeId));
+  if (!sub.ok) return NextResponse.json({ error: sub.error, code: sub.code }, { status: sub.status });
 
   const { id } = await params;
   const body = await request.json().catch(() => ({}));

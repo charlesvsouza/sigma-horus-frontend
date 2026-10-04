@@ -95,7 +95,7 @@ export default async function DashboardPage() {
         where: { lodgeId: String(lodgeId) },
         select: { id: true, amount: true, accountId: true, bankAccountId: true, account: { select: { type: true } } },
       }),
-      db.financialAccount.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, openingBalance: true } }),
+      db.financialAccount.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, name: true, openingBalance: true }, orderBy: { name: 'asc' } }),
       db.accountTransfer.findMany({ where: { lodgeId: String(lodgeId), status: 'approved' }, select: { fromId: true, toId: true, amount: true } }),
     ]),
   );
@@ -115,13 +115,14 @@ export default async function DashboardPage() {
   const payableTotal = openAmount('PAYABLE');
 
   // Saldo em caixa = soma do saldo de todos os caixas e contas bancárias (mesma regra dos Extratos).
-  const cashBalance = sumMoney(
-    computeFinancialAccountBalances(
-      financialAccounts.map((f) => ({ id: f.id, openingBalance: Number(f.openingBalance) })),
-      payments.map((p) => ({ bankAccountId: p.bankAccountId, amount: Number(p.amount ?? 0), accountType: p.account?.type ?? 'RECEIVABLE' })),
-      transfers.map((t) => ({ fromId: t.fromId, toId: t.toId, amount: Number(t.amount) })),
-    ).map((b) => b.saldo),
+  const accountBalances = computeFinancialAccountBalances(
+    financialAccounts.map((f) => ({ id: f.id, openingBalance: Number(f.openingBalance) })),
+    payments.map((p) => ({ bankAccountId: p.bankAccountId, amount: Number(p.amount ?? 0), accountType: p.account?.type ?? 'RECEIVABLE' })),
+    transfers.map((t) => ({ fromId: t.fromId, toId: t.toId, amount: Number(t.amount) })),
   );
+  const cashBalance = sumMoney(accountBalances.map((b) => b.saldo));
+  // O mesmo total, aberto por conta (Caixinha, Conta corrente…): a soma das linhas é o Saldo em caixa.
+  const cashByAccount = financialAccounts.map((f) => ({ id: f.id, name: f.name, saldo: accountBalances.find((b) => b.id === f.id)?.saldo ?? Number(f.openingBalance) }));
 
   const receivedTotal = sumMoney(payments.filter((p) => p.account?.type === 'RECEIVABLE').map((p) => Number(p.amount ?? 0)));
   // Vencida/pendente pelo VENCIMENTO e pelo saldo em aberto, não pelo status gravado (a conta fica "pending" depois de vencer).
@@ -183,6 +184,20 @@ export default async function DashboardPage() {
               <p className="text-xs text-sand-dark">Saldo em caixa</p>
               <p className={`mt-2 font-display text-3xl font-bold tabular-nums ${cashBalance >= 0 ? 'text-sand-light' : 'text-rose-300'}`}>{brl(cashBalance)}</p>
               <p className="mt-1 text-xs text-sand-dark">Somando todos os caixas e contas bancárias.</p>
+              {cashByAccount.length > 0 ? (
+                <ul className="mt-3 space-y-1 border-t border-white/6 pt-3 text-xs">
+                  {cashByAccount.map((c) => (
+                    <li key={c.id} className="flex items-baseline justify-between gap-3">
+                      <span className="text-sand-dark">{c.name}</span>
+                      <span className={`tabular-nums ${c.saldo >= 0 ? 'text-sand' : 'text-rose-300'}`}>{brl(c.saldo)}</span>
+                    </li>
+                  ))}
+                  <li className="flex items-baseline justify-between gap-3 border-t border-white/6 pt-1 font-medium">
+                    <span className="text-sand-light">Total</span>
+                    <span className="tabular-nums text-sand-light">{brl(cashBalance)}</span>
+                  </li>
+                </ul>
+              ) : null}
               <Link href="/dashboard/extratos" className="mt-3 inline-block text-xs font-medium text-gold transition hover:text-gold-light">Ver extratos</Link>
             </div>
             <div className="bg-sigma-blue-deep/60 p-5">

@@ -7,6 +7,9 @@ import { lockKey } from '@/lib/locks';
 import { syncMemberBlock } from '@/lib/member-block-sync';
 import { coversAmount, remainingAmount, round2 } from '@/lib/money';
 import { suggestAccounts, type Suggestion } from '@/lib/bank-suggest';
+import { suggestAgreementMatches, type AgreementSuggestion } from '@/lib/agreement-charge';
+import { applyAgreementPayment, summarizeBlock } from '@/lib/member-block-server';
+import { todayBR } from '@/lib/date-only';
 import { withTenant } from '@/lib/prisma';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { autoSignReceipt } from '@/lib/receipt-signature-server';
@@ -34,6 +37,8 @@ async function openReceivables(db: Db, lodgeId: string) {
 export interface BankSuggestionsResult {
   line: { id: string; date: string; description: string; amount: number; status: string };
   suggestions: (Omit<Suggestion, 'dueDate'> & { dueDate: string })[];
+  /** Acordos em aberto (parcela ou saldo) que este crédito provavelmente pagou. */
+  agreements: AgreementSuggestion[];
 }
 
 /** Sugestões de cobrança para uma linha de crédito do extrato ainda sem vínculo. */
@@ -42,11 +47,52 @@ export async function suggestForBankLine(lodgeId: string, bankTxId: string): Pro
     const tx = await db.bankTransaction.findFirst({ where: { id: bankTxId, lodgeId } });
     if (!tx) return { error: 'Lançamento não encontrado.', status: 404 };
     if (tx.amount <= 0) return { error: 'Só créditos (entradas) podem dar baixa em cobrança.', status: 400 };
-    const suggestions = suggestAccounts({ amount: Number(tx.amount), description: tx.description }, await openReceivables(db, lodgeId));
+    const line = { amount: Number(tx.amount), description: tx.description };
+    const suggestions = suggestAccounts(line, await openReceivables(db, lodgeId));
+    const blocks = await db.memberBlock.findMany({ where: { lodgeId, status: 'open' }, include: { items: true, member: { select: { name: true } } } });
+    const summaries = await Promise.all(blocks.map(async (b) => ({ memberId: b.memberId, memberName: b.member.name, s: await summarizeBlock(db, b) })));
+    const agreements = suggestAgreementMatches(line, summaries.map((x) => ({ memberId: x.memberId, memberName: x.memberName, block: { id: x.s.id, kind: x.s.kind, total: x.s.total, installments: x.s.installments, firstDueDate: x.s.firstDueDate, paid: x.s.paid, remaining: x.s.remaining } })), todayBR());
     return {
       line: { id: tx.id, date: tx.date.toISOString(), description: tx.description, amount: Number(tx.amount), status: tx.status },
       suggestions: suggestions.map((s) => ({ ...s, dueDate: s.dueDate.toISOString() })),
+      agreements,
     };
+  });
+}
+
+/**
+ * Baixa do crédito do extrato no ACORDO em aberto do irmão (parcela ou saldo): o valor é repartido entre os itens do
+ * acordo (taxa primeiro, depois a dívida mais antiga), como em "Registrar pagamento do acordo", e a linha é conciliada
+ * na mesma transação. O valor nunca passa do saldo do acordo.
+ */
+export async function settleAgreementFromBankLine(
+  lodgeId: string,
+  userId: string,
+  input: { bankTxId: string; memberId: string; bankAccountId: string },
+): Promise<BankSettleResult> {
+  return withTenant(lodgeId, async (db): Promise<BankSettleResult> => {
+    await lockKey(db, `bank-line:${input.bankTxId}`);
+    const tx = await db.bankTransaction.findFirst({ where: { id: input.bankTxId, lodgeId } });
+    if (!tx) return { ok: false, status: 404, error: 'Lançamento não encontrado.' };
+    if (tx.status !== 'unmatched') return { ok: false, status: 409, error: 'Esta linha do extrato já foi conciliada ou ignorada.' };
+    if (tx.amount <= 0) return { ok: false, status: 400, error: 'Só créditos (entradas) podem dar baixa em cobrança.' };
+
+    const r = await applyAgreementPayment(db, lodgeId, input.memberId, userId, {
+      amount: round2(Number(tx.amount)),
+      bankAccountId: input.bankAccountId,
+      paidAt: dateOnlyUTC(tx.date),
+      method: /pix/i.test(tx.description) ? 'pix' : 'transfer',
+      note: `Baixa assistida pelo extrato bancário: "${tx.description.slice(0, 120)}"`,
+      confirmOutsideAsaas: false,
+    });
+    if (!r.ok) return { ok: false, status: r.status, error: r.error };
+
+    await db.bankTransaction.update({ where: { id: tx.id }, data: { status: 'matched', matchedPaymentId: r.paymentIds[0] } });
+    await logAudit(db, {
+      lodgeId, userId, action: 'CREATE', entity: 'payment', entityId: r.paymentIds[0],
+      metadata: { source: 'bank-statement-agreement', bankTxId: tx.id, memberId: input.memberId, amount: round2(Number(tx.amount)) },
+    });
+    return { ok: true, paymentId: r.paymentIds[0] };
   });
 }
 

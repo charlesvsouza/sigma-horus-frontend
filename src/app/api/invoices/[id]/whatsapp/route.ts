@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { AGREEMENT_ITEM_MESSAGE, agreementDebtAccountIds } from '@/lib/agreement-items';
 import { auth } from '@/lib/auth';
 import { chargeUrgency, invoiceOpenBalance, whatsAppChargeMessage } from '@/lib/charge-notice';
 import { isAsaasMode, paymentInstructions } from '@/lib/collection';
@@ -36,7 +37,7 @@ async function loadInvoice(lodgeId: string, id: string) {
     const invoice = await db.invoice.findFirst({
       where: { id, lodgeId },
       select: {
-        id: true, number: true, amount: true, dueDate: true, status: true,
+        id: true, number: true, amount: true, dueDate: true, status: true, accountId: true,
         member: { select: { id: true, name: true, phone: true } },
         account: { select: { amount: true, status: true, payments: { select: { amount: true } } } },
       },
@@ -48,15 +49,17 @@ async function loadInvoice(lodgeId: string, id: string) {
         chargeLateFeesOnPix: true, lateFeePercent: true, lateInterestPercentMonth: true,
       },
     });
-    return { invoice, lodge };
+    const inAgreement = invoice ? (await agreementDebtAccountIds(db, lodgeId)).has(invoice.accountId) : false;
+    return { invoice, lodge, inAgreement };
   });
 }
 
 type Loaded = Awaited<ReturnType<typeof loadInvoice>>;
 
 /** Mesmas travas para montar e para registrar: Modo Loja, cobrança aberta, com saldo e com membro. */
-function check({ invoice, lodge }: Loaded) {
+function check({ invoice, lodge, inAgreement }: Loaded) {
   if (!invoice || !lodge) return { ok: false as const, res: NextResponse.json({ error: 'Cobrança não encontrada.' }, { status: 404 }) };
+  if (inAgreement) return { ok: false as const, res: NextResponse.json({ error: AGREEMENT_ITEM_MESSAGE }, { status: 409 }) };
   if (isAsaasMode(lodge)) return { ok: false as const, res: NextResponse.json({ error: 'O envio pelo WhatsApp está disponível apenas no Modo Loja.' }, { status: 409 }) };
   if (CLOSED_INVOICE_STATUSES.includes(invoice.status)) return { ok: false as const, res: NextResponse.json({ error: 'Esta cobrança já está paga ou cancelada.' }, { status: 409 }) };
   if (!invoice.member) return { ok: false as const, res: NextResponse.json({ error: 'Vincule a cobrança a um membro para enviar pelo WhatsApp.' }, { status: 400 }) };

@@ -54,5 +54,5 @@ export async function POST(request: Request, { params }: Ctx) {
     note: typeof body?.note === 'string' ? body.note.slice(0, 1000) : null,
   });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
-  return NextResponse.json({ ok: true, blockId: result.blockId });
+  return NextResponse.json({ ok: true, blockId: result.blockId, ...(result.asaasWarning ? { asaasWarning: result.asaasWarning } : {}) });
 }

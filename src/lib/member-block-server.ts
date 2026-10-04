@@ -13,6 +13,8 @@ import { coversAmount, isValidMoney, round2 } from '@/lib/money';
 import { getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import { prismaAdmin, withTenant } from '@/lib/prisma';
 import { skipPendingOccurrences } from '@/lib/recurring-rules';
+import { cancelAsaasCharges } from '@/lib/asaas-manual';
+import { releaseAsaasCharges } from '@/lib/renegotiation';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { autoSignReceipt } from '@/lib/receipt-signature-server';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
@@ -68,7 +70,7 @@ export async function previewBlock(db: Db, lodgeId: string, memberId: string, no
   };
 }
 
-export type BlockResult = { ok: true; blockId: string } | Fail;
+export type BlockResult = { ok: true; blockId: string; asaasWarning?: string | null } | Fail;
 
 /** Cria as contas a receber da taxa de regularização e da multa/juros (itens sem conta própria ainda). */
 async function createFeeAccounts(
@@ -99,7 +101,8 @@ export async function blockMember(
   extra: { powerProtocol?: string | null; powerSentAt?: Date | null; note?: string | null },
   now: Date = new Date(),
 ): Promise<BlockResult> {
-  return withTenant(lodgeId, async (db): Promise<BlockResult> => {
+  const asaasToCancel: string[] = [];
+  const result = await withTenant(lodgeId, async (db): Promise<BlockResult> => {
     await lockKey(db, `member-block:${memberId}`);
     const [member, lodge, dues, debts] = await Promise.all([
       db.member.findFirst({ where: { id: memberId, lodgeId }, select: { id: true, name: true, status: true } }),
@@ -148,12 +151,17 @@ export async function blockMember(
       select: { id: true },
     });
     await db.member.update({ where: { id: memberId }, data: { status: BLOCKED_STATUS } });
+    // As dívidas passam a ser cobradas só pelas parcelas do acordo: cobranças abertas no Asaas são desfeitas (cancela depois do commit).
+    asaasToCancel.push(...(await releaseAsaasCharges(db, pkg.items.filter((i) => i.kind === 'debt' && i.accountId).map((i) => i.accountId as string))));
     await logAudit(db, {
       lodgeId, userId: actorId, action: 'UPDATE', entity: 'member-block', entityId: block.id,
-      metadata: { action: 'block', kind: input.kind, memberId, total: pkg.total, fee: input.fee, extra: input.extra, installments: input.installments, items: pkg.items.length, protocol: extra.powerProtocol ?? null },
+      metadata: { action: 'block', kind: input.kind, asaasCancelled: asaasToCancel.length, memberId, total: pkg.total, fee: input.fee, extra: input.extra, installments: input.installments, items: pkg.items.length, protocol: extra.powerProtocol ?? null },
     });
     return { ok: true, blockId: block.id };
   });
+  if (!result.ok || asaasToCancel.length === 0) return result;
+  const asaasWarning = await cancelAsaasCharges(lodgeId, asaasToCancel).catch(() => 'Não foi possível cancelar as cobranças antigas no Asaas; cancele no painel do Asaas para o irmão não pagar o valor antigo.');
+  return { ...result, asaasWarning };
 }
 
 // ── Situação do acordo ────────────────────────────────────────────────────────
@@ -217,7 +225,7 @@ export async function summarizeBlock(db: Db, block: BlockWithItems, now: Date = 
 // ── Pagamento do acordo (parcelas) ────────────────────────────────────────────
 
 export type AgreementPaymentResult =
-  | { ok: true; applied: { accountId: string; amount: number }[]; chargeIds: string[]; paidAt: Date }
+  | { ok: true; applied: { accountId: string; amount: number }[]; paymentIds: string[]; chargeIds: string[]; paidAt: Date }
   | Fail;
 
 /**
@@ -225,14 +233,31 @@ export type AgreementPaymentResult =
  * (taxa primeiro, depois a dívida mais antiga). Cada item recebe um Payment na própria conta — assim
  * caixa, DRE e categorias ficam certos mês a mês, e quitar o último item quita o acordo.
  */
+type AgreementPaymentInput = { amount: number; bankAccountId: string; paidAt: Date; method: string; note: string; confirmOutsideAsaas: boolean };
+
 export async function recordAgreementPayment(
   lodgeId: string,
   memberId: string,
   actorId: string,
-  input: { amount: number; bankAccountId: string; paidAt: Date; method: string; note: string; confirmOutsideAsaas: boolean },
+  input: AgreementPaymentInput,
   now: Date = new Date(),
 ): Promise<AgreementPaymentResult> {
-  return withTenant(lodgeId, async (db): Promise<AgreementPaymentResult> => {
+  return withTenant(lodgeId, (db) => applyAgreementPayment(db, lodgeId, memberId, actorId, input, now)).then(async (r) => {
+    // Rede (fora da transação): avisa o Asaas das cobranças recebidas por fora.
+    if (r.ok && r.chargeIds.length > 0) await notifyAsaasReceivedInCash(lodgeId, r.chargeIds, r.paidAt).catch(() => null);
+    return r;
+  });
+}
+
+/** O mesmo pagamento do acordo, dentro de uma transação já aberta (a baixa pelo extrato concilia a linha na mesma transação). */
+export async function applyAgreementPayment(
+  db: Db,
+  lodgeId: string,
+  memberId: string,
+  actorId: string,
+  input: AgreementPaymentInput,
+  now: Date = new Date(),
+): Promise<AgreementPaymentResult> {
     await lockKey(db, `member-block:${memberId}`);
     if (!isValidMoney(input.amount)) return { ok: false, status: 400, error: 'Informe um valor maior que zero, com até 2 casas decimais.' };
     const block = await db.memberBlock.findFirst({ where: { lodgeId, memberId, status: 'open' }, include: { items: true } });
@@ -264,6 +289,7 @@ export async function recordAgreementPayment(
       return { ok: false, status: 409, ...asaasConflictBody(charges) };
     }
 
+    const paymentIds: string[] = [];
     for (const a of allocations) {
       const account = await db.account.findFirst({ where: { id: a.accountId, lodgeId }, select: { id: true, amount: true } });
       if (!account) continue;
@@ -275,6 +301,7 @@ export async function recordAgreementPayment(
         },
         select: { id: true },
       });
+      paymentIds.push(agreementPayment.id);
       await autoSignReceipt(db, lodgeId, agreementPayment.id, actorId);
       const agg = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: account.id } });
       const paid = coversAmount(Number(agg._sum.amount ?? 0), Number(account.amount));
@@ -286,12 +313,7 @@ export async function recordAgreementPayment(
       lodgeId, userId: actorId, action: 'CREATE', entity: 'member-block-payment', entityId: block.id,
       metadata: { memberId, amount: input.amount, method: input.method, items: allocations.length },
     });
-    return { ok: true, applied: allocations.map((a) => ({ accountId: a.accountId, amount: a.amount })), chargeIds: charges.map((c) => c.id), paidAt: input.paidAt };
-  }).then(async (r) => {
-    // Rede (fora da transação): avisa o Asaas das cobranças recebidas por fora.
-    if (r.ok && r.chargeIds.length > 0) await notifyAsaasReceivedInCash(lodgeId, r.chargeIds, r.paidAt).catch(() => null);
-    return r;
-  });
+    return { ok: true, applied: allocations.map((a) => ({ accountId: a.accountId, amount: a.amount })), paymentIds, chargeIds: charges.map((c) => c.id), paidAt: input.paidAt };
 }
 
 // ── Retorno do irmão ──────────────────────────────────────────────────────────

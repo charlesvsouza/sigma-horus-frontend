@@ -13,6 +13,7 @@ interface Candidate { id: string; amount: number; paidAt: string; account: { tit
 const fmt = (d: string) => formatDayMixed(d);
 
 interface Bank { id: string; name: string; isDefault: boolean }
+interface AgreementSuggestion { memberId: string; memberName: string; label: string; remaining: number; amountMatch: 'exact' | 'partial'; nameMatch: 'strong' | 'weak' | 'none' }
 interface Suggestion { accountId: string; title: string; memberName: string | null; balance: number; dueDate: string; amountMatch: 'exact' | 'partial'; nameMatch: 'strong' | 'weak' | 'none' }
 
 const CONFIDENCE: Record<string, string> = { 'exact-strong': 'Valor e nome conferem', 'exact-weak': 'Valor confere; nome parcial', 'exact-none': 'Valor confere', 'partial-strong': 'Nome confere; valor parcial', 'partial-weak': 'Nome parcial; valor parcial', 'partial-none': 'Valor parcial' };
@@ -21,7 +22,7 @@ const CONFIDENCE: Record<string, string> = { 'exact-strong': 'Valor e nome confe
 // nome do pagador. Quem confirma é a Tesouraria — nada é baixado sem o clique.
 function SettlePicker({ bankTxId, description, banks, onDone, onError }: { bankTxId: string; description: string; banks: Bank[]; onDone: () => void; onError: (text: string) => void }) {
   const askConfirm = useConfirm();
-  const [data, setData] = useState<{ suggestions: Suggestion[] } | null>(null);
+  const [data, setData] = useState<{ suggestions: Suggestion[]; agreements?: AgreementSuggestion[] } | null>(null);
   const [loadError, setLoadError] = useState('');
   const [bankId, setBankId] = useState(banks.find((b) => b.isDefault)?.id ?? banks[0]?.id ?? '');
   const [busy, setBusy] = useState<string | null>(null);
@@ -52,9 +53,24 @@ function SettlePicker({ bankTxId, description, banks, onDone, onError }: { bankT
     if (res.ok) onDone(); else onError(json.error ?? 'Erro ao dar baixa.');
   }
 
+  async function settleAgreement(a: AgreementSuggestion) {
+    const strong = a.amountMatch === 'exact' && a.nameMatch === 'strong';
+    if (!strong && !(await askConfirm({
+      title: 'Conferir antes de dar baixa',
+      message: `O extrato diz "${description}", mas o acordo é de ${a.memberName} (${(CONFIDENCE[a.amountMatch + '-' + a.nameMatch] ?? '').toLowerCase()}). Confirma que este crédito pagou ${a.label.toLowerCase()} do acordo dele?`,
+      confirmLabel: 'Sim, dar baixa',
+    }))) return;
+    setBusy(`acordo-${a.memberId}`);
+    const res = await fetch(`/api/bank-reconciliation/${bankTxId}/settle-agreement`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memberId: a.memberId, bankAccountId: bankId }) });
+    const json = await res.json().catch(() => ({}));
+    setBusy(null);
+    if (res.ok) onDone(); else onError(json.error ?? 'Erro ao dar baixa no acordo.');
+  }
+
   if (loadError) return <p className="mt-2 text-xs text-rose-300">{loadError}</p>;
   if (!data) return <p className="mt-2 text-xs text-sand-dark">Buscando cobranças em aberto…</p>;
-  if (data.suggestions.length === 0) return <p className="mt-2 text-xs text-sand-dark">Nenhuma cobrança em aberto com esse valor ou nome. Lance a baixa em Pagamentos e vincule manualmente.</p>;
+  const agreements = data.agreements ?? [];
+  if (data.suggestions.length === 0 && agreements.length === 0) return <p className="mt-2 text-xs text-sand-dark">Nenhuma cobrança em aberto com esse valor ou nome. Lance a baixa em Pagamentos e vincule manualmente.</p>;
 
   return (
     <div className="mt-3 rounded-lg border border-gold/20 bg-gold/5 p-3">
@@ -65,6 +81,25 @@ function SettlePicker({ bankTxId, description, banks, onDone, onError }: { bankT
         </select>
       </div>
       <ul className="mt-2 space-y-2">
+        {agreements.map((a) => {
+          const strong = a.amountMatch === 'exact' && a.nameMatch === 'strong';
+          return (
+            <li key={`acordo-${a.memberId}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-3 py-2">
+              <div className="text-sm">
+                <p className="font-medium text-sand-light">{a.memberName} · Acordo — {a.label}</p>
+                <p className="text-xs text-sand-dark">Saldo do acordo {brl(a.remaining)} · <span className={a.amountMatch === 'exact' && a.nameMatch !== 'none' ? 'text-emerald-300' : 'text-amber-300'}>{CONFIDENCE[`${a.amountMatch}-${a.nameMatch}`] ?? ''}</span></p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void settleAgreement(a)}
+                disabled={busy !== null || !bankId}
+                className={`rounded-full px-4 py-1.5 text-xs font-medium disabled:opacity-40 ${strong ? 'bg-gold text-sigma-blue-deep hover:bg-gold-light' : 'border border-white/15 text-sand-light hover:border-white/30'}`}
+              >
+                {busy === `acordo-${a.memberId}` ? 'Dando baixa…' : strong ? 'Dar baixa no acordo e conciliar' : 'Conferir e dar baixa no acordo'}
+              </button>
+            </li>
+          );
+        })}
         {data.suggestions.map((s) => {
           const strong = s.amountMatch === 'exact' && s.nameMatch === 'strong';
           return (

@@ -131,8 +131,11 @@ function BlockForm({ memberId, memberName, onDone }: { memberId: string; memberN
     });
     const data = await res.json().catch(() => ({}));
     setBusy(false);
-    if (res.ok) onDone();
-    else setError(data.error ?? 'Erro ao bloquear.');
+    if (res.ok) {
+      // Cobrança antiga no Asaas que não pôde ser cancelada: quem bloqueou precisa saber.
+      if (data.asaasWarning) window.alert(data.asaasWarning);
+      onDone();
+    } else setError(data.error ?? 'Erro ao bloquear.');
   }
 
   if (loadError) return <p className="mt-3 rounded-lg border border-rose-400/30 bg-rose-500/10 p-3 text-xs text-rose-200">{loadError}</p>;

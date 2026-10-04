@@ -28,3 +28,18 @@ export async function retargetInvoices(
   }
   return ids;
 }
+
+/**
+ * Acordo (quitação/regularização): as dívidas passam a ser cobradas SÓ pelas parcelas do acordo, no Pix da
+ * loja. As cobranças abertas dessas contas no Asaas perdem o vínculo (voltam a "pendente", valor e vencimento
+ * intactos) e devolve os ids do Asaas a cancelar depois do commit — assim ninguém paga o valor antigo em duplicidade.
+ */
+export async function releaseAsaasCharges(db: Prisma.TransactionClient, accountIds: string[]): Promise<string[]> {
+  if (accountIds.length === 0) return [];
+  const linked = await db.invoice.findMany({ where: { accountId: { in: accountIds }, status: { not: 'paid' }, asaasPaymentId: { not: null } }, select: { asaasPaymentId: true } });
+  const ids = [...new Set(linked.map((i) => i.asaasPaymentId).filter((id): id is string => Boolean(id)))];
+  if (ids.length === 0) return [];
+  // Inclui as irmãs de Pix agrupado: o grupo inteiro perde o Pix (vai ser cancelado no Asaas).
+  await db.invoice.updateMany({ where: { asaasPaymentId: { in: ids }, status: { not: 'paid' } }, data: { status: 'pending', asaasPaymentId: null, asaasInvoiceUrl: null } });
+  return ids;
+}

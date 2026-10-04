@@ -1,3 +1,4 @@
+import { agreementDebtAccountIds } from '@/lib/agreement-items';
 import { auth } from '@/lib/auth';
 import { chargeUrgency, invoiceOpenBalance } from '@/lib/charge-notice';
 import { isAsaasMode } from '@/lib/collection';
@@ -28,7 +29,7 @@ export default async function WhatsAppQueuePage() {
       db.invoice.findMany({
         where: { lodgeId, memberId: { not: null }, status: { notIn: CLOSED_INVOICE_STATUSES } },
         select: {
-          id: true, number: true, amount: true, dueDate: true, status: true, description: true,
+          id: true, number: true, amount: true, dueDate: true, status: true, description: true, accountId: true,
           member: { select: { name: true, phone: true } },
           account: { select: { title: true, amount: true, status: true, payments: { select: { amount: true } } } },
         },
@@ -40,7 +41,8 @@ export default async function WhatsAppQueuePage() {
         orderBy: { createdAt: 'desc' },
       }),
     ]);
-    return { lodge, invoices, logs };
+    const inAgreement = await agreementDebtAccountIds(db, lodgeId);
+    return { lodge, invoices: invoices.filter((i) => !inAgreement.has(i.accountId)), logs };
   });
 
   if (isAsaasMode(data.lodge)) {
