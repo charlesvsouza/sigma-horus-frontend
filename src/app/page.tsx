@@ -352,6 +352,7 @@ export default function Home() {
             <a href="#perguntas" className="text-sand-dark transition-colors hover:text-sand-light">Perguntas</a>
             <Link href="/login" className="text-sand-dark transition-colors hover:text-sand-light">Entrar</Link>
             <Link href="/sobre" className="text-sand-dark transition-colors hover:text-sand-light">Sobre</Link>
+            <Link href="/guias" className="text-sand-dark transition-colors hover:text-sand-light">Guias</Link>
             <Link href="/manual" className="text-sand-dark transition-colors hover:text-sand-light">Manual</Link>
             <Link href="/termos" className="text-sand-dark transition-colors hover:text-sand-light">Termos</Link>
             <Link href="/privacidade" className="text-sand-dark transition-colors hover:text-sand-light">Privacidade</Link>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 export const INSTITUTIONAL_LINKS = [
+  { href: '/guias', label: 'Guias' },
   { href: '/sobre', label: 'Sobre' },
   { href: '/manual', label: 'Manual' },
   { href: '/termos', label: 'Termos de Uso' },
