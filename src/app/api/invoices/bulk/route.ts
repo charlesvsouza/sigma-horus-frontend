@@ -8,6 +8,7 @@ import { duesAmountFor } from '@/lib/dues-benefit';
 import { isValidMoney } from '@/lib/money';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { intInRange, MAX_RECURRING_COUNT } from '@/lib/number-input';
 import { NextResponse } from 'next/server';
 
 // Gera uma cobrança para cada membro da loja (todos os irmãos): para cada um,
@@ -29,7 +30,9 @@ export async function POST(request: Request) {
   const chartAccountId = String(body?.chartAccountId ?? '').trim();
   const amount = Number(body?.amount ?? 0);
   const dueDate = body?.dueDate ? new Date(body.dueDate) : todayBR();
-  const recurringCount = body?.recurringCount != null && body.recurringCount !== '' ? Number(body.recurringCount) : null;
+  const recurringRaw = body?.recurringCount != null && body.recurringCount !== '' ? body.recurringCount : null;
+  const recurringCount = recurringRaw === null ? null : intInRange(recurringRaw, 1, MAX_RECURRING_COUNT);
+  if (recurringRaw !== null && recurringCount === null) return NextResponse.json({ error: `Número de ocorrências inválido: informe um inteiro de 1 a ${MAX_RECURRING_COUNT}.` }, { status: 400 });
   const scope = body?.scope === 'all' ? 'all' : 'active';
 
   const result = await withTenant(String(lodgeId), async (db) => {

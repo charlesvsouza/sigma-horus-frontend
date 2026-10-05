@@ -12,6 +12,8 @@ import {
   type FieldMapping,
 } from '@/lib/member-import';
 import { NextResponse } from 'next/server';
+
+const MAX_IMPORT_ROWS = 5000;
 import { platformAuthorized } from '@/lib/platform-auth';
 
 // Passo 1 do wizard de importação (somente leitura — não grava nada). Recebe o
@@ -50,7 +52,18 @@ export async function POST(request: Request) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const { headers, rows } = await parseSpreadsheet({ name: file.name, type: file.type, buffer });
+  // Planilha corrompida ou de outro formato lançava erro e virava 500; agora vira uma mensagem clara. Limite de linhas
+  // protege a análise e a gravação em lote (o corpo já é limitado pelo servidor, mas CSV compacta muita linha).
+  let parsed: Awaited<ReturnType<typeof parseSpreadsheet>>;
+  try {
+    parsed = await parseSpreadsheet({ name: file.name, type: file.type, buffer });
+  } catch {
+    return NextResponse.json({ error: 'Não foi possível ler o arquivo. Envie um CSV ou Excel (.xlsx) válido, não corrompido.' }, { status: 400 });
+  }
+  const { headers, rows } = parsed;
+  if (rows.length > MAX_IMPORT_ROWS) {
+    return NextResponse.json({ error: `A planilha tem ${rows.length} linhas; o limite é ${MAX_IMPORT_ROWS} por importação. Divida o arquivo.` }, { status: 400 });
+  }
   if (headers.length === 0) {
     return NextResponse.json({ error: 'Não foi possível ler nenhuma coluna neste arquivo.' }, { status: 400 });
   }

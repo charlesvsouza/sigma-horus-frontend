@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { availableUnits } from '@/lib/inventory';
 import { quarantineByMaterial } from '@/lib/inventory-server';
+import { intInRange, MAX_MATERIAL_QUANTITY } from '@/lib/number-input';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -51,10 +52,10 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const name = String(body?.name ?? '').trim();
-  const quantity = Number(body?.quantity ?? 1);
+  const quantity = body?.quantity == null || body.quantity === '' ? 1 : intInRange(body.quantity, 0, MAX_MATERIAL_QUANTITY);
 
   if (!name) return NextResponse.json({ error: 'Nome é obrigatório.' }, { status: 400 });
-  if (!Number.isFinite(quantity) || quantity < 0) {
+  if (quantity === null) {
     return NextResponse.json({ error: 'Quantidade inválida.' }, { status: 400 });
   }
 

@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { getBudgetComparison } from '@/lib/budget';
+import { intInRange } from '@/lib/number-input';
 import { NextResponse } from 'next/server';
 import { hasAtMostCents } from '@/lib/money';
 
@@ -32,11 +33,11 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
-  const year = Number(body?.year);
+  const year = intInRange(body?.year, 2000, 2100);
   const chartAccountId = String(body?.chartAccountId ?? '');
   const plannedAmount = Number(body?.plannedAmount ?? 0);
 
-  if (!year || !chartAccountId || !hasAtMostCents(plannedAmount) || plannedAmount < 0) {
+  if (year === null || !chartAccountId || !hasAtMostCents(plannedAmount) || plannedAmount < 0) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
   }
 

@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { parseDocumentDegree } from '@/lib/documents';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
-import { normalizeStoragePayload } from '@/lib/storage';
+import { normalizeStoragePayload, ownsDocumentKey } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
 // Passo 2 do upload de documento: o arquivo já foi enviado direto pro R2 pelo
@@ -38,8 +38,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Título e arquivo são obrigatórios.' }, { status: 400 });
   }
 
-  const item = await withTenant(String(lodgeId), async (db) =>
-    db.document.create({
+  if (!ownsDocumentKey(String(lodgeId), storage.storageKey)) {
+    return NextResponse.json({ error: 'Arquivo inválido: envie o documento de novo.' }, { status: 400 });
+  }
+
+  const item = await withTenant(String(lodgeId), async (db) => {
+    if (memberId && !(await db.member.findFirst({ where: { id: memberId, lodgeId: String(lodgeId) }, select: { id: true } }))) return null;
+    return db.document.create({
       data: {
         lodgeId: String(lodgeId),
         memberId,
@@ -55,8 +60,9 @@ export async function POST(request: Request) {
         storageKey: storage.storageKey,
         checksum: storage.checksum,
       },
-    }),
-  );
+    });
+  });
+  if (!item) return NextResponse.json({ error: 'Irmão não encontrado nesta loja.' }, { status: 400 });
 
   return NextResponse.json({ item });
 }

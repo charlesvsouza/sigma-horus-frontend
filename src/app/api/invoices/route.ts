@@ -4,6 +4,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { createChargesWithAccounts } from '@/lib/charges';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { intInRange, MAX_RECURRING_COUNT } from '@/lib/number-input';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -54,7 +55,9 @@ export async function POST(request: Request) {
   if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const memberId = String(body?.memberId ?? '').trim();
   const dueDate = body?.dueDate ? new Date(body.dueDate) : todayBR();
-  const recurringCount = body?.recurringCount != null && body.recurringCount !== '' ? Number(body.recurringCount) : null;
+  const recurringRaw = body?.recurringCount != null && body.recurringCount !== '' ? body.recurringCount : null;
+  const recurringCount = recurringRaw === null ? null : intInRange(recurringRaw, 1, MAX_RECURRING_COUNT);
+  if (recurringRaw !== null && recurringCount === null) return NextResponse.json({ error: `Número de ocorrências inválido: informe um inteiro de 1 a ${MAX_RECURRING_COUNT}.` }, { status: 400 });
 
   if (!memberId) {
     return NextResponse.json({ error: 'Selecione o membro a ser cobrado.' }, { status: 400 });

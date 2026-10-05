@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { requireLodgeAccess } from '@/lib/rbac';
-import { buildObjectKey, buildPublicUrl, getPresignedUploadUrl, getR2StorageSettings } from '@/lib/storage';
+import { buildObjectKey, buildPublicUrl, DOCUMENT_MIME_TYPES, getPresignedUploadUrl, getR2StorageSettings, lodgeDocumentPrefix } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 
 // Passo 1 do upload de documento (ver ./route.ts): gera uma URL assinada pra
@@ -18,15 +18,19 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const fileName = String(body?.fileName ?? '').trim();
-  const mimeType = String(body?.mimeType ?? '').trim() || 'application/octet-stream';
+  const mimeType = String(body?.mimeType ?? '').trim();
   if (!fileName) return NextResponse.json({ error: 'Nome do arquivo é obrigatório.' }, { status: 400 });
+  if (fileName.length > 200) return NextResponse.json({ error: 'Nome do arquivo muito longo (máximo 200 caracteres).' }, { status: 400 });
+  if (!DOCUMENT_MIME_TYPES.has(mimeType)) {
+    return NextResponse.json({ error: 'Tipo de arquivo não aceito. Envie PDF, imagem (PNG, JPG, WebP), Word, Excel, CSV ou texto.' }, { status: 400 });
+  }
 
   const settings = getR2StorageSettings();
   if (!settings.bucket) {
     return NextResponse.json({ error: 'Configuração de storage incompleta.' }, { status: 500 });
   }
 
-  const storageKey = buildObjectKey(fileName, 'documents');
+  const storageKey = buildObjectKey(fileName, lodgeDocumentPrefix(String(lodgeId)));
   const uploadUrl = await getPresignedUploadUrl(storageKey, mimeType);
   if (!uploadUrl) {
     return NextResponse.json({ error: 'Falha ao gerar link de envio.' }, { status: 500 });

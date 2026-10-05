@@ -19,6 +19,26 @@ export function buildObjectKey(fileName: string, prefix = 'documents') {
   return `${prefix}/${timestamp}-${safeName}`;
 }
 
+/**
+ * Pasta dos documentos de UMA loja no bucket privado. O caminho do arquivo é gravado a partir do que o navegador
+ * devolve ao registrar o documento; sem conferir o prefixo, uma loja registraria o caminho de um arquivo de OUTRA
+ * (e baixaria ou apagaria o objeto dela). Documentos antigos (sem a pasta da loja) continuam valendo — a regra
+ * só vale para registros novos.
+ */
+export const lodgeDocumentPrefix = (lodgeId: string) => `documents/${lodgeId}`;
+
+export function ownsDocumentKey(lodgeId: string, storageKey: string | null | undefined): boolean {
+  return typeof storageKey === 'string' && storageKey.startsWith(`${lodgeDocumentPrefix(lodgeId)}/`) && !storageKey.includes('..');
+}
+
+/** Tipos aceitos em Documentos (PDF, imagem, Word, Excel, CSV e texto). */
+export const DOCUMENT_MIME_TYPES = new Set([
+  'application/pdf', 'image/png', 'image/jpeg', 'image/webp',
+  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv', 'text/plain',
+]);
+
 export function buildPublicUrl(storageKey: string, baseUrl?: string) {
   if (!storageKey) return null;
 

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { intInRange, MAX_MATERIAL_QUANTITY } from '@/lib/number-input';
 import { NextResponse } from 'next/server';
 
 async function getSessionAndCheck(lodgeId: string | undefined, role: string | undefined) {
@@ -42,8 +43,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       data[f] = typeof body[f] === 'string' ? body[f].trim() || null : body[f];
     }
     if (body?.quantity !== undefined) {
-      const q = Number(body.quantity);
-      if (!Number.isFinite(q) || q < 0) return { invalidQuantity: true as const };
+      const q = intInRange(body.quantity, 0, MAX_MATERIAL_QUANTITY);
+      if (q === null) return { invalidQuantity: true as const };
       data.quantity = q;
     }
 

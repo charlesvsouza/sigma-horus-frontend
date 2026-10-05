@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { intInRange, MAX_DISPLAY_ORDER } from '@/lib/number-input';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -38,7 +39,8 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
   const name = String(body?.name ?? '').trim();
-  const order = Number(body?.order ?? 1);
+  const order = body?.order == null || body.order === '' ? 1 : intInRange(body.order, 0, MAX_DISPLAY_ORDER);
+  if (order === null) return NextResponse.json({ error: `Ordem inválida: informe um inteiro de 0 a ${MAX_DISPLAY_ORDER}.` }, { status: 400 });
 
   if (!name) {
     return NextResponse.json({ error: 'Nome do rito é obrigatório.' }, { status: 400 });
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
       data: {
         lodgeId: String(lodgeId),
         name,
-        order: Number.isFinite(order) ? order : 1,
+        order,
       },
     }),
   );
