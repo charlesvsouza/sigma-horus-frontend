@@ -10,6 +10,7 @@ import { MEMBER_FILTER_STATUSES, memberStatusLabel } from '@/lib/member-status';
 import { BLOCKED_STATUS, buildInstallments, MAX_AGREEMENT_INSTALLMENTS } from '@/lib/member-block';
 import Link from 'next/link';
 import { formatDateOnly } from '@/lib/date-only';
+import { OverdueNoticeDialog } from '@/components/overdue-notice-dialog';
 
 interface LateCharge { fee: number; interest: number; total: number; }
 interface Row {
@@ -270,6 +271,7 @@ export default function InadimplenciaClient({
   const [enquadramento, setEnquadramento] = useState<Enquadramento>('all');
   const [statusFilter, setStatusFilter] = useState('');
   const [sort, setSort] = useState<OverdueSort>('atraso');
+  const [noticeOpen, setNoticeOpen] = useState(false);
 
   const buckets: AgingBucket[] = ['1-30', '31-60', '61-90', '90+'];
   const aging = buckets.map((bucket) => {
@@ -372,6 +374,9 @@ export default function InadimplenciaClient({
               <ReportActions disabled={visibleRows.length === 0}>
                 <Button type="button" variant="secondary" onClick={exportCsv} disabled={visibleRows.length === 0}>Exportar CSV</Button>
               </ReportActions>
+            ) : null}
+            {rows.length > 0 && canRenegotiate ? (
+              <Button type="button" onClick={() => setNoticeOpen(true)} disabled={visibleRows.length === 0} title="Avisa por e-mail (em massa) ou WhatsApp todos os irmãos da lista atual">Avisar inadimplentes ({visibleRows.length})</Button>
             ) : null}
           </div>
 
@@ -517,6 +522,7 @@ export default function InadimplenciaClient({
         </table>
         <p className="mt-3 text-xs">Enquadramento: mensalidade em aberto mais antiga vencida há mais de 60 dias. &quot;Com encargos&quot; inclui multa e juros informativos, calculados na data do relatório.</p>
       </ReportDocument>
+      {noticeOpen ? <OverdueNoticeDialog memberIds={visibleRows.map((r) => r.memberId)} onClose={() => setNoticeOpen(false)} /> : null}
     </main>
   );
 }
