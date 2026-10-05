@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { GUIDES } from '@/lib/guides';
+import { MODULE_PAGES } from '@/lib/module-pages';
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://sigmahorus.com.br').replace(/\/+$/, '');
 
@@ -17,5 +18,6 @@ const pages: { path: string; priority: number; changeFrequency: 'weekly' | 'mont
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const guides = GUIDES.map((g) => ({ path: `/guias/${g.slug}`, priority: 0.8, changeFrequency: 'monthly' as const, lastModified: g.updatedAt }));
-  return [...pages, ...guides].map((p) => ({ url: `${APP_URL}${p.path}`, lastModified: p.lastModified, changeFrequency: p.changeFrequency, priority: p.priority }));
+  const modules = MODULE_PAGES.map((m) => ({ path: `/${m.slug}`, priority: 0.9, changeFrequency: 'monthly' as const, lastModified: m.updatedAt }));
+  return [...pages, ...modules, ...guides].map((p) => ({ url: `${APP_URL}${p.path}`, lastModified: p.lastModified, changeFrequency: p.changeFrequency, priority: p.priority }));
 }

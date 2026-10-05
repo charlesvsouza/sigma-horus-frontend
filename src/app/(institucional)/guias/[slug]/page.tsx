@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { LegalDoc, Section } from '@/components/legal-doc';
+import { GuideBlocks } from '@/components/guide-blocks';
+import { LegalDoc } from '@/components/legal-doc';
 import { GUIDES, getGuide } from '@/lib/guides';
 import { jsonLdString, SITE_URL } from '@/lib/seo';
 
@@ -46,27 +47,13 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     <LegalDoc eyebrow="Guia da tesouraria" title={guide.title} updatedAt={br(guide.updatedAt)} intro={guide.intro}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(ld) }} />
 
-      {guide.blocks.map((b) => (
-        <Section key={b.h} title={b.h}>
-          {b.p?.map((t) => <p key={t}>{t}</p>)}
-          {b.ol ? <ol className="list-decimal space-y-2 pl-6">{b.ol.map((t) => <li key={t}>{t}</li>)}</ol> : null}
-          {b.ul ? <ul className="list-disc space-y-2 pl-6">{b.ul.map((t) => <li key={t}>{t}</li>)}</ul> : null}
-          {b.table ? (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm [&_td]:border-b [&_td]:border-white/6 [&_td]:px-3 [&_td]:py-2 [&_th]:border-b [&_th]:border-white/10 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:text-sand-light">
-                <thead><tr>{b.table.head.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
-                <tbody>{b.table.rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j}>{c}</td>)}</tr>)}</tbody>
-              </table>
-            </div>
-          ) : null}
-        </Section>
-      ))}
+      <GuideBlocks blocks={guide.blocks} />
 
       <section className="rounded-xl border border-gold/25 bg-gold/5 p-6">
         <h2 className="text-lg font-semibold text-sand-light">Como o Sigma Horus ajuda</h2>
         <p className="mt-2 text-base leading-7 text-sand">{guide.cta}</p>
         <Link href="/#planos" className="mt-4 inline-flex rounded-full bg-gold px-6 py-2.5 text-sm font-medium text-sigma-blue-deep transition-colors hover:bg-gold-light">
-          Testar 10 dias grátis
+          Testar 10 dias (cartão exigido)
         </Link>
       </section>
 

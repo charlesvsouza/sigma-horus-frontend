@@ -17,24 +17,32 @@ const modules = [
   {
     numeral: 'I',
     name: 'Tesouraria',
+    href: '/tesouraria-loja-maconica',
+    more: 'Saiba mais sobre a Tesouraria',
     description:
       'O coração financeiro: cobranças e mensalidades, boletos e PIX com baixa automática, contas a pagar e a receber com cadastro de clientes e fornecedores, contas bancárias e transferências entre elas, conciliação bancária, fechamento de caixa e balancetes, fluxo de caixa projetado e o acompanhamento da inadimplência.',
   },
   {
     numeral: 'II',
     name: 'Secretaria',
+    href: '/secretaria-loja-maconica',
+    more: 'Saiba mais sobre a Secretaria',
     description:
       'A administração viva da loja: membros e cargos, períodos de veneralato, sessões com ordem do dia, convocação por e-mail e balaustre, documentos institucionais sempre à mão de todos — o obreiro acompanha tudo num calendário próprio no portal.',
   },
   {
     numeral: 'III',
     name: 'Chancelaria',
+    href: '/chancelaria-loja-maconica',
+    more: 'Saiba mais sobre a Chancelaria',
     description:
       'A ordem e a memória: ritos e graus, quadro de obreiros, inventário de materiais e alfaias com fornecimento por grau e termo de entrega, documentos oficiais da loja e o arquivo de prontuários e certificados.',
   },
   {
     numeral: 'IV',
     name: 'Hospitalaria',
+    href: '/hospitalaria-loja-maconica',
+    more: 'Saiba mais sobre a Hospitalaria',
     description:
       'O cuidado fraterno: campanhas de benemerência, tronco de beneficência com doação por Pix, felicitações de aniversário e jubileus — e o obreiro pode propor uma campanha ou pedir auxílio direto pelo portal.',
   },
@@ -197,6 +205,7 @@ export default function Home() {
                 </div>
                 <h3 className="mt-5 font-display text-xl font-semibold tracking-wide text-sand-light">{m.name}</h3>
                 <p className="mt-3 text-sm leading-6 text-sand-dark">{m.description}</p>
+                <Link href={m.href} className="mt-4 inline-block text-sm font-medium text-gold transition-colors hover:text-gold-light">{m.more} &rarr;</Link>
               </div>
             ))}
           </div>
@@ -226,6 +235,26 @@ export default function Home() {
               </div>
             ))}
           </div>
+          <p className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <Link href="/portal-do-irmao" className="font-medium text-gold transition-colors hover:text-gold-light">Saiba mais sobre o Portal do irmão &rarr;</Link>
+            <Link href="/controle-de-mensalidades" className="font-medium text-gold transition-colors hover:text-gold-light">Saiba mais sobre o controle de mensalidades &rarr;</Link>
+          </p>
+        </div>
+        </Reveal>
+      </section>
+
+      {/* ===================== POTÊNCIAS E RITOS ===================== */}
+      {/* TODO(SEO): confirmar lista — citar aqui, nominalmente, só as Potências e os ritos que já foram testados de verdade (o dono preenche). */}
+      <section className="relative border-t border-white/[0.06]">
+        <Reveal>
+        <div className="mx-auto max-w-4xl px-6 py-16 text-center lg:px-10">
+          <h2 className="font-display text-[clamp(1.5rem,2.8vw,2.1rem)] font-semibold leading-tight text-sand-light">
+            Do seu rito, da sua Potência
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-sand">
+            Rito, Potência e cargos são configuráveis pela própria loja. Os documentos oficiais saem com o cabeçalho, o brasão
+            e as assinaturas da sua loja, e as regras que variam de uma Potência para outra seguem o regulamento de cada uma.
+          </p>
         </div>
         </Reveal>
       </section>
