@@ -51,9 +51,9 @@ const brotherBenefits = [
 const brl0 = (cents: number) => `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`;
 
 const faq = [
-  { q: 'Quanto custa?', a: `Três planos, pelo número de membros ativos: ${Object.values(PLANS).map((p) => `${p.name} (${p.description.replace(/^Para lojas /, '').replace(/\.$/, '')}) a ${brl0(p.price)} por mês`).join('; ')}. Há desconto no plano anual e teste grátis de ${TRIAL_DAYS} dias.` },
+  { q: 'Quanto custa?', a: `Três planos, pelo número de membros ativos: ${Object.values(PLANS).map((p) => `${p.name} (${p.description.replace(/^Para lojas /, '').replace(/\.$/, '')}) a ${brl0(p.price)} por mês`).join('; ')}. Há desconto no plano anual e teste de ${TRIAL_DAYS} dias (cartão cadastrado no início, cobrado só ao fim do teste).` },
   { q: 'Preciso instalar alguma coisa?', a: 'Não. Funciona no navegador do computador e do celular. Cada irmão entra com o próprio e-mail e senha.' },
-  { q: 'Quanto tempo dura o teste grátis?', a: 'Dez dias, com todos os módulos do plano escolhido. O cartão é cadastrado no início, mas a primeira cobrança só acontece ao fim do teste — cancele antes e nada é cobrado.' },
+  { q: 'Quanto tempo dura o teste?', a: 'Dez dias, com todos os módulos do plano escolhido. O cartão é cadastrado no início, mas a primeira cobrança só acontece ao fim do teste — cancele antes e nada é cobrado.' },
   { q: 'Como os irmãos pagam?', a: 'A loja escolhe: direto na conta da loja, com o Pix da chave da loja (sem tarifa do sistema), ou pelo Asaas, com Pix ou boleto e baixa automática. Nos dois casos o irmão paga pelo portal.' },
   { q: 'Os dados da loja ficam seguros?', a: 'Cada loja só enxerga os próprios dados (isolamento no banco), cada cargo só vê a sua área, tudo fica na auditoria e há backup diário criptografado. Conforme a LGPD.' },
   { q: 'Consigo trazer o cadastro de outro sistema?', a: 'Sim. A importação reconhece as colunas da planilha de membros sozinha, e o histórico financeiro também pode ser importado.' },

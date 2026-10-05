@@ -31,16 +31,22 @@ export function landingJsonLd(faq: { q: string; a: string }[]) {
         operatingSystem: 'Web',
         inLanguage: 'pt-BR',
         url: SITE_URL,
-        description: 'Sistema de gestão para loja maçônica: tesouraria com Pix, portal do irmão, secretaria, chancelaria e hospitalaria.',
+        description: 'Sistema para loja maçônica: tesouraria com Pix e baixa automática, mensalidades, portal do irmão, secretaria, chancelaria e hospitalaria.',
         publisher: { '@id': `${SITE_URL}/#organization` },
-        offers: Object.values(PLANS).map((p) => ({
-          '@type': 'Offer',
-          name: `Plano ${p.name}`,
-          description: p.description,
-          price: (p.price / 100).toFixed(2),
-          priceCurrency: 'BRL',
-          url: `${SITE_URL}/#planos`,
-        })),
+        // Mesma fonte (PLANS) dos cards da página: preço e descrição nunca divergem do que o visitante vê.
+        // Preço de tabela mensal; o desconto do plano anual/Pix é condição de pagamento, não outro preço.
+        offers: Object.values(PLANS).map((p) => {
+          const price = (p.price / 100).toFixed(2);
+          return {
+            '@type': 'Offer',
+            name: `Plano ${p.name}`,
+            description: p.description,
+            price,
+            priceCurrency: 'BRL',
+            priceSpecification: { '@type': 'UnitPriceSpecification', price, priceCurrency: 'BRL', billingDuration: 1, unitCode: 'MON' },
+            url: `${SITE_URL}/#planos`,
+          };
+        }),
       },
       {
         '@type': 'FAQPage',
