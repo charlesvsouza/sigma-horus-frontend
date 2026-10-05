@@ -131,7 +131,7 @@ export default function Home() {
               className="animate-rise h-28 w-auto drop-shadow-[0_6px_30px_rgba(0,0,0,0.55)] sm:h-36"
             />
             {/* H1 único da página (palavra-chave); o slogan abaixo mantém o estilo visual de antes. */}
-            <h1 className="animate-rise mt-8 font-display text-xs font-normal tracking-[0.42em] text-gold" style={{ animationDelay: '120ms' }}>
+            <h1 className="animate-rise mt-8 font-display text-xs font-medium tracking-[0.42em] text-gold [text-shadow:0_1px_10px_rgba(0,0,0,0.7)]" style={{ animationDelay: '120ms' }}>
               GESTÃO DA LOJA MAÇÔNICA
             </h1>
             <p
@@ -159,7 +159,7 @@ export default function Home() {
                 href="#planos"
                 className="rounded-full bg-gold px-7 py-3 text-center font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light"
               >
-                Testar grátis por 10 dias
+                Testar 10 dias (cartão exigido)
               </Link>
               <a
                 href="#modulos"
@@ -419,7 +419,7 @@ async function FoundersSection() {
               {' '}{FOUNDER_PRICE_LOCK_MONTHS} meses — sem reajuste — e recebem o selo de <strong className="text-sand-light">Loja Fundadora</strong> do Sigma Horus.
             </p>
             <p className="mt-3 text-xs text-sand-dark">
-              Vale para assinatura paga de qualquer plano, mensal ou anual, a partir da data da assinatura. O teste grátis não ocupa vaga.
+              Vale para assinatura paga de qualquer plano, mensal ou anual, a partir da data da assinatura. O teste de 10 dias não ocupa vaga.
             </p>
           </div>
           <div className="text-center lg:text-right">

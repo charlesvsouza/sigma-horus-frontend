@@ -93,7 +93,7 @@ export default function OnboardingPage() {
             cadastre a loja, escolha o rito e crie o primeiro administrador.
           </p>
           <p className="mt-3 rounded-lg border border-gold/25 bg-gold/[0.06] px-3 py-2 text-xs text-sand-dark">
-            Não tem convite? A entrada padrão é pelo plano, com <strong className="text-sand">10 dias de teste grátis</strong>.{' '}
+            Não tem convite? A entrada padrão é pelo plano, com <strong className="text-sand">10 dias de teste</strong> (cartão exigido, cobrado só ao fim).{' '}
             <Link href="/#planos" className="font-medium text-gold hover:text-gold-light">Escolher um plano e começar →</Link>
           </p>
 

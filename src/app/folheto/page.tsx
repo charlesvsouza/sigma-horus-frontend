@@ -66,7 +66,7 @@ export default async function Folheto({ searchParams }: { searchParams: Promise<
           <h2 className="mt-1 font-display text-2xl font-bold">Lojas Fundadoras</h2>
           <p className="mt-1 text-[13px] leading-snug text-[#e9e4d8]">
             As primeiras {FOUNDER_SLOTS} lojas que assinarem mantêm o preço contratado por {FOUNDER_PRICE_LOCK_MONTHS} meses, sem reajuste,
-            e recebem o selo de Loja Fundadora. Teste grátis de 10 dias.
+            e recebem o selo de Loja Fundadora. Teste de 10 dias (cartão cadastrado no início, cobrado só ao fim).
           </p>
         </section>
 
