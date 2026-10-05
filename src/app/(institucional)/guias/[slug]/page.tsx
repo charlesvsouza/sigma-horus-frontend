@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { GuideBlocks } from '@/components/guide-blocks';
 import { LegalDoc } from '@/components/legal-doc';
 import { GUIDES, getGuide } from '@/lib/guides';
+import { getModulePage } from '@/lib/module-pages';
 import { jsonLdString, SITE_URL } from '@/lib/seo';
 
 export const dynamicParams = false;
@@ -35,19 +36,30 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     headline: guide.title,
     description: guide.description,
     inLanguage: 'pt-BR',
-    datePublished: guide.updatedAt,
+    datePublished: guide.publishedAt ?? guide.updatedAt,
     dateModified: guide.updatedAt,
     mainEntityOfPage: `${SITE_URL}/guias/${guide.slug}`,
     author: { '@type': 'Organization', name: 'Sigma Horus', url: SITE_URL },
     publisher: { '@type': 'Organization', name: 'Sigma Horus', logo: { '@type': 'ImageObject', url: `${SITE_URL}/sigmahorus_ouro.png` } },
   };
   const related = GUIDES.filter((g) => g.slug !== guide.slug);
+  const related_module = getModulePage(guide.moduleSlug);
 
   return (
     <LegalDoc eyebrow="Guia da tesouraria" title={guide.title} updatedAt={br(guide.updatedAt)} intro={guide.intro}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(ld) }} />
 
       <GuideBlocks blocks={guide.blocks} />
+
+      {related_module ? (
+        <section>
+          <h2 className="text-lg font-semibold text-sand-light">Módulo relacionado</h2>
+          <p className="mt-2 text-base leading-7 text-sand">
+            Este assunto faz parte do módulo <strong className="text-sand-light">{related_module.moduleName}</strong> do Sigma Horus.{' '}
+            <Link href={`/${related_module.slug}`} className="text-gold/90 hover:text-gold">{related_module.linkLabel}</Link>.
+          </p>
+        </section>
+      ) : null}
 
       <section className="rounded-xl border border-gold/25 bg-gold/5 p-6">
         <h2 className="text-lg font-semibold text-sand-light">Como o Sigma Horus ajuda</h2>

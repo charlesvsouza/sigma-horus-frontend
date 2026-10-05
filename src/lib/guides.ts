@@ -16,7 +16,11 @@ export interface Guide {
   /** Título curto (até ~48 caracteres): vai no <title> da página e nas listas de links, para o Google não cortar. */
   short: string;
   description: string;
-  /** AAAA-MM-DD da última revisão do texto. */
+  /** Página de módulo relacionada (lib/module-pages): vira o bloco de links internos do artigo. */
+  moduleSlug: string;
+  /** AAAA-MM-DD da primeira publicação (datePublished do Article). Omitido = igual a updatedAt. */
+  publishedAt?: string;
+  /** AAAA-MM-DD da última revisão do texto (dateModified do Article). */
   updatedAt: string;
   intro: string;
   blocks: GuideBlock[];
@@ -27,6 +31,7 @@ export interface Guide {
 export const GUIDES: Guide[] = [
   {
     slug: 'balancete-loja-maconica',
+    moduleSlug: 'tesouraria-loja-maconica',
     title: 'Como fazer o balancete de uma loja maçônica',
     short: 'Como fazer o balancete da loja maçônica',
     description: 'Passo a passo para montar o balancete da tesouraria de uma loja maçônica: plano de contas, lançamentos, conciliação com o extrato e erros comuns.',
@@ -67,6 +72,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: 'mensalidade-em-atraso-loja-maconica',
+    moduleSlug: 'controle-de-mensalidades',
     title: 'Mensalidade em atraso na loja maçônica: como organizar a cobrança',
     short: 'Mensalidade em atraso na loja maçônica',
     description: 'Como organizar a cobrança de mensalidades em atraso na loja maçônica, com respeito e registro: faixas de atraso, lembretes, acordos e comunicação à Potência.',
@@ -111,6 +117,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: 'pix-baixa-automatica-tesouraria-loja',
+    moduleSlug: 'portal-do-irmao',
     title: 'Pix com baixa automática na tesouraria da loja: como funciona',
     short: 'Pix com baixa automática na tesouraria da loja',
     description: 'Duas formas de receber por Pix na tesouraria da loja maçônica: direto na chave da loja ou por intermediário com baixa automática. Veja como escolher.',
@@ -152,6 +159,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: 'prestacao-de-contas-fim-do-veneralato',
+    moduleSlug: 'tesouraria-loja-maconica',
     title: 'Prestação de contas ao fim do veneralato: o que reunir',
     short: 'Prestação de contas ao fim do veneralato',
     description: 'Checklist para a prestação de contas da tesouraria ao fim do veneralato: relatórios a reunir, conferências, aprovação e como passar o saldo ao próximo período.',
@@ -201,6 +209,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: 'modelo-planilha-tesouraria-loja-maconica',
+    moduleSlug: 'tesouraria-loja-maconica',
     title: 'Modelo de planilha de tesouraria para loja maçônica (com plano de contas)',
     short: 'Planilha de tesouraria para loja maçônica',
     description: 'Modelo de planilha para a tesouraria de uma loja maçônica: colunas, plano de contas sugerido de receitas e despesas e dicas para manter a escrituração em dia.',
