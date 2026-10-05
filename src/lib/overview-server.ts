@@ -2,6 +2,7 @@ import type { Prisma } from '@/generated/prisma/client';
 import { listAbsenceStreaks } from '@/lib/attendance-streak-server';
 import { brl } from '@/lib/currency';
 import { formatDateOnly, todayBR } from '@/lib/date-only';
+import { missingRecordFields } from '@/lib/incomplete-record';
 import { getTroncoBalance } from '@/lib/hospitalaria';
 import { getLodgeOverdueDuesReport, isArt002Enabled } from '@/lib/overdue';
 import { birthdayWithin, type OverviewScope } from '@/lib/overview-roles';
@@ -87,7 +88,7 @@ export async function loadOverviewGroups(
     items.push({ key: 'proxima', label: 'Próxima sessão', value: next ? formatDateOnly(next.date.toISOString()) : '—', href: '/dashboard/sessoes', tone: 'muted', hint: next?.title });
     items.push({ key: 'balaustres', label: 'Balaústres sem arquivo', value: past.filter((s) => !s.minutesStorageKey && s._count.minutesFiles === 0).length, href: '/dashboard/sessoes', tone: 'gold' });
     items.push({ key: 'candidatos', label: 'Candidatos em processo', value: candidates, href: '/dashboard/candidatos', tone: 'muted' });
-    items.push({ key: 'cadastros', label: 'Cadastros incompletos (sem CPF ou e-mail)', value: members.filter((m) => !m.cpf || !m.email?.trim()).length, href: '/dashboard/membros/cadastros-incompletos', tone: 'gold' });
+    items.push({ key: 'cadastros', label: 'Cadastros incompletos (CPF, e-mail ou nascimento)', value: members.filter((m) => missingRecordFields(m).length > 0).length, href: '/dashboard/membros/cadastros-incompletos', tone: 'gold' });
     const birthdays = members.filter((m) => m.birthDate && birthdayWithin(m.birthDate, today, 7));
     items.push({ key: 'aniversarios', label: 'Aniversariantes nos próximos 7 dias', value: birthdays.length, href: '/dashboard/membros', tone: 'muted', hint: birthdays.slice(0, 3).map((m) => m.name.split(' ')[0]).join(', ') || undefined });
     groups.push({ title: 'Secretaria', items });

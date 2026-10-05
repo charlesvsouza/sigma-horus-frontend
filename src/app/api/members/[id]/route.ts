@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { CANDIDATE_STATUS } from '@/lib/candidate';
 import { logAudit } from '@/lib/audit';
 import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, parseSelfEditFields, validateMemberFields, validateRelatives } from '@/lib/member-fields';
+import { parseDateInput } from '@/lib/date-only';
 import { withTenant, prismaAdmin } from '@/lib/prisma';
 import { adminEmails, memberEmailIsAdminMessage, normalizeEmail } from '@/lib/admin-policy';
 import { isValidCPF, maskCPF, onlyDigits } from '@/lib/masks';
@@ -58,7 +59,7 @@ export async function PUT(request: Request, { params }: Ctx) {
     const rawCpf = typeof (body as { cpf?: unknown })?.cpf === 'string' ? String((body as { cpf: string }).cpf) : '';
     const cpfDigits = onlyDigits(rawCpf);
     const outcome = await withTenant(String(lodgeId), async (db) => {
-      const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, cpf: true } });
+      const existing = await db.member.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { id: true, cpf: true, birthDate: true } });
       if (!existing) return { notFound: true } as const;
       let cpfData: { cpf?: string } = {};
       if (cpfDigits && !onlyDigits(existing.cpf ?? '')) {
@@ -67,16 +68,25 @@ export async function PUT(request: Request, { params }: Ctx) {
         if (others.some((o) => onlyDigits(o.cpf ?? '') === cpfDigits)) return { error: 'Este CPF já está cadastrado para outro irmão. Procure a Secretaria.' } as const;
         cpfData = { cpf: maskCPF(cpfDigits) };
       }
+      // Nascimento: como o CPF, o irmão só PREENCHE o que está vazio (corrigir um já cadastrado é com a Secretaria).
+      let birthData: { birthDate?: Date } = {};
+      const rawBirth = typeof (body as { birthDate?: unknown })?.birthDate === 'string' ? String((body as { birthDate: string }).birthDate) : '';
+      if (rawBirth && !existing.birthDate) {
+        const parsed = parseDateInput(rawBirth, { minYear: 1900 });
+        if (!parsed || parsed.getTime() > Date.now()) return { error: 'Data de nascimento inválida. Confira o dia, o mês e o ano.' } as const;
+        birthData = { birthDate: parsed };
+      }
       const updated = await db.member.update({
         where: { id },
         data: {
           ...fields,
           ...cpfData,
+          ...birthData,
           relatives: { deleteMany: {}, create: relatives.map((r) => ({ lodgeId: String(lodgeId), ...r })) },
         },
         include: MEMBER_LIST_INCLUDE,
       });
-      await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { selfEdit: true, ...(cpfData.cpf ? { cpfFilled: true } : {}) } });
+      await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'member', entityId: id, metadata: { selfEdit: true, ...(cpfData.cpf ? { cpfFilled: true } : {}), ...(birthData.birthDate ? { birthDateFilled: true } : {}) } });
       return { item: updated } as const;
     });
     if ('notFound' in outcome) return NextResponse.json({ error: 'Membro não encontrado.' }, { status: 404 });

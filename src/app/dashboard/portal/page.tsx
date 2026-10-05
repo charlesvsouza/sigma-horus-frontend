@@ -19,6 +19,7 @@ interface MemberSummary {
   name: string;
   email?: string | null;
   hasCpf?: boolean;
+  hasBirthDate?: boolean;
   phone?: string | null;
   status: string;
   currentDegree?: string | null;
@@ -99,6 +100,7 @@ const dateVal = (iso?: string | null) => (iso ? new Date(iso).toISOString().slic
 
 interface EditForm {
   cpf: string;
+  birthDate: string;
   email: string;
   phone: string;
   zipCode: string;
@@ -117,6 +119,7 @@ interface EditForm {
 function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; onSaved: () => void; onCancel: () => void }) {
   const [form, setForm] = useState<EditForm>({
     cpf: '',
+    birthDate: '',
     email: member.email ?? '',
     phone: member.phone ?? '',
     zipCode: member.zipCode ?? '',
@@ -211,6 +214,10 @@ function SelfEditForm({ member, onSaved, onCancel }: { member: MemberSummary; on
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <input value={form.email} onChange={(e) => set('email', e.target.value)} className={inputClass} placeholder="E-mail" type="email" />
           {member.hasCpf === false ? <MaskedInput value={form.cpf} onChange={(v) => set('cpf', v)} mask={maskCPF} inputMode="numeric" className={inputClass} placeholder="CPF (falta no seu cadastro)" /> : null}
+          {member.hasBirthDate === false ? (
+            <label className="text-xs text-sand-dark">Data de nascimento (falta no seu cadastro)
+              <input type="date" value={form.birthDate} onChange={(e) => set('birthDate', clampDateYear(e.target.value, form.birthDate))} className={inputClass} /></label>
+          ) : null}
           <MaskedInput value={form.phone} onChange={(v) => set('phone', v)} mask={maskPhone} className={inputClass} placeholder="Telefone" />
         </div>
       </div>

@@ -48,6 +48,7 @@ export async function GET() {
           name: true,
           email: true,
           cpf: true,
+          birthDate: true,
           phone: true,
           status: true,
           currentDegree: true,
@@ -172,7 +173,7 @@ export async function GET() {
     : null;
 
   return NextResponse.json({
-    member: member ? { ...member, cpf: undefined, hasCpf: Boolean(member.cpf?.replace(/D/g, '')) } : member,
+    member: member ? { ...member, cpf: undefined, hasCpf: Boolean(member.cpf?.replace(/\D/g, '')), hasBirthDate: Boolean(member.birthDate) } : member,
     lodge: lodge ? { name: lodge.name, crestUrl: lodge.crestUrl } : null,
     collection,
     accounts: items,

@@ -7,13 +7,13 @@ import { NextResponse } from 'next/server';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-// Pedido de CPF/e-mail pelo WhatsApp (wa.me, manual): a Secretaria abre a conversa com o texto pronto.
+// Pedido de CPF/e-mail/nascimento pelo WhatsApp (wa.me, manual): a Secretaria abre a conversa com o texto pronto.
 // Só existe enquanto o cadastro estiver incompleto — regularizado, a rota responde 409 e o pedido some.
 //  GET   → texto, telefone e último envio.  POST → registra a abertura ({ text }) e devolve logId.
 //  PATCH → confirmação do usuário ({ logId, sent }): "sent" ou apaga o registro.
 
 const MAX_TEXT = 4000;
-const COMPLETE_ERROR = 'Este cadastro já está completo (CPF e e-mail preenchidos).';
+const COMPLETE_ERROR = 'Este cadastro já está completo (CPF, e-mail e data de nascimento preenchidos).';
 
 async function guard() {
   const session = await auth();
@@ -30,7 +30,7 @@ export async function GET(_request: Request, { params }: Ctx) {
   const { id } = await params;
   const data = await withTenant(g.lodgeId, async (db) => {
     const [member, lodge, last] = await Promise.all([
-      db.member.findFirst({ where: { id, lodgeId: g.lodgeId }, select: { id: true, name: true, cpf: true, email: true, phone: true, status: true, deceased: true } }),
+      db.member.findFirst({ where: { id, lodgeId: g.lodgeId }, select: { id: true, name: true, cpf: true, email: true, phone: true, birthDate: true, status: true, deceased: true } }),
       db.lodge.findUnique({ where: { id: g.lodgeId }, select: { name: true } }),
       db.messageLog.findFirst({ where: { lodgeId: g.lodgeId, memberId: id, ref: recordRequestRef(id), channel: WHATSAPP_MANUAL_CHANNEL, status: 'sent' }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
     ]);
@@ -58,12 +58,12 @@ export async function POST(request: Request, { params }: Ctx) {
   const text = typeof body?.text === 'string' ? body.text.trim().slice(0, MAX_TEXT) : '';
   if (!text) return NextResponse.json({ error: 'Mensagem vazia.' }, { status: 400 });
   const result = await withTenant(g.lodgeId, async (db) => {
-    const member = await db.member.findFirst({ where: { id, lodgeId: g.lodgeId }, select: { id: true, cpf: true, email: true, status: true, deceased: true } });
+    const member = await db.member.findFirst({ where: { id, lodgeId: g.lodgeId }, select: { id: true, cpf: true, email: true, birthDate: true, status: true, deceased: true } });
     if (!member) return { error: 'Membro não encontrado.', status: 404 } as const;
     if (!isIncompleteRecord(member)) return { error: COMPLETE_ERROR, status: 409 } as const;
     const log = await db.messageLog.create({
       select: { id: true },
-      data: { lodgeId: g.lodgeId, memberId: id, channel: WHATSAPP_MANUAL_CHANNEL, status: 'handed-off', title: 'WhatsApp: atualização cadastral (CPF/e-mail)', content: text, ref: recordRequestRef(id) },
+      data: { lodgeId: g.lodgeId, memberId: id, channel: WHATSAPP_MANUAL_CHANNEL, status: 'handed-off', title: 'WhatsApp: atualização cadastral (CPF/e-mail/nascimento)', content: text, ref: recordRequestRef(id) },
     });
     return { logId: log.id } as const;
   });

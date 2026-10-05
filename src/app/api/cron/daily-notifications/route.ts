@@ -1,4 +1,6 @@
 import { alertAbsenceStreaks } from '@/lib/attendance-streak-server';
+import { todayBR } from '@/lib/date-only';
+import { alertIncompleteRecords } from '@/lib/incomplete-record-server';
 import { alertBrokenAgreements } from '@/lib/member-block-server';
 import { reconcileAllTroncoQrs } from '@/lib/tronco-qr-server';
 import { runDailyNotifications } from '@/lib/notifications';
@@ -26,7 +28,15 @@ async function run() {
     console.error('tronco qr: falha na conferência diária', err);
     return null;
   });
-  return { ...notifications, agreements, absences, troncoQr };
+  // Segunda-feira (Brasília): resumo ao Secretário + pedido ao irmão para completar o cadastro (CPF, e-mail, nascimento).
+  const isMonday = todayBR().getUTCDay() === 1;
+  const records = isMonday
+    ? await alertIncompleteRecords().catch((err) => {
+        console.error('cadastros incompletos: falha no aviso semanal', err);
+        return null;
+      })
+    : null;
+  return { ...notifications, agreements, absences, troncoQr, records };
 }
 
 export async function GET(request: Request) {
