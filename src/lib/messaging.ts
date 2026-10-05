@@ -89,7 +89,11 @@ async function sendEmail(to: string, subject: string, body: string, branding?: {
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from, to, subject, text: body, ...(html ? { html } : {}), ...(attachments?.length ? { attachments } : {}) }),
     });
-    if (!res.ok) return { status: 'failed', detail: `Resend ${res.status}` };
+    if (!res.ok) {
+      // O corpo diz o motivo (domínio não verificado, destinatário inválido…); sem ele a falha era um número solto.
+      const detail = await res.text().catch(() => '');
+      return { status: 'failed', detail: `Resend ${res.status} ${detail.replace(/\s+/g, ' ').slice(0, 160)}`.trim() };
+    }
     return { status: 'sent' };
   } catch (e) {
     return { status: 'failed', detail: String(e) };
@@ -143,10 +147,33 @@ async function sendSms(to: string, body: string, cfg: SmsCfg): Promise<SendResul
 
 /** Envia por um canal. `to` = e-mail (email) ou telefone (whatsapp/sms). WhatsApp/SMS usam as credenciais da loja. */
 export async function dispatch(channel: Channel, to: string, subject: string, body: string, ch: LodgeChannels, opts?: { attachments?: EmailAttachment[]; html?: string }): Promise<SendResult> {
+  const result = await dispatchRaw(channel, to, subject, body, ch, opts);
+  await reportSendProblem(channel, result);
+  return result;
+}
+
+async function dispatchRaw(channel: Channel, to: string, subject: string, body: string, ch: LodgeChannels, opts?: { attachments?: EmailAttachment[]; html?: string }): Promise<SendResult> {
   if (!to) return { status: 'failed', detail: 'Destinatário sem contato.' };
   if (channel === 'email') return sendEmail(to, subject, body, { lodgeName: ch.lodgeName, crestUrl: ch.crestUrl }, opts?.attachments, opts?.html);
   if (channel === 'whatsapp') return ch.whatsapp ? sendWhatsApp(to, body, ch.whatsapp) : { status: 'queued', detail: 'WhatsApp não conectado nesta loja.' };
   return ch.sms ? sendSms(to, body, ch.sms) : { status: 'queued', detail: 'SMS não conectado nesta loja.' };
+}
+
+/**
+ * Rede de proteção do envio: toda falha de provedor (e e-mail não configurado na plataforma) entra no painel de
+ * erros do dono (/plataforma/erros, 1 linha por motivo, com contagem) — muitos chamadores ignoram o resultado e a
+ * falha sumia. "queued" de WhatsApp/SMS é a loja não ter conectado o canal (esperado), não vira erro. Nunca lança.
+ */
+async function reportSendProblem(channel: Channel, result: SendResult): Promise<void> {
+  if (result.status === 'sent') return;
+  if (result.status === 'queued' && channel !== 'email') return;
+  if (result.detail === 'Destinatário sem contato.') return;
+  try {
+    const { recordError } = await import('@/lib/error-monitor');
+    await recordError({ source: 'server', route: `envio:${channel}`, message: result.detail ?? `envio ${result.status}` });
+  } catch {
+    /* monitorar nunca derruba o envio */
+  }
 }
 
 /** Canais disponíveis: e-mail pela plataforma; WhatsApp/SMS conforme a loja conectou. */

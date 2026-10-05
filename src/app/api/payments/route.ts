@@ -326,13 +326,19 @@ export async function POST(request: Request) {
       ? `${brl(payment.amount)} + ${brl(result.lateCharge)} de multa e juros por atraso (total ${brl(payment.amount + result.lateCharge)})`
       : brl(payment.amount);
     const data = formatDayMixed(payment.paidAt);
-    dispatch(
+    const receipt = await dispatch(
       'email',
       payment.member.email,
       `Pagamento confirmado — ${lodgeName}`,
       `Olá, ${payment.member.name}.\n\nConfirmamos o recebimento do seu pagamento de ${valor} em ${data}, referente a "${payment.account.title}".\n\nAtenciosamente,\n${lodgeName}`,
       lodgeChannels,
-    ).catch(() => {});
+    ).catch(() => null);
+    // Fica no histórico de mensagens: falha de envio não derruba a baixa, mas precisa ser visível.
+    if (receipt) {
+      await withTenant(String(lodgeId), (db) =>
+        db.messageLog.create({ data: { lodgeId: String(lodgeId), memberId: payment.member?.id ?? null, channel: 'email', title: `Pagamento confirmado — ${lodgeName}`, content: `Confirmação de pagamento de ${valor} (${payment.account?.title ?? ''}).`, status: receipt.status, error: receipt.detail ?? null, ref: `payment:${payment.id}` } }),
+      ).catch(() => null);
+    }
   }
 
   return NextResponse.json({ item: payment, ...(asaasWarning ? { asaasWarning } : {}) });
