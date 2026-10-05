@@ -77,7 +77,7 @@ export default function Home() {
           Véu mais leve para revelar as pirâmides e os camelos ao fundo. */}
       <div aria-hidden="true" className="fixed inset-0 -z-10">
         <Image
-          src="/backgraund_theme.png"
+          src="/background_theme.png"
           alt=""
           fill
           priority
@@ -318,13 +318,14 @@ export default function Home() {
               Erga a gestão da sua loja
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-sand">
-              Comece hoje com avaliação gratuita. Sem instalar nada, com seus dados isolados e seguros.
+              Teste por 10 dias, sem instalar nada e com seus dados isolados e seguros. O cartão é cadastrado no
+              início e só é cobrado ao fim do teste — cancele antes e não paga nada.
             </p>
             <Link
               href="#planos"
               className="mt-8 inline-flex rounded-full bg-gold px-8 py-3 font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light"
             >
-              Criar conta gratuita
+              Testar 10 dias (cartão exigido)
             </Link>
           </div>
         </div>
@@ -361,10 +362,6 @@ export default function Home() {
         </div>
         <div className="border-t border-white/[0.05] px-6 py-6 text-center text-xs text-sand-dark lg:px-10">
           © {new Date().getFullYear()} Sigma Horus — a tesouraria da sua loja no prumo.
-          {' · '}
-          <Link href="/plataforma" className="text-sand-dark/60 transition-colors hover:text-sand-light">
-            Admin
-          </Link>
         </div>
       </footer>
     </main>
@@ -396,12 +393,18 @@ async function FoundersSection() {
             </p>
           </div>
           <div className="text-center lg:text-right">
-            {left != null ? (
+            {/* Contador só depois da primeira assinatura: "30 de 30 restantes" passa a impressão de que ninguém aderiu. */}
+            {left != null && paid != null && paid > 0 ? (
               <p>
                 <span className="block font-display text-5xl font-bold text-gold">{left}</span>
                 <span className="mt-1 block text-sm text-sand">de {FOUNDER_SLOTS} vagas restantes</span>
               </p>
-            ) : null}
+            ) : (
+              <p>
+                <span className="block font-display text-5xl font-bold text-gold">{FOUNDER_SLOTS}</span>
+                <span className="mt-1 block text-sm text-sand">vagas de Loja Fundadora</span>
+              </p>
+            )}
             <a href="#planos" className="mt-5 inline-flex rounded-full bg-gold px-7 py-3 font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light">
               Garantir a vaga da minha loja
             </a>

@@ -77,7 +77,7 @@ export default function LoginPage() {
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-sigma-blue-deep">
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url(/backgraund_theme.png)" }}
+        style={{ backgroundImage: "url(/background_theme.png)" }}
       />
 
       <div className="absolute inset-0 bg-gradient-to-b from-sigma-blue-deep/90 via-sigma-blue-deep/50 to-sigma-blue-deep/85" />

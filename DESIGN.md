@@ -114,7 +114,7 @@ Emblema ouro (Olho de Hórus + esquadro e compasso) com wordmark "SIGMA HORUS".
 | Emblema | `src/app/icon.png` | Favicon, sidebar compacta |
 | OG / share | `src/app/opengraph-image.png` | Compartilhamento (1200×630) |
 
-Fundo de marca (landing/login): foto egípcia `public/backgraund_theme.png` sob véu azul-noite.
+Fundo de marca (landing/login): foto egípcia `public/background_theme.png` sob véu azul-noite.
 
 ## Colors
 
