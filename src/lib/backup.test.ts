@@ -8,8 +8,9 @@ const source = readFileSync('src/lib/backup.ts', 'utf-8');
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 // Fora de propósito: BackupLog é o próprio registro do backup; RateLimit são contadores efêmeros
-// (janelas de minutos) — restaurá-los só bloquearia gente sem motivo.
-const EXCLUDED = new Set(['backupLog', 'rateLimit']);
+// (janelas de minutos) — restaurá-los só bloquearia gente sem motivo; ErrorEvent é diagnóstico de
+// plataforma, sem dado de loja.
+const EXCLUDED = new Set(['backupLog', 'rateLimit', 'errorEvent']);
 
 const schemaModels = [...schema.matchAll(/^model (\w+) \{/gm)].map((m) => lowerFirst(m[1]));
 const listBlock = source.match(/BACKUP_MODELS = \[([\s\S]*?)\] as const/)?.[1] ?? '';

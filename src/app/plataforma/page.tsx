@@ -31,6 +31,8 @@ export default function PlataformaPage() {
 
         <p className="mt-8 text-center text-xs text-sand-dark">
           <Link href="/plataforma/backups" className="text-gold-light hover:text-gold">Backups da plataforma →</Link>
+          <span className="mx-3 text-sand-dark/40">·</span>
+          <Link href="/plataforma/erros" className="text-gold-light hover:text-gold">Erros em produção →</Link>
         </p>
       </div>
     </main>

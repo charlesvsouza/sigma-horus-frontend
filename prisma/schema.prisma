@@ -1409,3 +1409,23 @@ model MemberBlockSignature {
   @@unique([blockId, party])
   @@index([lodgeId])
 }
+
+// Monitoramento de erros em produção (plataforma, sem RLS; só prismaAdmin). Um registro por
+// impressão digital: origem + rota normalizada + mensagem sem números/ids. Ver lib/error-monitor.ts.
+model ErrorEvent {
+  id            String    @id @default(cuid())
+  fingerprint   String    @unique
+  source        String
+  route         String
+  method        String?
+  message       String
+  stack         String?
+  digest        String?
+  count         Int       @default(1)
+  firstSeenAt   DateTime  @default(now()) @db.Timestamptz(3)
+  lastSeenAt    DateTime  @default(now()) @db.Timestamptz(3)
+  lastAlertedAt DateTime? @db.Timestamptz(3)
+  resolvedAt    DateTime? @db.Timestamptz(3)
+
+  @@index([lastSeenAt])
+}

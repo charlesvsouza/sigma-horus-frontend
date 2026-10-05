@@ -22,6 +22,8 @@ const EXEMPT: Record<string, string> = {
   'asaas/webhook': 'webhook do Asaas (token do sistema)',
   'backups': 'backup da plataforma (token de plataforma)',
   'invites': 'convites (token de plataforma)',
+  'platform/': 'painel de erros da plataforma (token de plataforma)',
+  'client-error': 'falha de tela reportada pelo navegador (pública, limite por IP; só grava registro de plataforma)',
   'plataforma/': 'painel da plataforma (token de plataforma)',
   'lodges/route.ts': 'criação de loja (token de plataforma)',
   // Simulações que só leem e devolvem o que seria gravado (a gravação é o /commit, guardado).
