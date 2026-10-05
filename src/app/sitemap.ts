@@ -13,7 +13,8 @@ const pages: { path: string; priority: number; changeFrequency: 'weekly' | 'mont
   { path: '/manual', priority: 0.6, changeFrequency: 'weekly', lastModified: '2026-10-04' },
   { path: '/compliance', priority: 0.4, changeFrequency: 'yearly', lastModified: '2026-09-22' },
   { path: '/termos', priority: 0.3, changeFrequency: 'yearly', lastModified: '2026-07-01' },
-  { path: '/privacidade', priority: 0.3, changeFrequency: 'yearly', lastModified: '2026-09-18' },
+  { path: '/privacidade', priority: 0.3, changeFrequency: 'yearly', lastModified: '2026-10-05' },
+  { path: '/cookies', priority: 0.3, changeFrequency: 'yearly', lastModified: '2026-10-05' },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

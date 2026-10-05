@@ -7,6 +7,7 @@ export const INSTITUTIONAL_LINKS = [
   { href: '/manual', label: 'Manual' },
   { href: '/termos', label: 'Termos de Uso' },
   { href: '/privacidade', label: 'Privacidade & LGPD' },
+  { href: '/cookies', label: 'Cookies' },
   { href: '/compliance', label: 'Compliance & Transparência' },
 ];
 
