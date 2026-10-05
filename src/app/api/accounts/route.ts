@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from '@/lib/date-only';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -54,10 +55,12 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
+  const badDate = firstInvalidDate(body, ['dueDate', 'paidAt']);
+  if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const title = String(body?.title ?? '').trim();
   const type = String(body?.type ?? 'RECEIVABLE').trim().toUpperCase();
   const amount = round2(Number(body?.amount ?? 0));
-  const dueDate = body?.dueDate ? new Date(body.dueDate) : new Date();
+  const dueDate = body?.dueDate ? new Date(body.dueDate) : todayBR();
   const status = String(body?.status ?? 'pending').trim();
   const description = String(body?.description ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
@@ -65,7 +68,7 @@ export async function POST(request: Request) {
   const chartAccountId = body?.chartAccountId ? String(body.chartAccountId) : null;
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
   const isDues = Boolean(body?.isDues);
-  const paidAt = body?.paidAt ? new Date(body.paidAt) : new Date();
+  const paidAt = body?.paidAt ? new Date(body.paidAt) : todayBR();
 
   if (!title || !['RECEIVABLE', 'PAYABLE'].includes(type)) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
@@ -78,6 +81,9 @@ export async function POST(request: Request) {
     // Trava de período: não permite lançar em veneralato já encerrado.
     const locked = await findClosedTermForDate(db, String(lodgeId), dueDate);
     if (locked) return { locked } as const;
+
+    // O irmão informado precisa ser desta loja (a chave estrangeira sozinha não confere o isolamento entre lojas).
+    if (memberId && !(await db.member.findFirst({ where: { id: memberId, lodgeId: String(lodgeId) }, select: { id: true } }))) return { invalidMember: true } as const;
 
     // Irmão bloqueado (comunicado à Potência) não recebe lançamento novo: a regularização é pelo acordo.
     if (type === 'RECEIVABLE' && memberId) {
@@ -162,6 +168,10 @@ export async function POST(request: Request) {
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'account', entityId: created.id, metadata: { title, type, amount, status } });
     return { created } as const;
   });
+
+  if ('invalidMember' in result) {
+    return NextResponse.json({ error: 'Irmão não encontrado nesta loja.' }, { status: 400 });
+  }
 
   if ('blockedError' in result) {
     return NextResponse.json({ error: result.blockedError }, { status: 409 });

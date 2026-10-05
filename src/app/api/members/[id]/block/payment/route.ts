@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from '@/lib/date-only';
 import { recordAgreementPayment } from '@/lib/member-block-server';
 import { canBlockMembers } from '@/lib/member-block';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -23,9 +24,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
+  const badDate = firstInvalidDate(body, ['paidAt']);
+  if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : '';
   if (!bankAccountId) return NextResponse.json({ error: 'Selecione a conta bancária/caixa que recebeu o valor.' }, { status: 400 });
-  const paidAt = body?.paidAt ? new Date(body.paidAt) : new Date();
+  const paidAt = body?.paidAt ? new Date(body.paidAt) : todayBR();
   if (Number.isNaN(paidAt.getTime())) return NextResponse.json({ error: 'Data do pagamento inválida.' }, { status: 400 });
 
   const result = await recordAgreementPayment(String(lodgeId), id, String(session.user.id), {

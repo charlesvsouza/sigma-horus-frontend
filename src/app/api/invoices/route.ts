@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from '@/lib/date-only';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { createChargesWithAccounts } from '@/lib/charges';
@@ -49,8 +50,10 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
+  const badDate = firstInvalidDate(body, ['dueDate']);
+  if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const memberId = String(body?.memberId ?? '').trim();
-  const dueDate = body?.dueDate ? new Date(body.dueDate) : new Date();
+  const dueDate = body?.dueDate ? new Date(body.dueDate) : todayBR();
   const recurringCount = body?.recurringCount != null && body.recurringCount !== '' ? Number(body.recurringCount) : null;
 
   if (!memberId) {

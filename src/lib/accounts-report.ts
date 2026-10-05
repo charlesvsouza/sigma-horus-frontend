@@ -5,6 +5,8 @@
 // (recebidas/pagas) filtram por data do PAGAMENTO — uma linha por Payment, não
 // por Account, porque uma conta pode ser paga em parcelas em datas diferentes.
 
+import { sumMoney } from './money';
+
 export interface AccountReportRowInput {
   id: string;
   date: Date; // vencimento (aberta) ou data do pagamento (liquidada)
@@ -165,6 +167,6 @@ export function buildAccountsReport(rows: AccountReportRowInput[], filters: Acco
     reference: referenceLabel(dueDate),
     detail: accountDetail(r.description, r.category),
   }));
-  const total = out.reduce((s, r) => s + r.amount, 0);
+  const total = sumMoney(out.map((r) => r.amount));
   return { rows: out, total, groups: filters.subtotals === false ? null : groupRows(out, sort) };
 }

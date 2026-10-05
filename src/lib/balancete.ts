@@ -1,4 +1,5 @@
 import type { Prisma } from '@/generated/prisma/client';
+import { sumMoney, round2 } from '@/lib/money';
 import { logAudit } from '@/lib/audit';
 
 /**
@@ -24,12 +25,13 @@ export async function generateBalancete(
     db.payment.findMany({ where: { lodgeId, paidAt: { gte: from, lte: to } }, select: { amount: true, account: { select: { type: true } } } }),
   ]);
 
-  const totalReceivables = accounts.filter((a) => a.type === 'RECEIVABLE').reduce((s, a) => s + Number(a.amount ?? 0), 0);
-  const totalPayables = accounts.filter((a) => a.type === 'PAYABLE').reduce((s, a) => s + Number(a.amount ?? 0), 0);
-  const cashIn = payments.filter((p) => p.account?.type === 'RECEIVABLE').reduce((s, p) => s + Number(p.amount ?? 0), 0);
-  const cashOut = payments.filter((p) => p.account?.type === 'PAYABLE').reduce((s, p) => s + Number(p.amount ?? 0), 0);
+  // Somas em centavos inteiros: estes totais são GRAVADOS no balancete; ponto flutuante acumularia erro (140326.45999…).
+  const totalReceivables = sumMoney(accounts.filter((a) => a.type === 'RECEIVABLE').map((a) => Number(a.amount ?? 0)));
+  const totalPayables = sumMoney(accounts.filter((a) => a.type === 'PAYABLE').map((a) => Number(a.amount ?? 0)));
+  const cashIn = sumMoney(payments.filter((p) => p.account?.type === 'RECEIVABLE').map((p) => Number(p.amount ?? 0)));
+  const cashOut = sumMoney(payments.filter((p) => p.account?.type === 'PAYABLE').map((p) => Number(p.amount ?? 0)));
   const totalPayments = cashIn; // "Pagamentos" = dinheiro efetivamente recebido no período (entradas)
-  const netBalance = cashIn - cashOut; // saldo de caixa real do período (entradas − saídas), não entradas − obrigações em aberto
+  const netBalance = round2(cashIn - cashOut); // saldo de caixa real do período (entradas − saídas), não entradas − obrigações em aberto
 
   const created = await db.balancete.create({
     data: { lodgeId, periodFrom: from, periodTo: to, totalReceivables, totalPayables, totalPayments, netBalance, notes, createdById },

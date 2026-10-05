@@ -13,7 +13,7 @@ import { brl } from '@/lib/currency';
 import { NextResponse } from 'next/server';
 import { lockKey } from '@/lib/locks';
 import { autoSignReceipt } from '@/lib/receipt-signature-server';
-import { formatDayMixed } from '@/lib/date-only';
+import { formatDayMixed, firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from '@/lib/date-only';
 import { LATE_CHARGE_CHART, lateChargeMarker } from '@/lib/late-charge';
 
 export async function GET() {
@@ -61,10 +61,12 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
+  const badDate = firstInvalidDate(body, ['paidAt']);
+  if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const accountId = String(body?.accountId ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
   const amount = round2(Number(body?.amount ?? 0));
-  const paidAt = body?.paidAt ? new Date(body.paidAt) : new Date();
+  const paidAt = body?.paidAt ? new Date(body.paidAt) : todayBR();
   const method = String(body?.method ?? 'manual').trim();
   const note = String(body?.note ?? '').trim();
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
@@ -111,6 +113,10 @@ export async function POST(request: Request) {
     const bank = await db.financialAccount.findFirst({ where: { id: bankAccountId, lodgeId: String(lodgeId), active: true }, select: { id: true } });
     if (!bank) {
       return { invalidBank: true as const };
+    }
+    // O irmão informado precisa ser desta loja (a chave estrangeira sozinha não confere o isolamento entre lojas).
+    if (memberId && !(await db.member.findFirst({ where: { id: memberId, lodgeId: String(lodgeId) }, select: { id: true } }))) {
+      return { invalidMember: true as const };
     }
     if (lateCharge > 0 && (account.type !== 'RECEIVABLE' || !account.memberId)) {
       return { lateNotAllowed: true as const };
@@ -273,6 +279,10 @@ export async function POST(request: Request) {
 
   if ('pendingApproval' in result) {
     return NextResponse.json({ error: 'Esta despesa está aguardando aprovação do Venerável Mestre antes de ser paga.' }, { status: 409 });
+  }
+
+  if ('invalidMember' in result) {
+    return NextResponse.json({ error: 'Irmão não encontrado nesta loja.' }, { status: 400 });
   }
 
   if ('invalidBank' in result) {

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from '@/lib/date-only';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -21,7 +22,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
-  const paidAt = body?.paidAt ? new Date(body.paidAt) : new Date();
+  const badDate = firstInvalidDate(body, ['dueDate', 'paidAt']);
+  if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
+  const paidAt = body?.paidAt ? new Date(body.paidAt) : todayBR();
   if (body?.amount !== undefined && !isValidMoney(Number(body.amount))) {
     return NextResponse.json({ error: 'Informe um valor maior que zero, com até 2 casas decimais.' }, { status: 400 });
   }
@@ -87,6 +90,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const nextType = body?.type !== undefined ? String(body.type).trim().toUpperCase() : existing.type;
     const nextAmount = body?.amount !== undefined ? Number(body.amount) : Number(existing.amount);
     const nextMemberId = body?.memberId !== undefined ? (body.memberId ? String(body.memberId) : null) : existing.memberId;
+    // O irmão informado precisa ser desta loja (a chave estrangeira sozinha não confere o isolamento entre lojas).
+    if (body?.memberId && !(await db.member.findFirst({ where: { id: String(body.memberId), lodgeId: String(lodgeId) }, select: { id: true } }))) return { error: 'invalid-member' as const };
     // Mensalidade é sempre de um irmão.
     if (body?.isDues === true && nextType === 'RECEIVABLE' && !nextMemberId) return { error: 'dues-no-member' as const };
 
@@ -160,6 +165,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   if ('error' in result) {
     if (result.error === 'notfound') return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });
+    if (result.error === 'invalid-member') return NextResponse.json({ error: 'Irmão não encontrado nesta loja.' }, { status: 400 });
     if (result.error === 'dues-no-member') return NextResponse.json({ error: 'Mensalidade precisa estar vinculada a um irmão. Escolha o membro em "Vincular a um membro".' }, { status: 400 });
     if (result.error === 'asaas-group') {
       return NextResponse.json({

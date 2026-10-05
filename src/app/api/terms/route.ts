@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { firstInvalidDate, INVALID_DATE_MESSAGE } from '@/lib/date-only';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { invalidateCargoRoles, requireLodgeAccess } from '@/lib/rbac';
@@ -28,6 +29,8 @@ export async function POST(request: Request) {
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
+  const badDate = firstInvalidDate(body, ['startDate', 'endDate']);
+  if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const title = String(body?.title ?? '').trim();
   const startDate = body?.startDate ? new Date(body.startDate) : new Date();
   const endDate = body?.endDate ? new Date(body.endDate) : null;

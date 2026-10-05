@@ -48,3 +48,41 @@ export function formatDayMixed(value: Date | string | number | null | undefined,
   const dateOnly = d.getTime() % DAY_MS === 0;
   return d.toLocaleDateString('pt-BR', { timeZone: dateOnly ? 'UTC' : 'America/Sao_Paulo' });
 }
+
+/** Anos aceitos em datas digitadas: fora disso quase sempre é erro de digitação (0001, 5138…). */
+export const MIN_INPUT_YEAR = 2000;
+export const MAX_INPUT_YEAR = 2100;
+
+/**
+ * Lê uma data vinda do navegador/API com rigor: só "AAAA-MM-DD" (com ou sem horário ISO), dia que existe no calendário
+ * (2026-02-30 não vira 02/03 em silêncio) e ano plausível. Devolve null se não passar. "AAAA-MM-DD" = 00:00 UTC, igual
+ * a `new Date("AAAA-MM-DD")` — o resto do sistema segue gravando do mesmo jeito.
+ */
+export function parseDateInput(raw: unknown, opts: { minYear?: number } = {}): Date | null {
+  const minYear = opts.minYear ?? MIN_INPUT_YEAR;
+  if (raw instanceof Date) return Number.isNaN(raw.getTime()) || raw.getUTCFullYear() < minYear || raw.getUTCFullYear() > MAX_INPUT_YEAR ? null : raw;
+  if (typeof raw !== 'string') return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.exec(raw.trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  if (y < minYear || y > MAX_INPUT_YEAR) return null;
+  const check = new Date(Date.UTC(y, mo - 1, d));
+  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d) return null;
+  const parsed = new Date(raw.trim());
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/** Primeiro campo de data PREENCHIDO e inválido do corpo (nome do campo), ou null se todos estão ok/vazios. */
+export function firstInvalidDate(body: unknown, keys: string[], opts: { minYear?: number } = {}): string | null {
+  const o = (body ?? {}) as Record<string, unknown>;
+  for (const k of keys) {
+    const v = o[k];
+    if (v === undefined || v === null || v === '') continue;
+    if (parseDateInput(v, opts) === null) return k;
+  }
+  return null;
+}
+
+export const INVALID_DATE_MESSAGE = 'Data inválida. Informe uma data real no formato AAAA-MM-DD.';

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { firstInvalidDate, INVALID_DATE_MESSAGE } from '@/lib/date-only';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -17,6 +18,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
+  const badDate = firstInvalidDate(body, ['acquisitionDate'], { minYear: 1900 });
+  if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const moneyInputs = [body?.acquisitionValue, body?.currentValue].filter((v) => v !== undefined && v !== null && v !== '').map(Number);
   if (moneyInputs.some((v) => !hasAtMostCents(v) || v < 0)) {
     return NextResponse.json({ error: 'Informe valores em reais, não negativos, com no máximo 2 casas decimais.' }, { status: 400 });

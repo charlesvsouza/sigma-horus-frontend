@@ -1,4 +1,5 @@
 import { withTenant } from '@/lib/prisma';
+import { sumMoney } from '@/lib/money';
 import { reconcileMemberBalances } from '@/lib/closing';
 
 // Computação da suíte de fechamento do veneralato (formato livro caixa):
@@ -124,7 +125,7 @@ export async function getClosingReport(lodgeId: string, fromParam: string | null
   const cobrancas = data.invoices
     .filter((i) => inPeriod(i.dueDate))
     .map((i) => ({ number: i.number, member: i.member?.name ?? '—', amount: Number(i.amount), dueDate: i.dueDate.toISOString(), status: i.status }));
-  const totalCobrancas = cobrancas.reduce((s, c) => s + c.amount, 0);
+  const totalCobrancas = sumMoney(cobrancas.map((c) => c.amount));
 
   // ---------- 6. Saldo dos Irmãos ----------
   const saldoIrmaos = reconcileMemberBalances(

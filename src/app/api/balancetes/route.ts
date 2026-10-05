@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { firstInvalidDate, INVALID_DATE_MESSAGE } from '@/lib/date-only';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { generateBalancete } from '@/lib/balancete';
@@ -34,6 +35,8 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => undefined);
   if (body === undefined) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
+  const badDate = firstInvalidDate(body, ['periodFrom', 'periodTo']);
+  if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const from = body?.periodFrom ? new Date(body.periodFrom) : null;
   const to = body?.periodTo ? new Date(body.periodTo) : null;
   const notes = body?.notes ? String(body.notes).trim() : null;

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { firstInvalidDate, INVALID_DATE_MESSAGE } from '@/lib/date-only';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole } from '@/lib/rbac';
@@ -21,6 +22,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
+  const badDate = firstInvalidDate(body, ['presentedAt']);
+  if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const presentedAt = body?.presentedAt ? new Date(body.presentedAt) : new Date();
 
   const item = await withTenant(String(lodgeId), async (db) => {

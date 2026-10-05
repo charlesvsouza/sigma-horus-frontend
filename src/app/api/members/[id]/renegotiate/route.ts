@@ -5,7 +5,7 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { DUES_ACCOUNT_WHERE, sumLateCharges, type LateCharge } from '@/lib/overdue';
 import { cancelAsaasCharges } from '@/lib/asaas-manual';
-import { todayBR } from '@/lib/date-only';
+import { todayBR, firstInvalidDate, INVALID_DATE_MESSAGE } from '@/lib/date-only';
 import { retargetInvoices } from '@/lib/renegotiation';
 import { NextResponse } from 'next/server';
 
@@ -32,6 +32,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const { id: memberId } = await params;
   const body = await request.json().catch(() => ({}));
+  const badDate = firstInvalidDate(body, ['firstDueDate']);
+  if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const firstDueDate = body?.firstDueDate ? new Date(body.firstDueDate) : addMonths(new Date(), 1);
   const applyLateCharge = Boolean(body?.applyLateCharge);
   if (Number.isNaN(firstDueDate.getTime())) {

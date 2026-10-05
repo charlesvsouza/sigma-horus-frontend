@@ -1,4 +1,5 @@
 import type { Prisma } from '@/generated/prisma/client';
+import { sumMoney } from '@/lib/money';
 import { daysOverdueBR, todayBR } from '@/lib/date-only';
 
 // Art. 002 (regimento): suspensão dos direitos maçônicos do membro inadimplente
@@ -90,7 +91,7 @@ export async function getMemberDuesStatus(
   const oldest = open.reduce((a, b) => (a.dueDate < b.dueDate ? a : b));
   return {
     daysOverdue: daysOverdue(oldest.dueDate, now),
-    amount: open.reduce((sum, item) => sum + item.amount, 0),
+    amount: sumMoney(open.map((item) => item.amount)),
     oldestDueDate: oldest.dueDate,
     openCount: open.length,
   };
