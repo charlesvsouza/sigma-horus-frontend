@@ -1,4 +1,5 @@
 import { LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels';
+import { memberIdsRestricted } from '@/lib/member-restriction-server';
 import { withTenant } from '@/lib/prisma';
 import {
   buildConvocationText, convocationChanged, convocationEligibility, sessionDegrees, type ConvocationEligibility,
@@ -21,8 +22,10 @@ export async function loadConvocation(lodgeId: string, sessionId: string) {
     });
     if (!meeting) return null;
     const lodge = await db.lodge.findUnique({ where: { id: lodgeId }, select: { ...LODGE_MESSAGING_SELECT } });
+    // Em licença (RG 176): dispensado da frequência, não é convocado.
+    const onLeave = [...(await memberIdsRestricted(db, lodgeId, ['convocation']))];
     const members = await db.member.findMany({
-      where: { lodgeId, status: 'active', deceased: false },
+      where: { lodgeId, status: 'active', deceased: false, ...(onLeave.length ? { id: { notIn: onLeave } } : {}) },
       select: { id: true, name: true, email: true, phone: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
       orderBy: { name: 'asc' },
     });

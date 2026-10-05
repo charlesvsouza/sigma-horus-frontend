@@ -11,6 +11,8 @@ import { formatDateOnly } from '@/lib/date-only';
 import { ReportDocument } from '@/components/report/report-document';
 import { fetchRecordShare, WhatsAppSendDialog, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
 import { isIncompleteRecord, missingRecordFields } from '@/lib/incomplete-record';
+import { canManageRestrictions, RESTRICTION_KINDS, restrictionBadge } from '@/lib/member-restriction';
+import RestrictionsPanel from './RestrictionsPanel';
 
 interface Option { id: string; name: string; }
 type RelativeKind = 'mother' | 'father' | 'spouse' | 'son' | 'daughter' | 'child' | 'other';
@@ -77,6 +79,7 @@ interface Member {
   originPower?: Option | null;
   relatives?: RelativeData[];
   user?: { id: string; status: string; mustChangePassword: boolean } | null;
+  restrictions?: { id: string; kind: string; expectedEndAt?: string | null }[]; // só para quem gerencia restrições
 }
 
 type FormState = Record<string, string>;
@@ -92,6 +95,9 @@ const emptyForm: FormState = {
   installationLodge: '', currentDegree: '', originLodge: '',
   masonicNumber: '', documents: '', notes: '',
 };
+
+// Motivos que mudam a situação do cadastro: o selo de situação já os mostra; os demais ganham selo próprio.
+const MEMBER_STATUS_KINDS = new Set(RESTRICTION_KINDS.filter((k) => k.scope === 'total').map((k) => k.value));
 
 const dateInput = (iso?: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
 
@@ -157,6 +163,7 @@ export default function MembrosPage() {
   const [saving, setSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [canGrantBenefit, setCanGrantBenefit] = useState(false);
+  const [canRestrict, setCanRestrict] = useState(false);
   const [grantingId, setGrantingId] = useState<string | null>(null);
   const [recordShare, setRecordShare] = useState<WhatsAppShare | null>(null);
 
@@ -175,6 +182,7 @@ export default function MembrosPage() {
         const role = String(s?.user?.role ?? '').toLowerCase();
         setIsAdmin(role === 'admin');
         setCanGrantBenefit(canGrantDuesBenefit(role));
+        setCanRestrict(canManageRestrictions(role));
         setUserName(s?.user?.name ?? null);
         // Foto do irmão (Galeria de Veneráveis/Quadro da Gestão): prerrogativa
         // do Secretário, Venerável e Administrador.
@@ -461,7 +469,7 @@ export default function MembrosPage() {
                         ) : null}
                       </span>
                       <span className="text-xs text-sand-dark md:text-sm md:text-sand">{degreeShort(m)}</span>
-                      <span className="text-xs"><span className={`rounded-full px-2 py-0.5 ${TONE_BADGE[memberStatusTone(m.status)]}`}>{memberStatusLabel(m.status)}</span>{isIncompleteRecord(m) ? <span title={`Falta: ${missingRecordFields(m).join(' e ')}`} className="ml-1.5 rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-300">Incompleto</span> : null}</span>
+                      <span className="text-xs"><span className={`rounded-full px-2 py-0.5 ${TONE_BADGE[memberStatusTone(m.status)]}`}>{memberStatusLabel(m.status)}</span>{(m.restrictions ?? []).filter((r) => !MEMBER_STATUS_KINDS.has(r.kind)).map((r) => <span key={r.id} title="Restrição em vigor — veja em detalhes" className="ml-1.5 rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-300">{restrictionBadge(r)}</span>)}{isIncompleteRecord(m) ? <span title={`Falta: ${missingRecordFields(m).join(' e ')}`} className="ml-1.5 rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-300">Incompleto</span> : null}</span>
                       <span className="text-xs text-sand-dark md:text-sm">{m.rite?.name ?? '—'}</span>
                       <span className="text-xs text-sand-dark md:text-sm">{m.phone || '—'}</span>
                       <span className="hidden text-right text-xs text-gold/70 md:block">{open ? 'fechar' : 'detalhes'}</span>
@@ -535,6 +543,7 @@ export default function MembrosPage() {
                                 </ul>
                               </div>
                             ) : null}
+                            {canRestrict ? <RestrictionsPanel memberId={m.id} onChanged={() => void loadData()} /> : null}
                             <div className="flex flex-wrap items-center gap-3 pt-1">
                               <button onClick={() => setEditingId(m.id)} className="rounded-full border border-gold/40 px-4 py-2 text-xs font-medium text-gold/80 transition-all hover:border-gold/60 hover:text-gold">Editar</button>
                               {isAdmin ? (

@@ -31,6 +31,7 @@ export const BACKUP_MODELS = [
   'memberBlock', // depois de member (bloqueio por comunicado à Potência + acordo)
   'memberBlockItem', // depois de memberBlock (o item aponta para a conta, sem FK)
   'memberBlockSignature', // depois de memberBlock (assinatura digital do termo do acordo)
+  'memberRestriction', // depois de member (restrição do cadastro com motivo)
   'user',
   'financialAccount',
   'accountTransfer',

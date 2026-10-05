@@ -108,6 +108,8 @@ export async function PUT(request: Request, { params }: Ctx) {
     if (existing.status === CANDIDATE_STATUS) return 'candidate' as const;
     // Bloqueado só sai do bloqueio pelo acordo quitado (Tesouraria → Acordos de regularização), nunca pela edição.
     if (existing.status === 'blocked') fields.status = 'blocked';
+    // Restrição total em vigor (Quit Placet, suspensão...): a situação só muda ao encerrá-la no cadastro do irmão, com o motivo.
+    if (fields.status !== existing.status && (await db.memberRestriction.count({ where: { lodgeId: String(lodgeId), memberId: id, status: 'active', scope: 'total' } })) > 0) fields.status = existing.status;
     // Benefício de mensalidade: só o Venerável e o Administrador concedem ou retiram; os demais preservam o que está gravado.
     if (!canGrantDuesBenefit(role)) Object.assign(fields, { duesExempt: existing.duesExempt, duesPotencyOnly: existing.duesPotencyOnly, duesPotencyReason: existing.duesPotencyReason });
     const benefitChanged = fields.duesExempt !== existing.duesExempt || fields.duesPotencyOnly !== existing.duesPotencyOnly || fields.duesPotencyReason !== existing.duesPotencyReason;

@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { NOT_CANDIDATE } from '@/lib/candidate';
 import { logAudit } from '@/lib/audit';
+import { canManageRestrictions } from '@/lib/member-restriction';
 import { MEMBER_LIST_INCLUDE, parseMemberFields, parseRelatives, validateMemberFields, validateRelatives } from '@/lib/member-fields';
 import { withTenant } from '@/lib/prisma';
 import { adminEmails, memberEmailIsAdminMessage, normalizeEmail } from '@/lib/admin-policy';
@@ -22,14 +23,21 @@ export async function GET() {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  const items = await withTenant(String(lodgeId), (db) =>
-    db.member.findMany({
+  const manage = canManageRestrictions(role);
+  const items = await withTenant(String(lodgeId), async (db) => {
+    const members = await db.member.findMany({
       // Candidatos têm tela própria (Secretaria → Candidatos): aqui só obreiros.
       where: { lodgeId: String(lodgeId), ...NOT_CANDIDATE },
       include: MEMBER_LIST_INCLUDE,
       orderBy: { name: 'asc' },
-    }),
-  );
+    });
+    // Restrições em vigor (selo na lista): só para quem as gerencia — o motivo pode ser sigiloso para o resto do quadro.
+    if (!manage) return members;
+    const active = await db.memberRestriction.findMany({ where: { lodgeId: String(lodgeId), status: 'active' }, select: { id: true, memberId: true, kind: true, expectedEndAt: true } });
+    const byMember = new Map<string, typeof active>();
+    for (const r of active) byMember.set(r.memberId, [...(byMember.get(r.memberId) ?? []), r]);
+    return members.map((m) => ({ ...m, restrictions: byMember.get(m.id) ?? [] }));
+  });
 
   return NextResponse.json({ items });
 }

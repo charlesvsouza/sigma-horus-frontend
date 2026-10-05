@@ -2,6 +2,7 @@ import type { Prisma } from '@/generated/prisma/client';
 import { absenceStreaks, streakKey, STREAK_SESSION_TYPES, STREAK_WINDOW, ABSENCE_STREAK, type AbsenceStreak, type AttendanceMap } from '@/lib/attendance-streak';
 import { formatDateOnly } from '@/lib/date-only';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
+import { memberIdsRestricted } from '@/lib/member-restriction-server';
 import { prismaAdmin, withTenant } from '@/lib/prisma';
 
 type Db = Prisma.TransactionClient;
@@ -17,9 +18,10 @@ export async function listAbsenceStreaks(db: Db, lodgeId: string, now: Date = ne
     select: { id: true, date: true, type: true },
   });
   if (sessions.length === 0) return [];
+  const onLeave = [...(await memberIdsRestricted(db, lodgeId, ['convocation']))]; // licença: faltas não contam
   const [rows, members] = await Promise.all([
     db.attendance.findMany({ where: { lodgeId, sessionId: { in: sessions.map((s) => s.id) } }, select: { sessionId: true, memberId: true, status: true } }),
-    db.member.findMany({ where: { lodgeId, status: 'active', deceased: false }, select: { id: true, name: true, status: true, initiationDate: true } }),
+    db.member.findMany({ where: { lodgeId, status: 'active', deceased: false, ...(onLeave.length ? { id: { notIn: onLeave } } : {}) }, select: { id: true, name: true, status: true, initiationDate: true } }),
   ]);
   const attendance: AttendanceMap = new Map();
   for (const r of rows) {

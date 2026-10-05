@@ -64,7 +64,7 @@ export async function GET() {
     const [
       financialAccounts, accountTransfers, counterparties, hospitalityRequests,
       materials, materialLoans, materialIncidents, venerableGalleryEntries,
-      visitors, sessionVisitors, candidateProcesses, candidateInquirers, degreeFeePlans, memberBlocks, memberBlockItems, sessionMinutes, memberBlockSignatures,
+      visitors, sessionVisitors, candidateProcesses, candidateInquirers, degreeFeePlans, memberBlocks, memberBlockItems, sessionMinutes, memberBlockSignatures, memberRestrictions,
     ] = await Promise.all([
       db.financialAccount.findMany({ where: { lodgeId: id } }),
       db.accountTransfer.findMany({ where: { lodgeId: id } }),
@@ -83,6 +83,7 @@ export async function GET() {
       db.memberBlockItem.findMany({ where: { lodgeId: id } }),
       db.sessionMinutes.findMany({ where: { lodgeId: id } }),
       db.memberBlockSignature.findMany({ where: { lodgeId: id } }),
+      db.memberRestriction.findMany({ where: { lodgeId: id } }),
     ]);
 
     // Remove os campos de credenciais/segredos criptografados — sem valor pro
@@ -105,7 +106,7 @@ export async function GET() {
         campaigns, campaignDonations, rolePermissions, subscription, auditLogs,
         financialAccounts, accountTransfers, counterparties, hospitalityRequests,
         materials, materialLoans, materialIncidents, venerableGalleryEntries,
-        visitors, sessionVisitors, candidateProcesses, candidateInquirers, degreeFeePlans, memberBlocks, memberBlockItems, sessionMinutes, memberBlockSignatures,
+        visitors, sessionVisitors, candidateProcesses, candidateInquirers, degreeFeePlans, memberBlocks, memberBlockItems, sessionMinutes, memberBlockSignatures, memberRestrictions,
       },
     };
   }, { timeoutMs: 45_000 });

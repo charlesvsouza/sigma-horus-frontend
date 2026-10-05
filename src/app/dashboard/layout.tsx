@@ -8,6 +8,7 @@ import { Alert } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { summarizeBlock } from '@/lib/member-block-server';
+import { restrictionNotice } from '@/lib/member-restriction';
 import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import DashboardShell from './DashboardShell';
 
@@ -189,6 +190,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     pendingPlanEffectiveAt: Date | null;
   } | null = null;
   let art002DaysOverdue: number | null = null;
+  let restrictionNotices: string[] = [];
   let blockInfo: { id: string; total: number; paid: number; remaining: number; installments: number; settled: boolean; settlement: boolean } | null = null;
   const memberId = session?.user?.memberId;
   if (lodgeId) {
@@ -205,10 +207,15 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       const block = memberId
         ? await db.memberBlock.findFirst({ where: { lodgeId: String(lodgeId), memberId: String(memberId), status: { in: ['open', 'settled'] } }, include: { items: true } })
         : null;
-      return { lodge, subscription, dues, block: block ? await summarizeBlock(db, block) : null };
+      // Restrições do cadastro com motivo (Regulamento Geral): o irmão sempre vê o motivo e o artigo.
+      const restrictions = memberId
+        ? await db.memberRestriction.findMany({ where: { lodgeId: String(lodgeId), memberId: String(memberId), status: 'active' }, orderBy: { startedAt: 'desc' } })
+        : [];
+      return { lodge, subscription, dues, block: block ? await summarizeBlock(db, block) : null, restrictions };
     });
     if (data.lodge?.name) lodgeName = data.lodge.name;
     sub = data.subscription;
+    restrictionNotices = data.restrictions.map((r) => restrictionNotice(r));
     // Só avisa o próprio membro quando já cruzou o prazo do Art. 002 (60 dias)
     // e a loja tem a régua automática ligada; mensalidade em atraso mas ainda
     // dentro do prazo, ou loja com o Art. 002 desligado, não dispara o popup.
@@ -289,6 +296,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <a href={`/dashboard/acordos/${blockInfo.id}/termo`} className="font-medium underline hover:text-rose-100">Ver e assinar o termo de acordo</a>
         </Alert>
       ) : null}
+      {restrictionNotices.map((text) => (
+        <Alert key={text} variant="banner" intent="warn">{text}</Alert>
+      ))}
       {children}
       </DashboardShell>
     </>

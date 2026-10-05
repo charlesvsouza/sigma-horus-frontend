@@ -146,6 +146,7 @@ model Lodge {
   memberBlockItems MemberBlockItem[]
   sessionMinutes SessionMinutes[]
   memberBlockSignatures MemberBlockSignature[]
+  memberRestrictions MemberRestriction[]
   paymentReceiptSignatures PaymentReceiptSignature[]
   troncoIntakes TroncoIntake[]
   troncoSessionQrs TroncoSessionQr[]
@@ -254,6 +255,7 @@ model Member {
   candidateInquiries CandidateInquirer[]
   degreeFeePlans     DegreeFeePlan[]
   memberBlocks       MemberBlock[]
+  restrictions       MemberRestriction[]
   @@index([lodgeId])
 }
 
@@ -1408,6 +1410,39 @@ model MemberBlockSignature {
   block MemberBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
   @@unique([blockId, party])
   @@index([lodgeId])
+}
+
+// Restrição do cadastro COM MOTIVO (Regulamento Geral e Código Disciplinar da GLMERJ): Quit Placet,
+// certificado de grau, licença, placet de ofício, cobertura de direitos, suspensão, eliminação etc.
+// O catálogo de motivos (artigo, alcance, exigências) fica em lib/member-restriction.ts; aqui só o ato.
+// scope é fotografia do alcance na época: total (muda Member.status para o do motivo), convocation (só
+// convocação/frequência) ou none (só registro). previousStatus restaura a situação ao encerrar.
+// O Art. 002 (status 'blocked' + acordo) continua em MemberBlock. status: active | ended
+model MemberRestriction {
+  id             String    @id @default(cuid())
+  lodgeId        String
+  memberId       String
+  kind           String
+  scope          String
+  status         String    @default("active")
+  startedAt      DateTime  // data do ato (só dia)
+  startedById    String
+  deliberatedAt  DateTime? // deliberação da Loja (voto/ata), quando o motivo exige
+  expectedEndAt  DateTime? // fim previsto (licença, suspensão)
+  reason         String?
+  destination    String?   // loja/Potência de filiação (Quit Placet, certificado de grau)
+  protocol       String?   // nº de registro na Grande Loja
+  previousStatus String?
+  endedAt        DateTime?
+  endedById      String?
+  endNote        String?   // como terminou: reabilitação, readmissão, cumprimento, retorno...
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  lodge  Lodge  @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  @@index([lodgeId, memberId])
+  @@index([lodgeId, status])
 }
 
 // Monitoramento de erros em produção (plataforma, sem RLS; só prismaAdmin). Um registro por
