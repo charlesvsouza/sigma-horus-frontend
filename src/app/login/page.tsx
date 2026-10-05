@@ -17,6 +17,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   // Resultado do link de troca de e-mail (/api/account/confirm-email → /login?emailChange=…).
   const [emailChange, setEmailChange] = useState<string | null>(null);
+  // Voltou do painel porque a sessão expirou por inatividade (30 min).
+  const [expired, setExpired] = useState(false);
 
   // Recuperação de senha (painel inline)
   const [forgot, setForgot] = useState(false);
@@ -30,6 +32,7 @@ export default function LoginPage() {
     // Init hidratação-safe (query string e localStorage só existem no cliente); não é fetch-on-mount.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setEmailChange(new URLSearchParams(window.location.search).get("emailChange"));
+    setExpired(new URLSearchParams(window.location.search).get("expirada") === "1");
     const saved = localStorage.getItem(REMEMBER_KEY);
     if (saved) {
       setEmail(saved);
@@ -215,6 +218,12 @@ export default function LoginPage() {
                     Esqueceu a senha?
                   </button>
                 </div>
+
+                {expired ? (
+                  <p role="status" className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+                    Sua sessão expirou por inatividade (30 minutos). Entre novamente para continuar.
+                  </p>
+                ) : null}
 
                 {emailChange ? (
                   <p role="status" className={`rounded-lg px-3 py-2 text-xs ${emailChange === "ok" ? "bg-emerald-500/10 text-emerald-300" : "bg-rose-500/10 text-rose-300"}`}>

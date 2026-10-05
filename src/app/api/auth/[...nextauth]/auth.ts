@@ -57,7 +57,9 @@ async function loadSessionUser(id: string): Promise<SessionUser | null> {
 
 export const authOptions = {
   secret: process.env.AUTH_SECRET,
-  session: { strategy: 'jwt' as const },
+  // Sessão de 30 minutos, renovada a cada chamada de /api/auth/session (o painel renova enquanto a pessoa usa; ver
+  // components/session-guard e lib/session-idle). Parou 30 min → o JWT vence no servidor, não só no navegador.
+  session: { strategy: 'jwt' as const, maxAge: 30 * 60 },
   providers: [
     Credentials({
       credentials: {

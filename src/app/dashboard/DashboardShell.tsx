@@ -9,6 +9,7 @@ import CommandPalette, { type Command } from '@/components/command-palette';
 import { ConfirmProvider } from '@/components/ui';
 import Art002Alert from '@/components/art002-alert';
 import { QuickNavProvider, QuickNavToggle, SiblingNav } from '@/components/quick-nav';
+import { SessionGuard } from '@/components/session-guard';
 import { candidateMayVisit, isCandidateRole } from '@/lib/candidate';
 import {
   LayoutDashboard, CircleUser, BookOpen, Users, Database, Briefcase, Crown, Wallet,
@@ -443,7 +444,7 @@ export default function DashboardShell({ groups, extraCommands = [], lodgeName, 
 
           <div className="fio-de-prumo mx-5 lg:mx-8" />
           <SiblingNav groups={groups} />
-          <div id="conteudo" tabIndex={-1} className="flex-1 bg-sigma-app outline-none"><ConfirmProvider>{candidateBlocked ? null : children}</ConfirmProvider></div>
+          <div id="conteudo" tabIndex={-1} className="flex-1 bg-sigma-app outline-none"><SessionGuard /><ConfirmProvider>{candidateBlocked ? null : children}</ConfirmProvider></div>
         </div>
       </div>
       <CommandPalette commands={commands} />
