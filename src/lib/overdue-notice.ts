@@ -4,7 +4,7 @@ import { ART_002_THRESHOLD_DAYS } from '@/lib/overdue-rules';
 
 // Aviso de inadimplência (relatório Inadimplência — Art. 002): um e-mail ou WhatsApp por irmão que diz que há
 // mensalidades vencidas em aberto, que é preciso regularizar para não aumentar o custo do atraso e evitar o
-// enquadramento no Art. 002 (mais de 60 dias). Texto aprovado pelo dono em 2026-10-05. Tom fraterno, sem ameaça:
+// enquadramento no Art. 002 (mais de 60 dias). Texto aprovado pelo dono em 2026-10-05; WhatsApp substituído pelo texto do Venerável Mestre (mesmo dia). Tom fraterno, sem ameaça:
 // o Art. 002 hoje só informa e o bloqueio é ato manual do Venerável.
 
 export const OVERDUE_NOTICE_LOG_TITLE = 'Aviso de inadimplência (Art. 002)';
@@ -41,6 +41,8 @@ export interface OverdueNoticeInput {
 }
 
 const countLabel = (n: number) => (n === 1 ? '1 cobrança vencida' : `${n} cobranças vencidas`);
+/** Como a lei é citada ao irmão (redação do Venerável Mestre). */
+const LAW_002 = 'Lei nº 002, que dispõe sobre a inadimplência dos Obreiros e dá outras providências';
 const alreadyIn = (i: OverdueNoticeInput) => i.art002Enabled && i.daysOverdue > ART_002_THRESHOLD_DAYS;
 
 export function overdueNoticeSubject(lodgeName: string): string {
@@ -54,7 +56,7 @@ function summaryLine(i: OverdueNoticeInput): string {
 function attentionLine(i: OverdueNoticeInput): string {
   const cost = `O acúmulo de mensalidades em aberto aumenta o custo para o irmão${i.hasLateFees ? ', com multa e juros conforme as regras da Loja' : ''}`;
   return i.art002Enabled
-    ? `Pedimos a sua atenção para regularizar esses valores o quanto antes. ${cost} e, passados ${ART_002_THRESHOLD_DAYS} dias de atraso, leva ao enquadramento no Art. 002, com os desdobramentos previstos junto à Potência.`
+    ? `Pedimos a sua atenção para regularizar esses valores o quanto antes. ${cost} e, passados ${ART_002_THRESHOLD_DAYS} dias de atraso, leva ao enquadramento na ${LAW_002}.`
     : `Pedimos a sua atenção para regularizar esses valores o quanto antes. ${cost}.`;
 }
 
@@ -105,19 +107,21 @@ export function overdueNoticeHtml(i: OverdueNoticeInput): string {
   ].join('\n');
 }
 
-/** Versão curta para WhatsApp (o Tesoureiro envia pelo wa.me). */
+/**
+ * Versão para WhatsApp (o Tesoureiro envia pelo wa.me). Redação do Venerável Mestre, em três parágrafos:
+ * situação e pedido de regularização, como pagar, e o comprovante. Mesma para quem já passou de 60 dias.
+ */
 export function overdueNoticeWhatsApp(i: OverdueNoticeInput): string {
   const days = `${i.daysOverdue} ${i.daysOverdue === 1 ? 'dia' : 'dias'}`;
-  const head = `Caro irmão ${i.memberName}, constam ${countLabel(i.count)} na Tesouraria da ${i.lodgeName}, somando ${brl(i.total)} (a mais antiga vencida há ${days}).`;
-  const risk = i.art002Enabled
-    ? (alreadyIn(i)
-      ? `Para não aumentar os custos do atraso, pedimos que regularize o quanto antes: seu cadastro já se enquadra no Art. 002 (mais de ${ART_002_THRESHOLD_DAYS} dias).`
-      : `Para não aumentar os custos do atraso e evitar o enquadramento no Art. 002 (mais de ${ART_002_THRESHOLD_DAYS} dias), pedimos que regularize o quanto antes.`)
-    : 'Para não aumentar os custos do atraso, pedimos que regularize o quanto antes.';
+  const verb = i.count === 1 ? 'consta' : 'constam';
+  const head = `Caro irmão ${i.memberName}, ${verb} ${countLabel(i.count)} na Tesouraria da ${i.lodgeName}, somando ${brl(i.total)} (a mais antiga vencida há ${days}).`;
+  const ask = i.art002Enabled
+    ? `Para não aumentar os custos do atraso e evitar o enquadramento na ${LAW_002}, pedimos que regularize essa situação o quanto antes.`
+    : 'Para não aumentar os custos do atraso, pedimos que regularize essa situação o quanto antes.';
   const pay = i.portalUrl
-    ? `Pague pelo portal: ${i.portalUrl} ou fale com o Tesoureiro para parcelar.`
+    ? `Pague pelo portal: ${i.portalUrl} ou fale comigo para parcelar.`
     : i.instructions
-      ? `Como pagar — ${i.instructions.replace(/\n/g, ' | ')}. Se preferir, fale com o Tesoureiro para parcelar.`
-      : 'Procure o Tesoureiro para pagar ou parcelar.';
-  return [head, risk, pay, 'Se já pagou, responda com o comprovante.', OVERDUE_NOTICE_SIGNOFF].join(' ');
+      ? `Como pagar — ${i.instructions.replace(/\n/g, ' | ')}. Se preferir, fale comigo para parcelar.`
+      : 'Fale comigo para pagar ou parcelar.';
+  return [`${head} ${ask}`, pay, 'Se já pagou, responda enviando o comprovante. Fraternalmente, Tesouraria'].join('\n');
 }
