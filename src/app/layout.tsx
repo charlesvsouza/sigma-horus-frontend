@@ -27,12 +27,11 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://sigmahorus.com.br";
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: {
-    default: "Sigma Horus — a tesouraria da sua loja no prumo",
-    template: "%s · Sigma Horus",
+    default: "Sistema para Loja Maçônica: Tesouraria e Pix | Sigma Horus",
+    template: "%s | Sigma Horus",
   },
   description:
-    "Sistema para loja maçônica: tesouraria com Pix e baixa automática, portal do irmão, mensalidades e inadimplência, secretaria, chancelaria e hospitalaria — com prestação de contas pronta e LGPD.",
-  keywords: ["sistema para loja maçônica", "tesouraria de loja maçônica", "gestão de loja maçônica", "mensalidade loja maçônica", "software maçonaria"],
+    "Sistema para loja maçônica: tesouraria com Pix e baixa automática, mensalidades, portal do irmão, secretaria e chancelaria. Teste por 10 dias.",
   applicationName: "Sigma Horus",
   // Verificação do Google Search Console / Bing Webmaster: preencha as variáveis na Vercel (ver divulgacao/SEO.md).
   verification: { google: process.env.GOOGLE_SITE_VERIFICATION || undefined },
@@ -42,15 +41,15 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     url: APP_URL,
     siteName: "Sigma Horus",
-    title: "Sigma Horus — a tesouraria da sua loja no prumo",
+    title: "Sistema para Loja Maçônica: Tesouraria e Pix | Sigma Horus",
     description:
-      "Tesouraria, secretaria, chancelaria e hospitalaria — a loja maçônica inteira, em uma só plataforma segura.",
+      "Tesouraria com Pix e baixa automática, mensalidades, portal do irmão, secretaria e chancelaria da loja maçônica em uma só plataforma. Teste por 10 dias.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sigma Horus — a tesouraria da sua loja no prumo",
+    title: "Sistema para Loja Maçônica: Tesouraria e Pix | Sigma Horus",
     description:
-      "Gestão financeira e administrativa para lojas maçônicas, com a precisão de quem presta contas.",
+      "Tesouraria com Pix e baixa automática, mensalidades, portal do irmão, secretaria e chancelaria da loja maçônica. Teste por 10 dias.",
   },
 };
 

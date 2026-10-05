@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
@@ -9,6 +10,9 @@ import { subscriptionAccess } from '@/lib/subscription-access';
 import { summarizeBlock } from '@/lib/member-block-server';
 import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import DashboardShell from './DashboardShell';
+
+// Área logada: fora do índice dos buscadores (noindex; NÃO bloquear no robots.txt, senão o Google não lê o noindex).
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 interface NavEntry { href: string; label: string; roles: string[]; /** Se informado, o item aparece só para quem tem esta permissão (matriz de Permissões), em vez da lista fixa de papéis. */ resource?: Resource;
   /** Aparece se o usuário tem LEITURA em qualquer um destes recursos (inclui papéis por cargo, ex.: Arquiteto). */

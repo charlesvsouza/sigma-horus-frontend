@@ -81,6 +81,7 @@ export default function Home() {
           alt=""
           fill
           priority
+          quality={60}
           sizes="100vw"
           className="object-cover object-[50%_55%]"
         />
@@ -115,24 +116,24 @@ export default function Home() {
           <div className="max-w-2xl">
             <Image
               src="/sigmahorus_ouro.png"
-              alt=""
-              aria-hidden="true"
+              alt="Sigma Horus"
               width={1024}
               height={1024}
               priority
               className="animate-rise h-28 w-auto drop-shadow-[0_6px_30px_rgba(0,0,0,0.55)] sm:h-36"
             />
-            <p className="animate-rise mt-8 font-display text-xs tracking-[0.42em] text-gold" style={{ animationDelay: '120ms' }}>
+            {/* H1 único da página (palavra-chave); o slogan abaixo mantém o estilo visual de antes. */}
+            <h1 className="animate-rise mt-8 font-display text-xs font-normal tracking-[0.42em] text-gold" style={{ animationDelay: '120ms' }}>
               GESTÃO DA LOJA MAÇÔNICA
-            </p>
-            <h1
+            </h1>
+            <p
               className="animate-rise mt-5 text-balance font-display text-[clamp(2.7rem,6.4vw,5rem)] font-bold leading-[1.04] text-sand-light"
               style={{ animationDelay: '200ms' }}
             >
               Toda a loja,
               <br />
               <span className="text-gold">no prumo.</span>
-            </h1>
+            </p>
             <p
               className="animate-rise mt-7 max-w-xl text-lg leading-8 text-sand"
               style={{ animationDelay: '300ms' }}
