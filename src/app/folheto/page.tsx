@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import QRCode from 'qrcode';
-import { FOUNDER_PRICE_LOCK_MONTHS, FOUNDER_SLOTS } from '@/lib/founders';
+import { FOUNDER_PRICE_LOCK_MONTHS } from '@/lib/founders';
 import { PrintButton } from './print-button';
 
 // Folheto de uma página (A4) para imprimir ou salvar em PDF: sessões magnas, congressos,
@@ -65,7 +65,7 @@ export default async function Folheto({ searchParams }: { searchParams: Promise<
           <p className="text-[11px] font-semibold tracking-[0.35em] text-[#e2c46f]">OFERTA DE LANÇAMENTO</p>
           <h2 className="mt-1 font-display text-2xl font-bold">Lojas Fundadoras</h2>
           <p className="mt-1 text-[13px] leading-snug text-[#e9e4d8]">
-            As primeiras {FOUNDER_SLOTS} lojas que assinarem mantêm o preço contratado por {FOUNDER_PRICE_LOCK_MONTHS} meses, sem reajuste,
+            As lojas que assinarem durante a oferta de lançamento (vagas limitadas) mantêm o preço contratado por {FOUNDER_PRICE_LOCK_MONTHS} meses, sem reajuste,
             e recebem o selo de Loja Fundadora. Teste de 10 dias (cartão cadastrado no início, cobrado só ao fim).
           </p>
         </section>

@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PlansSection } from '@/components/plans-section';
 import { Reveal } from '@/components/reveal';
-import { FOUNDER_PRICE_LOCK_MONTHS, FOUNDER_SLOTS, countPaidLodges, foundersLeft } from '@/lib/founders';
+import { FOUNDER_PRICE_LOCK_MONTHS, countPaidLodges, founderOfferEnd, foundersDaysLeft, foundersSlotsLeft } from '@/lib/founders';
 import { PLANS, TRIAL_DAYS } from '@/lib/plans';
 import { jsonLdString, landingJsonLd } from '@/lib/seo';
 
@@ -398,11 +398,14 @@ export default function Home() {
   );
 }
 
-/** "Lojas Fundadoras": 30 vagas com preço travado por 24 meses. Contador real (assinaturas pagas). */
+/** "Lojas Fundadoras": preço travado por 24 meses; vagas = dias até o fim do teste da loja de referência (lib/founders). */
 async function FoundersSection() {
-  const paid = await countPaidLodges();
-  const left = paid == null ? null : foundersLeft(paid);
-  if (left === 0) return null; // oferta encerrada: a seção some sozinha
+  const [paid, end] = await Promise.all([countPaidLodges(), founderOfferEnd()]);
+  if (!end) return null; // sem a data do teste da loja de referência (ou teste encerrado): a oferta não é exibida
+  const daysLeft = foundersDaysLeft(end);
+  const left = foundersSlotsLeft(daysLeft, paid ?? 0);
+  if (daysLeft <= 0 || left === 0) return null; // oferta encerrada: a seção some sozinha
+  const endLabel = end.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
   return (
     <section id="fundadoras" className="mx-auto max-w-7xl px-6 pt-8 lg:px-10">
       <Reveal>
@@ -415,7 +418,7 @@ async function FoundersSection() {
               Lojas Fundadoras
             </h2>
             <p className="mt-4 max-w-2xl text-base leading-7 text-sand">
-              As primeiras {FOUNDER_SLOTS} lojas que assinarem um plano mantêm o preço contratado por
+              As lojas que assinarem um plano até <strong className="text-sand-light">{endLabel}</strong>, enquanto houver vagas, mantêm o preço contratado por
               {' '}{FOUNDER_PRICE_LOCK_MONTHS} meses — sem reajuste — e recebem o selo de <strong className="text-sand-light">Loja Fundadora</strong> do Sigma Horus.
             </p>
             <p className="mt-3 text-xs text-sand-dark">
@@ -423,18 +426,12 @@ async function FoundersSection() {
             </p>
           </div>
           <div className="text-center lg:text-right">
-            {/* Contador só depois da primeira assinatura: "30 de 30 restantes" passa a impressão de que ninguém aderiu. */}
-            {left != null && paid != null && paid > 0 ? (
-              <p>
-                <span className="block font-display text-5xl font-bold text-gold">{left}</span>
-                <span className="mt-1 block text-sm text-sand">de {FOUNDER_SLOTS} vagas restantes</span>
-              </p>
-            ) : (
-              <p>
-                <span className="block font-display text-5xl font-bold text-gold">{FOUNDER_SLOTS}</span>
-                <span className="mt-1 block text-sm text-sand">vagas de Loja Fundadora</span>
-              </p>
-            )}
+            {/* Vagas = dias restantes da oferta (uma a menos por dia) menos as assinaturas pagas. */}
+            <p>
+              <span className="block font-display text-5xl font-bold text-gold">{left}</span>
+              <span className="mt-1 block text-sm text-sand">{left === 1 ? 'vaga restante' : 'vagas restantes'}</span>
+              <span className="mt-1 block text-xs text-sand-dark">Oferta até {endLabel}</span>
+            </p>
             <a href="#planos" className="mt-5 inline-flex rounded-full bg-gold px-7 py-3 font-medium text-sigma-blue-deep transition-all duration-300 ease-out hover:bg-gold-light">
               Garantir a vaga da minha loja
             </a>
