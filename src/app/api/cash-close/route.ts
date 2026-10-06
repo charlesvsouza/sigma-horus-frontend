@@ -2,11 +2,13 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { computeCashClose } from '@/lib/cash-close';
 import { NextResponse } from 'next/server';
 
 // PASSO 1 do encerramento: o Tesoureiro gera o fechamento de caixa (snapshot)
 // do período. Calcula o saldo final (closingBalance) a partir do saldo herdado
-// (openingBalance do Term) + entradas (pagamentos) − saídas (contas a pagar).
+// (openingBalance do Term) + entradas − saídas, ambas pelos pagamentos feitos no
+// período (ver lib/cash-close.ts).
 // Ainda NÃO encerra o veneralato — depende da aprovação (Venerável) e do
 // encerramento (Admin).
 export async function POST(request: Request) {
@@ -43,16 +45,16 @@ export async function POST(request: Request) {
       }),
       db.payment.findMany({
         where: { lodgeId: String(lodgeId), paidAt: { gte: term.startDate, lte: periodEnd } },
-        select: { amount: true },
+        select: { amount: true, account: { select: { type: true } } },
       }),
     ]);
 
-    const totalReceivables = accounts.filter((a) => a.type === 'RECEIVABLE').reduce((sum, a) => sum + Number(a.amount ?? 0), 0);
-    const totalPayables = accounts.filter((a) => a.type === 'PAYABLE').reduce((sum, a) => sum + Number(a.amount ?? 0), 0);
-    const totalPayments = payments.reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
-    const netBalance = totalPayments - totalPayables;
     const openingBalance = Number(term.openingBalance ?? 0);
-    const closingBalance = openingBalance + netBalance;
+    const { totalReceivables, totalPayables, totalPayments, netBalance, closingBalance } = computeCashClose({
+      openingBalance,
+      accounts: accounts.map((a) => ({ type: a.type, amount: Number(a.amount ?? 0) })),
+      payments: payments.map((p) => ({ amount: Number(p.amount ?? 0), accountType: p.account?.type })),
+    });
 
     const close = await db.cashClose.create({
       data: { lodgeId: String(lodgeId), termId, totalReceivables, totalPayables, totalPayments, netBalance, openingBalance, closingBalance, notes },

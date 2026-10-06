@@ -431,7 +431,7 @@ export default function VeneralatoPage() {
                               <div className="grid grid-cols-2 gap-1 text-xs text-sand-dark">
                                 <span>Abertura: <span className="text-sand-light">{brl(close.openingBalance)}</span></span>
                                 <span>Entradas: <span className="text-sand-light">{brl(close.totalPayments)}</span></span>
-                                <span>Saídas: <span className="text-sand-light">{brl(close.totalPayables)}</span></span>
+                                <span>Saídas: <span className="text-sand-light">{brl(Math.round((close.totalPayments - close.netBalance) * 100) / 100)}</span></span>
                                 <span>Saldo final: <span className="text-gold">{brl(close.closingBalance)}</span></span>
                               </div>
                               {canClose && !close.approved ? (

@@ -1,5 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { donorDisplayName } from '@/lib/hospitalaria';
+import { remainingAmount, sumMoney } from '@/lib/money';
 import type { AccountReportRowInput } from '@/lib/accounts-report';
 
 export type AccountsReportVariant = 'contas-a-receber' | 'contas-a-pagar' | 'contas-recebidas' | 'contas-pagas';
@@ -36,22 +37,26 @@ export async function loadAccountsReportRows(
         member: { select: { id: true, name: true } },
         counterparty: { select: { id: true, name: true } },
         chartAccount: { select: { name: true, isSolidarity: true } },
+        payments: { select: { amount: true } },
       },
     });
-    return accounts.map((a) => {
+    // Em aberto = saldo restante (pagamento parcial já descontado); conta totalmente paga não aparece.
+    return accounts.flatMap((a) => {
+      const open = remainingAmount(Number(a.amount), sumMoney(a.payments.map((p) => Number(p.amount))));
+      if (open <= 0) return [];
       const isSolidarity = a.chartAccount?.isSolidarity ?? false;
       const personId = a.member?.id ?? a.counterparty?.id ?? null;
       const rawName = a.member?.name ?? a.counterparty?.name ?? a.counterpartyName ?? null;
-      return {
+      return [{
         id: a.id,
         date: a.dueDate,
         personId,
         personName: donorDisplayName(rawName, isSolidarity, role),
         description: a.title,
         category: a.chartAccount?.name ?? null,
-        amount: Number(a.amount),
+        amount: open,
         dueDate: a.dueDate,
-      };
+      }];
     });
   }
 

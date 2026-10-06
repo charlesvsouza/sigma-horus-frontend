@@ -1,5 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
-import { sumMoney } from '@/lib/money';
+import { remainingAmount, sumMoney } from '@/lib/money';
+import { invoiceOpenBalance } from '@/lib/charge-notice';
 import { daysOverdueBR, todayBR } from '@/lib/date-only';
 
 // Art. 002 (regimento): suspensão dos direitos maçônicos do membro inadimplente
@@ -52,7 +53,7 @@ async function findOpenDues(
         dueDate: { lt: todayBR(now) },
         member: memberFilter,
       },
-      select: { memberId: true, amount: true, dueDate: true },
+      select: { memberId: true, amount: true, dueDate: true, payments: { select: { amount: true } } },
     }),
     db.invoice.findMany({
       where: {
@@ -63,13 +64,19 @@ async function findOpenDues(
         account: DUES_ACCOUNT_WHERE,
         member: memberFilter,
       },
-      select: { memberId: true, amount: true, dueDate: true },
+      select: { memberId: true, amount: true, dueDate: true, account: { select: { amount: true, status: true, payments: { select: { amount: true } } } } },
     }),
   ]);
 
-  return [...accounts, ...invoices]
-    .filter((row): row is { memberId: string; amount: number; dueDate: Date } => row.memberId != null)
-    .map((row) => ({ memberId: row.memberId, amount: Number(row.amount), dueDate: row.dueDate }));
+  // Pelo SALDO em aberto (já descontado o pagamento parcial), não pelo valor cheio: quem pagou metade da
+  // mensalidade deve a outra metade — e a multa/juros incide só sobre ela. Quitado por completo sai da lista.
+  const rows: { memberId: string | null; amount: number; dueDate: Date }[] = [
+    ...accounts.map((a) => ({ memberId: a.memberId, amount: remainingAmount(Number(a.amount), sumMoney(a.payments.map((p) => Number(p.amount)))), dueDate: a.dueDate })),
+    ...invoices.map((i) => ({ memberId: i.memberId, amount: invoiceOpenBalance(Number(i.amount), i.account ? { amount: Number(i.account.amount), status: i.account.status, payments: i.account.payments } : null), dueDate: i.dueDate })),
+  ];
+  return rows
+    .filter((row): row is { memberId: string; amount: number; dueDate: Date } => row.memberId != null && row.amount > 0)
+    .map((row) => ({ memberId: row.memberId, amount: row.amount, dueDate: row.dueDate }));
 }
 
 export interface MemberDuesStatus {

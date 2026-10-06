@@ -1229,7 +1229,7 @@ export function ManualBook() {
                   encadeados</strong>, cada um com um responsável — não se pula etapa:
                 </p>
                 <Steps>
-                  <li><strong>1. Fechamento de caixa (Tesoureiro):</strong> abra o período e clique em <UI>Fechar caixa deste período</UI>. O sistema registra o snapshot — saldo de abertura (herdado), entradas, saídas e <strong>saldo final</strong>.</li>
+                  <li><strong>1. Fechamento de caixa (Tesoureiro):</strong> abra o período e clique em <UI>Fechar caixa deste período</UI>. O sistema registra o snapshot — saldo de abertura (herdado), entradas, saídas e <strong>saldo final</strong> (abertura + o que foi recebido − o que foi pago no período; contas a pagar ainda não pagas não reduzem o caixa).</li>
                   <li><strong>2. Prestação de contas (Venerável):</strong> o Venerável revisa e clica em <UI>Aprovar prestação de contas</UI>.</li>
                   <li><strong>3. Encerrar veneralato (Administrador):</strong> só fica disponível <em>após</em> a aprovação. Ao encerrar, os lançamentos do período ficam <strong>travados</strong> e o saldo final é <strong>herdado pela próxima gestão</strong> como saldo de abertura.</li>
                 </Steps>

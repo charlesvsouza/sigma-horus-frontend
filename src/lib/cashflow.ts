@@ -1,4 +1,5 @@
 import type { Prisma } from '@/generated/prisma/client';
+import { remainingAmount, sumMoney } from '@/lib/money';
 
 export interface CashFlowBucket {
   label: string;
@@ -31,7 +32,7 @@ export async function getProjectedCashFlow(
   const [accounts, lastClose] = await Promise.all([
     db.account.findMany({
       where: { lodgeId, status: { not: 'paid' } },
-      select: { type: true, amount: true, dueDate: true },
+      select: { type: true, amount: true, dueDate: true, payments: { select: { amount: true } } },
     }),
     db.cashClose.findFirst({ where: { lodgeId }, orderBy: { closedAt: 'desc' }, select: { closingBalance: true, closedAt: true } }),
   ]);
@@ -42,7 +43,9 @@ export async function getProjectedCashFlow(
   const sums = labels.map(() => ({ receivable: 0, payable: 0 }));
 
   for (const a of accounts) {
-    const amount = Number(a.amount);
+    // Saldo em aberto: o que já foi pago de uma conta parcial não volta a entrar na projeção.
+    const amount = remainingAmount(Number(a.amount), sumMoney(a.payments.map((p) => Number(p.amount))));
+    if (amount <= 0) continue;
     let idx: number;
     if (a.dueDate < edges[0]) idx = 0;
     else if (a.dueDate < edges[1]) idx = 1;
