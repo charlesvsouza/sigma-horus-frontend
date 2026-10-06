@@ -297,7 +297,12 @@ export default function PortalPage() {
     .filter((a) => typeFilter === 'all' || a.type === typeFilter)
     .filter((a) => statusFilter === 'all' || a.effectiveStatus === statusFilter);
   const payableAccounts = accounts.filter((a) => a.payable);
-  const filteredTotal = filteredAccounts.reduce((sum, a) => sum + (a.type === 'RECEIVABLE' ? Number(a.amount) : -Number(a.amount)), 0);
+  // Em aberto (saldo restante, já descontados pagamentos parciais) e liquidado (valor cheio) nunca se somam.
+  const signed = (a: AccountItem, value: number) => (a.type === 'RECEIVABLE' ? value : -value);
+  const openFiltered = filteredAccounts.filter((a) => a.effectiveStatus !== 'paid');
+  const doneFiltered = filteredAccounts.filter((a) => a.effectiveStatus === 'paid');
+  const filteredOpenTotal = Math.round(openFiltered.reduce((sum, a) => sum + signed(a, Number(a.balance)), 0) * 100) / 100;
+  const filteredDoneTotal = Math.round(doneFiltered.reduce((sum, a) => sum + signed(a, Number(a.amount)), 0) * 100) / 100;
 
   async function load() {
     setLoadError('');
@@ -681,9 +686,15 @@ export default function PortalPage() {
               </tr>
             ))}
             <tr className="rpt-total">
-              <td colSpan={5}>Saldo do filtro (débitos − créditos)</td>
-              <td className="num">{brl(filteredTotal)}</td>
+              <td colSpan={5}>Em aberto (débitos − créditos) — {openFiltered.length} lançamento(s)</td>
+              <td className="num">{brl(filteredOpenTotal)}</td>
             </tr>
+            {doneFiltered.length > 0 ? (
+              <tr className="rpt-total">
+                <td colSpan={5}>Liquidado (débitos − créditos) — {doneFiltered.length} lançamento(s)</td>
+                <td className="num">{brl(filteredDoneTotal)}</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
         <p className="mt-4 text-xs text-sand-dark">Documento informativo, gerado pelo próprio {isCandidate ? 'candidato' : 'irmão'} no portal. Não substitui o recibo de pagamento emitido pela Tesouraria.</p>

@@ -14,16 +14,18 @@ interface Row {
   type: string;
   category: string | null;
   planned: number;
+  launched: number;
   realized: number;
   variance: number;
 }
 
-const sum = (rows: Row[], key: 'planned' | 'realized') => rows.reduce((s, r) => s + r[key], 0);
+const sum = (rows: Row[], key: 'planned' | 'launched' | 'realized') => rows.reduce((s, r) => s + r[key], 0);
 const pctExecuted = (planned: number, realized: number) => (planned > 0 ? `${((realized / planned) * 100).toFixed(1).replace('.', ',')}%` : '—');
 
 // Versão do documento (papel): sem a célula editável nem a barra de progresso.
 function PrintGroup({ title, rows }: { title: string; rows: Row[] }) {
   const planned = sum(rows, 'planned');
+  const launched = sum(rows, 'launched');
   const realized = sum(rows, 'realized');
   return (
     <div className="mt-4">
@@ -33,9 +35,10 @@ function PrintGroup({ title, rows }: { title: string; rows: Row[] }) {
           <tr>
             <th className="text-left">Categoria</th>
             <th className="num">Orçado</th>
-            <th className="num">Realizado</th>
+            <th className="num">Lançado</th>
+            <th className="num">Liquidado</th>
             <th className="num">Diferença</th>
-            <th className="num">% executado</th>
+            <th className="num">% liquidado</th>
           </tr>
         </thead>
         <tbody>
@@ -43,6 +46,7 @@ function PrintGroup({ title, rows }: { title: string; rows: Row[] }) {
             <tr key={r.chartAccountId}>
               <td>{r.code} — {r.name}</td>
               <td className="num">{brl(r.planned)}</td>
+              <td className="num">{brl(r.launched)}</td>
               <td className="num">{brl(r.realized)}</td>
               <td className="num">{brl(r.variance)}</td>
               <td className="num">{pctExecuted(r.planned, r.realized)}</td>
@@ -51,6 +55,7 @@ function PrintGroup({ title, rows }: { title: string; rows: Row[] }) {
           <tr className="rpt-total">
             <td>Total de {title.toLowerCase()}</td>
             <td className="num">{brl(planned)}</td>
+            <td className="num">{brl(launched)}</td>
             <td className="num">{brl(realized)}</td>
             <td className="num">{brl(realized - planned)}</td>
             <td className="num">{pctExecuted(planned, realized)}</td>
@@ -100,7 +105,8 @@ function Group({ title, rows, canEdit, onSave }: { title: string; rows: Row[]; c
             <tr className="text-left text-xs uppercase tracking-wide text-sand-dark/70">
               <th className="border-b border-white/10 px-2 py-2">Categoria</th>
               <th className="border-b border-white/10 px-2 py-2 text-right">Orçado</th>
-              <th className="border-b border-white/10 px-2 py-2 text-right">Realizado</th>
+              <th className="border-b border-white/10 px-2 py-2 text-right">Lançado</th>
+              <th className="border-b border-white/10 px-2 py-2 text-right">Liquidado</th>
               <th className="border-b border-white/10 px-2 py-2 text-right">Diferença</th>
               <th className="border-b border-white/10 px-2 py-2">Progresso</th>
             </tr>
@@ -115,6 +121,7 @@ function Group({ title, rows, canEdit, onSave }: { title: string; rows: Row[]; c
                   <td className="border-b border-white/5 px-2 py-2 text-right">
                     <EditableCell value={r.planned} disabled={!canEdit} onSave={(v) => onSave(r.chartAccountId, v)} />
                   </td>
+                  <td className="border-b border-white/5 px-2 py-2 text-right tabular-nums text-sand-dark">{brl(r.launched)}</td>
                   <td className="border-b border-white/5 px-2 py-2 text-right tabular-nums text-sand">{brl(r.realized)}</td>
                   <td className={`border-b border-white/5 px-2 py-2 text-right tabular-nums ${over ? 'text-rose-300' : 'text-sand-dark'}`}>{brl(r.variance)}</td>
                   <td className="border-b border-white/5 px-2 py-2">
@@ -128,6 +135,7 @@ function Group({ title, rows, canEdit, onSave }: { title: string; rows: Row[]; c
             <tr>
               <td className="px-2 py-2 text-xs font-semibold uppercase tracking-wide text-sand-dark">Total</td>
               <td className="px-2 py-2 text-right text-sm font-semibold text-sand-light">{brl(sum(rows, 'planned'))}</td>
+              <td className="px-2 py-2 text-right text-sm font-semibold text-sand-dark">{brl(sum(rows, 'launched'))}</td>
               <td className="px-2 py-2 text-right text-sm font-semibold text-sand-light">{brl(sum(rows, 'realized'))}</td>
               <td className="px-2 py-2" colSpan={2} />
             </tr>
@@ -170,15 +178,16 @@ export default function OrcamentoClient({
   const revenues = items.filter((i) => i.type === 'REVENUE');
   const expenses = items.filter((i) => i.type === 'EXPENSE');
   const netPlanned = sum(revenues, 'planned') - sum(expenses, 'planned');
+  const netLaunched = sum(revenues, 'launched') - sum(expenses, 'launched');
   const netRealized = sum(revenues, 'realized') - sum(expenses, 'realized');
 
   function csvRows(): unknown[][] {
-    const out: unknown[][] = [['Grupo', 'Código', 'Categoria', 'Orçado', 'Realizado', 'Diferença']];
+    const out: unknown[][] = [['Grupo', 'Código', 'Categoria', 'Orçado', 'Lançado', 'Liquidado', 'Diferença (liquidado − orçado)']];
     for (const [group, rows] of [['Receitas', revenues], ['Despesas', expenses]] as const) {
-      for (const r of rows) out.push([group, r.code, r.name, csvNumber(r.planned), csvNumber(r.realized), csvNumber(r.variance)]);
-      out.push([`Total de ${group.toLowerCase()}`, '', '', csvNumber(sum(rows, 'planned')), csvNumber(sum(rows, 'realized')), csvNumber(sum(rows, 'realized') - sum(rows, 'planned'))]);
+      for (const r of rows) out.push([group, r.code, r.name, csvNumber(r.planned), csvNumber(r.launched), csvNumber(r.realized), csvNumber(r.variance)]);
+      out.push([`Total de ${group.toLowerCase()}`, '', '', csvNumber(sum(rows, 'planned')), csvNumber(sum(rows, 'launched')), csvNumber(sum(rows, 'realized')), csvNumber(sum(rows, 'realized') - sum(rows, 'planned'))]);
     }
-    out.push(['Resultado (receitas − despesas)', '', '', csvNumber(netPlanned), csvNumber(netRealized), csvNumber(netRealized - netPlanned)]);
+    out.push(['Resultado (receitas − despesas)', '', '', csvNumber(netPlanned), csvNumber(netLaunched), csvNumber(netRealized), csvNumber(netRealized - netPlanned)]);
     return out;
   }
 
@@ -189,7 +198,7 @@ export default function OrcamentoClient({
           <div>
             <h1 className="font-display text-2xl font-bold text-sand-light">Orçamento anual</h1>
             <p className="mt-1 text-sm text-sand-dark">
-              Defina a meta por categoria do plano de contas e acompanhe o realizado ao longo do ano.
+              Defina a meta por categoria do plano de contas e acompanhe o lançado e o liquidado ao longo do ano.
               {canEdit ? ' Clique num valor orçado para editar.' : ''}
             </p>
           </div>
@@ -212,8 +221,8 @@ export default function OrcamentoClient({
           printOnly
           lodgeName={lodgeName}
           crestUrl={crestUrl}
-          title={`Orçamento anual ${year} — orçado × realizado`}
-          details={[`Exercício de 01/01/${year} a 31/12/${year}`, 'realizado = lançamentos com vencimento no ano, pagos ou em aberto']}
+          title={`Orçamento anual ${year} — orçado × liquidado`}
+          details={[`Exercício de 01/01/${year} a 31/12/${year}`, 'lançado = contas com vencimento no ano, pagas ou em aberto; liquidado = o que já foi pago/recebido delas']}
           issuedBy={issuedBy}
         >
           <PrintGroup title="Receitas" rows={revenues} />
@@ -223,6 +232,7 @@ export default function OrcamentoClient({
               <tr className="rpt-total">
                 <td>Resultado (receitas − despesas)</td>
                 <td className="num">{brl(netPlanned)}</td>
+                <td className="num">{brl(netLaunched)}</td>
                 <td className="num">{brl(netRealized)}</td>
                 <td className="num">{brl(netRealized - netPlanned)}</td>
                 <td className="num" />

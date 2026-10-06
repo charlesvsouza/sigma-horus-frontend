@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react';
 import { inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import {
-  AGING_BUCKETS, EMPTY_FILTERS, PERIOD_PRESETS, QUICK_VIEWS, agingFacets, isDefaultFilters, lineValue, situationFacets,
-  type Filters, type FilterAccount, type Situation, type SortKey,
+  AGING_BUCKETS, EMPTY_FILTERS, PERIOD_PRESETS, QUICK_VIEWS, agingFacets, isDefaultFilters, situationFacets, totalsOf,
+  type Filters, type FilterAccount, type Situation, type SortKey, type Totals,
 } from '@/lib/accounts-filter';
 import { formatDateOnly } from '@/lib/date-only';
 
@@ -220,17 +220,18 @@ export default function AccountsFilterBar({
   );
 }
 
-/** Resumo do que o filtro mostra: quantidade e valor por tipo. */
+/** Resumo do que o filtro mostra: quantidade e valor por tipo, com o que está em aberto separado do já liquidado. */
 export function FilterSummary({ rows }: { rows: FilterAccount[] }) {
-  const sum = (type: string) => rows.filter((r) => r.type === type).reduce((s, r) => s + lineValue(r), 0);
-  const rec = sum('RECEIVABLE');
-  const pay = sum('PAYABLE');
+  const t = totalsOf(rows);
+  const part = (label: string, x: Totals, tone: string) => (x.count > 0 ? <> · {label} <strong className={`tabular-nums ${tone}`}>{brl(x.value)}</strong> ({x.count})</> : null);
   return (
     <p className="text-xs text-sand-dark" aria-live="polite">
       <strong className="tabular-nums text-sand-light">{rows.length}</strong> lançamento{rows.length === 1 ? '' : 's'}
-      {rec > 0 ? <> · a receber <strong className="tabular-nums text-emerald-300">{brl(rec)}</strong></> : null}
-      {pay > 0 ? <> · a pagar <strong className="tabular-nums text-rose-300">{brl(pay)}</strong></> : null}
-      {rec > 0 && pay > 0 ? <> · saldo <strong className="tabular-nums text-sand-light">{brl(Math.round((rec - pay) * 100) / 100)}</strong></> : null}
+      {part('a receber em aberto', t.receivableOpen, 'text-emerald-300')}
+      {part('recebido', t.receivableDone, 'text-sand-light')}
+      {part('a pagar em aberto', t.payableOpen, 'text-rose-300')}
+      {part('pago', t.payableDone, 'text-sand-light')}
+      {t.receivableOpen.value > 0 && t.payableOpen.value > 0 ? <> · saldo em aberto <strong className="tabular-nums text-sand-light">{brl(Math.round((t.receivableOpen.value - t.payableOpen.value) * 100) / 100)}</strong></> : null}
     </p>
   );
 }

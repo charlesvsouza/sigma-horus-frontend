@@ -74,6 +74,30 @@ export function lineValue(a: Pick<FilterAccount, 'amount' | 'paid' | 'status'>):
   return Math.max(0, cents(a.amount) - cents(a.paid)) / 100;
 }
 
+export interface Totals { value: number; count: number }
+export interface AccountTotals {
+  receivableOpen: Totals;
+  receivableDone: Totals;
+  payableOpen: Totals;
+  payableDone: Totals;
+}
+
+/** Totais por tipo separando o que está em aberto (saldo restante) do já liquidado: nunca se somam entre si. */
+export function totalsOf(rows: Pick<FilterAccount, 'type' | 'amount' | 'paid' | 'status'>[]): AccountTotals {
+  const out: AccountTotals = {
+    receivableOpen: { value: 0, count: 0 }, receivableDone: { value: 0, count: 0 },
+    payableOpen: { value: 0, count: 0 }, payableDone: { value: 0, count: 0 },
+  };
+  for (const r of rows) {
+    const done = r.status === 'paid';
+    const t = r.type === 'RECEIVABLE' ? (done ? out.receivableDone : out.receivableOpen) : (done ? out.payableDone : out.payableOpen);
+    t.value += lineValue(r);
+    t.count++;
+  }
+  for (const t of [out.receivableOpen, out.receivableDone, out.payableOpen, out.payableDone]) t.value = Math.round(t.value * 100) / 100;
+  return out;
+}
+
 type Ignore = 'sit' | 'days';
 
 function matches(a: FilterAccount, f: Filters, today: Date, ignore: Ignore[] = []): boolean {

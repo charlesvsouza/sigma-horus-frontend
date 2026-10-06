@@ -7,6 +7,7 @@ import { BotaoExportar } from '../exportar';
 import { INVOICE_STATUS_LABEL } from '@/lib/status-labels';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
+import { round2 } from '@/lib/money';
 
 function parseDate(value: string | undefined): Date | undefined {
   if (!value) return undefined;
@@ -53,25 +54,30 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
   // Somas e contagens no banco (não traz todas as linhas para o servidor: com 30 mil lançamentos eram 10 s) —
   // os números são os mesmos de antes; só as 6 linhas de "Próximos vencimentos" e de "Últimos registros" são lidas.
   const openWhere = { ...accountWhere, status: { not: 'paid' } } satisfies Prisma.AccountWhereInput;
-  const [totalsByType, openByType, upcomingRows, paymentTotal, payments, invoices] = await withTenant(String(lodgeId), (db) =>
+  // "A receber"/"A pagar" = o que ainda falta (valor das contas em aberto menos o que já foi pago delas); o já
+  // liquidado não entra. Entradas e saídas de caixa vêm dos pagamentos, separados pelo tipo da conta.
+  const [openAmounts, openByType, upcomingRows, paidOnOpen, cashIn, cashOut, payments, invoices] = await withTenant(String(lodgeId), (db) =>
     Promise.all([
-      db.account.groupBy({ by: ['type'], where: accountWhere, _sum: { amount: true } }),
+      db.account.groupBy({ by: ['type'], where: openWhere, _sum: { amount: true } }),
       db.account.groupBy({ by: ['type'], where: openWhere, _count: { _all: true } }),
       db.account.findMany({ where: openWhere, select: { id: true, title: true, type: true, dueDate: true }, orderBy: { dueDate: 'asc' }, take: 6 }),
-      db.payment.aggregate({ where: paymentWhere, _sum: { amount: true } }),
+      Promise.all(['RECEIVABLE', 'PAYABLE'].map((type) => db.payment.aggregate({ where: { lodgeId: String(lodgeId), account: { ...openWhere, type } }, _sum: { amount: true } }))),
+      db.payment.aggregate({ where: { ...paymentWhere, account: { type: 'RECEIVABLE' } }, _sum: { amount: true } }),
+      db.payment.aggregate({ where: { ...paymentWhere, account: { type: 'PAYABLE' } }, _sum: { amount: true } }),
       db.payment.findMany({ where: paymentWhere, select: { id: true, amount: true, paidAt: true, method: true }, orderBy: { paidAt: 'desc' }, take: 6 }),
       db.invoice.findMany({ where: invoiceWhere, select: { id: true, number: true, amount: true, dueDate: true, status: true }, orderBy: { dueDate: 'asc' }, take: 6 }),
     ]),
   );
 
-  const sumOf = (type: string) => Number(totalsByType.find((t) => t.type === type)?._sum.amount ?? 0);
+  const openOf = (type: string, i: number) => round2(Number(openAmounts.find((t) => t.type === type)?._sum.amount ?? 0) - Number(paidOnOpen[i]._sum.amount ?? 0));
   const countOf = (type: string) => openByType.find((t) => t.type === type)?._count._all ?? 0;
-  const totalReceivables = sumOf('RECEIVABLE');
-  const totalPayables = sumOf('PAYABLE');
+  const totalReceivables = Math.max(0, openOf('RECEIVABLE', 0));
+  const totalPayables = Math.max(0, openOf('PAYABLE', 1));
   const openReceivables = { length: countOf('RECEIVABLE') };
   const openPayables = { length: countOf('PAYABLE') };
-  const totalPayments = Number(paymentTotal._sum.amount ?? 0);
-  const netFlow = totalPayments - totalPayables;
+  const totalReceived = Number(cashIn._sum.amount ?? 0);
+  const totalPaidOut = Number(cashOut._sum.amount ?? 0);
+  const netFlow = round2(totalReceived - totalPaidOut);
   const upcoming = upcomingRows;
 
   return (
@@ -89,19 +95,20 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
-            <p className="text-sm text-sand-dark">A receber</p>
+            <p className="text-sm text-sand-dark">A receber (em aberto)</p>
             <p className="mt-3 text-2xl font-semibold text-emerald-300">{brl(totalReceivables)}</p>
           </div>
           <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
-            <p className="text-sm text-sand-dark">A pagar</p>
+            <p className="text-sm text-sand-dark">A pagar (em aberto)</p>
             <p className="mt-3 text-2xl font-semibold text-rose-300">{brl(totalPayables)}</p>
           </div>
           <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
-            <p className="text-sm text-sand-dark">Pagamentos registrados</p>
-            <p className="mt-3 text-2xl font-semibold text-gold">{brl(totalPayments)}</p>
+            <p className="text-sm text-sand-dark">Recebido no período</p>
+            <p className="mt-3 text-2xl font-semibold text-gold">{brl(totalReceived)}</p>
+            <p className="mt-1 text-xs text-sand-dark">Pago no período: {brl(totalPaidOut)}</p>
           </div>
           <div className="rounded-xl border border-white/6 bg-sigma-card p-5">
-            <p className="text-sm text-sand-dark">Fluxo líquido</p>
+            <p className="text-sm text-sand-dark">Fluxo líquido (recebido − pago)</p>
             <p className={`mt-3 text-2xl font-semibold ${netFlow >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{brl(netFlow)}</p>
           </div>
         </section>

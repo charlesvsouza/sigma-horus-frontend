@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   AGING_BUCKETS, EMPTY_FILTERS, QUICK_VIEWS, agingFacets, applyFilters, daysLate, describeFilters, isDefaultFilters, reportTitleFor, lineValue, parseFilters, serializeFilters,
-  situationFacets, situationOf, type FilterAccount, type Filters,
+  situationFacets, situationOf, totalsOf, type FilterAccount, type Filters,
 } from './accounts-filter.ts';
 
 const TODAY = new Date('2026-10-05T00:00:00.000Z');
@@ -124,4 +124,18 @@ test('descrição dos filtros para o cabeçalho do relatório', () => {
   ]);
   assert.equal(reportTitleFor('PAYABLE'), 'Contas a pagar');
   assert.equal(reportTitleFor('all'), 'Contas a receber e a pagar');
+});
+
+test('totalsOf separa o em aberto (saldo restante) do já liquidado', () => {
+  const t = totalsOf([
+    acc({ id: '1', dueDate: '2026-09-01T00:00:00.000Z', amount: 100 }),
+    acc({ id: '2', dueDate: '2026-09-01T00:00:00.000Z', amount: 100, paid: 40 }),
+    acc({ id: '3', dueDate: '2026-09-01T00:00:00.000Z', amount: 124289.94, paid: 124289.94, status: 'paid' }),
+    acc({ id: '4', dueDate: '2026-09-01T00:00:00.000Z', type: 'PAYABLE', amount: 30 }),
+    acc({ id: '5', dueDate: '2026-09-01T00:00:00.000Z', type: 'PAYABLE', amount: 20, paid: 20, status: 'paid' }),
+  ]);
+  assert.deepEqual(t.receivableOpen, { value: 160, count: 2 });
+  assert.deepEqual(t.receivableDone, { value: 124289.94, count: 1 });
+  assert.deepEqual(t.payableOpen, { value: 30, count: 1 });
+  assert.deepEqual(t.payableDone, { value: 20, count: 1 });
 });

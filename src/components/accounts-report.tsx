@@ -5,7 +5,7 @@ import { ReportActions, ReportDocument } from '@/components/report/report-docume
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
 import { csvNumber } from '@/lib/csv';
-import { daysLate, lineValue, reportTitleFor, situationOf, type Filters, type FilterAccount } from '@/lib/accounts-filter';
+import { daysLate, lineValue, reportTitleFor, situationOf, totalsOf, type Filters, type FilterAccount } from '@/lib/accounts-filter';
 
 // Relatório da lista de Contas: imprime (PDF) ou exporta CSV exatamente o que está filtrado na tela. Substitui os relatórios
 // separados "Contas a receber" e "Contas a pagar" (decisão do dono, 2026-10-04: uma tela só, com filtro).
@@ -33,16 +33,29 @@ export default function AccountsReport({
   const groups = grouped
     ? [...rows.reduce((m, r) => { const k = r.personName ?? 'Sem vínculo'; m.set(k, [...(m.get(k) ?? []), r]); return m; }, new Map<string, FilterAccount[]>())]
     : null;
-  const sum = (list: FilterAccount[], type?: string) => Math.round(list.filter((r) => !type || r.type === type).reduce((s, r) => s + lineValue(r), 0) * 100) / 100;
-  const receivable = sum(rows, 'RECEIVABLE');
-  const payable = sum(rows, 'PAYABLE');
-  const mixed = receivable > 0 && payable > 0;
+  // Em aberto e liquidado nunca se somam: o total "a receber" é só o que ainda falta receber.
+  const t = totalsOf(rows);
+  const mixed = t.receivableOpen.count + t.receivableDone.count > 0 && t.payableOpen.count + t.payableDone.count > 0;
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const openNet = (x: ReturnType<typeof totalsOf>) => round2(x.receivableOpen.value - x.payableOpen.value);
+  const doneNet = (x: ReturnType<typeof totalsOf>) => round2(x.receivableDone.value - x.payableDone.value);
+  // Subtotal do grupo: o que está em aberto (com sinal, se houver os dois tipos) e o já liquidado.
+  const groupOpen = (x: ReturnType<typeof totalsOf>) => (mixed ? openNet(x) : round2(x.receivableOpen.value + x.payableOpen.value));
+  const groupDone = (x: ReturnType<typeof totalsOf>) => (mixed ? doneNet(x) : round2(x.receivableDone.value + x.payableDone.value));
+
+  const totalLines: [string, number][] = [
+    ...(t.receivableOpen.count > 0 ? [['Total a receber em aberto', t.receivableOpen.value] as [string, number]] : []),
+    ...(t.receivableDone.count > 0 ? [['Total recebido', t.receivableDone.value] as [string, number]] : []),
+    ...(t.payableOpen.count > 0 ? [['Total a pagar em aberto', t.payableOpen.value] as [string, number]] : []),
+    ...(t.payableDone.count > 0 ? [['Total pago', t.payableDone.value] as [string, number]] : []),
+    ...(mixed && t.receivableOpen.value + t.payableOpen.value > 0 ? [['Saldo em aberto (a receber − a pagar)', openNet(t)] as [string, number]] : []),
+  ];
 
   const csvLine = (r: FilterAccount) => [formatDateOnly(r.dueDate), r.personName ?? '', r.title, r.chartName ?? '', r.type === 'RECEIVABLE' ? 'A receber' : 'A pagar', situationText(r, today), csvNumber(lineValue(r))];
   const csvRows: unknown[][] = [
     ['Vencimento', 'Pessoa', 'Título', 'Categoria', 'Tipo', 'Situação', 'Valor'],
-    ...(groups ? groups.flatMap(([name, list]) => [...list.map(csvLine), ['', '', '', '', '', `Subtotal — ${name}`, csvNumber(sum(list))]]) : rows.map(csvLine)),
-    ['Total', '', '', '', '', '', csvNumber(mixed ? receivable - payable : receivable + payable)],
+    ...(groups ? groups.flatMap(([name, list]) => [...list.map(csvLine), ['', '', '', '', '', `Subtotal em aberto — ${name}`, csvNumber(groupOpen(totalsOf(list)))], ['', '', '', '', '', `Subtotal liquidado — ${name}`, csvNumber(groupDone(totalsOf(list)))]]) : rows.map(csvLine)),
+    ...totalLines.map(([label, value]) => ['', '', '', '', '', label, csvNumber(value)]),
   ];
 
   const renderRow = (r: FilterAccount) => (
@@ -82,21 +95,15 @@ export default function AccountsReport({
                         <tr className="rpt-group"><td colSpan={6} className="border-b border-gold/25 px-2 pb-1.5 pt-5 text-xs font-semibold uppercase tracking-[0.12em] text-gold/90">{name}</td></tr>
                         {list.map(renderRow)}
                         <tr className="rpt-subtotal">
-                          <td colSpan={5} className="px-2 py-2 text-right text-xs text-sand-dark">Subtotal — {name} · {list.length} lançamento{list.length === 1 ? '' : 's'}</td>
-                          <td className="px-2 py-2 text-right num tabular-nums font-medium text-sand-light">{brl(sum(list))}</td>
+                          <td colSpan={5} className="px-2 py-2 text-right text-xs text-sand-dark">Subtotal em aberto — {name} · {list.length} lançamento{list.length === 1 ? '' : 's'}{groupDone(totalsOf(list)) !== 0 ? ` · liquidado ${brl(groupDone(totalsOf(list)))}` : ''}</td>
+                          <td className="px-2 py-2 text-right num tabular-nums font-medium text-sand-light">{brl(groupOpen(totalsOf(list)))}</td>
                         </tr>
                       </Fragment>
                     ))
                   : rows.map(renderRow)}
-                {mixed ? (
-                  <>
-                    <tr className="rpt-total"><td colSpan={5} className="px-2 py-2">Total a receber</td><td className="px-2 py-2 text-right num">{brl(receivable)}</td></tr>
-                    <tr className="rpt-total"><td colSpan={5} className="px-2 py-2">Total a pagar</td><td className="px-2 py-2 text-right num">{brl(payable)}</td></tr>
-                    <tr className="rpt-total"><td colSpan={5} className="px-2 py-2">Saldo (a receber − a pagar) — {rows.length} lançamentos</td><td className="px-2 py-2 text-right num">{brl(Math.round((receivable - payable) * 100) / 100)}</td></tr>
-                  </>
-                ) : (
-                  <tr className="rpt-total"><td colSpan={5} className="px-2 py-2">Total — {rows.length} lançamento{rows.length === 1 ? '' : 's'}</td><td className="px-2 py-2 text-right num">{brl(receivable + payable)}</td></tr>
-                )}
+                {totalLines.map(([label, value]) => (
+                  <tr key={label} className="rpt-total"><td colSpan={5} className="px-2 py-2">{label}</td><td className="px-2 py-2 text-right num">{brl(value)}</td></tr>
+                ))}
               </tbody>
             </table>
           </div>
