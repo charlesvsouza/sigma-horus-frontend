@@ -82,6 +82,12 @@ async function sendEmail(to: string, subject: string, body: string, branding?: {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
   if (!key || !from) return { status: 'queued', detail: 'E-mail não configurado na plataforma.' };
+  // Cadastro com espaço, vírgula/“;” ou sem “@” faz o Resend recusar com 422 (e vira alerta de erro de plataforma):
+  // normaliza e, se ainda for inválido, registra a falha por irmão sem chamar o provedor.
+  to = to.trim().replace(/[;,].*$/, '').trim();
+  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]{2,}$/.test(to)) {
+    return { status: 'failed', detail: 'E-mail do cadastro inválido — corrija o e-mail deste irmão.' };
+  }
   try {
     const html = buildEmailHtml(body, branding, innerHtml);
     const res = await fetch('https://api.resend.com/emails', {
