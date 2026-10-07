@@ -1,5 +1,4 @@
 import { auth } from '@/lib/auth';
-import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { todayBR } from '@/lib/date-only';
 import { withTenant } from '@/lib/prisma';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
@@ -20,7 +19,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(String(body?.date ?? '')) ? String(body.date) : todayBR().toISOString().slice(0, 10);
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime()) || date.getTime() > todayBR().getTime()) return NextResponse.json({ error: 'A data do recebimento não pode ser futura.' }, { status: 400 });
-  const paidAt = dateStr === todayBR().toISOString().slice(0, 10) ? new Date() : parseBRDateTimeLocal(`${dateStr}T12:00:00`);
+  const paidAt = date; // dia contábil (só dia), não o instante
   const result = await withTenant(String(lodgeId), (db) =>
     confirmTronco(db, String(lodgeId), id, { id: String(session.user.id), name: String(session.user.name ?? 'Usuário'), role: session.user.role }, { bankAccountId, date, paidAt }),
   );

@@ -16,6 +16,7 @@ import { skipPendingOccurrences } from '@/lib/recurring-rules';
 import { cancelAsaasCharges } from '@/lib/asaas-manual';
 import { releaseAsaasCharges } from '@/lib/renegotiation';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import { autoSignReceipt } from '@/lib/receipt-signature-server';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 
@@ -265,6 +266,8 @@ export async function applyAgreementPayment(
 
     const locked = await findClosedTermForDate(db, lodgeId, input.paidAt);
     if (locked) return { ok: false, status: 409, error: `Período encerrado (${locked.title}). Não é possível baixar pagamento dentro de um veneralato já fechado.` };
+    const ledger = await checkLedgerOpen(db, lodgeId, [input.paidAt], { userId: actorId, what: 'agreement-payment' });
+    if (!ledger.ok) return { ok: false, status: 409, error: ledger.error };
     const bank = await db.financialAccount.findFirst({ where: { id: input.bankAccountId, lodgeId, active: true }, select: { id: true } });
     if (!bank) return { ok: false, status: 400, error: 'Conta bancária/caixa inválida ou inativa.' };
 

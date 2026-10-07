@@ -3,10 +3,12 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import { syncMemberBlock } from '@/lib/member-block-sync';
 import { coversAmount } from '@/lib/money';
 import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
 import { lateChargeMarker, mainPaymentIdFromMarker } from '@/lib/late-charge';
+import { editPayment, type PaymentPatch } from '@/lib/payment-edit-server';
 import { NextResponse } from 'next/server';
 
 // Estorno/exclusão de um pagamento lançado errado. Recalcula o status da
@@ -29,6 +31,8 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     const locked = await findClosedTermForDate(db, String(lodgeId), payment.paidAt);
     if (locked) return { error: 'locked' as const, term: locked };
+    const ledger = await checkLedgerOpen(db, String(lodgeId), [payment.paidAt], { userId: session.user.id, what: 'payment.delete' });
+    if (!ledger.ok) return { error: 'ledger' as const, message: ledger.error };
 
     // Antes de apagar: se este pagamento estava conciliado com uma linha de
     // extrato bancário, o FK cai pra null sozinho (onDelete: SetNull), mas o
@@ -104,6 +108,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   });
 
   if ('error' in result) {
+    if (result.error === 'ledger') return NextResponse.json({ error: result.message, code: 'LEDGER_LOCKED' }, { status: 409 });
     if (result.error === 'notfound') return NextResponse.json({ error: 'Pagamento não encontrado.' }, { status: 404 });
     if (result.error === 'locked') {
       return NextResponse.json(
@@ -114,4 +119,39 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   }
 
   return NextResponse.json({ success: true });
+}
+
+// Corrige um pagamento já lançado (valor, data, conta bancária/caixa, observação). Antes só dava para
+// estornar e lançar de novo; corrigir só o lançamento deixava o extrato com o valor antigo.
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  const lodgeId = session?.user?.lodgeId;
+  if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'accounts', 'write');
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
+
+  const { id } = await params;
+  const body = await request.json().catch(() => undefined);
+  if (body === undefined || body === null || typeof body !== 'object') return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
+  const patch: PaymentPatch = {};
+  if (body.amount !== undefined) patch.amount = Number(body.amount);
+  if (body.paidAt !== undefined) patch.paidAt = String(body.paidAt).slice(0, 10);
+  if (body.bankAccountId !== undefined) patch.bankAccountId = String(body.bankAccountId);
+  if (body.note !== undefined) patch.note = body.note === null ? null : String(body.note);
+
+  const result = await withTenant(String(lodgeId), async (db) => {
+    const before = await db.payment.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { amount: true, paidAt: true, bankAccountId: true, note: true } });
+    const r = await editPayment(db, { lodgeId: String(lodgeId), paymentId: id, patch, user: { id: String(session.user.id) } });
+    if (r.ok && r.changed.length > 0) {
+      await logAudit(db, {
+        lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'payment', entityId: id,
+        before: before ? { amount: before.amount, paidAt: before.paidAt, bankAccountId: before.bankAccountId, note: before.note } : undefined,
+        metadata: { changed: r.changed, ...patch, reopenedBankLines: r.unmatchedBankLines },
+      });
+    }
+    return r;
+  });
+
+  if (!result.ok) return NextResponse.json({ error: result.error, ...(result.code ? { code: result.code } : {}) }, { status: result.status });
+  return NextResponse.json({ ok: true, changed: result.changed, reopenedBankLines: result.unmatchedBankLines });
 }

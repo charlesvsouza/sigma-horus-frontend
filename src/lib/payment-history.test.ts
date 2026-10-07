@@ -16,10 +16,11 @@ test('só Tesoureiro, Administrador e Venerável veem o histórico de todos (Sec
   assert.equal(canSeePaymentHistory(undefined), false);
 });
 
-test('período no calendário de Brasília: o dia "até" vai até 23:59 BR', () => {
+test('período por dia: do 00:00Z do "de" ao último instante do "até" (pagamentos são só-dia)', () => {
   const b = periodBounds('2026-03-01', '2026-03-31');
-  assert.equal(b.from?.toISOString(), '2026-03-01T03:00:00.000Z');
-  assert.equal(b.to?.toISOString(), '2026-04-01T02:59:59.999Z');
+  // o pagamento do 1º dia (00:00Z) não pode cair fora do período
+  assert.equal(b.from?.toISOString(), '2026-03-01T00:00:00.000Z');
+  assert.equal(b.to?.toISOString(), '2026-03-31T23:59:59.999Z');
   assert.deepEqual(periodBounds('', 'lixo'), { from: null, to: null });
   // 31/12 às 22h em Brasília ainda é 31/12 (já é 01/01 em UTC).
   assert.deepEqual(defaultPeriod(new Date('2027-01-01T01:00:00Z')), { from: '2026-01-01', to: '2026-12-31' });

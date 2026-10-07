@@ -2,6 +2,7 @@ import { alertAbsenceStreaks } from '@/lib/attendance-streak-server';
 import { todayBR } from '@/lib/date-only';
 import { alertIncompleteRecords } from '@/lib/incomplete-record-server';
 import { alertBrokenAgreements } from '@/lib/member-block-server';
+import { alertLedgerDrift } from '@/lib/ledger-drift-server';
 import { reconcileAllTroncoQrs } from '@/lib/tronco-qr-server';
 import { runDailyNotifications } from '@/lib/notifications';
 import { NextResponse } from 'next/server';
@@ -16,6 +17,11 @@ async function run() {
   const notifications = await runDailyNotifications();
   const agreements = await alertBrokenAgreements().catch((err) => {
     console.error('acordos de regularização: falha no alerta diário', err);
+    return null;
+  });
+  // Saldo calculado até o dia conferido com o banco mudou depois da conferência: avisa a Tesouraria e o Venerável.
+  const ledgerDrift = await alertLedgerDrift().catch((err) => {
+    console.error('conferência com o banco: falha no alerta diário', err);
     return null;
   });
   // 3 ou mais faltas seguidas: e-mail ao Venerável e ao Hospitaleiro (uma vez por sequência).
@@ -36,7 +42,7 @@ async function run() {
         return null;
       })
     : null;
-  return { ...notifications, agreements, absences, troncoQr, records };
+  return { ...notifications, agreements, ledgerDrift, absences, troncoQr, records };
 }
 
 export async function GET(request: Request) {

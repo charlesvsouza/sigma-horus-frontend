@@ -2,10 +2,12 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { computeAccountStatement, type StatementMovementInput } from '@/lib/financial-accounts';
+import { isDayKey, todayKeyBR } from '@/lib/ledger-day';
+import { loadLedgerStatus } from '@/lib/ledger-lock-server';
 import ExtratosClient from './ExtratosClient';
 
-function monthStart(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
+function monthStartKey(todayKey: string) {
+  return `${todayKey.slice(0, 7)}-01`;
 }
 
 export default async function ExtratosPage(props: { searchParams: Promise<{ accountId?: string; from?: string; to?: string }> }) {
@@ -31,9 +33,10 @@ export default async function ExtratosPage(props: { searchParams: Promise<{ acco
     );
   }
 
-  const now = new Date();
-  const from = searchParams.from ? new Date(`${searchParams.from}T00:00:00`) : monthStart(now);
-  const to = searchParams.to ? new Date(`${searchParams.to}T23:59:59`) : now;
+  // Período em DIAS (AAAA-MM-DD, calendário de Brasília) — não em instantes do servidor (UTC).
+  const todayKey = todayKeyBR();
+  const fromKey = isDayKey(searchParams.from) ? searchParams.from : monthStartKey(todayKey);
+  const toKey = isDayKey(searchParams.to) ? searchParams.to : todayKey;
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, financialAccounts] = await Promise.all([
@@ -44,8 +47,9 @@ export default async function ExtratosPage(props: { searchParams: Promise<{ acco
       }),
     ]);
 
+    const ledger = await loadLedgerStatus(db, String(lodgeId));
     const accountId = searchParams.accountId ?? financialAccounts[0]?.id ?? null;
-    if (!accountId) return { lodge, financialAccounts, accountId: null, statement: null };
+    if (!accountId) return { lodge, financialAccounts, accountId: null, statement: null, ledger };
 
     const [payments, transfers] = await Promise.all([
       db.payment.findMany({
@@ -84,9 +88,9 @@ export default async function ExtratosPage(props: { searchParams: Promise<{ acco
     }
 
     const account = financialAccounts.find((a) => a.id === accountId) ?? null;
-    const statement = account ? computeAccountStatement(account.openingBalance, movements, from, to) : null;
+    const statement = account ? computeAccountStatement(account.openingBalance, movements, fromKey, toKey) : null;
 
-    return { lodge, financialAccounts, accountId, statement };
+    return { lodge, financialAccounts, accountId, statement, ledger };
   });
 
   return (
@@ -96,9 +100,10 @@ export default async function ExtratosPage(props: { searchParams: Promise<{ acco
       issuedBy={session?.user?.name ?? null}
       accounts={data.financialAccounts.map((a) => ({ id: a.id, name: a.name, kind: a.kind, bankName: a.bankName, active: a.active, isInvestment: a.isInvestment }))}
       selectedAccountId={data.accountId}
-      from={from.toISOString().slice(0, 10)}
-      to={searchParams.to ?? now.toISOString().slice(0, 10)}
+      from={fromKey}
+      to={toKey}
       statement={data.statement}
+      ledger={{ through: data.ledger.checkpoint?.throughKey ?? null, confirmedByName: data.ledger.checkpoint?.confirmedByName ?? null, drift: data.ledger.drift.length > 0, rectificationOpen: data.ledger.rectificationOpen }}
     />
   );
 }

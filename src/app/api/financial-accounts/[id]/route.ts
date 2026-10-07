@@ -4,6 +4,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 import { hasAtMostCents } from '@/lib/money';
+import { checkLedgerOpen, getActiveCheckpoint } from '@/lib/ledger-lock-server';
 
 const KINDS = ['bank', 'cash'];
 
@@ -45,6 +46,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const result = await withTenant(String(lodgeId), async (db) => {
     const existing = await db.financialAccount.findFirst({ where: { id, lodgeId: String(lodgeId) } });
     if (!existing) return { notFound: true as const };
+    // Saldo inicial muda TODOS os saldos da conta: com o livro conferido, só com retificação aprovada que
+    // inclua o dia da conferência (o pedido precisa abranger até esse dia).
+    if (data.openingBalance !== undefined && Math.round(Number(data.openingBalance) * 100) !== Math.round(existing.openingBalance * 100)) {
+      const checkpoint = await getActiveCheckpoint(db, String(lodgeId));
+      if (checkpoint) {
+        const ledger = await checkLedgerOpen(db, String(lodgeId), [checkpoint.throughKey], { userId: session!.user.id, what: 'financialAccount.openingBalance' });
+        if (!ledger.ok) return { ledgerLocked: ledger.error } as const;
+      }
+    }
     await db.financialAccount.updateMany({ where: { id, lodgeId: String(lodgeId) }, data });
     await logAudit(db, {
       lodgeId: String(lodgeId),
@@ -57,6 +67,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return { ok: true as const };
   });
 
+  if ('ledgerLocked' in result) return NextResponse.json({ error: result.ledgerLocked, code: 'LEDGER_LOCKED' }, { status: 409 });
   if ('notFound' in result) return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

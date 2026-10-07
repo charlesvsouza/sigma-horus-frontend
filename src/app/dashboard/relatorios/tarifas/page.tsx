@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
-import { parseBRDateTimeLocal } from '@/lib/br-time';
+import { ledgerPeriod } from '@/lib/ledger-day';
 import { todayBR } from '@/lib/date-only';
 import { asaasIdFromNote, buildFeeReport, type FeeRow } from '@/lib/fees-report';
 import { isAsaasMode } from '@/lib/collection';
@@ -25,8 +25,7 @@ export default async function TarifasPage(props: { searchParams: Promise<{ from?
   const today = todayBR();
   const fromStr = /^\d{4}-\d{2}-\d{2}$/.test(sp.from ?? '') ? sp.from! : `${today.getUTCFullYear()}-01-01`;
   const toStr = /^\d{4}-\d{2}-\d{2}$/.test(sp.to ?? '') ? sp.to! : today.toISOString().slice(0, 10);
-  const from = parseBRDateTimeLocal(`${fromStr}T00:00:00`);
-  const to = parseBRDateTimeLocal(`${toStr}T23:59:59`);
+  const { from, to } = ledgerPeriod(fromStr, toStr);
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const lid = String(lodgeId);

@@ -3,9 +3,9 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import { FUND_LABELS, findFundChart, isFundPurpose, resolveBankAccount } from '@/lib/funds';
 import { isValidMoney, round2 } from '@/lib/money';
-import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { todayBR } from '@/lib/date-only';
 import { recordTronco } from '@/lib/tronco-server';
 import { canConfirmTronco, canDeclareTronco, isTroncoSource } from '@/lib/tronco-session';
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
   const dueDate = new Date(dateStr); // data "só dia" (00:00 UTC), como as demais contas
   if (Number.isNaN(dueDate.getTime())) return NextResponse.json({ error: 'Data inválida.' }, { status: 400 });
   if (dueDate.getTime() > todayBR().getTime()) return NextResponse.json({ error: 'A data do aporte não pode ser futura.' }, { status: 400 });
-  const paidAt = dateStr === todayBR().toISOString().slice(0, 10) ? new Date() : parseBRDateTimeLocal(`${dateStr}T12:00:00`);
+  const paidAt = dueDate; // dia contábil (só dia), não o instante
 
   // Tronco: o Secretário não lança nem vê valores; o Hospitaleiro declara a entrada (fica aguardando confirmação); o Tesoureiro,
   // o Venerável e o Administrador lançam no caixa. Entrada SEM doador identificado segue o fluxo novo (com DNA e sessão); com
@@ -82,6 +82,8 @@ export async function POST(request: Request) {
 
     const locked = await findClosedTermForDate(db, lid, dueDate);
     if (locked) return { error: 'locked' as const, title: locked.title };
+    const ledger = await checkLedgerOpen(db, lid, [paidAt], { userId: session.user.id, what: 'fund-contribution' });
+    if (!ledger.ok) return { error: 'ledger' as const, message: ledger.error };
 
     // Categoria de receita do fundo.
     const chart = await findFundChart(db, lid, fund, 'REVENUE');
@@ -151,6 +153,8 @@ export async function POST(request: Request) {
     switch (result.error) {
       case 'locked':
         return NextResponse.json({ error: `Período encerrado (${result.title}). Não é possível lançar com data dentro de um veneralato já fechado.` }, { status: 409 });
+      case 'ledger':
+        return NextResponse.json({ error: result.message, code: 'LEDGER_LOCKED' }, { status: 409 });
       case 'no_chart':
         return NextResponse.json({ error: 'Categoria do fundo não encontrada: use "Atualizar plano de contas" em Cadastros.' }, { status: 400 });
       case 'no_caixa':

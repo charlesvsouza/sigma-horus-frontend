@@ -107,11 +107,12 @@ const COMPARE: Record<PaymentHistorySort, (a: PaymentHistoryInput, b: PaymentHis
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Limites do período no calendário de Brasília (UTC-3): de 00:00 do "de" a 23:59:59 do "até". */
+/** Limites do período por DIA (pagamentos são só-dia, 00:00 UTC): de 00:00Z do "de" a 23:59:59.999Z do "até". */
 export function periodBounds(from: string | null | undefined, to: string | null | undefined): { from: Date | null; to: Date | null } {
   return {
-    from: from && DAY.test(from) ? new Date(`${from}T00:00:00-03:00`) : null,
-    to: to && DAY.test(to) ? new Date(`${to}T23:59:59.999-03:00`) : null,
+    // Pagamentos são "só dia" (00:00 UTC): o início é 00:00Z do dia, não a meia-noite de Brasília.
+    from: from && DAY.test(from) ? new Date(`${from}T00:00:00.000Z`) : null,
+    to: to && DAY.test(to) ? new Date(`${to}T23:59:59.999Z`) : null,
   };
 }
 

@@ -9,7 +9,7 @@ import { reconcileMemberBalances } from '@/lib/closing';
 export async function getClosingReport(lodgeId: string, fromParam: string | null, toParam: string | null) {
   const now = new Date();
   const from = fromParam ? new Date(fromParam) : new Date(now.getFullYear(), 0, 1);
-  const to = toParam ? new Date(`${toParam}T23:59:59`) : now;
+  const to = toParam ? new Date(`${toParam}T23:59:59.999Z`) : now;
 
   const data = await withTenant(lodgeId, async (db) => {
     const [lodge, payments, accounts, invoices] = await Promise.all([

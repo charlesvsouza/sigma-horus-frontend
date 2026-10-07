@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess, normalizeRole } from '@/lib/rbac';
 import { donorDisplayName } from '@/lib/hospitalaria';
-import { parseBRDateTimeLocal } from '@/lib/br-time';
+import { ledgerPeriod } from '@/lib/ledger-day';
 import { todayBR } from '@/lib/date-only';
 import { fundChartWhere, isFundPurpose } from '@/lib/funds';
 import { buildCategoryLedger, type LedgerPaymentInput, type LedgerOpenItemInput, type RequestedChart } from '@/lib/category-ledger';
@@ -43,8 +43,7 @@ export default async function CategoriasPage(props: {
   const today = todayBR();
   const fromStr = ISO_DAY.test(sp.from ?? '') ? sp.from! : `${today.getUTCFullYear()}-01-01`;
   const toStr = ISO_DAY.test(sp.to ?? '') ? sp.to! : today.toISOString().slice(0, 10);
-  const from = parseBRDateTimeLocal(`${fromStr}T00:00:00`);
-  const to = parseBRDateTimeLocal(`${toStr}T23:59:59`);
+  const { from, to } = ledgerPeriod(fromStr, toStr);
   const direction: 'all' | 'in' | 'out' = sp.dir === 'in' || sp.dir === 'out' ? sp.dir : 'all';
   const includeOpen = sp.open === '1';
 

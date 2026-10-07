@@ -147,6 +147,8 @@ model Lodge {
   sessionMinutes SessionMinutes[]
   memberBlockSignatures MemberBlockSignature[]
   memberRestrictions MemberRestriction[]
+  ledgerCheckpoints  LedgerCheckpoint[]
+  ledgerRectifications LedgerRectification[]
   paymentReceiptSignatures PaymentReceiptSignature[]
   troncoIntakes TroncoIntake[]
   troncoSessionQrs TroncoSessionQr[]
@@ -1442,6 +1444,55 @@ model MemberRestriction {
   lodge  Lodge  @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
   @@index([lodgeId, memberId])
+  @@index([lodgeId, status])
+}
+
+// Conferência do livro com o banco: "conferido até" um dia, com o saldo do banco informado por conta.
+// Vale como trava: lançamento de caixa (pagamento, transferência, abertura) com data até throughDate só
+// passa com uma LedgerRectification aprovada pelo Venerável/Administrador. balancesJson = lista
+// [{ accountId, name, informed, calculated }] (texto, para não depender de coluna Json no backup).
+model LedgerCheckpoint {
+  id              String    @id @default(cuid())
+  lodgeId         String
+  throughDate     DateTime  // dia conferido (só dia, 00:00 UTC)
+  balancesJson    String
+  confirmedById   String
+  confirmedByName String
+  note            String?
+  undoneAt        DateTime?
+  undoneById      String?
+  undoneByName    String?
+  createdAt       DateTime  @default(now())
+
+  lodge Lodge @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  @@index([lodgeId, throughDate])
+}
+
+// Pedido de retificação de um período já conferido: o Tesoureiro (ou quem escreve em Contas) pede com a
+// justificativa e a janela de dias; o Venerável/Administrador dá ciência ("Concordo") — nunca o próprio
+// solicitante, salvo se ele for o único que pode. Aprovado, vale por 48 h ou até ser encerrado; cada
+// alteração feita sob ele é contada e auditada. status: pending | approved | rejected | canceled | closed
+model LedgerRectification {
+  id              String    @id @default(cuid())
+  lodgeId         String
+  status          String    @default("pending")
+  reason          String
+  dateFrom        DateTime  // primeiro dia que o pedido libera (só dia)
+  dateTo          DateTime  // último dia que o pedido libera (só dia)
+  requestedById   String
+  requestedByName String
+  requestedAt     DateTime  @default(now())
+  decidedById     String?
+  decidedByName   String?
+  decidedAt       DateTime?
+  decisionNote    String?
+  selfApproved    Boolean   @default(false)
+  expiresAt       DateTime?
+  usedCount       Int       @default(0)
+  lastUsedAt      DateTime?
+  closedAt        DateTime?
+
+  lodge Lodge @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   @@index([lodgeId, status])
 }
 

@@ -12,6 +12,7 @@ import { applyAgreementPayment, summarizeBlock } from '@/lib/member-block-server
 import { todayBR } from '@/lib/date-only';
 import { withTenant } from '@/lib/prisma';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import { autoSignReceipt } from '@/lib/receipt-signature-server';
 
 type Db = Prisma.TransactionClient;
@@ -127,6 +128,8 @@ export async function settleFromBankLine(
     const paidAt = dateOnlyUTC(tx.date);
     const locked = await findClosedTermForDate(db, lodgeId, paidAt);
     if (locked) return { ok: false, status: 409, error: `Período encerrado (${locked.title}): a data do crédito cai num veneralato já fechado.` };
+    const ledger = await checkLedgerOpen(db, lodgeId, [paidAt], { userId, what: 'bank-settle' });
+    if (!ledger.ok) return { ok: false, status: 409, error: ledger.error };
 
     const open = await findOpenAsaasCharges(db, { accountId: account.id, memberId: account.memberId });
     if (open.length > 0) {

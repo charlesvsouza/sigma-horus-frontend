@@ -4,6 +4,7 @@
 // Valores são Float: cada soma é arredondada em centavos (lib/money) para não
 // acumular erro de ponto flutuante (100 + 30,10 + 20,20 ≠ 150,30 sem isso).
 import { round2 } from '@/lib/money';
+import { ledgerDayKey } from '@/lib/ledger-day';
 
 export interface AccountPaymentInput {
   bankAccountId: string | null;
@@ -88,19 +89,28 @@ function signedAmountOf(m: StatementMovementInput): number {
   return m.kind === 'payment_in' || m.kind === 'transfer_in' ? m.amount : -m.amount;
 }
 
+/**
+ * `from`/`to` podem ser o dia (AAAA-MM-DD) ou uma Date (vira o dia contábil dela). A comparação é por DIA
+ * contábil (lib/ledger-day), não por instante — o extrato de um dia e o de um período longo concordam, e um
+ * Pix das 22h de Brasília cai no dia em que a tela o mostra. No mesmo dia, vale a ordem em que foram lançados.
+ */
 export function computeAccountStatement(
   baseOpeningBalance: number,
   allMovements: StatementMovementInput[],
-  from: Date,
-  to: Date,
+  from: Date | string,
+  to: Date | string,
 ): AccountStatement {
-  const sorted = [...allMovements].sort((a, b) => a.date.getTime() - b.date.getTime());
+  const fromKey = typeof from === 'string' ? from : ledgerDayKey(from);
+  const toKey = typeof to === 'string' ? to : ledgerDayKey(to);
+  const sorted = allMovements
+    .map((m, i) => ({ m, i, key: ledgerDayKey(m.date) }))
+    .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : a.m.date.getTime() - b.m.date.getTime() || a.i - b.i));
 
   let openingBalance = baseOpeningBalance;
   const inRange: StatementMovementInput[] = [];
-  for (const m of sorted) {
-    if (m.date < from) openingBalance = round2(openingBalance + signedAmountOf(m));
-    else if (m.date <= to) inRange.push(m);
+  for (const { m, key } of sorted) {
+    if (key < fromKey) openingBalance = round2(openingBalance + signedAmountOf(m));
+    else if (key <= toKey) inRange.push(m);
   }
 
   let running = openingBalance;

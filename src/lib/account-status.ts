@@ -2,6 +2,7 @@ import type { Prisma } from '@/generated/prisma/client';
 import { coversAmount, remainingAmount } from '@/lib/money';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { lockKey } from '@/lib/locks';
+import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 
 /**
  * "Conta simples": sem membro fixo e sem cobranças (Invoice) — despesa de
@@ -60,6 +61,9 @@ export async function settleAccountAsPaid(
   if (locked) {
     return { ok: false, status: 409, error: `Período encerrado (${locked.title}). Não é possível registrar pagamento com data dentro de um veneralato já fechado.` };
   }
+
+  const ledger = await checkLedgerOpen(db, lodgeId, [paidAt], { what: 'account.settle' });
+  if (!ledger.ok) return { ok: false, status: 409, error: ledger.error };
 
   await db.payment.create({
     data: {

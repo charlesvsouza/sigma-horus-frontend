@@ -54,8 +54,8 @@ export default async function AccountsReportPage({
   // está pendente"; quem quiser um recorte por período estreita o filtro manualmente. Já
   // Contas Recebidas/Pagas são por data do pagamento — aí faz sentido partir do mês atual.
   const isOpenVariant = variant === 'contas-a-receber' || variant === 'contas-a-pagar';
-  const from = sp.from ? new Date(`${sp.from}T00:00:00`) : isOpenVariant ? new Date('2000-01-01T00:00:00') : monthStart(now);
-  const to = sp.to ? new Date(`${sp.to}T23:59:59`) : isOpenVariant ? new Date('2100-01-01T23:59:59') : now;
+  const from = sp.from ? new Date(`${sp.from}T00:00:00.000Z`) : isOpenVariant ? new Date('2000-01-01T00:00:00') : monthStart(now);
+  const to = sp.to ? new Date(`${sp.to}T23:59:59.999Z`) : isOpenVariant ? new Date('2100-01-01T23:59:59') : now;
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, members, counterparties, rowsInput] = await Promise.all([

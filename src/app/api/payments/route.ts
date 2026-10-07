@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import { syncMemberBlock } from '@/lib/member-block-sync';
 import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
 import { coversAmount, isValidMoney, remainingAmount, round2 } from '@/lib/money';
@@ -95,6 +96,9 @@ export async function POST(request: Request) {
     // Trava de período: não permite baixar com data dentro de veneralato encerrado.
     const locked = await findClosedTermForDate(db, String(lodgeId), paidAt);
     if (locked) return { locked } as const;
+    // Livro já conferido com o banco: só com retificação aprovada pelo Venerável.
+    const ledger = await checkLedgerOpen(db, String(lodgeId), [paidAt], { userId: session.user.id, what: 'payment.create' });
+    if (!ledger.ok) return { ledgerLocked: ledger.error } as const;
 
     const account = await db.account.findFirst({
       where: { id: accountId, lodgeId: String(lodgeId) },
@@ -272,6 +276,8 @@ export async function POST(request: Request) {
       { status: 409 },
     );
   }
+
+  if ('ledgerLocked' in result) return NextResponse.json({ error: result.ledgerLocked, code: 'LEDGER_LOCKED' }, { status: 409 });
 
   if ('notFound' in result) {
     return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });

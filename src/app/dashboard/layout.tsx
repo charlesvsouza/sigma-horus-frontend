@@ -129,6 +129,8 @@ const NAV: NavGroupDef[] = [
         items: [
           { href: '/dashboard/cadastros-financeiros', label: 'Cadastros financeiros', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/conciliacao-bancaria', label: 'Conciliação bancária', roles: ['admin', 'treasurer'] },
+          // Trava o livro até um dia conferido com o banco; retificação só com a ciência do Venerável. Ver lib/ledger-lock.ts.
+          { href: '/dashboard/conferencia', label: 'Conferência com o banco', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/patrimonio', label: 'Patrimônio', roles: ['admin', 'venerable', 'treasurer'] },
         ],
       },

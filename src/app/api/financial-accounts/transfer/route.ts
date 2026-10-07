@@ -1,9 +1,10 @@
 import { auth } from '@/lib/auth';
-import { firstInvalidDate, INVALID_DATE_MESSAGE } from '@/lib/date-only';
+import { firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from '@/lib/date-only';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import { NextResponse } from 'next/server';
 import { isValidMoney } from '@/lib/money';
 
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
   const fromId = String(body?.fromId ?? '').trim();
   const toId = String(body?.toId ?? '').trim();
   const amount = Number(body?.amount ?? 0);
-  const date = body?.date ? new Date(body.date) : new Date();
+  const date = body?.date ? new Date(body.date) : todayBR();
   const note = String(body?.note ?? '').trim();
 
   if (!fromId || !toId || fromId === toId || !isValidMoney(amount)) {
@@ -61,6 +62,8 @@ export async function POST(request: Request) {
   const result = await withTenant(String(lodgeId), async (db) => {
     const locked = await findClosedTermForDate(db, String(lodgeId), date);
     if (locked) return { locked } as const;
+    const ledger = await checkLedgerOpen(db, String(lodgeId), [date], { userId: session.user.id, what: 'transfer.create' });
+    if (!ledger.ok) return { ledgerLocked: ledger.error } as const;
 
     const [from, to] = await Promise.all([
       db.financialAccount.findFirst({ where: { id: fromId, lodgeId: String(lodgeId), active: true }, select: { id: true } }),
@@ -103,6 +106,7 @@ export async function POST(request: Request) {
       { status: 409 },
     );
   }
+  if ('ledgerLocked' in result) return NextResponse.json({ error: result.ledgerLocked, code: 'LEDGER_LOCKED' }, { status: 409 });
   if ('invalidAccounts' in result) {
     return NextResponse.json({ error: 'Uma das contas selecionadas não existe ou está inativa.' }, { status: 400 });
   }

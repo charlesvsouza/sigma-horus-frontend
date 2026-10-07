@@ -48,6 +48,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           },
           orderBy: { paidAt: 'desc' },
         }),
+        revenueCharts: await db.chartAccount.findMany({ where: { lodgeId: String(lodgeId), type: 'REVENUE' }, select: { id: true, code: true, name: true }, orderBy: { code: 'asc' } }),
         financialAccounts: await db.financialAccount.findMany({
           where: { lodgeId: String(lodgeId), active: true },
           select: { id: true, name: true, kind: true, isDefault: true, isInvestment: true },
@@ -87,7 +88,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           select: { id: true, date: true, amount: true, description: true },
         }),
       }))
-    : { accounts: [], members: [], payments: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], receiptChecks: [], cashPayments: [], cashConfirmed: [], hiddenOld: 0 };
+    : { accounts: [], members: [], payments: [], revenueCharts: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], receiptChecks: [], cashPayments: [], cashConfirmed: [], hiddenOld: 0 };
 
   const accounts = data.accounts
     .map((a) => {
@@ -195,6 +196,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
       members={data.members}
       payments={payments}
       financialAccounts={data.financialAccounts}
+      revenueCharts={data.revenueCharts}
       notices={notices}
       currentUserId={session?.user?.id ?? null}
       initialAccountId={conta && openById.has(conta) ? conta : null}

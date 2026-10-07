@@ -56,6 +56,7 @@ export default function ExtratosClient({
   from,
   to,
   statement,
+  ledger,
 }: {
   lodgeName: string;
   crestUrl: string | null;
@@ -65,6 +66,7 @@ export default function ExtratosClient({
   from: string;
   to: string;
   statement: Statement | null;
+  ledger: { through: string | null; confirmedByName: string | null; drift: boolean; rectificationOpen: boolean };
 }) {
   const router = useRouter();
   const [accountId, setAccountId] = useState(selectedAccountId ?? '');
@@ -101,8 +103,10 @@ export default function ExtratosClient({
       f = new Date(2000, 0, 1);
       t = now;
     }
-    const fStr = f.toISOString().slice(0, 10);
-    const tStr = t.toISOString().slice(0, 10);
+    // Dia local do navegador (Brasília), não o dia em UTC: depois das 21h o toISOString() já seria "amanhã".
+    const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const fStr = ymd(f);
+    const tStr = ymd(t);
     setFromVal(fStr);
     setToVal(tStr);
     applyWith(accountId, fStr, tStr);
@@ -156,6 +160,14 @@ export default function ExtratosClient({
                 <button onClick={() => shortcut('abertura')} className="rounded-full border border-white/8 px-3.5 py-1.5 text-xs text-sand-dark transition-colors hover:border-white/20 hover:text-sand-light">Desde a abertura</button>
               </div>
             </section>
+
+            {ledger.through ? (
+              <p className={`rpt-noprint rounded-lg border px-4 py-3 text-sm ${ledger.drift ? 'border-rose-500/30 bg-rose-500/10 text-rose-200' : 'border-emerald-500/20 bg-emerald-500/8 text-emerald-200'}`}>
+                Livro conferido com o banco até <strong>{ledger.through.split('-').reverse().join('/')}</strong>
+                {ledger.confirmedByName ? ` (por ${ledger.confirmedByName})` : ''}. Lançamentos com data até esse dia só mudam com retificação aprovada pelo Venerável.
+                {ledger.drift ? ' ATENÇÃO: o saldo calculado até esse dia difere do conferido — veja Conferência com o banco.' : ledger.rectificationOpen ? ' Há uma retificação em andamento.' : ''}
+              </p>
+            ) : null}
 
             {statement && selectedAccount ? (
               <>

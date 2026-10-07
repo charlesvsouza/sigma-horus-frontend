@@ -48,8 +48,8 @@ export default async function DrePage(props: { searchParams: Promise<{ from?: st
   }
 
   const now = new Date();
-  const from = searchParams.from ? new Date(`${searchParams.from}T00:00:00`) : monthStart(now);
-  const to = searchParams.to ? new Date(`${searchParams.to}T23:59:59`) : now;
+  const from = searchParams.from ? new Date(`${searchParams.from}T00:00:00.000Z`) : monthStart(now);
+  const to = searchParams.to ? new Date(`${searchParams.to}T23:59:59.999Z`) : now;
   const compareMode: 'previous' | 'yoy' = searchParams.compare === 'yoy' ? 'yoy' : 'previous';
   const periodB = computePeriodB(from, to, compareMode);
 

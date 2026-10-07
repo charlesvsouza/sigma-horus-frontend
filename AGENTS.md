@@ -1,3 +1,15 @@
+# Handoff — Sessão 2026-10-07 (2): extrato corrigido + conferência com o banco (local, não publicado)
+
+Pedidos do tesoureiro da AMM139 resolvidos de forma GLOBAL. Detalhes no `historico_de_desenvolvimento.md` (entrada 2026-10-07 (2)). Resumo para quem retomar:
+
+- **Edição que chega ao extrato:** `PATCH /api/payments/[id]` + `lib/payment-edit-server.ts` (`editPayment`); `lib/account-edit-sync.ts` liga a edição do lançamento (Contas) ao pagamento; botões Editar/Dividir em Pagamentos (`PaymentPanels.tsx`). Dividir = `lib/split-payment-server.ts` (+ `split-allocation.ts`): categoria nova (Tronco) ou baixa das mensalidades adiantadas do irmão; saldo do banco não muda.
+- **Dia contábil:** `lib/ledger-day.ts` (`ledgerDayKey`: só-dia = dia UTC; instante = dia de Brasília). Todo relatório de período por dia deve usar isto, não `new Date('…T23:59:59')`. Ainda NÃO migrados (usam instantes UTC): DRE, Fechamento (`closing-report.ts`), relatórios de contas, Balancetes — a migration `20261014130000` já normaliza os dados, então ficam certos; migrar para chave de dia é refino futuro.
+- **Conferência/retificação:** `lib/ledger-lock.ts` (regras puras), `ledger-lock-server.ts` (`checkLedgerOpen`, conferência, pedido/ciência), tela `/dashboard/conferencia`, rotas `/api/ledger/*`, alerta diário `ledger-drift-server.ts`. Toda NOVA rota que grava `Payment`/`AccountTransfer`/saldo inicial deve chamar `checkLedgerOpen` com as datas (ao lado de `findClosedTermForDate`); lançamento por vencimento (Account) não trava.
+- **Migrations novas (aplicar ANTES do push):** `20261014120000_ledger_checkpoint_rectification`, `20261014130000_payment_day_normalize` (normaliza instantes → dia de Brasília; testada, não muda saldos).
+- **Teste no ambiente:** Postgres descartável via Docker (`postgres:16-alpine`, role `sigma_app` criado à mão antes do `migrate deploy`); loader com stubs de `next/headers` e `next-auth/jwt` para rodar libs com `logAudit` em node puro. Servidor local: zerar RESEND/R2/ASAAS e `SUBSCRIPTION_ENFORCEMENT=off`; o `next dev` reescreve o AGENTS.md — NÃO use `git checkout AGENTS.md` com handoff novo não commitado (apaga o handoff); remova só o bloco de agent rules.
+- **PDF para o Tesoureiro:** `C:\sygmahorus\instrucoes_tesoureiro\Guia_Conferencia_com_o_Banco.pdf` (13 páginas, telas reais com dados de exemplo, inclui a explicação de por que não há segundo centro de custo).
+- **Falta:** aplicar migrations em produção, commit/push, mensagem curta ao Tesoureiro apontando o PDF.
+
 # Handoff — Sessão 2026-10-03 (noite): documentos por grau + balaustre por grau
 
 - ✅ **Pendências técnicas fechadas (a publicar junto):**

@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Button, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { MemberLink } from '@/components/quick-nav';
-import { formatDateOnly, todayBR } from '@/lib/date-only';
+import { formatDateOnly, formatDayMixed, todayBR } from '@/lib/date-only';
+import { canEditPayment, canSplitPayment, PaymentEditPanel, PaymentSplitPanel } from './PaymentPanels';
 
 interface MemberOption { id: string; name: string; }
 interface AccountOption {
@@ -75,8 +76,8 @@ interface PaymentItem {
   bankAccount?: { id: string; name: string; kind: string } | null;
 }
 
-export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null, currentUserId = null, topSlot = null }: {
-  topSlot?: React.ReactNode; accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[]; notices?: PaymentNotice[]; initialAccountId?: string | null; currentUserId?: string | null }) {
+export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null, currentUserId = null, topSlot = null, revenueCharts = [] }: {
+  revenueCharts?: { id: string; code: string; name: string }[]; topSlot?: React.ReactNode; accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[]; notices?: PaymentNotice[]; initialAccountId?: string | null; currentUserId?: string | null }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -182,6 +183,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
     document.getElementById('novo-pagamento')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   const [consent, setConsent] = useState(false);
+  const [panel, setPanel] = useState<{ id: string; mode: 'edit' | 'split' } | null>(null);
   const [search, setSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -473,12 +475,20 @@ export default function PagamentosClient({ accounts, members, payments, financia
                 </div>
                 <div className="text-right text-xs text-sand-dark">
                   <p className="tabular-nums">Valor: {brl(payment.amount)}</p>
-                  <p className="mt-0.5">Data: {new Date(payment.paidAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
+                  <p className="mt-0.5">Data: {formatDayMixed(payment.paidAt)}</p>
                   <div className="mt-1 flex items-center justify-end gap-3">
                     <Link href={`/dashboard/pagamentos/${payment.id}/recibo`} target="_blank" className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Recibo</Link>
+                    {canEditPayment(payment) ? <button onClick={() => setPanel(panel?.id === payment.id && panel.mode === 'edit' ? null : { id: payment.id, mode: 'edit' })} className="text-xs px-1 py-1 text-sand transition hover:text-sand-light">Editar</button> : null}
+                    {canSplitPayment(payment) ? <button onClick={() => setPanel(panel?.id === payment.id && panel.mode === 'split' ? null : { id: payment.id, mode: 'split' })} className="text-xs px-1 py-1 text-sand transition hover:text-sand-light">Dividir</button> : null}
                     <button onClick={() => void handleEstorno(payment.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Estornar</button>
                   </div>
                 </div>
+                {panel?.id === payment.id && panel.mode === 'edit' ? (
+                  <PaymentEditPanel payment={payment} banks={financialAccounts} onClose={() => setPanel(null)} notify={setMessage} />
+                ) : null}
+                {panel?.id === payment.id && panel.mode === 'split' ? (
+                  <PaymentSplitPanel payment={payment} charts={revenueCharts} members={members} onClose={() => setPanel(null)} notify={setMessage} />
+                ) : null}
               </div>
             ))}
           </div>

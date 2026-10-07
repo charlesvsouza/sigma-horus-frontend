@@ -4,6 +4,7 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import { computeAccountStatement, type StatementMovementInput } from '@/lib/financial-accounts';
 import { NextResponse } from 'next/server';
 import { formatDayMixed } from '@/lib/date-only';
+import { isDayKey, todayKeyBR } from '@/lib/ledger-day';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -30,11 +31,12 @@ export async function GET(request: Request, { params }: Ctx) {
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { searchParams } = new URL(request.url);
-  const now = new Date();
+  // Período em DIAS de Brasília (mesma regra da tela do extrato), não em instantes do servidor.
+  const todayKey = todayKeyBR();
   const fromParam = searchParams.get('from');
   const toParam = searchParams.get('to');
-  const from = fromParam ? new Date(`${fromParam}T00:00:00`) : new Date(now.getFullYear(), now.getMonth(), 1);
-  const to = toParam ? new Date(`${toParam}T23:59:59`) : now;
+  const from = isDayKey(fromParam) ? fromParam : `${todayKey.slice(0, 7)}-01`;
+  const to = isDayKey(toParam) ? toParam : todayKey;
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, account, payments, transfers] = await Promise.all([
@@ -94,7 +96,7 @@ export async function GET(request: Request, { params }: Ctx) {
 
   sheet.addRow([data.lodge?.name ?? 'Loja']).font = { bold: true, size: 13 };
   sheet.addRow([`Extrato — ${data.account.name}${data.account.bankName ? ` (${data.account.bankName})` : ''}`]).font = { bold: true };
-  sheet.addRow([`Período: ${from.toLocaleDateString('pt-BR')} a ${to.toLocaleDateString('pt-BR')}`]);
+  sheet.addRow([`Período: ${from.split('-').reverse().join('/')} a ${to.split('-').reverse().join('/')}`]);
   sheet.addRow([]);
 
   const headerRowIdx = sheet.rowCount + 1;
@@ -128,7 +130,7 @@ export async function GET(request: Request, { params }: Ctx) {
   sheet.getColumn('saldo').numFmt = brlFormat;
 
   const buffer = await workbook.xlsx.writeBuffer();
-  const filename = `extrato-${data.account.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${from.toISOString().slice(0, 10)}-a-${to.toISOString().slice(0, 10)}.xlsx`;
+  const filename = `extrato-${data.account.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${from}-a-${to}.xlsx`;
 
   return new Response(buffer as unknown as BodyInit, {
     headers: {

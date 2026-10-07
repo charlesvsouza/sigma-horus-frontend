@@ -2,11 +2,11 @@ import type { Prisma } from '@/generated/prisma/client';
 import { logAudit } from '@/lib/audit';
 import { findFundChart, fundChartWhere, resolveBankAccount } from '@/lib/funds';
 import { ASAAS_FEE_CHART } from '@/lib/collection';
-import { parseBRDateTimeLocal } from '@/lib/br-time';
 import { dateOnlyUTC, todayBR } from '@/lib/date-only';
 import { identifierInText } from '@/lib/tronco-loja-pix';
 import { isValidMoney } from '@/lib/money';
 import { findClosedTermForDate } from '@/lib/term-lock';
+import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import {
   canConfirmTronco, canDeclareTronco, generateTroncoCode, summarizeBySession,
   type TroncoChannel, type TroncoSessionRow, type TroncoSource,
@@ -42,6 +42,8 @@ async function postToCashbox(
 ): Promise<{ ok: true; paymentId: string; bankId: string } | Fail> {
   const locked = await findClosedTermForDate(db, p.lodgeId, p.date);
   if (locked) return { ok: false, status: 409, error: `Período encerrado (${locked.title}). Não é possível lançar com data dentro de um veneralato já fechado.` };
+  const ledger = await checkLedgerOpen(db, p.lodgeId, [p.date, p.paidAt], { what: 'tronco.post' });
+  if (!ledger.ok) return { ok: false, status: 409, error: ledger.error };
   const chart = await findFundChart(db, p.lodgeId, 'tronco', 'REVENUE');
   if (!chart) return { ok: false, status: 400, error: 'Categoria do Tronco não encontrada: use "Atualizar plano de contas" em Cadastros.' };
   const bank = await resolveBankAccount(db, p.lodgeId, p.bankAccountId);
@@ -173,7 +175,7 @@ export async function postStatementCredits(
   const last = txs.reduce((a, b) => (a > b.date ? a : b.date), txs[0].date);
   const date = dateOnlyUTC(last);
   if (date.getTime() > todayBR().getTime()) return { ok: false, status: 400, error: 'Há crédito com data futura no extrato.' };
-  const paidAt = parseBRDateTimeLocal(`${date.toISOString().slice(0, 10)}T12:00:00`);
+  const paidAt = date; // dia contábil (só dia), como toda baixa digitada
   const rec = await recordTronco(db, {
     lodgeId, user, amount: m.total, date, paidAt, method: 'pix', channel: 'pix', source: input.source, sessionId: input.sessionId,
     bankAccountId: input.bankAccountId, note: `Extrato: ${m.count} crédito(s) com o identificador ${m.identifier}`,

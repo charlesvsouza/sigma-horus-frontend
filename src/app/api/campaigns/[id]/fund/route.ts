@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { todayBR } from '@/lib/date-only';
 import { logAudit } from '@/lib/audit';
 import { brl } from '@/lib/currency';
 import { getTroncoBalance } from '@/lib/hospitalaria';
@@ -51,7 +52,7 @@ export async function POST(request: Request, { params }: Ctx) {
         type: 'PAYABLE',
         title: `Benemerência – ${campaign.title}`,
         amount,
-        dueDate: new Date(),
+        dueDate: todayBR(),
         status: 'paid',
         chartAccountId: expenseAccount.id,
         bankAccountId: bank.id,
@@ -59,7 +60,7 @@ export async function POST(request: Request, { params }: Ctx) {
       },
     });
     await db.payment.create({
-      data: { lodgeId: String(lodgeId), accountId: account.id, bankAccountId: bank.id, amount, method: 'fund', note: `Custeio: ${campaign.title}` },
+      data: { lodgeId: String(lodgeId), accountId: account.id, bankAccountId: bank.id, amount, paidAt: todayBR(), method: 'fund', note: `Custeio: ${campaign.title}` },
     });
     const updated = await db.campaign.update({
       where: { id },

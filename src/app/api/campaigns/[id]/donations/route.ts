@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { todayBR } from '@/lib/date-only';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -52,7 +53,7 @@ export async function POST(request: Request, { params }: Ctx) {
         type: 'RECEIVABLE',
         title: `Doação – ${campaign.title}`,
         amount,
-        dueDate: new Date(),
+        dueDate: todayBR(),
         status: 'paid',
         chartAccountId: tronco.id,
         bankAccountId: bank.id,
@@ -60,7 +61,7 @@ export async function POST(request: Request, { params }: Ctx) {
       },
     });
     const payment = await db.payment.create({
-      data: { lodgeId: String(lodgeId), accountId: account.id, bankAccountId: bank.id, amount, method: 'donation', note: display },
+      data: { lodgeId: String(lodgeId), accountId: account.id, bankAccountId: bank.id, amount, paidAt: todayBR(), method: 'donation', note: display },
     });
     const donation = await db.campaignDonation.create({
       data: { lodgeId: String(lodgeId), campaignId: id, donorName, anonymous, amount, note, paymentId: payment.id },

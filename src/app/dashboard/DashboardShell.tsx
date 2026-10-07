@@ -19,7 +19,7 @@ import {
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
   Scale, ListTree, Users2, Images, LayoutGrid, UsersRound, PencilLine,
   ArrowDownToLine, ArrowUpFromLine, HandCoins, Banknote, Percent, type LucideIcon,
-  History, BadgeCheck, UserPlus, Award, UserRoundSearch, GraduationCap, Handshake,
+  History, BadgeCheck, ShieldCheck, UserPlus, Award, UserRoundSearch, GraduationCap, Handshake,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; }
@@ -60,6 +60,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/extratos': NotebookText,
   '/dashboard/patrimonio': Landmark,
   '/dashboard/conciliacao-bancaria': ArrowLeftRight,
+  '/dashboard/conferencia': ShieldCheck,
   '/dashboard/relatorios': ChartColumn,
   '/dashboard/relatorios/contas-a-receber': ArrowDownToLine,
   '/dashboard/relatorios/contas-a-pagar': ArrowUpFromLine,
@@ -123,7 +124,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   fechamento: 'Fechamento', irmaos: 'Irmãos', campanhas: 'Campanhas', tarifas: 'Tarifas de cobrança (Asaas)', fundos: 'Fundos (Tronco e Doações)', portal: 'Meu portal', secretaria: 'Secretaria',
   inadimplencia: 'Inadimplência (Art. 002)', balancetes: 'Balancetes periódicos', categorias: 'Razão por categoria', 'historico-pagamentos': 'Histórico de pagamentos', historico: 'Meu histórico de pagamentos', 'declaracao-regularidade': 'Declaração de regularidade', declaracao: 'Declaração de regularidade',
   'fluxo-caixa': 'Fluxo de caixa projetado', orcamento: 'Orçamento anual',
-  patrimonio: 'Patrimônio', 'conciliacao-bancaria': 'Conciliação bancária',
+  patrimonio: 'Patrimônio', 'conciliacao-bancaria': 'Conciliação bancária', conferencia: 'Conferência com o banco',
   completo: 'Relatório completo', balanco: 'Balanço Financeiro', balancete: 'Balancete de Verificação',
   'receitas-despesas': 'Receitas × Despesas', 'livro-caixa': 'Livro Caixa', cobrancas: 'Cobranças',
   'saldo-irmaos': 'Saldo dos Irmãos', whatsapp: 'Envio pelo WhatsApp', livro: 'Livro de presença', 'lista-visitantes': 'Lista de visitantes',

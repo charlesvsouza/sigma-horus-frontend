@@ -47,8 +47,8 @@ export async function GET(request: Request) {
   const isOpenVariant = variant === 'contas-a-receber' || variant === 'contas-a-pagar';
   const fromParam = searchParams.get('from');
   const toParam = searchParams.get('to');
-  const from = fromParam ? new Date(`${fromParam}T00:00:00`) : isOpenVariant ? new Date('2000-01-01T00:00:00') : new Date(now.getFullYear(), now.getMonth(), 1);
-  const to = toParam ? new Date(`${toParam}T23:59:59`) : isOpenVariant ? new Date('2100-01-01T23:59:59') : now;
+  const from = fromParam ? new Date(`${fromParam}T00:00:00.000Z`) : isOpenVariant ? new Date('2000-01-01T00:00:00') : new Date(now.getFullYear(), now.getMonth(), 1);
+  const to = toParam ? new Date(`${toParam}T23:59:59.999Z`) : isOpenVariant ? new Date('2100-01-01T23:59:59') : now;
   const personId = searchParams.get('personId') || null;
   const text = searchParams.get('text') || undefined;
   const sort = parseAccountsSort(searchParams.get('sort'));

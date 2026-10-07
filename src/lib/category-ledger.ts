@@ -1,4 +1,5 @@
 import { round2, sumMoney } from '@/lib/money';
+import { ledgerDayKey } from '@/lib/ledger-day';
 
 // Razão por categoria: todos os pagamentos lançados em cada categoria do plano de
 // contas (Tronco, Doações, Mensalidades, qualquer uma), lançamento a lançamento, com
@@ -125,6 +126,10 @@ export function buildCategoryLedger(
   requestedCharts: RequestedChart[] = [],
 ): Ledger {
   const isIn = (e: Entry) => e.accountType === 'RECEIVABLE';
+  // Por DIA contábil (lib/ledger-day): o que foi lançado no primeiro dia do período é do período, não do saldo anterior.
+  const fromKey = ledgerDayKey(from);
+  const toKey = ledgerDayKey(to);
+  const dayOf = (e: Entry) => ledgerDayKey(e.date);
   const keyOf = (e: Entry) => e.chart?.id ?? NO_CATEGORY_KEY;
 
   const entries: Entry[] = [
@@ -140,7 +145,7 @@ export function buildCategoryLedger(
 
   const byKey = new Map<string, Entry[]>();
   for (const e of entries) {
-    if (e.date > to) continue;
+    if (dayOf(e) > toKey) continue;
     const list = byKey.get(keyOf(e)) ?? [];
     list.push(e);
     byKey.set(keyOf(e), list);
@@ -150,13 +155,13 @@ export function buildCategoryLedger(
   for (const [key, list] of byKey) {
     const sorted = [...list].sort((a, b) => a.date.getTime() - b.date.getTime() || a.id.localeCompare(b.id));
     // Saldo anterior é só do que já foi pago de fato — pendência nunca entrou no caixa.
-    const before = sorted.filter((e) => e.kind === 'paid' && e.date < from);
+    const before = sorted.filter((e) => e.kind === 'paid' && dayOf(e) < fromKey);
     const opening = sumMoney(before.map((e) => (isIn(e) ? e.amount : -e.amount)));
 
     let running = opening;
     const rows: LedgerRow[] = [];
     for (const e of sorted) {
-      if (e.date < from) continue;
+      if (dayOf(e) < fromKey) continue;
       if (direction === 'in' && !isIn(e)) continue;
       if (direction === 'out' && isIn(e)) continue;
       if (e.kind === 'paid') running = round2(running + (isIn(e) ? e.amount : -e.amount));

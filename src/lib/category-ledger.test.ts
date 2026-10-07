@@ -142,3 +142,18 @@ test('sem categoria marcada (todas), não aparece grupo "empty" nenhum', () => {
   const l = buildCategoryLedger(payments, from, to);
   assert.ok(l.groups.every((g) => g.empty === false));
 });
+
+test('lançamento do PRIMEIRO dia do período (só-dia, 00:00Z) entra no período, não no saldo anterior', () => {
+  const l = buildCategoryLedger(
+    [p({ id: 'x', paidAt: new Date('2026-09-01T00:00:00.000Z'), amount: 100 })],
+    new Date('2026-09-01T00:00:00.000Z'),
+    new Date('2026-09-30T23:59:59.999Z'),
+  );
+  const g = l.groups[0];
+  assert.equal(g.opening, 0);
+  assert.equal(g.rows.length, 1);
+  assert.equal(g.rows[0].balance, 100);
+  // mesmo com o início em meia-noite de Brasília (03:00Z), o dia é o mesmo
+  const l2 = buildCategoryLedger([p({ id: 'x', paidAt: new Date('2026-09-01T00:00:00.000Z'), amount: 100 })], new Date('2026-09-01T03:00:00.000Z'), new Date('2026-09-30T23:59:59.000Z'));
+  assert.equal(l2.groups[0].opening, 0);
+});

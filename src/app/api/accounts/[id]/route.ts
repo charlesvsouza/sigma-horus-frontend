@@ -6,8 +6,11 @@ import { requireLodgeAccess } from '@/lib/rbac';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { syncMemberBlock } from '@/lib/member-block-sync';
 import { isPlainAccount, settleAccountAsPaid } from '@/lib/account-status';
+import { syncPaymentsOnAccountEdit } from '@/lib/account-edit-sync';
+import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import { coversAmount, isValidMoney, round2 } from '@/lib/money';
 import { asaasConflictBody, findOpenAsaasCharges, groupedChargeNumbers, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
+import { brl } from '@/lib/currency';
 import { NextResponse } from 'next/server';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -95,6 +98,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     // Mensalidade é sempre de um irmão.
     if (body?.isDues === true && nextType === 'RECEIVABLE' && !nextMemberId) return { error: 'dues-no-member' as const };
 
+    // O extrato e o saldo leem o PAGAMENTO, não o lançamento: corrigir valor, conta ou data de um lançamento já
+    // pago corrige o pagamento junto (antes só o lançamento mudava e o extrato ficava com o valor antigo).
+    const synced = await syncPaymentsOnAccountEdit(db, {
+      lodgeId: String(lodgeId), userId: String(session.user.id), accountId: id,
+      existing: { amount: Number(existing.amount), bankAccountId: existing.bankAccountId },
+      next: { amount: nextAmount, amountGiven: body?.amount !== undefined, bankAccountId, bankGiven: body?.bankAccountId !== undefined, paidAt: body?.paidAt ? String(body.paidAt).slice(0, 10) : null },
+    });
+    if (!synced.ok) return synced.reason === 'multi-payments' ? { error: 'multi-payments' as const, count: synced.count } : synced.reason === 'below-paid' ? { error: 'below-paid' as const, totalPaid: synced.totalPaid } : { error: 'payment-edit' as const, status: synced.status, message: synced.message, code: synced.code };
+    for (const e of synced.edits) {
+      await logAudit(db, {
+        lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'payment', entityId: e.paymentId,
+        before: { amount: e.before.amount, paidAt: e.before.paidAt }, metadata: { via: 'account-edit', changed: e.changed, ...e.patch, reopenedBankLines: e.reopenedBankLines },
+      });
+    }
+
     // Status: "Pago" gera o Payment do que falta quitar (é ele que move o caixa,
     // extrato e DRE) — só gravar o texto deixava o valor fora do caixa. Já
     // com pagamentos registrados, o status segue a soma deles, não o formulário.
@@ -165,6 +183,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   if ('error' in result) {
     if (result.error === 'notfound') return NextResponse.json({ error: 'Conta não encontrada.' }, { status: 404 });
+    if (result.error === 'multi-payments') {
+      return NextResponse.json({ error: `Este lançamento tem ${result.count} pagamentos. Para mudar valor, data ou conta, corrija cada pagamento em Pagamentos → Editar (assim o extrato acompanha).` }, { status: 409 });
+    }
+    if (result.error === 'below-paid') {
+      return NextResponse.json({ error: `O valor informado é menor que o já pago (${brl(result.totalPaid)}). Corrija os pagamentos em Pagamentos → Editar antes de reduzir o valor da conta.` }, { status: 409 });
+    }
+    if (result.error === 'payment-edit') {
+      return NextResponse.json({ error: result.message, ...(result.code ? { code: result.code } : {}) }, { status: result.status });
+    }
     if (result.error === 'invalid-member') return NextResponse.json({ error: 'Irmão não encontrado nesta loja.' }, { status: 400 });
     if (result.error === 'dues-no-member') return NextResponse.json({ error: 'Mensalidade precisa estar vinculada a um irmão. Escolha o membro em "Vincular a um membro".' }, { status: 400 });
     if (result.error === 'asaas-group') {
@@ -213,7 +240,19 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     const locked = await findClosedTermForDate(db, String(lodgeId), prev.dueDate);
     if (locked) return { error: 'locked' as const, term: locked };
 
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'account', entityId: id, metadata: { title: prev.title } });
+    // Excluir um lançamento já pago apaga os pagamentos junto (cascata): as datas deles também contam
+    // para o veneralato encerrado e para o livro já conferido com o banco.
+    const paidDates = await db.payment.findMany({ where: { accountId: id }, select: { paidAt: true } });
+    for (const pd of paidDates) {
+      const termLocked = await findClosedTermForDate(db, String(lodgeId), pd.paidAt);
+      if (termLocked) return { error: 'locked' as const, term: termLocked };
+    }
+    if (paidDates.length > 0) {
+      const ledger = await checkLedgerOpen(db, String(lodgeId), paidDates.map((x) => x.paidAt), { userId: session.user.id, what: 'account.delete' });
+      if (!ledger.ok) return { error: 'ledger' as const, message: ledger.error };
+    }
+
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'DELETE', entity: 'account', entityId: id, metadata: { title: prev.title, payments: paidDates.length } });
     await db.account.deleteMany({ where: { id, lodgeId: String(lodgeId) } });
     if (prev.memberId) {
       await syncMemberBlock(db, String(lodgeId), prev.memberId);
@@ -223,6 +262,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   if ('error' in result) {
     if (result.error === 'notfound') return NextResponse.json({ error: 'Lançamento não encontrado.' }, { status: 404 });
+    if (result.error === 'ledger') return NextResponse.json({ error: result.message, code: 'LEDGER_LOCKED' }, { status: 409 });
     if (result.error === 'locked') {
       return NextResponse.json(
         { error: `Período encerrado (${result.term.title}). Não é possível excluir lançamento dentro de um veneralato já fechado.` },

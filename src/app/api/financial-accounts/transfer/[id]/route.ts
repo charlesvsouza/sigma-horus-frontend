@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
 import { normalizeRole, requireLodgeAccess } from '@/lib/rbac';
+import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import { NextResponse } from 'next/server';
 
 // PASSO 2: o Venerável (ou Admin) aprova/rejeita a transferência criada pelo
@@ -37,6 +38,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const transfer = await db.accountTransfer.findFirst({ where: { id, lodgeId: String(lodgeId) } });
     if (!transfer) return { notFound: true as const };
     if (transfer.status !== 'pending') return { alreadyDecided: true as const };
+    // Aprovar é o que move o saldo: com data dentro do período já conferido, só com retificação aprovada.
+    if (action === 'approve') {
+      const ledger = await checkLedgerOpen(db, String(lodgeId), [transfer.date], { userId: session!.user.id, what: 'transfer.approve' });
+      if (!ledger.ok) return { ledgerLocked: ledger.error } as const;
+    }
 
     // Só decide quem ainda encontra a transferência pendente: aprovações simultâneas
     // (clique duplo) não repetem a decisão nem a auditoria.
@@ -68,6 +74,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return { updated };
   });
 
+  if ('ledgerLocked' in result) return NextResponse.json({ error: result.ledgerLocked, code: 'LEDGER_LOCKED' }, { status: 409 });
   if ('notFound' in result) return NextResponse.json({ error: 'Transferência não encontrada.' }, { status: 404 });
   if ('alreadyDecided' in result) return NextResponse.json({ error: 'Esta transferência já foi decidida.' }, { status: 409 });
 

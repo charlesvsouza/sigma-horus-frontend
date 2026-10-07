@@ -65,6 +65,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-historico', label: '7.19 Histórico de pagamentos dos irmãos' },
       { id: 'tes-declaracao', label: '7.20 Declaração de regularidade financeira' },
       { id: 'tes-taxas-grau', label: '7.21 Taxas de grau (iniciação, elevação, exaltação, filiação e regularização)' },
+      { id: 'tes-conferencia', label: '7.22 Conferência com o banco, retificação e correção de pagamentos' },
     ],
   },
   {
@@ -264,7 +265,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 4 de outubro de 2026 · versão 1.93</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 7 de outubro de 2026 · versão 1.94</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1117,6 +1118,24 @@ export function ManualBook() {
                   <li>Clique em <UI>Registrar pagamento</UI>. Ele aparece em <UI>Pagamentos recentes</UI>.</li>
                 </Steps>
                 <p>
+                  <strong>Corrigir um pagamento já lançado.</strong> Em <UI>Pagamentos recentes</UI>, o botão <UI>Editar</UI> corrige
+                  o <UI>valor</UI>, a <UI>data</UI>, a <UI>conta bancária/caixa</UI> e a <UI>observação</UI> do pagamento — e o extrato e os
+                  saldos já mostram o valor novo. A conta e a cobrança são recalculadas (volta a ficar em aberto se o pagamento
+                  deixou de cobri-la), o recibo assinado é refeito e uma linha do extrato bancário conciliada com o valor antigo volta
+                  para conferência. Editar o valor, a conta ou a data do <strong>lançamento</strong> em Contas faz o mesmo no pagamento
+                  (quando há um só). Com mais de um pagamento, corrija cada um aqui. Baixas automáticas do Asaas, aportes do Tronco e
+                  doações não se editam: estorne e lance de novo. Se o período já foi conferido com o banco (7.22), a correção
+                  precisa de retificação.
+                </p>
+                <p>
+                  <strong>Dividir um recebimento.</strong> O botão <UI>Dividir</UI> separa partes de um recebimento já lançado — o caso típico
+                  é o <strong>saldo de abertura</strong>, que entrou num lançamento só mas inclui o Tronco e mensalidades adiantadas de
+                  irmãos. Cada parte vira <UI>Outra categoria</UI> (ex.: Tronco de Beneficência) ou <UI>Mensalidade adiantada de irmão</UI>
+                  (baixa das cobranças em aberto dele, da mais antiga para a mais nova; se o valor passar do que ele tem em aberto, gere
+                  antes as mensalidades dos meses cobertos). Use <UI>Ver prévia</UI> antes de <UI>Confirmar divisão</UI>: o valor sai do
+                  lançamento original e a <strong>conta bancária e o saldo do banco não mudam</strong>.
+                </p>
+                <p>
                   <strong>Avisos &quot;Já paguei&quot; (Modo Loja).</strong> Quando o irmão paga pelo portal no Pix da chave da
                   loja e clica em <UI>Já paguei</UI> (capítulo 10), o Tesoureiro, o Administrador e o Venerável Mestre recebem um e-mail com um
                   link direto para a baixa, e o aviso aparece no topo de Pagamentos, em <UI>Avisos de pagamento dos
@@ -1562,6 +1581,12 @@ export function ManualBook() {
                   financeiros</UI> e em <UI>Transferências</UI>. Para comparar contra o extrato real do banco (OFX), use
                   a <UI>Conciliação bancária</UI> (7.12) — ferramentas diferentes, propósitos diferentes.
                 </Note>
+                <Note>
+                  O período do extrato é contado em <strong>dias de Brasília</strong>: o extrato de um único dia e o de um período
+                  longo sempre concordam (um Pix das 22h do dia 27 fica no dia 27, nos dois). Dentro do mesmo dia, as linhas seguem a
+                  ordem em que foram lançadas. Quando o livro já foi conferido com o banco (7.22), o extrato mostra o aviso
+                  <em> &quot;Livro conferido até…&quot;</em>.
+                </Note>
               </Sub>
               <Sub id="tes-dre" title="7.16 DRE comparativo entre períodos">
                 <p>
@@ -1673,6 +1698,33 @@ export function ManualBook() {
                   <li><strong>Cartão de crédito (só Modo Asaas):</strong> com a opção ligada em <UI>Configurações da loja → Financeiro</UI> (e as tarifas do contrato da loja com o Asaas informadas), o plano ganha a <UI>Forma de pagamento</UI> <strong>Cartão de crédito no Asaas</strong>, à vista ou em até 6x. A tarifa do cartão é <strong>repassada</strong> ao irmão: a prévia mostra a taxa, o acréscimo e o total, e o Asaas cria o parcelamento na hora. O sistema mostra o <strong>link para o irmão pagar</strong> (botão <UI>Link do cartão (Asaas)</UI> no plano e <UI>Pagar no cartão</UI> no portal dele). O cartão é cobrado em parcelas; cada parcela dá baixa sozinha e a tarifa real sai como despesa, então a loja recebe a taxa cheia. Pix e boleto continuam sem acréscimo. No Modo Loja não há cartão. As cotas no cartão não são antecipadas nem reemitidas em Pix. No relatório <UI>Tarifas de cobrança</UI>, a tarifa dessas parcelas aparece como <strong>repassada</strong>.</li>
                     <li><strong>Cancelar plano:</strong> se o evento não for acontecer (desligamento, desistência, candidato reprovado), <UI>Cancelar plano</UI> com o motivo: as cotas em aberto saem (e são canceladas no Asaas, se emitidas) e o que já foi pago vira uma <strong>conta a pagar ao irmão</strong> em Contas (categoria 2.1.17 Devolução de Taxas de Grau), com o visto do Venerável se passar do limite. Cota com pagamento parcial precisa ser acertada antes.</li>
                 </Bullets>
+              </Sub>
+              <Sub id="tes-conferencia" title="7.22 Conferência com o banco, retificação e correção de pagamentos">
+                <p>
+                  Depois que o extrato do sistema bate com o do banco até um dia, o Tesoureiro <strong>trava</strong> esse período em
+                  <UI>Tesouraria → Cadastros e Conferência → Conferência com o banco</UI>. A partir daí, o saldo conferido não muda por
+                  engano: lançamento, pagamento, transferência ou saldo inicial com data <strong>até esse dia</strong> só passam com uma
+                  retificação aprovada.
+                </p>
+                <Steps>
+                  <li>Escolha <UI>Conferido até o dia</UI> (um dia que já passou) e digite o <strong>saldo que o banco mostra</strong> no fim desse dia, em cada conta (inclusive investimento e Caixa).</li>
+                  <li>Clique em <UI>Conferir e travar o período</UI>. O sistema só aceita se o saldo informado bater, ao centavo, com o que ele calculou; se não bater, mostra a diferença por conta — confira os lançamentos até aquele dia em <UI>Extratos de contas</UI> e tente de novo.</li>
+                  <li>Pronto: o livro fica <strong>conferido até aquele dia</strong>. O extrato mostra o aviso, e lançar ou editar com data até lá é recusado. Datas posteriores continuam livres.</li>
+                </Steps>
+                <p>
+                  <strong>Precisa corrigir algo dentro do período conferido?</strong> Em <UI>Pedir retificação</UI>, informe de que dia a que dia e
+                  o motivo. O <strong>Venerável Mestre</strong> (ou o Administrador) recebe um e-mail e, na mesma tela, responde
+                  <UI>Concordo</UI> ou <UI>Não concordo</UI> — quem pediu não dá a própria ciência (só numa loja em que ele é o único que
+                  poderia, e isso fica marcado como autoaprovada). Aprovada, a retificação vale por <strong>48 horas</strong> e só para
+                  aqueles dias; cada alteração feita sob ela é contada e fica no histórico de auditoria. Quando terminar, registre uma
+                  <strong> nova conferência</strong> com o saldo do banco: ela encerra a retificação e trava o período de novo.
+                </p>
+                <Note>
+                  Todo dia o sistema compara o saldo calculado até o dia conferido com o saldo informado. Se mudar por qualquer
+                  caminho que a trava não cubra, o Tesoureiro, o Venerável e o Administrador recebem um aviso por e-mail (uma vez por
+                  conferência), e a tela mostra a diferença. O Venerável ou o Administrador podem <UI>Desfazer esta conferência</UI>
+                  se ela foi registrada por engano.
+                </Note>
               </Sub>
             </Chapter>
 

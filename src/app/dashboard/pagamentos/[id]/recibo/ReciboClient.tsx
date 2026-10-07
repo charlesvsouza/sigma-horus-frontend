@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { brl } from '@/lib/currency';
+import { formatDayMixed } from '@/lib/date-only';
 import { Alert, Button, useConfirm } from '@/components/ui';
 import { receiptMarkText } from '@/lib/receipt-signature';
 import { ReportActions, ReportDocument } from '@/components/report/report-document';
@@ -81,7 +82,7 @@ export default function ReciboClient({ payment, treasurerName, issuedBy, signatu
             <p>
               Recebemos de <strong>{payment.memberName ?? 'contribuinte não vinculado'}</strong>
               {payment.memberCpf ? ` (CPF ${payment.memberCpf})` : ''} a quantia de <strong>{brl(payment.amount)}</strong>{' '}
-              referente a <strong>{payment.accountTitle}</strong>, paga em {new Date(payment.paidAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })} via{' '}
+              referente a <strong>{payment.accountTitle}</strong>, paga em {formatDayMixed(payment.paidAt)} via{' '}
               {METHOD_LABEL[payment.method] ?? payment.method}.
             </p>
             {payment.note ? <p className="text-xs text-sand-dark">Observação: {payment.note}</p> : null}
