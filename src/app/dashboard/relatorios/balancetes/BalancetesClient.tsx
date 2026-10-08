@@ -158,7 +158,7 @@ export default function BalancetesClient({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ periodFrom, periodTo, notes }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setGenerating(false);
     if (res.ok) {
       setMessage({ kind: 'ok', text: 'Balancete gerado.' });
@@ -184,7 +184,7 @@ export default function BalancetesClient({
     const ok = await askConfirm({ title: 'Aprovar balancete', message: 'Registra que este balancete foi apresentado e aprovado em sessão.', confirmLabel: 'Aprovar' });
     if (!ok) return;
     const res = await fetch(`/api/balancetes/${id}/approve`, { method: 'POST' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setMessage(res.ok ? { kind: 'ok', text: 'Balancete aprovado.' } : { kind: 'error', text: data.error ?? 'Erro.' });
     router.refresh();
   }

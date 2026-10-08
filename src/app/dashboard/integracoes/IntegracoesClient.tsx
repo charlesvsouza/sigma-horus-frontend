@@ -53,7 +53,7 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
     setReconciling(true);
     setMessage(null);
     const res = await fetch('/api/asaas/reconcile', { method: 'POST' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setReconciling(false);
     if (res.ok) {
       setMessage({ kind: 'ok', text: `Verificadas ${data.checked} cobrança(s): ${data.reconciled} baixada(s) agora, ${data.stillPending} ainda em aberto${data.errors ? `, ${data.errors} com erro` : ''}.` });
@@ -76,7 +76,7 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ apiKey: apiKey.trim(), env, webhookToken: webhookToken.trim() }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setSaving(false);
     if (res.ok) {
       setMessage({ kind: 'ok', text: 'Asaas conectado para esta loja.' });
@@ -226,7 +226,7 @@ function MessagingIntegration({ initial }: { initial: MsgStatus }) {
     setBusy(true);
     setMsg(null);
     const res = await fetch('/api/integrations/messaging', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, ...payload }) });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setBusy(false);
     if (res.ok) { setMsg({ kind: 'ok', text: `${channel === 'whatsapp' ? 'WhatsApp' : 'SMS'} conectado.` }); router.refresh(); }
     else setMsg({ kind: 'error', text: data.error ?? 'Erro ao salvar.' });

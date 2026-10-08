@@ -66,7 +66,8 @@ export async function POST(request: Request) {
   if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const accountId = String(body?.accountId ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
-  const amount = round2(Number(body?.amount ?? 0));
+  const rawAmount = Number(body?.amount ?? 0);
+  const amount = round2(rawAmount);
   const paidAt = body?.paidAt ? new Date(body.paidAt) : todayBR();
   const method = String(body?.method ?? 'manual').trim();
   const note = String(body?.note ?? '').trim();
@@ -77,18 +78,19 @@ export async function POST(request: Request) {
   const e2eId = typeof body?.e2eId === 'string' && /^E[0-9A-Za-z]{31}$/.test(body.e2eId) ? body.e2eId : null;
   // Multa e juros por atraso recebidos junto (conta a receber de irmão): lançados à parte, em
   // "1.2.06 Multas e Juros por Atraso" — a conta original quita pelo valor dela.
-  const lateCharge = body?.lateCharge != null && body.lateCharge !== '' ? round2(Number(body.lateCharge)) : 0;
+  const rawLateCharge = body?.lateCharge != null && body.lateCharge !== '' ? Number(body.lateCharge) : 0;
+  const lateCharge = round2(rawLateCharge);
 
   if (!accountId) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
   }
-  if (!isValidMoney(amount)) {
+  if (!isValidMoney(rawAmount)) {
     return NextResponse.json({ error: 'Informe um valor maior que zero, com até 2 casas decimais.' }, { status: 400 });
   }
   if (!bankAccountId) {
     return NextResponse.json({ error: 'Selecione a conta bancária/caixa que recebeu ou pagou este valor.' }, { status: 400 });
   }
-  if (lateCharge !== 0 && !isValidMoney(lateCharge)) {
+  if (rawLateCharge !== 0 && !isValidMoney(rawLateCharge)) {
     return NextResponse.json({ error: 'Multa e juros: informe um valor maior que zero, com até 2 casas decimais (ou deixe em branco).' }, { status: 400 });
   }
 

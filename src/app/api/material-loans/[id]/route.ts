@@ -39,8 +39,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         return NextResponse.json({ error: `${SUPPLY_KIND_LABEL[kind]} é registrada por quem cuida do cadastro de materiais (Secretário, Venerável ou Administrador).` }, { status: 403 });
       }
     }
-    const unitPrice = round2(Number(body?.unitPrice ?? 0));
-    if (kind === 'sale' && !isValidMoney(unitPrice)) {
+    const rawUnitPrice = Number(body?.unitPrice ?? 0);
+    const unitPrice = round2(rawUnitPrice);
+    if (kind === 'sale' && !isValidMoney(rawUnitPrice)) {
       return NextResponse.json({ error: 'Informe o valor unitário da venda (maior que zero, até 2 casas decimais).' }, { status: 400 });
     }
     const dueDate = body?.dueDate ? new Date(`${String(body.dueDate).slice(0, 10)}T12:00:00Z`) : new Date();

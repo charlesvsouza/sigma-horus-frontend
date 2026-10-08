@@ -182,7 +182,7 @@ export const authOptions = {
     // Tipos dos callbacks do next-auth v5 sem module augmentation (o app usa
     // casts explícitos abaixo em vez de aumentar Session/JWT/User globalmente).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async jwt({ token, user, trigger }: { token: any; user?: any; trigger?: string }) {
+    async jwt({ token, user }: { token: any; user?: any }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -203,12 +203,10 @@ export const authOptions = {
           token.role = fresh.role;
           token.lodgeId = fresh.lodgeId;
           token.memberId = fresh.memberId;
-          if (!fresh.mustChangePassword) token.mustChangePassword = false;
+          // Espelha o banco: só a troca real de senha (que zera a flag lá) a libera,
+          // então um update() do cliente não consegue contornar o gate.
+          token.mustChangePassword = fresh.mustChangePassword;
         }
-      }
-      // Após o usuário trocar a senha, o cliente chama update() para limpar a flag.
-      if (trigger === 'update') {
-        token.mustChangePassword = false;
       }
       return token;
     },

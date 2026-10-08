@@ -150,7 +150,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         setMessage({ kind: 'ok', text: editingId ? 'Material atualizado.' : 'Material cadastrado.' });
         cancelEdit();
@@ -187,7 +187,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
     setSeeding(true);
     setMessage(null);
     const response = await fetch('/api/materials/seed-defaults', { method: 'POST' });
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     setSeeding(false);
     if (response.ok) {
       setMessage({ kind: 'ok', text: `Lista padrão carregada: ${data.created} novo(s), ${data.skipped} já existiam.` });
@@ -218,7 +218,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
           dueDate: loanForm.kind === 'sale' ? loanForm.dueDate : undefined,
         }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         setMessage({ kind: 'ok', text: loanForm.kind === 'sale' ? 'Venda registrada. A conta a receber foi lançada na Tesouraria.' : 'Fornecimento registrado.' });
         setLoanForm({ ...emptyLoanForm, kind: loanForm.kind });
@@ -249,7 +249,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         setMessage({ kind: 'ok', text: status === 'returned' ? 'Marcado como devolvido.' : 'Marcado como extraviado.' });
         router.refresh();
@@ -274,7 +274,7 @@ export default function MaterialsClient({ letterhead, signatures, issuedBy, mate
           dueDate: converting.kind === 'sale' ? converting.dueDate : undefined,
         }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         setMessage({ kind: 'ok', text: `Modalidade alterada para "${SUPPLY_KIND_LABEL[converting.kind]}".` });
         setConverting(null);

@@ -68,7 +68,7 @@ export default function PermissoesClient({ initialMatrix, roles, resources, acti
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ matrix }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setSaving(false);
     if (res.ok) {
       setMatrix(data.matrix ?? matrix);

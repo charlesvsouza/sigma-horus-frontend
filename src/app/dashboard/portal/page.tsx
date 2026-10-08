@@ -309,7 +309,7 @@ export default function PortalPage() {
     try {
       const response = await fetch('/api/portal');
       if (!response.ok) throw new Error('Falha ao carregar o portal.');
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       setMember(data.member ?? null);
       setAccounts(data.accounts ?? []);
       setDocuments(data.documents ?? []);

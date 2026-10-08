@@ -40,7 +40,7 @@ function RenegotiateForm({ memberId, onDone }: { memberId: string; onDone: () =>
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ firstDueDate: firstDueDate || undefined, applyLateCharge }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setBusy(false);
     if (res.ok) {
       // Cobrança antiga no Asaas que não pôde ser cancelada: o operador precisa saber.

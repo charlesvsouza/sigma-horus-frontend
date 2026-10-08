@@ -61,7 +61,8 @@ export async function POST(request: Request) {
   const quantity = Number(body?.quantity ?? 1);
   const notes = body?.notes ? String(body.notes).trim() : null;
   const kind: SupplyKind = body?.kind === undefined ? 'loan' : body.kind;
-  const unitPrice = round2(Number(body?.unitPrice ?? 0));
+  const rawUnitPrice = Number(body?.unitPrice ?? 0);
+  const unitPrice = round2(rawUnitPrice);
   const dueDate = body?.dueDate ? new Date(`${String(body.dueDate).slice(0, 10)}T12:00:00Z`) : new Date();
 
   if (!materialId || !memberId || !Number.isInteger(quantity) || quantity <= 0 || !isSupplyKind(kind)) {
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `${SUPPLY_KIND_LABEL[kind]} é registrada por quem cuida do cadastro de materiais (Secretário, Venerável ou Administrador).` }, { status: 403 });
     }
   }
-  if (kind === 'sale' && !isValidMoney(unitPrice)) {
+  if (kind === 'sale' && !isValidMoney(rawUnitPrice)) {
     return NextResponse.json({ error: 'Informe o valor unitário da venda (maior que zero, até 2 casas decimais).' }, { status: 400 });
   }
   if (Number.isNaN(dueDate.getTime())) {

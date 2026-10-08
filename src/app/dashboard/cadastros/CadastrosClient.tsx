@@ -36,7 +36,7 @@ export default function CadastrosClient({ rites, powers }: { rites: Item[]; powe
     setSeeding(true);
     setMessage(null);
     const res = await fetch('/api/lodges/seed-defaults', { method: 'POST' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setSeeding(false);
     if (res.ok) {
       const s = data.seeded ?? {};
@@ -54,7 +54,7 @@ export default function CadastrosClient({ rites, powers }: { rites: Item[]; powe
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: riteName, order: 1 }),
     });
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     if (response.ok) {
       setMessage({ kind: 'ok', text: 'Rito criado com sucesso.' });
       setRiteName('');
@@ -71,7 +71,7 @@ export default function CadastrosClient({ rites, powers }: { rites: Item[]; powe
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: powerName, order: 1 }),
     });
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     if (response.ok) {
       setMessage({ kind: 'ok', text: 'Potência criada com sucesso.' });
       setPowerName('');

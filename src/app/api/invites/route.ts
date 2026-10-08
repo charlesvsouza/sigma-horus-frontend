@@ -24,6 +24,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Plano inválido: ${plan}` }, { status: 400 });
   }
 
+  if ((ttlDays !== undefined && ttlDays <= 0) || (trialDays !== undefined && trialDays <= 0)) {
+    return NextResponse.json({ error: 'ttlDays e trialDays precisam ser maiores que zero.' }, { status: 400 });
+  }
+
   const invite = await createInvite({ email, note, ttlDays, plan, trialDays });
   const base = process.env.NEXT_PUBLIC_APP_URL ?? '';
   return NextResponse.json({

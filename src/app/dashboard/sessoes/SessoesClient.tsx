@@ -28,7 +28,7 @@ export default function SessoesClient({ sessions }: { sessions: SessionItem[] })
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, notes: form.notes || undefined, agenda: form.agenda || undefined, endDate: form.endDate || undefined }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setForm(EMPTY_FORM);
         // Abre a sessão criada: é lá que se revisa e envia a convocação.

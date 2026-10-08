@@ -61,7 +61,7 @@ export default function VeneralatoPage() {
 
   async function loadTerms(): Promise<TermItem[]> {
     const res = await fetch('/api/terms');
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     const items: TermItem[] = data.items ?? [];
     setTerms(items);
     return items;
@@ -69,8 +69,8 @@ export default function VeneralatoPage() {
 
   async function loadRefs() {
     const [offRes, memRes] = await Promise.all([fetch('/api/offices'), fetch('/api/members')]);
-    setOffices(((await offRes.json()).items ?? []).sort(compareOffices));
-    setMembers((await memRes.json()).items ?? []);
+    setOffices(((await offRes.json().catch(() => ({}))).items ?? []).sort(compareOffices));
+    setMembers((await memRes.json().catch(() => ({}))).items ?? []);
   }
 
   useEffect(() => {
@@ -87,7 +87,7 @@ export default function VeneralatoPage() {
   async function loadTermDetail(id: string) {
     setSelectedTerm(id);
     const res = await fetch(`/api/terms/${id}`);
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setTermDetail(data.item);
   }
 
@@ -101,7 +101,7 @@ export default function VeneralatoPage() {
     setLoadingHistory(true);
     try {
       const res = await fetch('/api/terms/member-history');
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       setHistory(data.items ?? []);
     } finally {
       setLoadingHistory(false);
@@ -203,7 +203,7 @@ export default function VeneralatoPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ termId }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setMessage(data.item
       ? { kind: 'ok', text: 'Caixa fechado. Aguarda aprovação da prestação de contas.' }
       : { kind: 'error', text: data.error ?? 'Erro.' });
@@ -213,7 +213,7 @@ export default function VeneralatoPage() {
   async function undoCashClose(termId: string) {
     if (!(await askConfirm({ title: 'Desfazer fechamento de caixa', message: 'Permite refazer o Passo 1. Só é possível enquanto a prestação de contas não tiver sido aprovada.', confirmLabel: 'Desfazer', intent: 'danger' }))) return;
     const res = await fetch(`/api/cash-close?termId=${termId}`, { method: 'DELETE' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setMessage(res.ok ? { kind: 'ok', text: 'Fechamento de caixa desfeito.' } : { kind: 'error', text: data.error ?? 'Erro.' });
     await loadTermDetail(termId);
   }
@@ -223,7 +223,7 @@ export default function VeneralatoPage() {
     const res = await fetch('/api/cash-close/approve', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ termId }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setMessage(res.ok ? { kind: 'ok', text: 'Prestação de contas aprovada.' } : { kind: 'error', text: data.error ?? 'Erro.' });
     await loadTermDetail(termId);
   }
@@ -231,7 +231,7 @@ export default function VeneralatoPage() {
   async function deleteTerm(termId: string) {
     if (!(await askConfirm({ title: 'Excluir período', message: 'Remove este período (só é possível enquanto não houver fechamento de caixa registrado).', confirmLabel: 'Excluir', intent: 'danger' }))) return;
     const res = await fetch(`/api/terms/${termId}`, { method: 'DELETE' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setMessage(res.ok ? { kind: 'ok', text: 'Período excluído.' } : { kind: 'error', text: data.error ?? 'Erro.' });
     if (res.ok) {
       setSelectedTerm(null);
@@ -243,7 +243,7 @@ export default function VeneralatoPage() {
   async function closeTerm(termId: string) {
     if (!(await askConfirm({ title: 'Encerrar veneralato', message: 'Esta ação trava todos os lançamentos do período e o saldo final será herdado pela próxima gestão. Não pode ser desfeita.', confirmLabel: 'Encerrar', intent: 'danger' }))) return;
     const res = await fetch(`/api/terms/${termId}/close`, { method: 'POST' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setMessage(res.ok
       ? { kind: 'ok', text: `Veneralato encerrado. Saldo final ${brl(data.closingBalance)} será herdado pela próxima gestão.` }
       : { kind: 'error', text: data.error ?? 'Erro.' });

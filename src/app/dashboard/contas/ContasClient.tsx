@@ -143,13 +143,13 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
       });
 
       let response = await send(false);
-      let data = await response.json();
+      let data = await response.json().catch(() => ({}));
       // Cobrança aberta no Asaas: a baixa é do Asaas. Só segue se foi recebido fora dele.
       if (response.status === 409 && data.code === 'ASAAS_CHARGE_OPEN') {
         const ok = await askConfirm({ title: 'Cobrança aberta no Asaas', message: data.error, confirmLabel: 'Recebido fora do Asaas' });
         if (!ok) return;
         response = await send(true);
-        data = await response.json();
+        data = await response.json().catch(() => ({}));
       }
       if (response.ok) {
         setMessage(data.asaasWarning ? { kind: 'error', text: data.asaasWarning } : { kind: 'ok', text: editingId ? 'Conta atualizada com sucesso.' : 'Conta cadastrada com sucesso.' });
@@ -185,7 +185,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
 
   async function handleApprove(id: string) {
     const response = await fetch(`/api/accounts/${id}/approve`, { method: 'POST' });
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     if (response.ok) {
       setMessage({ kind: 'ok', text: 'Despesa aprovada.' });
       router.refresh();

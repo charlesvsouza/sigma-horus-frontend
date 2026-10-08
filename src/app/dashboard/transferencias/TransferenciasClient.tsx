@@ -44,7 +44,7 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, amount: Number(form.amount) }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         setMessage({ kind: 'ok', text: 'Transferência criada — aguardando aprovação do Venerável Mestre.' });
         setForm({ fromId: '', toId: '', amount: '', date: '', note: '' });
@@ -78,7 +78,7 @@ export default function TransferenciasClient({ financialAccounts, transfers, rol
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         setMessage({ kind: 'ok', text: action === 'approve' ? 'Transferência aprovada e efetivada.' : 'Transferência rejeitada.' });
         router.refresh();

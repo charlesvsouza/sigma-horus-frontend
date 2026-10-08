@@ -37,7 +37,7 @@ export default function ComunicacaoClient({ items, members }: { items: MessageIt
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, channel, content, memberId }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         const s = data.stats as { sent: number; queued: number; failed: number; skipped: number } | undefined;
         const parts: string[] = [];

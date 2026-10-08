@@ -172,7 +172,7 @@ export default function OrcamentoClient({
       body: JSON.stringify({ year, chartAccountId, plannedAmount }),
     });
     if (res.ok) router.refresh();
-    else setMessage((await res.json()).error ?? 'Erro ao salvar.');
+    else setMessage((await res.json().catch(() => ({}))).error ?? 'Erro ao salvar.');
   }
 
   const revenues = items.filter((i) => i.type === 'REVENUE');

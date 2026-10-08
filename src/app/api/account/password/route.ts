@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { prismaAdmin } from '@/lib/prisma';
 import { isStrongEnough } from '@/lib/password';
+import { invalidateSessionUser } from '@/app/api/auth/[...nextauth]/auth';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
 
@@ -28,6 +29,8 @@ export async function POST(request: Request) {
 
   const passwordHash = await bcrypt.hash(next, 10);
   await prismaAdmin.user.update({ where: { id: userId }, data: { passwordHash, mustChangePassword: false } });
+
+  invalidateSessionUser(userId);
 
   await prismaAdmin.auditLog.create({
     data: { lodgeId: user.lodgeId, userId, action: 'UPDATE', entity: 'user', entityId: userId, after: JSON.stringify({ changedPassword: true }) },

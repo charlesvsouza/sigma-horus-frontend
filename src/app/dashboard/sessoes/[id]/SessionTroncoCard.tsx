@@ -14,7 +14,7 @@ export default function SessionTroncoCard({ sessionId }: { sessionId: string }) 
   useEffect(() => {
     let alive = true;
     fetch(`/api/sessions/${sessionId}/tronco`)
-      .then(async (res) => { if (!res.ok) throw new Error('x'); return (await res.json()) as Totals; })
+      .then(async (res) => { if (!res.ok) throw new Error('x'); return (await res.json().catch(() => ({}))) as Totals; })
       .then((d) => { if (alive) setData(d); })
       .catch(() => { if (alive) setFailed(true); });
     return () => { alive = false; };

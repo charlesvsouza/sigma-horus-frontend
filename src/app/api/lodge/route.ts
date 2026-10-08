@@ -4,6 +4,9 @@ import { withTenant } from '@/lib/prisma';
 import { canLodgeAccess, normalizeRole } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
+import { hasAtMostCents } from '@/lib/money';
+
+const PERCENT_FIELDS = new Set<string>(['lateFeePercent', 'lateInterestPercentMonth', 'cardFeePercentOneTime', 'cardFeePercentInstallment']);
 
 const FIELDS = [
   'name', 'legalName', 'tradeName', 'cnpj', 'email', 'phone',
@@ -78,7 +81,11 @@ export async function PUT(request: Request) {
   }
   if ('foundationDate' in body) {
     const raw = String(body.foundationDate ?? '').trim();
-    data.foundationDate = raw ? new Date(raw).toISOString() : null;
+    const parsed = raw ? new Date(raw) : null;
+    if (parsed && Number.isNaN(parsed.getTime())) {
+      return NextResponse.json({ error: 'Data de fundação inválida.' }, { status: 400 });
+    }
+    data.foundationDate = parsed ? parsed.toISOString() : null;
   }
   for (const field of FIELDS) {
     if (field in body) {
@@ -92,7 +99,10 @@ export async function PUT(request: Request) {
       const n = raw ? Number(raw) : null;
       // 0 é um valor explícito válido (ex.: exigir aprovação de QUALQUER
       // despesa) — só string vazia limpa o campo (volta a null/desativado).
-      data[numField] = n != null && !Number.isNaN(n) && n >= 0 ? n : null;
+      if (n != null && (!Number.isFinite(n) || n < 0 || !hasAtMostCents(n) || (PERCENT_FIELDS.has(numField) && n > 100))) {
+        return NextResponse.json({ error: `Valor inválido em "${numField}": use até 2 casas decimais${PERCENT_FIELDS.has(numField) ? ' e no máximo 100%' : ''}.` }, { status: 400 });
+      }
+      data[numField] = n;
     }
   }
   if (!data.name) {

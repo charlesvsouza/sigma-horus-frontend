@@ -168,7 +168,7 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ riteName: form.riteName }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setSeeding(false);
     if (res.ok) {
       notify('ok', `Cargos do rito aplicados: ${data.seeded.created} criados, ${data.seeded.skipped} já existiam.`);
@@ -197,7 +197,7 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
     setSaving(true);
     setMessage(null);
     const res = await fetch('/api/lodge', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setSaving(false);
     if (res.ok) {
       setSavedSnapshot(form);

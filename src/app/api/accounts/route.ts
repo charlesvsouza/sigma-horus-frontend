@@ -9,6 +9,9 @@ import { isValidMoney, round2 } from '@/lib/money';
 import { blockedMemberError } from '@/lib/member-block-server';
 import { NextResponse } from 'next/server';
 
+// Só 'paid' dispara a baixa; qualquer outro texto criaria conta "paga" sem Payment.
+const ACCOUNT_STATUSES = ['pending', 'paid'];
+
 export async function GET() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
@@ -59,9 +62,10 @@ export async function POST(request: Request) {
   if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const title = String(body?.title ?? '').trim();
   const type = String(body?.type ?? 'RECEIVABLE').trim().toUpperCase();
-  const amount = round2(Number(body?.amount ?? 0));
+  const rawAmount = Number(body?.amount ?? 0);
+  const amount = round2(rawAmount);
   const dueDate = body?.dueDate ? new Date(body.dueDate) : todayBR();
-  const status = String(body?.status ?? 'pending').trim();
+  const status = String(body?.status ?? 'pending').trim().toLowerCase();
   const description = String(body?.description ?? '').trim();
   const memberId = body?.memberId ? String(body.memberId) : null;
   const counterpartyId = body?.counterpartyId ? String(body.counterpartyId) : null;
@@ -73,8 +77,12 @@ export async function POST(request: Request) {
   if (!title || !['RECEIVABLE', 'PAYABLE'].includes(type)) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
   }
-  if (!isValidMoney(amount)) {
+  // round2 sozinho aceitaria 12,345 e gravaria 12,35 em silêncio: valida o valor bruto.
+  if (!isValidMoney(rawAmount)) {
     return NextResponse.json({ error: 'Informe um valor maior que zero, com até 2 casas decimais.' }, { status: 400 });
+  }
+  if (!ACCOUNT_STATUSES.includes(status)) {
+    return NextResponse.json({ error: 'Situação inválida: use pendente ou paga.' }, { status: 400 });
   }
 
   const result = await withTenant(String(lodgeId), async (db) => {

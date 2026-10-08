@@ -38,7 +38,7 @@ export default function HospitalariaPortalPage() {
   useEffect(() => {
     async function load() {
       const res = await fetch('/api/campaigns');
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       setCampaigns(data.items ?? []);
       setTroncoBalance(data.tronco?.configured ? Number(data.tronco.balance) : null);
       setLoading(false);

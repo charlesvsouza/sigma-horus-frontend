@@ -50,7 +50,7 @@ export default function CampanhasClient({ items, tronco, channels, requests, ban
 
   async function fetchDetail(id: string) {
     const res = await fetch(`/api/campaigns/${id}`);
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) setDetail(data.item);
   }
 
@@ -71,7 +71,7 @@ export default function CampanhasClient({ items, tronco, channels, requests, ban
     e.preventDefault();
     setMessage('');
     const res = await fetch('/api/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) { setMessage('Campanha criada.'); setCreating(false); setForm(emptyForm); router.refresh(); }
     else setMessage(data.error ?? 'Erro ao criar campanha.');
   }
@@ -221,7 +221,7 @@ function CampaignDetail({ campaign, tronco, channels, bankAccounts, onChange }: 
     if (selected.length === 0) { setConvResult('Selecione ao menos um canal.'); return; }
     setConvBusy(true);
     const res = await fetch(`/api/campaigns/${campaign!.id}/convocar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channels: selected, scope: conv.scope, message: conv.message }) });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setConvBusy(false);
     if (res.ok) {
       const s = data.stats ?? {};
@@ -235,7 +235,7 @@ function CampaignDetail({ campaign, tronco, channels, bankAccounts, onChange }: 
     e.preventDefault();
     setMsg('');
     const res = await fetch(`/api/campaigns/${campaign!.id}/donations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...donation, amount: Number(donation.amount), bankAccountId: bankAccountId || undefined }) });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) { setDonation({ amount: '', donorName: '', anonymous: false }); onChange(); }
     else setMsg(data.error ?? 'Erro ao registrar doação.');
   }
@@ -243,7 +243,7 @@ function CampaignDetail({ campaign, tronco, channels, bankAccounts, onChange }: 
     e.preventDefault();
     setMsg('');
     const res = await fetch(`/api/campaigns/${campaign!.id}/fund`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: Number(fund), bankAccountId: bankAccountId || undefined }) });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) { setFund(''); onChange(); }
     else setMsg(data.error ?? 'Erro ao custear pelo Tronco.');
   }

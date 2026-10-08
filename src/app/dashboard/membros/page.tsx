@@ -267,9 +267,9 @@ export default function MembrosPage() {
       if (!membersResponse.ok || !ritesResponse.ok || !powersResponse.ok) {
         throw new Error('Falha ao carregar dados.');
       }
-      const membersData = await membersResponse.json();
-      const ritesData = await ritesResponse.json();
-      const powersData = await powersResponse.json();
+      const membersData = await membersResponse.json().catch(() => ({}));
+      const ritesData = await ritesResponse.json().catch(() => ({}));
+      const powersData = await powersResponse.json().catch(() => ({}));
       const lodgeData = await lodgeResponse.json().catch(() => ({}));
       setMembers(membersData.items ?? []);
       setRites(ritesData.items ?? []);
@@ -306,7 +306,7 @@ export default function MembrosPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, relatives }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setSaving(false);
     if (res.ok) {
       notify('ok', 'Membro cadastrado com sucesso.');
@@ -325,7 +325,7 @@ export default function MembrosPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, relatives }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setSaving(false);
     if (res.ok) {
       notify('ok', 'Membro atualizado.');
@@ -340,7 +340,7 @@ export default function MembrosPage() {
     if (!(await askConfirm({ title: 'Migrar família antiga', message: 'Migrar os campos antigos de família (mãe/pai/esposa/filhos) para a nova ficha de dependentes? Só afeta membros que ainda não têm familiares cadastrados.', confirmLabel: 'Migrar' }))) return;
     setMessage(null);
     const res = await fetch('/api/members/backfill-relatives', { method: 'POST' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       const s = data.stats ?? {};
       notify('ok', `Família migrada: ${s.migrated ?? 0} membro(s), ${s.relativesCreated ?? 0} familiar(es) criado(s).`);
@@ -354,7 +354,7 @@ export default function MembrosPage() {
     if (!(await askConfirm({ title: 'Excluir membro', message: `Excluir definitivamente o cadastro de "${m.name}"? Esta ação não pode ser desfeita.`, confirmLabel: 'Excluir', intent: 'danger' }))) return;
     setMessage(null);
     const res = await fetch(`/api/members/${m.id}`, { method: 'DELETE' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       notify('ok', 'Membro excluído.');
       await loadData();

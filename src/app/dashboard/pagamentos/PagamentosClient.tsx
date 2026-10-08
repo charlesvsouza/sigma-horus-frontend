@@ -226,13 +226,13 @@ export default function PagamentosClient({ accounts, members, payments, financia
       });
 
       let response = await send(false);
-      let data = await response.json();
+      let data = await response.json().catch(() => ({}));
       // Cobrança aberta no Asaas: a baixa é do Asaas. Só segue se foi recebido fora dele.
       if (response.status === 409 && data.code === 'ASAAS_CHARGE_OPEN') {
         const ok = await askConfirm({ title: 'Cobrança aberta no Asaas', message: data.error, confirmLabel: 'Recebido fora do Asaas' });
         if (!ok) return;
         response = await send(true);
-        data = await response.json();
+        data = await response.json().catch(() => ({}));
       }
       if (response.ok) {
         setMessage(data.asaasWarning ? { kind: 'error', text: data.asaasWarning } : { kind: 'ok', text: 'Pagamento registrado com sucesso.' });

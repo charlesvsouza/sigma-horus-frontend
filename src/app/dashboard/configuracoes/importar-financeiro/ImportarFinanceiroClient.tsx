@@ -84,7 +84,7 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
     setError(null);
     try {
       const res = await fetch('/api/import/financial/analyze', { method: 'POST', body: buildForm(list, next), signal: controller.signal });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (controller.signal.aborted) return;
       if (!res.ok) {
         setError(data?.error ?? 'Não foi possível analisar os arquivos.');
@@ -126,7 +126,7 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
       if (acceptFailed) fd.append('acceptFailedChecks', 'true');
       if (allowRepeat) fd.append('allowRepeat', 'true');
       const res = await fetch('/api/import/financial/commit', { method: 'POST', body: fd });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) { setError(data?.error ?? 'Falha ao importar.'); return; }
       setResult(data as CommitResult);
       setAnalysis(null);
@@ -149,7 +149,7 @@ export default function ImportarFinanceiroClient({ denied }: { denied: boolean }
     setError(null);
     try {
       const res = await fetch('/api/import/financial/undo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ batchId }) });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) { setError(data?.error ?? 'Falha ao desfazer.'); return; }
       setResult(null);
       setAnalysis(null);

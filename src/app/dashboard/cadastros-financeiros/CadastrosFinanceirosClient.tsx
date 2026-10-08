@@ -48,7 +48,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
       setShowChartForm(false);
       router.refresh();
     } else {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       notify('error', data.error ?? 'Erro ao criar conta.');
     }
   }
@@ -87,7 +87,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
     setLinking(true);
     setMessage(null);
     const res = await fetch('/api/chart-accounts/sync', { method: 'POST' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setLinking(false);
     if (res.ok) {
       const s = data.stats ?? {};
@@ -103,7 +103,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
     setLinking(true);
     setMessage(null);
     const res = await fetch('/api/accounts/backfill-chart', { method: 'POST' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setLinking(false);
     if (res.ok) {
       const s = data.stats ?? {};
@@ -130,7 +130,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...cpForm, document: cpForm.document || null }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setCpSaving(false);
     if (res.ok) {
       notify('ok', 'Contraparte criada com sucesso.');
@@ -193,7 +193,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...faForm, name }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setFaSaving(false);
     if (res.ok) {
       notify('ok', 'Conta financeira criada com sucesso.');

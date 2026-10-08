@@ -108,7 +108,7 @@ export default function ImportarClient({ denied }: { denied: boolean }) {
       formData.append('file', targetFile);
       if (mapping) formData.append('mapping', JSON.stringify(mapping));
       const res = await fetch('/api/import/analyze', { method: 'POST', body: formData });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data?.error ?? 'Falha ao analisar o arquivo.');
         setBusy(false);
@@ -151,7 +151,7 @@ export default function ImportarClient({ denied }: { denied: boolean }) {
         formData.append('approvedAmbiguousRows', JSON.stringify([...approvedAmbiguous]));
       }
       const res = await fetch('/api/import/commit', { method: 'POST', body: formData });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data?.error ?? 'Falha ao confirmar a importação.');
         setBusy(false);

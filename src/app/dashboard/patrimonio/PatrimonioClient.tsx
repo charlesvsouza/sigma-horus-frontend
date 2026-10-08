@@ -64,7 +64,7 @@ export default function PatrimonioClient({ assets, chartAccounts }: { assets: As
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         setMessage({ kind: 'ok', text: editingId ? 'Bem atualizado.' : 'Bem cadastrado.' });
         cancelEdit();

@@ -35,7 +35,7 @@ export function SubscriptionManager({ currentPlan, isActiveCard, pendingPlan }: 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan, interval, method: effectiveMethod }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.url) window.location.href = data.url;
       else setMsg({ kind: 'err', text: data.error ?? 'Não foi possível iniciar o checkout.' });
     } finally {
@@ -52,7 +52,7 @@ export function SubscriptionManager({ currentPlan, isActiveCard, pendingPlan }: 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setMsg({ kind: 'ok', text: data.message ?? 'Plano atualizado.' });
         setTimeout(() => window.location.reload(), 1500);

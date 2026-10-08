@@ -81,7 +81,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         setMessage({ kind: 'ok', text: 'Cobrança criada com sucesso.' });
         setJustCreated(lodgeMode && data.item?.member ? { id: data.item.id, number: data.item.number } : null);
@@ -107,7 +107,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...bulk, amount: Number(bulk.amount) }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setBulkProcessing(false);
     if (res.ok) {
       setMessage({ kind: 'ok', text: `Cobranças geradas: ${data.created} (de ${data.members} membros).` });
@@ -128,7 +128,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
       // O método (Pix/boleto) vem da configuração da loja — cartão fica fora.
       body: JSON.stringify({ invoiceId }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setEmittingId('');
     if (res.ok) {
       const link = data.invoiceUrl ?? data.bankSlipUrl ?? '';
@@ -169,7 +169,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
   async function remindInvoice(invoiceId: string) {
     setMessage(null);
     const res = await fetch(`/api/invoices/${invoiceId}/remind`, { method: 'POST' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setMessage(res.ok ? { kind: 'ok', text: 'Lembrete enviado.' } : { kind: 'error', text: data.error ?? 'Erro ao enviar lembrete.' });
   }
 
@@ -177,7 +177,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
     setProcessing(true);
     setMessage(null);
     const res = await fetch('/api/cron/recurring-invoices', { method: 'POST' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       setMessage({ kind: 'error', text: data.error ?? 'Erro ao processar as recorrentes.' });
     } else {

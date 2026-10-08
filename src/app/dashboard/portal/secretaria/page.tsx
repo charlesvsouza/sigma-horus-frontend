@@ -32,7 +32,7 @@ export default function SecretariaPage() {
   useEffect(() => {
     async function load() {
       const res = await fetch('/api/portal/agenda');
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       setSessions(data.items ?? []);
       setLoading(false);
     }

@@ -4,7 +4,7 @@ import { recordAgreementPayment } from '@/lib/member-block-server';
 import { canBlockMembers } from '@/lib/member-block';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
-import { round2 } from '@/lib/money';
+import { hasAtMostCents, round2 } from '@/lib/money';
 import { NextResponse } from 'next/server';
 
 // Registra um pagamento do acordo de regularização (à vista ou parcela) e o reparte entre os itens do
@@ -31,8 +31,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const paidAt = body?.paidAt ? new Date(body.paidAt) : todayBR();
   if (Number.isNaN(paidAt.getTime())) return NextResponse.json({ error: 'Data do pagamento inválida.' }, { status: 400 });
 
+  const rawAmount = Number(body?.amount ?? 0);
+  if (!hasAtMostCents(rawAmount)) return NextResponse.json({ error: 'Informe o valor com até 2 casas decimais.' }, { status: 400 });
+
   const result = await recordAgreementPayment(String(lodgeId), id, String(session.user.id), {
-    amount: round2(Number(body?.amount ?? 0)),
+    amount: round2(rawAmount),
     bankAccountId,
     paidAt,
     method: String(body?.method ?? 'manual').trim().slice(0, 40),

@@ -131,7 +131,7 @@ function MatchPicker({ bankTxId, onDone }: { bankTxId: string; onDone: () => voi
   async function load() {
     setLoading(true);
     const res = await fetch(`/api/bank-reconciliation/${bankTxId}/candidates`);
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setCandidates(data.items ?? []);
     setLoading(false);
   }
@@ -190,7 +190,7 @@ export default function ConciliacaoClient({ items, banks, canSettle }: { items: 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setImporting(false);
     if (res.ok) {
       setMessage({ kind: 'ok', text: `Extrato importado: ${data.parsed} linha(s) lida(s), ${data.imported} nova(s), ${data.duplicates} já existiam, ${data.autoMatched} conciliada(s) automaticamente.` });
