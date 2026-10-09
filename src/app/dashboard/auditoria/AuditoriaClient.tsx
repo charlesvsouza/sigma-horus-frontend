@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
+import { AUDIT_ACTION_LABEL as actionLabels, AUDIT_ENTITY_LABEL as entityLabels } from '@/lib/audit-report';
 
 interface AuditEntry {
   id: string;
@@ -13,24 +15,6 @@ interface AuditEntry {
   userName?: string | null;
   viaSuperadmin?: boolean;
 }
-
-const entityLabels: Record<string, string> = {
-  account: 'Conta',
-  member: 'Membro',
-  invoice: 'Fatura',
-  payment: 'Pagamento',
-  session: 'Sessão',
-  office: 'Cargo',
-  term: 'Período',
-  memberOffice: 'Vinculação',
-  cashClose: 'Fechamento',
-};
-
-const actionLabels: Record<string, string> = {
-  CREATE: 'Criação',
-  UPDATE: 'Alteração',
-  DELETE: 'Remoção',
-};
 
 export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) {
   const [filter, setFilter] = useState('');
@@ -46,9 +30,14 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
   return (
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-sand-light">Auditoria</h1>
-          <p className="mt-1 text-sm text-sand-dark">Registro de todas as operações realizadas no sistema.</p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-sand-light">Auditoria</h1>
+            <p className="mt-1 text-sm text-sand-dark">Registro de todas as operações realizadas no sistema.</p>
+          </div>
+          <Link href="/dashboard/auditoria/relatorio" className="rounded-full border border-gold/40 px-4 py-1.5 text-xs font-medium text-gold hover:text-gold-light">
+            Relatório de intervenções por pessoa
+          </Link>
         </div>
 
         <input
