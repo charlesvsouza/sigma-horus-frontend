@@ -265,7 +265,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 9 de outubro de 2026 · versão 1.100</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 9 de outubro de 2026 · versão 1.101</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -985,7 +985,7 @@ export function ManualBook() {
                   <li>Clique em <UI>Salvar conta</UI>. A conta aparece na lista <UI>Contas cadastradas</UI> e o formulário fica limpo e aberto para o próximo lançamento; use <UI>Remover</UI> para excluir.</li>
                 </Steps>
                 <p>
-                  <strong>Comprovante de pagamento da despesa.</strong> Em toda <strong>conta a pagar</strong> da lista, o botão <UI>Anexar comprovante</UI> guarda o comprovante (PDF ou foto, até 4 MB) do que a loja pagou — aluguel, energia, fornecedor. Depois de anexado, a conta passa a mostrar <UI>Ver comprovante</UI> (abre o arquivo), <UI>Trocar</UI> e <UI>Tirar</UI>. É o mesmo cuidado do comprovante de mensalidade: o arquivo fica em armazenamento privado da loja, só abre para quem tem acesso a Contas, e a inclusão e a remoção ficam na auditoria. O comprovante é um registro de apoio: não dá baixa nem muda o saldo.
+                  <strong>Comprovante de pagamento da despesa.</strong> No formulário, ao escolher <strong>Conta a pagar</strong>, aparece o campo <UI>Comprovante de pagamento</UI>: o arquivo sobe junto com <UI>Salvar conta</UI>, num só passo (se o envio falhar, a despesa fica salva e o aviso diz para tentar de novo pela lista). Em toda <strong>conta a pagar</strong> da lista, o botão <UI>Anexar comprovante</UI> também guarda o comprovante (PDF ou foto, até 4 MB) do que a loja pagou — aluguel, energia, fornecedor. Depois de anexado, a conta passa a mostrar <UI>Ver comprovante</UI> (abre o arquivo), <UI>Trocar</UI> e <UI>Tirar</UI>. É o mesmo cuidado do comprovante de mensalidade: o arquivo fica em armazenamento privado da loja, só abre para quem tem acesso a Contas, e a inclusão e a remoção ficam na auditoria. O comprovante é um registro de apoio: não dá baixa nem muda o saldo.
                 </p>
                 <p>
                   <strong>Filtros da lista de Contas.</strong> Com a <UI>Navegação rápida</UI> ligada (capítulo 4) — ou ao chegar por um atalho já filtrado, como os da Visão geral — a lista ganha a barra de filtros:

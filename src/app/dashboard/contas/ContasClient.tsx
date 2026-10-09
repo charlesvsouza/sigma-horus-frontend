@@ -8,6 +8,7 @@ import { MemberLink, useQuickNav } from '@/components/quick-nav';
 import AccountsFilterBar, { FilterSummary } from '@/components/accounts-filter-bar';
 import AccountsReport from '@/components/accounts-report';
 import { applyFilters, describeFilters, isDefaultFilters, parseFilters, serializeFilters, type Filters, type FilterAccount } from '@/lib/accounts-filter';
+import { receiptUploadError } from '@/lib/upload-guards';
 import { daysOverdueBR, formatDateOnly, todayBR } from '@/lib/date-only';
 
 interface ChartAccountOption { id: string; code: string; name: string; type: string; isDues?: boolean; }
@@ -51,6 +52,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   const emptyForm = () => ({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', bankAccountId: '', isDues: art002Enabled, paidAt: '' });
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Comprovante de pagamento (só despesa): sobe junto com o salvamento. `fileKey` zera o campo de arquivo.
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [fileKey, setFileKey] = useState(0);
   // O formulário de lançamento abre pelo item "Lançamento" do menu (startWithForm) — e fica aberto
   // entre um lançamento e outro. Em /contas (só a lista) abre ao editar uma conta; sem contas ainda, já vem aberto.
   const [formOpen, setFormOpen] = useState(startWithForm || accounts.length === 0);
@@ -107,6 +111,8 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   }
 
   function cancelEdit() {
+    setReceiptFile(null);
+    setFileKey((k) => k + 1);
     setEditingId(null);
     setFormOpen(startWithForm);
     setForm(emptyForm());
@@ -125,6 +131,12 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    // Confere o comprovante antes de gravar a conta, para não salvar pela metade por arquivo inválido.
+    const withReceipt = form.type === 'PAYABLE' ? receiptFile : null;
+    if (withReceipt) {
+      const invalid = receiptUploadError(withReceipt);
+      if (invalid) { setMessage({ kind: 'error', text: invalid }); return; }
+    }
     setSubmitting(true);
     try {
       // A categoria vem pré-carregada na edição (startEdit), então o que está no form é o que vale.
@@ -153,7 +165,20 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
         data = await response.json().catch(() => ({}));
       }
       if (response.ok) {
-        setMessage(data.asaasWarning ? { kind: 'error', text: data.asaasWarning } : { kind: 'ok', text: editingId ? 'Conta atualizada com sucesso.' : 'Conta cadastrada com sucesso.' });
+        const savedText = editingId ? 'Conta atualizada com sucesso.' : 'Conta cadastrada com sucesso.';
+        let receiptError: string | null = null;
+        const accountId = editingId ?? data.item?.id ?? null;
+        if (withReceipt && accountId) {
+          const body = new FormData();
+          body.append('file', withReceipt);
+          const up = await fetch(`/api/accounts/${accountId}/receipt`, { method: 'POST', body });
+          if (!up.ok) receiptError = ((await up.json().catch(() => ({}))) as { error?: string }).error ?? 'Erro ao enviar o comprovante.';
+        }
+        setMessage(
+          receiptError ? { kind: 'error', text: `${savedText} Mas o comprovante não foi enviado: ${receiptError} Use "Anexar comprovante" na lista para tentar de novo.` }
+          : data.asaasWarning ? { kind: 'error', text: data.asaasWarning }
+          : { kind: 'ok', text: withReceipt ? `${savedText} Comprovante anexado.` : savedText },
+        );
         cancelEdit();
         router.refresh();
       } else {
@@ -329,6 +354,12 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                     É mensalidade do membro (conta para a regra do Art. 002 — 60 dias de inadimplência)
                     {!art002Enabled ? <span className="text-xs text-sand-dark/70">· Art. 002 desligado em Configurações</span> : null}
                   </label>
+                ) : null}
+                {form.type === 'PAYABLE' ? (
+                  <Field label="Comprovante de pagamento (opcional)">
+                    <input key={fileKey} type="file" accept="application/pdf,image/png,image/jpeg,image/webp" onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)} className={INPUT_CLASS} />
+                    <p className="mt-1 text-xs text-sand-dark">PDF ou foto, até 4 MB. Guardado junto com a despesa; não dá baixa nem muda o saldo.</p>
+                  </Field>
                 ) : null}
                 <Field label="Descrição">
                   <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={INPUT_CLASS} rows={3} />
