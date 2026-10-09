@@ -15,7 +15,7 @@ test('período: dias de Brasília, inclusive o último', () => {
 
 test('ator: usuário, ator de sistema e sistema sem nome', () => {
   assert.deepEqual(actorOf(e({})), { key: 'u1', name: 'Ana', system: false });
-  assert.equal(actorOf(e({ userId: null, after: '{"actor":"system:asaas-webhook"}' })).name, 'Sistema (asaas-webhook)');
+  assert.equal(actorOf(e({ userId: null, after: '{"actor":"system:asaas-webhook"}' })).name, 'Sistema (aviso automático do Asaas)');
   assert.equal(actorOf(e({ userId: null, after: null })).key, 'system');
   assert.equal(actorOf(e({ userName: null })).name, 'Usuário removido');
 });
