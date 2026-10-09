@@ -14,6 +14,7 @@ import { syncMemberBlock } from '@/lib/member-block-sync';
 import { mainPaymentIdFromMarker } from '@/lib/late-charge';
 import { autoSignReceipt } from '@/lib/receipt-signature-server';
 import { brl } from '@/lib/currency';
+import { type SettlementType } from '@/lib/settlement-type';
 
 type Db = Prisma.TransactionClient;
 
@@ -32,6 +33,7 @@ export interface PaymentPatch {
   paidAt?: string; // AAAA-MM-DD
   bankAccountId?: string;
   note?: string | null;
+  settlementType?: SettlementType;
 }
 
 export type EditPaymentResult =
@@ -76,6 +78,7 @@ export async function editPayment(
   if (next.paidAt.getTime() !== payment.paidAt.getTime()) changed.push('data');
   if (next.bankAccountId !== payment.bankAccountId) changed.push('conta');
   if (next.note !== payment.note) changed.push('observação');
+  if (patch.settlementType !== undefined && patch.settlementType !== payment.settlementType) changed.push('tipo de baixa');
   if (changed.length === 0) return { ok: true, changed, unmatchedBankLines: 0 };
 
   // Travas: tanto a data de hoje do pagamento quanto a nova.
@@ -85,7 +88,7 @@ export async function editPayment(
     if (term) return { ok: false, status: 409, error: `Período encerrado (${term.title}). Não é possível alterar pagamento dentro de um veneralato já fechado.` };
   }
   // Observação sozinha não mexe no caixa: não precisa da retificação.
-  const cashChanged = changed.some((c) => c !== 'observação');
+  const cashChanged = changed.some((c) => c !== 'observação' && c !== 'tipo de baixa');
   if (cashChanged) {
     const ledger = await checkLedgerOpen(db, lodgeId, dates, { userId: user.id, what: 'payment.edit' });
     if (!ledger.ok) return { ok: false, status: 409, error: ledger.error, code: 'LEDGER_LOCKED' };
@@ -102,7 +105,7 @@ export async function editPayment(
     }
   }
 
-  await db.payment.update({ where: { id: payment.id }, data: { amount: next.amount, paidAt: next.paidAt, bankAccountId: next.bankAccountId, note: next.note } });
+  await db.payment.update({ where: { id: payment.id }, data: { amount: next.amount, paidAt: next.paidAt, bankAccountId: next.bankAccountId, note: next.note, ...(patch.settlementType !== undefined ? { settlementType: patch.settlementType } : {}) } });
 
   // A conciliação bancária apontava para o valor/data/conta antigos: reabre a linha do extrato para conferir de novo.
   let unmatchedBankLines = 0;

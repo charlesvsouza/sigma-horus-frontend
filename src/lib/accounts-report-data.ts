@@ -2,6 +2,7 @@ import type { Prisma } from '@/generated/prisma/client';
 import { donorDisplayName } from '@/lib/hospitalaria';
 import { remainingAmount, sumMoney } from '@/lib/money';
 import type { AccountReportRowInput } from '@/lib/accounts-report';
+import { settlementTypeOf } from '@/lib/settlement-type';
 
 export type AccountsReportVariant = 'contas-a-receber' | 'contas-a-pagar' | 'contas-recebidas' | 'contas-pagas';
 
@@ -63,6 +64,7 @@ export async function loadAccountsReportRows(
   const payments = await db.payment.findMany({
     where: { lodgeId, account: { type } },
     include: {
+      bankTransactions: { select: { id: true }, take: 1 },
       member: { select: { id: true, name: true } },
       account: {
         select: {
@@ -90,6 +92,7 @@ export async function loadAccountsReportRows(
       category: p.account?.chartAccount?.name ?? null,
       amount: Number(p.amount),
       dueDate: p.account?.dueDate ?? null,
+      settlement: settlementTypeOf({ settlementType: p.settlementType, method: p.method, note: p.note, bankMatched: p.bankTransactions.length > 0 }),
     };
   });
 }

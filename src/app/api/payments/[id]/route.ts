@@ -9,6 +9,7 @@ import { coversAmount } from '@/lib/money';
 import { isPlainAccount, syncPlainAccountStatus } from '@/lib/account-status';
 import { lateChargeMarker, mainPaymentIdFromMarker } from '@/lib/late-charge';
 import { editPayment, type PaymentPatch } from '@/lib/payment-edit-server';
+import { checkManualSettlement } from '@/lib/settlement-type';
 import { NextResponse } from 'next/server';
 
 // Estorno/exclusão de um pagamento lançado errado. Recalcula o status da
@@ -138,14 +139,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.paidAt !== undefined) patch.paidAt = String(body.paidAt).slice(0, 10);
   if (body.bankAccountId !== undefined) patch.bankAccountId = String(body.bankAccountId);
   if (body.note !== undefined) patch.note = body.note === null ? null : String(body.note);
+  if (body.settlementType !== undefined) {
+    const st = checkManualSettlement(body.settlementType);
+    if (!st.ok) return NextResponse.json({ error: st.error }, { status: 400 });
+    patch.settlementType = st.value;
+  }
 
   const result = await withTenant(String(lodgeId), async (db) => {
-    const before = await db.payment.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { amount: true, paidAt: true, bankAccountId: true, note: true } });
+    const before = await db.payment.findFirst({ where: { id, lodgeId: String(lodgeId) }, select: { amount: true, paidAt: true, bankAccountId: true, note: true, settlementType: true } });
     const r = await editPayment(db, { lodgeId: String(lodgeId), paymentId: id, patch, user: { id: String(session.user.id) } });
     if (r.ok && r.changed.length > 0) {
       await logAudit(db, {
         lodgeId: String(lodgeId), userId: session.user.id, action: 'UPDATE', entity: 'payment', entityId: id,
-        before: before ? { amount: before.amount, paidAt: before.paidAt, bankAccountId: before.bankAccountId, note: before.note } : undefined,
+        before: before ? { amount: before.amount, paidAt: before.paidAt, bankAccountId: before.bankAccountId, note: before.note, settlementType: before.settlementType } : undefined,
         metadata: { changed: r.changed, ...patch, reopenedBankLines: r.unmatchedBankLines },
       });
     }

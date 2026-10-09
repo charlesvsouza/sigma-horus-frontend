@@ -74,6 +74,7 @@ export async function settleAccountAsPaid(
       amount: remaining,
       paidAt,
       method: 'manual',
+      settlementType: 'manual_other',
       note: 'Lançamento registrado como pago',
     },
   });

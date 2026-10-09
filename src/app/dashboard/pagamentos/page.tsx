@@ -1,4 +1,6 @@
 import { auth } from '@/lib/auth';
+import { isAsaasMode } from '@/lib/collection';
+import { settlementTypeOf } from '@/lib/settlement-type';
 import { todayBR } from '@/lib/date-only';
 import { matchNoticesToBank } from '@/lib/notice-bank-match';
 import { openBalance, PAYMENT_NOTICE_CHECK_ENTITY, PAYMENT_NOTICE_ENTITY, PAYMENT_NOTICE_REJECT_ENTITY, withoutRejected } from '@/lib/portal-dues';
@@ -45,9 +47,11 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
             account: { select: { id: true, title: true, type: true } },
             member: { select: { id: true, name: true } },
             bankAccount: { select: { id: true, name: true, kind: true } },
+            bankTransactions: { select: { id: true }, take: 1 },
           },
           orderBy: { paidAt: 'desc' },
         }),
+        lodgeMode: await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { collectionMode: true } }),
         revenueCharts: await db.chartAccount.findMany({ where: { lodgeId: String(lodgeId), type: 'REVENUE' }, select: { id: true, code: true, name: true }, orderBy: { code: 'asc' } }),
         financialAccounts: await db.financialAccount.findMany({
           where: { lodgeId: String(lodgeId), active: true },
@@ -88,7 +92,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           select: { id: true, date: true, amount: true, description: true },
         }),
       }))
-    : { accounts: [], members: [], payments: [], revenueCharts: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], receiptChecks: [], cashPayments: [], cashConfirmed: [], hiddenOld: 0 };
+    : { accounts: [], members: [], payments: [], revenueCharts: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], receiptChecks: [], cashPayments: [], cashConfirmed: [], hiddenOld: 0, lodgeMode: null };
 
   const accounts = data.accounts
     .map((a) => {
@@ -172,6 +176,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
     amount: Number(p.amount),
     paidAt: p.paidAt.toISOString(),
     method: p.method,
+    settlementType: settlementTypeOf({ settlementType: p.settlementType, method: p.method, note: p.note, bankMatched: p.bankTransactions.length > 0 }),
     note: p.note ?? null,
     account: p.account ? { id: p.account.id, title: p.account.title, type: p.account.type } : null,
     member: p.member ? { id: p.member.id, name: p.member.name } : null,
@@ -199,6 +204,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
       revenueCharts={data.revenueCharts}
       notices={notices}
       currentUserId={session?.user?.id ?? null}
+      asaasMode={isAsaasMode(data.lodgeMode)}
       initialAccountId={conta && openById.has(conta) ? conta : null}
     />
     </>

@@ -79,15 +79,15 @@ export default function HistoricoPagamentosClient({
   const title = staff ? 'Histórico de pagamentos' : 'Meu histórico de pagamentos';
   const period = `Período: ${from ? formatDateOnly(from) : 'início'} a ${to ? formatDateOnly(to) : 'hoje'}`;
   const details = [period, memberName ? `Irmão: ${memberName}` : staff ? 'Todos os irmãos' : null, `Ordenado por: ${PAYMENT_HISTORY_SORT_LABEL[sort]}${paymentSortHasGroups(sort) && !subtotals ? ', sem subtotais' : ''}`];
-  const cols = showMemberColumn ? 6 : 5; // colunas antes do recibo
+  const cols = (showMemberColumn ? 6 : 5) + (staff ? 1 : 0); // colunas antes do recibo (staff ganha "Tipo de baixa")
 
   const csvLine = (r: PaymentHistoryRow) => [
     fmtPaidAt(r.paidAt), ...(showMemberColumn ? [r.memberName ?? ''] : []), r.title, r.category ?? '',
-    r.dueDate ? formatDateOnly(r.dueDate) : '', paymentMethodLabel(r.method), csvNumber(r.amount),
+    r.dueDate ? formatDateOnly(r.dueDate) : '', paymentMethodLabel(r.method), ...(staff ? [r.settlement ?? '—'] : []), csvNumber(r.amount),
   ];
   const blank = (n: number) => Array.from({ length: n }, () => '');
   const csvRows = [
-    ['Data do pagamento', ...(showMemberColumn ? ['Irmão'] : []), 'Referente a', 'Categoria', 'Vencimento', 'Forma', 'Valor'],
+    ['Data do pagamento', ...(showMemberColumn ? ['Irmão'] : []), 'Referente a', 'Categoria', 'Vencimento', 'Forma', ...(staff ? ['Tipo de baixa'] : []), 'Valor'],
     ...(report.groups
       ? report.groups.flatMap((g) => [...g.rows.map(csvLine), [...blank(cols - 1), `Subtotal — ${g.label}`, csvNumber(g.total)]])
       : report.rows.map(csvLine)),
@@ -104,6 +104,7 @@ export default function HistoricoPagamentosClient({
       </td>
       <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{r.dueDate ? formatDateOnly(r.dueDate) : '—'}</td>
       <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{paymentMethodLabel(r.method)}</td>
+      {staff ? <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{r.settlement ?? '—'}</td> : null}
       <td className="border-b border-white/5 px-2 py-2 text-right num tabular-nums text-sand-light">{brl(r.amount)}</td>
       <td className="rpt-noprint border-b border-white/5 px-2 py-2 text-right">
         <a href={`/dashboard/pagamentos/${r.id}/recibo`} target="_blank" rel="noreferrer" className="text-xs text-gold hover:text-gold-light">Recibo</a>
@@ -239,6 +240,7 @@ export default function HistoricoPagamentosClient({
                     <th className="border-b border-white/10 px-2 py-2">Referente a</th>
                     <th className="border-b border-white/10 px-2 py-2">Vencimento</th>
                     <th className="border-b border-white/10 px-2 py-2">Forma</th>
+                    {staff ? <th className="border-b border-white/10 px-2 py-2">Tipo de baixa</th> : null}
                     <th className="border-b border-white/10 px-2 py-2 text-right num">Valor</th>
                     <th className="rpt-noprint border-b border-white/10 px-2 py-2"><span className="sr-only">Recibo</span></th>
                   </tr>

@@ -17,6 +17,8 @@ export interface AccountReportRowInput {
   amount: number;
   /** Vencimento da conta (também nas liquidadas): define a Referência — mês/ano do vencimento. */
   dueDate?: Date | null;
+  /** Tipo de baixa do pagamento (só nas contas já recebidas/pagas; ver lib/settlement-type.ts). */
+  settlement?: string | null;
 }
 
 export interface AccountReportRow extends Omit<AccountReportRowInput, 'date' | 'dueDate'> {
@@ -93,6 +95,8 @@ export interface AccountReportFilters {
   text?: string; // busca em descrição/categoria
   amountMin?: number;
   amountMax?: number;
+  /** Só pagamentos deste tipo de baixa (contas recebidas/pagas). */
+  settlement?: string | null;
   sort?: AccountsSort;
   /** Blocos com subtotal nas ordens Referência e Nome (padrão: sim). */
   subtotals?: boolean;
@@ -157,6 +161,7 @@ export function buildAccountsReport(rows: AccountReportRowInput[], filters: Acco
     .filter((r) => r.date >= filters.from && r.date <= filters.to)
     .filter((r) => !filters.personId || r.personId === filters.personId)
     .filter((r) => !text || r.description.toLowerCase().includes(text) || (r.category ?? '').toLowerCase().includes(text) || (referenceLabel(r.dueDate) ?? '').includes(text))
+    .filter((r) => !filters.settlement || r.settlement === filters.settlement)
     .filter((r) => filters.amountMin == null || r.amount >= filters.amountMin)
     .filter((r) => filters.amountMax == null || r.amount <= filters.amountMax)
     .sort(COMPARE[sort === 'nenhuma' ? 'referencia' : sort]);

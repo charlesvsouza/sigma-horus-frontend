@@ -3,6 +3,7 @@ import { buildAccountsReport, parseAccountsSort } from '@/lib/accounts-report';
 import { loadAccountsReportRows, type AccountsReportVariant } from '@/lib/accounts-report-data';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
+import { isSettlementType } from '@/lib/settlement-type';
 import ContasReportClient from './ContasReportClient';
 
 const LABELS: Record<AccountsReportVariant, { title: string; description: string; dateLabel: string }> = {
@@ -11,6 +12,9 @@ const LABELS: Record<AccountsReportVariant, { title: string; description: string
   'contas-recebidas': { title: 'Contas recebidas', description: 'Pagamentos já recebidos, por data de recebimento.', dateLabel: 'Recebimento' },
   'contas-pagas': { title: 'Contas pagas', description: 'Pagamentos já efetuados, por data de pagamento.', dateLabel: 'Pagamento' },
 };
+
+/** Relatórios de pagamentos efetuados: ganham a coluna e o filtro "Tipo de baixa". */
+const KIND_LIQUIDATED = new Set<AccountsReportVariant>(['contas-recebidas', 'contas-pagas']);
 
 function monthStart(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -21,7 +25,7 @@ export default async function AccountsReportPage({
   searchParams,
 }: {
   variant: AccountsReportVariant;
-  searchParams: Promise<{ from?: string; to?: string; personId?: string; text?: string; sort?: string; sub?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; personId?: string; text?: string; sort?: string; sub?: string; settlement?: string }>;
 }) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
@@ -72,6 +76,7 @@ export default async function AccountsReportPage({
     to,
     personId: sp.personId || null,
     text: sp.text,
+    settlement: isSettlementType(sp.settlement) ? sp.settlement : null,
     sort,
     subtotals,
   });
@@ -93,6 +98,8 @@ export default async function AccountsReportPage({
       to={sp.to ?? (isOpenVariant ? '' : now.toISOString().slice(0, 10))}
       personId={sp.personId ?? ''}
       text={sp.text ?? ''}
+      showSettlement={KIND_LIQUIDATED.has(variant)}
+      settlement={isSettlementType(sp.settlement) ? sp.settlement : ''}
       sort={sort}
       subtotals={subtotals}
       report={report}

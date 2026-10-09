@@ -1,5 +1,6 @@
 "use client";
 
+import { SELECTABLE_SETTLEMENTS, SETTLEMENT_LABEL, type SettlementType } from '@/lib/settlement-type';
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -46,7 +47,7 @@ function accountLabel(a: AccountOption): string {
   return [a.title, a.who, `venc. ${formatDateOnly(a.dueDate)}`, `saldo ${brl(a.balance)}`].filter(Boolean).join(' · ');
 }
 
-const EMPTY_FORM = { accountId: '', memberId: '', bankAccountId: '', amount: '', lateCharge: '', paidAt: '', method: 'manual', note: '', bankTransactionId: '' };
+const EMPTY_FORM = { accountId: '', memberId: '', bankAccountId: '', amount: '', lateCharge: '', paidAt: '', method: 'manual', settlementType: '', note: '', bankTransactionId: '' };
 
 /** Formulário pronto para a baixa de uma conta (saldo, irmão, conta prevista); com aviso do portal, Pix na data do aviso. */
 function formFor(account: AccountOption, notice?: PaymentNotice | null) {
@@ -70,13 +71,16 @@ interface PaymentItem {
   amount: number;
   paidAt: string;
   method: string;
+  /** Tipo de baixa (gravado ou deduzido); null = lançamento que não é baixa (doação, custeio, tarifa, estorno). */
+  settlementType?: string | null;
   note?: string | null;
   account?: { id: string; title: string; type: string } | null;
   member?: { id: string; name: string } | null;
   bankAccount?: { id: string; name: string; kind: string } | null;
 }
 
-export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null, currentUserId = null, topSlot = null, revenueCharts = [] }: {
+export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null, currentUserId = null, topSlot = null, revenueCharts = [], asaasMode = false }: {
+  asaasMode?: boolean;
   revenueCharts?: { id: string; code: string; name: string }[]; topSlot?: React.ReactNode; accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[]; notices?: PaymentNotice[]; initialAccountId?: string | null; currentUserId?: string | null }) {
   const router = useRouter();
   const askConfirm = useConfirm();
@@ -127,6 +131,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
         amount: account.balance,
         paidAt: check.paidAt ? brDay(check.paidAt) : notice.paidAtInformed ?? notice.noticeDay,
         method: 'pix',
+        settlementType: 'receipt_check',
         bankAccountId,
         note: `Pix conferido pelo comprovante (nº de controle ${check.e2e}).${notice.group ? ` Pix agrupado de ${notice.group.accountIds.length} contas.` : ''}`,
         e2eId: check.e2e,
@@ -434,6 +439,13 @@ export default function PagamentosClient({ accounts, members, payments, financia
                   <option value="card">Cartão</option>
                 </select>
               </Field>
+              <Field label="Tipo de baixa (como foi confirmado)">
+                <select value={form.settlementType} onChange={(event) => setForm({ ...form, settlementType: event.target.value })} className={INPUT} required>
+                  <option value="">Selecione…</option>
+                  {SELECTABLE_SETTLEMENTS.map((t) => <option key={t} value={t}>{SETTLEMENT_LABEL[t]}</option>)}
+                </select>
+                <span className="mt-1 block text-xs text-sand-dark">{asaasMode ? 'A baixa automática do Asaas é registrada pelo próprio sistema; aqui entram os recebimentos conferidos por você ou fora do Asaas.' : 'No Modo Loja a baixa não é automática: diga como o recebimento foi confirmado.'}</span>
+              </Field>
               <Field label="Conta bancária/caixa que recebeu ou pagou">
                 <select value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT} required>
                   <option value="">Selecione…</option>
@@ -472,6 +484,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
                 <div>
                   <p className="text-sm font-medium text-sand-light">{payment.account?.title ?? 'Conta removida'}</p>
                   <p className="mt-1 text-xs text-sand-dark">{payment.member ? <MemberLink id={payment.member.id} name={payment.member.name} /> : 'Sem vínculo'} • {payment.method}{payment.bankAccount ? ` • ${payment.bankAccount.name}` : ''}</p>
+                  {payment.settlementType && payment.settlementType in SETTLEMENT_LABEL ? <p className="mt-1"><span className="rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-[11px] font-medium text-gold">{SETTLEMENT_LABEL[payment.settlementType as SettlementType]}</span></p> : null}
                 </div>
                 <div className="text-right text-xs text-sand-dark">
                   <p className="tabular-nums">Valor: {brl(payment.amount)}</p>

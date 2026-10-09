@@ -64,7 +64,7 @@ export async function settleAsaasInvoicePayment(
   const created = await db.payment.create({
     // paidAt = DIA de Brasília (só-dia, 00:00 UTC), como toda data digitada: um Pix das 22h do último dia do mês
     // fica no mês certo nos relatórios, que agrupam por dia/UTC.
-    data: { lodgeId, accountId, memberId, bankAccountId, amount, method: receivedInCash ? ASAAS_CASH_METHOD : 'asaas', paidAt: todayBR(), note: receivedInCash ? asaasCashNote(asaasPaymentId) : `Baixa automática Asaas (${asaasPaymentId})` },
+    data: { lodgeId, accountId, memberId, bankAccountId, amount, method: receivedInCash ? ASAAS_CASH_METHOD : 'asaas', settlementType: receivedInCash ? 'cash' : 'asaas_auto', paidAt: todayBR(), note: receivedInCash ? asaasCashNote(asaasPaymentId) : `Baixa automática Asaas (${asaasPaymentId})` },
   });
 
   // Tarifa real cobrada pelo Asaas: despesa na mesma conta, com o rastro na cobrança.

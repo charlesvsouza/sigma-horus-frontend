@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import { Button, Field, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { ledgerDayKey } from '@/lib/ledger-day';
+import { SELECTABLE_SETTLEMENTS, SETTLEMENT_LABEL, type SettlementType } from '@/lib/settlement-type';
 
 export interface PanelPayment {
   id: string;
   amount: number;
   paidAt: string;
   method: string;
+  settlementType?: string | null;
   note?: string | null;
   account?: { id: string; title: string; type: string } | null;
   bankAccount?: { id: string; name: string; kind: string } | null;
@@ -27,7 +29,7 @@ type Notify = (m: { kind: 'ok' | 'error'; text: string }) => void;
 /** Corrige valor, data, conta e observação de um pagamento já lançado (o extrato acompanha). */
 export function PaymentEditPanel({ payment, banks, onClose, notify }: { payment: PanelPayment; banks: { id: string; name: string }[]; onClose: () => void; notify: Notify }) {
   const router = useRouter();
-  const [form, setForm] = useState({ amount: String(payment.amount), paidAt: ledgerDayKey(payment.paidAt), bankAccountId: payment.bankAccount?.id ?? '', note: payment.note ?? '' });
+  const [form, setForm] = useState({ amount: String(payment.amount), paidAt: ledgerDayKey(payment.paidAt), bankAccountId: payment.bankAccount?.id ?? '', note: payment.note ?? '', settlementType: payment.settlementType ?? '' });
   const [busy, setBusy] = useState(false);
   const [locked, setLocked] = useState(false);
 
@@ -40,6 +42,7 @@ export function PaymentEditPanel({ payment, banks, onClose, notify }: { payment:
       if (form.paidAt !== ledgerDayKey(payment.paidAt)) body.paidAt = form.paidAt;
       if (form.bankAccountId && form.bankAccountId !== (payment.bankAccount?.id ?? '')) body.bankAccountId = form.bankAccountId;
       if (form.note !== (payment.note ?? '')) body.note = form.note;
+      if (form.settlementType && form.settlementType !== (payment.settlementType ?? '')) body.settlementType = form.settlementType;
       if (Object.keys(body).length === 0) { notify({ kind: 'ok', text: 'Nada para alterar.' }); onClose(); return; }
       const res = await fetch(`/api/payments/${payment.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
@@ -66,6 +69,12 @@ export function PaymentEditPanel({ payment, banks, onClose, notify }: { payment:
           <select value={form.bankAccountId} onChange={(e) => setForm({ ...form, bankAccountId: e.target.value })} className={inputClass}>
             {payment.bankAccount ? null : <option value="">Sem conta (histórico antigo)</option>}
             {banks.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Tipo de baixa">
+          <select value={form.settlementType} onChange={(e) => setForm({ ...form, settlementType: e.target.value })} className={inputClass}>
+            {SELECTABLE_SETTLEMENTS.includes(form.settlementType as SettlementType) ? null : <option value="">Selecione…</option>}
+            {SELECTABLE_SETTLEMENTS.map((t) => <option key={t} value={t}>{SETTLEMENT_LABEL[t]}</option>)}
           </select>
         </Field>
         <Field label="Observação"><input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className={inputClass} /></Field>

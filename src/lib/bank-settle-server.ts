@@ -146,6 +146,7 @@ export async function settleFromBankLine(
       data: {
         lodgeId, accountId: account.id, memberId: account.memberId, bankAccountId: bank.id, amount, paidAt,
         method: /pix/i.test(tx.description) ? 'pix' : 'transfer',
+        settlementType: 'bank_statement',
         note: `Baixa assistida pelo extrato bancário: "${tx.description.slice(0, 120)}"`,
       },
       select: { id: true },

@@ -5,6 +5,7 @@ import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 import { formatDayMixed } from '@/lib/date-only';
+import { SETTLEMENT_LABEL, isSettlementType } from '@/lib/settlement-type';
 
 const VARIANTS: AccountsReportVariant[] = ['contas-a-receber', 'contas-a-pagar', 'contas-recebidas', 'contas-pagas'];
 
@@ -53,6 +54,9 @@ export async function GET(request: Request) {
   const text = searchParams.get('text') || undefined;
   const sort = parseAccountsSort(searchParams.get('sort'));
   const subtotals = searchParams.get('sub') !== '0';
+  const settlementParam = searchParams.get('settlement');
+  const settlement = isSettlementType(settlementParam) ? settlementParam : null;
+  const showSettlement = variant === 'contas-recebidas' || variant === 'contas-pagas';
 
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, rowsInput] = await Promise.all([
@@ -62,7 +66,7 @@ export async function GET(request: Request) {
     return { lodge, rowsInput };
   });
 
-  const report = buildAccountsReport(data.rowsInput, { from, to, personId, text, sort, subtotals });
+  const report = buildAccountsReport(data.rowsInput, { from, to, personId, text, settlement: showSettlement ? settlement : null, sort, subtotals });
 
   const { default: ExcelJS } = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
@@ -76,6 +80,7 @@ export async function GET(request: Request) {
     { header: 'Referência', key: 'referencia', width: 16 },
     { header: 'Categoria', key: 'categoria', width: 24 },
     { header: 'Detalhe', key: 'detalhe', width: 30 },
+    ...(showSettlement ? [{ header: 'Tipo de baixa', key: 'baixa', width: 26 }] : []),
     { header: 'Valor', key: 'valor', width: 15 },
   ];
 
@@ -86,25 +91,25 @@ export async function GET(request: Request) {
   sheet.addRow([]);
 
   const headerRowIdx = sheet.rowCount + 1;
-  sheet.addRow([DATE_LABEL[variant], 'Nome', 'Referência', 'Categoria', 'Detalhe', 'Valor']);
+  sheet.addRow([DATE_LABEL[variant], 'Nome', 'Referência', 'Categoria', 'Detalhe', ...(showSettlement ? ['Tipo de baixa'] : []), 'Valor']);
   const headerRow = sheet.getRow(headerRowIdx);
   headerRow.font = { bold: true };
   headerRow.eachCell((cell) => { cell.border = { bottom: { style: 'thin' } }; });
 
   const addLine = (r: (typeof report.rows)[number]) =>
-    sheet.addRow([formatDayMixed(r.date), r.personName ?? '—', r.reference ?? '—', r.category ?? '—', r.detail ?? '', r.amount]);
+    sheet.addRow([formatDayMixed(r.date), r.personName ?? '—', r.reference ?? '—', r.category ?? '—', r.detail ?? '', ...(showSettlement ? [r.settlement && isSettlementType(r.settlement) ? SETTLEMENT_LABEL[r.settlement] : '—'] : []), r.amount]);
   if (report.groups) {
     // Mesmos blocos da tela: um por mês (Referência) ou por pessoa (Nome), cada um com subtotal.
     for (const g of report.groups) {
       g.rows.forEach(addLine);
-      const sub = sheet.addRow(['', '', '', '', `Subtotal — ${g.label}`, g.total]);
+      const sub = sheet.addRow(['', '', '', '', ...(showSettlement ? [''] : []), `Subtotal — ${g.label}`, g.total]);
       sub.font = { italic: true };
-      sub.getCell(6).border = { top: { style: 'thin' } };
+      sub.getCell(showSettlement ? 7 : 6).border = { top: { style: 'thin' } };
     }
   } else {
     report.rows.forEach(addLine);
   }
-  const totalRow = sheet.addRow(['', '', '', '', 'Total do período', report.total]);
+  const totalRow = sheet.addRow(['', '', '', '', ...(showSettlement ? [''] : []), 'Total do período', report.total]);
   totalRow.font = { bold: true };
 
   sheet.getColumn('valor').numFmt = '"R$" #,##0.00';

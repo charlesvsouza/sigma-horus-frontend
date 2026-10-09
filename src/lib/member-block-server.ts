@@ -300,7 +300,7 @@ export async function applyAgreementPayment(
       const agreementPayment = await db.payment.create({
         data: {
           lodgeId, accountId: account.id, memberId, bankAccountId: bank.id, amount: a.amount, paidAt: input.paidAt,
-          method: input.method || 'manual', note: input.note || `Pagamento do ${agreementKindLabel(block.kind).toLowerCase()}`,
+          method: input.method || 'manual', settlementType: 'manual_other', note: input.note || `Pagamento do ${agreementKindLabel(block.kind).toLowerCase()}`,
         },
         select: { id: true },
       });

@@ -1,5 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
 import type { PaymentHistoryInput } from '@/lib/payment-history';
+import { settlementLabel } from '@/lib/settlement-type';
 
 /**
  * Pagamentos dos irmãos à loja (contas a receber). O irmão do pagamento é o do Payment ou,
@@ -16,7 +17,8 @@ export async function loadPaymentHistory(db: Prisma.TransactionClient, lodgeId: 
         : [{ memberId: { not: null } }, { account: { memberId: { not: null } } }],
     },
     select: {
-      id: true, paidAt: true, method: true, amount: true,
+      id: true, paidAt: true, method: true, amount: true, settlementType: true, note: true,
+      bankTransactions: { select: { id: true }, take: 1 },
       member: { select: { id: true, name: true } },
       account: {
         select: {
@@ -40,6 +42,7 @@ export async function loadPaymentHistory(db: Prisma.TransactionClient, lodgeId: 
       category: p.account?.chartAccount?.name ?? null,
       dueDate: p.account?.dueDate ?? null,
       method: p.method,
+      settlement: settlementLabel({ settlementType: p.settlementType, method: p.method, note: p.note, bankMatched: p.bankTransactions.length > 0 }),
       amount: Number(p.amount),
     };
   });

@@ -265,7 +265,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 7 de outubro de 2026 · versão 1.94</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 8 de outubro de 2026 · versão 1.95</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1109,6 +1109,7 @@ export function ManualBook() {
                   <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> do pagamento.</li>
                   <li>Opcional: <UI>Multa e juros recebidos</UI> — se o irmão pagou com acréscimo por atraso, informe aqui só o acréscimo (o <UI>Valor</UI> fica o da conta). Ele é lançado à parte, já pago, em <strong>1.2.06 Multas e Juros por Atraso</strong>; estornar a baixa estorna os dois (7.9). Vindo de um aviso com comprovante conferido, o campo já vem preenchido.</li>
                   <li>Escolha o <UI>método</UI>: Manual, PIX, Dinheiro ou Cartão.</li>
+                  <li>Escolha o <UI>Tipo de baixa</UI> — <strong>obrigatório</strong>: diz <em>como o recebimento foi confirmado</em>, não como o dinheiro andou (isso é o método). As opções são <strong>Conferência de comprovante</strong>, <strong>Conferência de extrato</strong>, <strong>Recebido em mãos / dinheiro</strong> e <strong>Manual — outro</strong> (explique na observação). A baixa <strong>Automática Asaas</strong> é registrada pelo próprio sistema quando o Asaas confirma a cobrança (só no Modo Asaas) e não se escolhe aqui; no Modo Loja nenhuma baixa é automática. Quando você usa <UI>Confirmar e dar baixa</UI> num aviso <UI>Já paguei</UI> com comprovante conferido, o tipo vem como Conferência de comprovante. O tipo aparece em <UI>Pagamentos recentes</UI>, no recibo, no <UI>Histórico de pagamentos</UI> (Tesouraria) e como coluna e filtro em <UI>Contas recebidas</UI> e <UI>Contas pagas</UI> (inclusive no CSV e no Excel); o botão <UI>Editar</UI> permite corrigi-lo. Pagamentos antigos foram classificados automaticamente pela forma e pela observação; doações, custeios, tarifas e estornos do Asaas não têm tipo (aparecem como “—”).</li>
                   <li>Escolha a <UI>Conta bancária/caixa que recebeu ou pagou</UI> — obrigatório em todo pagamento novo,
                     para saber exatamente onde o dinheiro entrou ou saiu (ver 7.14). Se a conta a receber/pagar já tinha
                     uma <UI>conta bancária prevista</UI> (7.2), o campo já vem preenchido sozinho; pode trocar se o
@@ -2166,7 +2167,7 @@ export function ManualBook() {
                 <li><UI>Taxas de grau</UI> (7.21): cria e acompanha os planos de iniciação, elevação, exaltação, filiação e regularização, com entrada opcional, e assina o contrato.</li>
                 <li><strong>Faltas seguidas:</strong> o irmão ativo que chega a <strong>3 ou mais ausências seguidas</strong> nas últimas sessões (ordinárias, magnas e extraordinárias com presença registrada; falta é falta, sem justificativa) aparece em <UI>Visão geral → Frequência</UI> e você recebe um <strong>e-mail</strong> (junto com o Hospitaleiro), uma vez por sequência: se ele continuar faltando não repete; só volta a avisar depois que comparecer e faltar 3 vezes de novo. Presença não registrada não conta como falta.</li>
                 <li><strong>Aviso de fim de recorrência:</strong> 30 dias antes de acabar o período programado das mensalidades recorrentes, você recebe um e-mail (junto com o Tesoureiro e o Administrador) perguntando se a loja renova ou cria outro período — quem renova é o Tesoureiro ou o Administrador (7.3).</li>
-                <li><UI>Auditoria</UI> (se o Administrador liberar em 6.4): a trilha imutável de quem fez o quê e quando — base para pareceres e aprovações.</li>
+                <li><UI>Auditoria</UI> (se o Administrador liberar em 6.4): a trilha imutável de quem fez o quê e quando — base para pareceres e aprovações. O botão <UI>Relatório de intervenções por pessoa</UI> emite, para um período escolhido à mão (<UI>De</UI> e <UI>Até</UI>) e para todas as pessoas ou só uma (inclusive o <UI>Sistema</UI>, que reúne webhooks e rotinas automáticas), o resumo de criações, alterações e remoções de cada um e a lista das intervenções, com <UI>Imprimir / PDF</UI> e CSV (até as 5.000 mais recentes do período).</li>
               </Bullets>
             </Chapter>
 

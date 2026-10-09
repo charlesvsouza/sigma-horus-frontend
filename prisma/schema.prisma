@@ -514,6 +514,7 @@ model Payment {
   amount       Float
   paidAt       DateTime @default(now())
   method       String   @default("manual")
+  settlementType String? // tipo de baixa (lib/settlement-type.ts): asaas_auto | receipt_check | bank_statement | cash | manual_other | import. Null = deduzido da forma/observação
   note         String?
 
   lodge        Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)

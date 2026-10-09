@@ -16,6 +16,8 @@ interface Payment {
   amount: number;
   paidAt: string;
   method: string;
+  /** Tipo de baixa (como a loja confirmou o recebimento); '—' = não se aplica. */
+  settlement?: string | null;
   note?: string | null;
   accountTitle: string;
   memberName?: string | null;
@@ -85,6 +87,7 @@ export default function ReciboClient({ payment, treasurerName, issuedBy, signatu
               referente a <strong>{payment.accountTitle}</strong>, paga em {formatDayMixed(payment.paidAt)} via{' '}
               {METHOD_LABEL[payment.method] ?? payment.method}.
             </p>
+            {payment.settlement && payment.settlement !== '—' ? <p className="text-xs text-sand-dark">Baixa: {payment.settlement}.</p> : null}
             {payment.note ? <p className="text-xs text-sand-dark">Observação: {payment.note}</p> : null}
             {signature ? <p className="text-xs text-sand-dark">Verifique a autenticidade em <strong>sigmahorus.com.br/verificar/{signature.code}</strong>.</p> : null}
           </div>

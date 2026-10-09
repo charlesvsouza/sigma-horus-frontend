@@ -1,5 +1,6 @@
 'use client';
 
+import { SELECTABLE_SETTLEMENTS, SETTLEMENT_LABEL, type SettlementType } from '@/lib/settlement-type';
 import { useRouter } from 'next/navigation';
 import { Fragment, useState } from 'react';
 import { EmptyState, inputClass } from '@/components/ui';
@@ -10,7 +11,7 @@ import { csvNumber } from '@/lib/csv';
 import { ACCOUNTS_SORT_LABEL, sortHasGroups, type AccountsSort } from '@/lib/accounts-report';
 
 interface PersonOption { id: string; name: string; }
-interface ReportRow { id: string; date: string; personId: string | null; personName: string | null; description: string; category: string | null; amount: number; reference: string | null; detail: string | null; }
+interface ReportRow { id: string; date: string; personId: string | null; personName: string | null; description: string; category: string | null; amount: number; reference: string | null; detail: string | null; settlement?: string | null; }
 interface ReportGroup { label: string; rows: ReportRow[]; total: number; }
 
 function fmtDate(iso: string) {
@@ -30,6 +31,8 @@ export default function ContasReportClient({
   to,
   personId,
   text,
+  showSettlement = false,
+  settlement = '',
   sort,
   subtotals,
   report,
@@ -46,6 +49,9 @@ export default function ContasReportClient({
   to: string;
   personId: string;
   text: string;
+  /** Mostra a coluna e o filtro "Tipo de baixa" (contas já recebidas/pagas). */
+  showSettlement?: boolean;
+  settlement?: string;
   sort: AccountsSort;
   subtotals: boolean;
   report: { rows: ReportRow[]; total: number; groups: ReportGroup[] | null };
@@ -55,6 +61,8 @@ export default function ContasReportClient({
   const [toVal, setToVal] = useState(to);
   const [personVal, setPersonVal] = useState(personId);
   const [textVal, setTextVal] = useState(text);
+  const [settlementVal, setSettlementVal] = useState(settlement);
+  const cols = showSettlement ? 6 : 5;
   const [sortVal, setSortVal] = useState(sort);
   const [subVal, setSubVal] = useState(subtotals);
   const canGroup = sortHasGroups(sortVal);
@@ -68,26 +76,28 @@ export default function ContasReportClient({
     if (toVal) params.set('to', toVal);
     if (personVal) params.set('personId', personVal);
     if (textVal) params.set('text', textVal);
+    if (showSettlement && settlementVal) params.set('settlement', settlementVal);
     if (nextSort !== 'referencia') params.set('sort', nextSort);
     if (!nextSub) params.set('sub', '0');
     router.push(`${basePath}?${params.toString()}`);
   }
 
-  const xlsHref = `/api/reports/accounts/xlsx?variant=${basePath.split('/').pop()}&from=${fromVal}&to=${toVal}${personVal ? `&personId=${personVal}` : ''}${textVal ? `&text=${encodeURIComponent(textVal)}` : ''}${sort !== 'referencia' ? `&sort=${sort}` : ''}${subtotals ? '' : '&sub=0'}`;
+  const xlsHref = `/api/reports/accounts/xlsx?variant=${basePath.split('/').pop()}&from=${fromVal}&to=${toVal}${personVal ? `&personId=${personVal}` : ''}${textVal ? `&text=${encodeURIComponent(textVal)}` : ''}${showSettlement && settlementVal ? `&settlement=${settlementVal}` : ''}${sort !== 'referencia' ? `&sort=${sort}` : ''}${subtotals ? '' : '&sub=0'}`;
 
   // Contas em aberto sem datas no filtro = todas as pendências (não "Invalid Date").
   const period = from || to
     ? `Período: ${from ? fmtDate(`${from}T00:00:00`) : 'início'} a ${to ? fmtDate(`${to}T00:00:00`) : 'hoje'}`
     : 'Todas as pendências, sem limite de data';
   const personName = personId ? people.find((p) => p.id === personId)?.name : null;
-  const details = [period, personName ? `Pessoa: ${personName}` : null, text ? `Busca: "${text}"` : null, `Ordenado por: ${sortLabel(sort === 'nenhuma' ? 'referencia' : sort)}${sortHasGroups(sort) && !subtotals ? ', sem subtotais' : ''}`];
-  const csvLine = (r: ReportRow) => [fmtDate(r.date), r.personName ?? '', r.reference ?? '', r.category ?? '', r.detail ?? '', csvNumber(r.amount)];
+  const details = [period, personName ? `Pessoa: ${personName}` : null, text ? `Busca: "${text}"` : null, showSettlement && settlement ? `Tipo de baixa: ${SETTLEMENT_LABEL[settlement as SettlementType]}` : null, `Ordenado por: ${sortLabel(sort === 'nenhuma' ? 'referencia' : sort)}${sortHasGroups(sort) && !subtotals ? ', sem subtotais' : ''}`];
+  const settleText = (r: ReportRow) => (r.settlement && r.settlement in SETTLEMENT_LABEL ? SETTLEMENT_LABEL[r.settlement as SettlementType] : '—');
+  const csvLine = (r: ReportRow) => [fmtDate(r.date), r.personName ?? '', r.reference ?? '', r.category ?? '', r.detail ?? '', ...(showSettlement ? [settleText(r)] : []), csvNumber(r.amount)];
   const csvRows = [
-    [dateLabel, 'Nome', 'Referência', 'Categoria', 'Detalhe', 'Valor'],
+    [dateLabel, 'Nome', 'Referência', 'Categoria', 'Detalhe', ...(showSettlement ? ['Tipo de baixa'] : []), 'Valor'],
     ...(report.groups
-      ? report.groups.flatMap((g) => [...g.rows.map(csvLine), ['', '', '', '', `Subtotal — ${g.label}`, csvNumber(g.total)]])
+      ? report.groups.flatMap((g) => [...g.rows.map(csvLine), ['', '', '', '', ...(showSettlement ? [''] : []), `Subtotal — ${g.label}`, csvNumber(g.total)]])
       : report.rows.map(csvLine)),
-    ['Total', '', '', '', '', csvNumber(report.total)],
+    ['Total', '', '', '', ...(showSettlement ? [''] : []), '', csvNumber(report.total)],
   ];
 
   const renderRow = (r: ReportRow) => (
@@ -99,6 +109,7 @@ export default function ContasReportClient({
         {r.category ?? (r.detail ? null : '—')}
         {r.detail ? <span className={r.category ? 'block text-xs text-sand-dark/80' : 'text-sand'}>{r.detail}</span> : null}
       </td>
+      {showSettlement ? <td className="border-b border-white/5 px-2 py-2 text-sand-dark">{settleText(r)}</td> : null}
       <td className="border-b border-white/5 px-2 py-2 text-right num tabular-nums text-sand-light">{brl(r.amount)}</td>
     </tr>
   );
@@ -112,7 +123,7 @@ export default function ContasReportClient({
         </div>
 
         <section className="rpt-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
-          <div className="grid gap-4 md:grid-cols-[1fr_1fr_1.4fr_1.4fr_1.3fr_auto_auto]">
+          <div className={`grid gap-4 ${showSettlement ? 'md:grid-cols-[1fr_1fr_1.4fr_1.4fr_1.3fr_1.3fr_auto_auto]' : 'md:grid-cols-[1fr_1fr_1.4fr_1.4fr_1.3fr_auto_auto]'}`}>
             <label className="text-xs text-sand-dark">De
               <input type="date" value={fromVal} onChange={(e) => setFromVal(e.target.value)} className={`mt-1 ${inputClass}`} />
             </label>
@@ -128,6 +139,16 @@ export default function ContasReportClient({
             <label className="text-xs text-sand-dark">Categoria, descrição ou referência
               <input value={textVal} onChange={(e) => setTextVal(e.target.value)} className={`mt-1 ${inputClass}`} placeholder="Buscar…" />
             </label>
+            {showSettlement ? (
+              <label className="text-xs text-sand-dark">Tipo de baixa
+                <select value={settlementVal} onChange={(e) => setSettlementVal(e.target.value)} className={`mt-1 ${inputClass}`}>
+                  <option value="">Todos</option>
+                  <option value="asaas_auto">{SETTLEMENT_LABEL.asaas_auto}</option>
+                  {SELECTABLE_SETTLEMENTS.map((t) => <option key={t} value={t}>{SETTLEMENT_LABEL[t]}</option>)}
+                  <option value="import">{SETTLEMENT_LABEL.import}</option>
+                </select>
+              </label>
+            ) : null}
             <label className="text-xs text-sand-dark">Ordenar por
               <select
                 value={sortVal}
@@ -191,6 +212,7 @@ export default function ContasReportClient({
                     <th className="border-b border-white/10 px-2 py-2">Nome</th>
                     <th className="border-b border-white/10 px-2 py-2">Referência</th>
                     <th className="border-b border-white/10 px-2 py-2">Categoria</th>
+                    {showSettlement ? <th className="border-b border-white/10 px-2 py-2">Tipo de baixa</th> : null}
                     <th className="border-b border-white/10 px-2 py-2 text-right num">Valor</th>
                   </tr>
                 </thead>
@@ -199,13 +221,13 @@ export default function ContasReportClient({
                     ? report.groups.map((g, i) => (
                         <Fragment key={`${i}-${g.label}`}>
                           <tr className="rpt-group">
-                            <td colSpan={5} className="border-b border-gold/25 px-2 pb-1.5 pt-5 text-xs font-semibold uppercase tracking-[0.12em] text-gold/90">
+                            <td colSpan={cols} className="border-b border-gold/25 px-2 pb-1.5 pt-5 text-xs font-semibold uppercase tracking-[0.12em] text-gold/90">
                               {g.label}
                             </td>
                           </tr>
                           {g.rows.map(renderRow)}
                           <tr className="rpt-subtotal">
-                            <td colSpan={4} className="px-2 py-2 text-right text-xs text-sand-dark">
+                            <td colSpan={cols - 1} className="px-2 py-2 text-right text-xs text-sand-dark">
                               Subtotal — {g.label} · {g.rows.length} lançamento{g.rows.length !== 1 ? 's' : ''}
                             </td>
                             <td className="px-2 py-2 text-right num tabular-nums font-medium text-sand-light">{brl(g.total)}</td>
@@ -214,7 +236,7 @@ export default function ContasReportClient({
                       ))
                     : report.rows.map(renderRow)}
                   <tr className="rpt-total">
-                    <td className="px-2 py-2 font-semibold text-sand-light" colSpan={4}>Total — {report.rows.length} lançamento{report.rows.length !== 1 ? 's' : ''}</td>
+                    <td className="px-2 py-2 font-semibold text-sand-light" colSpan={cols - 1}>Total — {report.rows.length} lançamento{report.rows.length !== 1 ? 's' : ''}</td>
                     <td className="px-2 py-2 text-right num font-semibold text-gold">{brl(report.total)}</td>
                   </tr>
                 </tbody>

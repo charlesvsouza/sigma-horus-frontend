@@ -39,6 +39,8 @@ export interface PaymentHistoryInput {
   /** Vencimento da conta paga — a "competência" que o irmão reconhece. */
   dueDate: Date | null;
   method: string;
+  /** Tipo de baixa (rótulo do lib/settlement-type), ou null quando o lançamento não é baixa. */
+  settlement?: string | null;
   amount: number;
 }
 

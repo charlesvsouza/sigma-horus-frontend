@@ -16,6 +16,7 @@ import { lockKey } from '@/lib/locks';
 import { autoSignReceipt } from '@/lib/receipt-signature-server';
 import { formatDayMixed, firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from '@/lib/date-only';
 import { LATE_CHARGE_CHART, lateChargeMarker } from '@/lib/late-charge';
+import { checkManualSettlement } from '@/lib/settlement-type';
 
 export async function GET() {
   const session = await auth();
@@ -90,6 +91,10 @@ export async function POST(request: Request) {
   if (!bankAccountId) {
     return NextResponse.json({ error: 'Selecione a conta bancária/caixa que recebeu ou pagou este valor.' }, { status: 400 });
   }
+  // Tipo de baixa: obrigatório em toda baixa manual (como o recebimento foi confirmado). A baixa automática do Asaas não passa por aqui.
+  const settle = checkManualSettlement(body?.settlementType);
+  if (!settle.ok) return NextResponse.json({ error: settle.error }, { status: 400 });
+  const settlementType = settle.value;
   if (rawLateCharge !== 0 && !isValidMoney(rawLateCharge)) {
     return NextResponse.json({ error: 'Multa e juros: informe um valor maior que zero, com até 2 casas decimais (ou deixe em branco).' }, { status: 400 });
   }
@@ -166,6 +171,7 @@ export async function POST(request: Request) {
         amount,
         paidAt,
         method: method || 'manual',
+        settlementType,
         note: note || null,
       },
       include: {
@@ -207,6 +213,7 @@ export async function POST(request: Request) {
           amount: lateCharge,
           paidAt,
           method: method || 'manual',
+          settlementType,
           note: `Multa e juros por atraso recebidos junto com "${account.title}".`,
         },
         select: { id: true },
@@ -259,7 +266,7 @@ export async function POST(request: Request) {
       await syncMemberBlock(db, String(lodgeId), memberId);
     }
 
-    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method, ...(lateCharge > 0 ? { lateCharge } : {}) } });
+    await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'payment', entityId: created.id, metadata: { accountId, amount, method, settlementType, ...(lateCharge > 0 ? { lateCharge } : {}) } });
 
     let lodgeName = 'Sua loja';
     let lodgeChannels = buildLodgeChannels(null);

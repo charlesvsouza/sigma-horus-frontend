@@ -120,7 +120,7 @@ export async function commitPlan(
       description: `${t.description} ${tag}`, counterpartyName: t.counterpartyKey ? t.name : null,
     });
     payments.push({
-      lodgeId, accountId: id, memberId: t.memberId, bankAccountId, amount: t.amount, paidAt: new Date(t.date), method: 'import', note: tag,
+      lodgeId, accountId: id, memberId: t.memberId, bankAccountId, amount: t.amount, paidAt: new Date(t.date), method: 'import', settlementType: 'import', note: tag,
     });
   }
 

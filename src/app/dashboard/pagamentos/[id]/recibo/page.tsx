@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { settlementLabel } from '@/lib/settlement-type';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -37,6 +38,7 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
         // Baixa sem "vincular a um membro": o pagador do recibo é o dono da conta.
         account: { select: { title: true, type: true, member: { select: { name: true, cpf: true } } } },
         member: { select: { name: true, cpf: true } },
+        bankTransactions: { select: { id: true }, take: 1 },
         lodge: { select: { name: true, cnpj: true, addressLine: true, addressNumber: true, city: true, state: true, crestUrl: true } },
         receiptSignature: { select: { signerName: true, signerRole: true, signedAt: true, code: true } },
       },
@@ -55,6 +57,7 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
         amount: payment.amount,
         paidAt: payment.paidAt.toISOString(),
         method: payment.method,
+        settlement: settlementLabel({ settlementType: payment.settlementType, method: payment.method, note: payment.note, bankMatched: payment.bankTransactions.length > 0 }),
         note: payment.note,
         accountTitle: payment.account?.title ?? '—',
         memberName: (payment.member ?? payment.account?.member)?.name ?? null,
