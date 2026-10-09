@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { requireLodgeAccessAny } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 // Busca no cadastro de visitantes (sugestão ao digitar o nome ou o e-mail na sessão):
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const access = await requireLodgeAccess(lodgeId, session?.user?.role, 'members', 'read');
+  const access = await requireLodgeAccessAny(lodgeId, session?.user?.role, ['members', 'attendance'], 'read', session?.user?.memberId);
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const q = (new URL(request.url).searchParams.get('q') ?? '').trim();

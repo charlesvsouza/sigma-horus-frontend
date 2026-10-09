@@ -45,7 +45,7 @@ function handlers(src: string): { method: string; body: string }[] {
 }
 
 // O `write` pode vir seguido do memberId da sessão (papéis por cargo, ex.: Arquiteto).
-const DIRECT_GUARD = /requireLodgeAccess\((?:[^()]|\([^()]*\))*['"]write['"](?:\s*,\s*[\w?.]+)?\s*\)|requireActiveSubscription\(/;
+const DIRECT_GUARD = /requireLodgeAccess(?:Any)?\((?:[^()]|\([^()]*\))*['"]write['"](?:\s*,\s*[\w?.]+)?\s*\)|requireActiveSubscription\(/;
 
 /** Funções do arquivo (ex.: getSessionAndCheck) que já carregam a guarda. */
 function guardedHelpers(src: string): string[] {

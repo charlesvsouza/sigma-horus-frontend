@@ -79,3 +79,23 @@ test('Social: todo papel enxerga os quadros, mas ninguém ganha o cadastro de me
   assert.equal(canAccess('member', 'members', 'read'), false);
   assert.equal(canAccess('member', 'accounts', 'read'), false);
 });
+
+test('Chanceler (papel por cargo): opera presença e visitantes, não vê o cadastro dos irmãos nem o financeiro', () => {
+  assert.equal(canAccess('chancellor', 'attendance', 'read'), true);
+  assert.equal(canAccess('chancellor', 'attendance', 'write'), true);
+  for (const resource of ['members', 'accounts', 'documents', 'messages', 'import', 'audit', 'materials', 'inventory'] as const) {
+    assert.equal(canAccess('chancellor', resource, 'read'), false, resource);
+  }
+  assert.equal((ROLES as readonly string[]).includes('chancellor'), false);
+  assert.equal(MATRIX_ROLES.includes('chancellor'), true);
+  assert.equal(cargoRoleForOffice('Chanceler'), 'chancellor');
+  assert.equal(cargoRoleForOffice('  CHANCELER '), 'chancellor');
+});
+
+test('Chancelaria sem prejuízo do Secretário: quem já cuidava da presença continua com o acesso', () => {
+  for (const role of ['admin', 'venerable', 'secretary']) {
+    assert.equal(canAccess(role, 'attendance', 'read'), true, role);
+    assert.equal(canAccess(role, 'attendance', 'write'), true, role);
+  }
+  for (const role of ['treasurer', 'member', 'hospitaller']) assert.equal(canAccess(role, 'attendance', 'write'), false, role);
+});

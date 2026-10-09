@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { requireLodgeAccessAny } from '@/lib/rbac';
 import { anonymizedVisitor, parseVisitorFields } from '@/lib/visitors';
 import { NextResponse } from 'next/server';
 
@@ -11,7 +11,7 @@ async function guard() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
   if (!lodgeId || !session?.user?.id) return { ok: false as const, res: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-  const access = await requireLodgeAccess(lodgeId, session.user.role, 'members', 'write');
+  const access = await requireLodgeAccessAny(lodgeId, session.user.role, ['members', 'attendance'], 'write', session?.user?.memberId);
   if (!access.ok) return { ok: false as const, res: NextResponse.json({ error: access.error }, { status: access.status }) };
   return { ok: true as const, lodgeId, userId: session.user.id };
 }

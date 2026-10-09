@@ -14,6 +14,7 @@ const ROLE_LABELS: Record<string, string> = {
   member: 'Membro',
   hospitaller: 'Hospitaleiro',
   architect: 'Arquiteto (cargo)',
+  chancellor: 'Chanceler (cargo)',
 };
 
 const RESOURCE_LABELS: Record<string, string> = {
@@ -28,6 +29,7 @@ const RESOURCE_LABELS: Record<string, string> = {
   inventory: 'Inventário — ocorrências e empréstimos',
   social: 'Social — quadros e composição da loja',
   audit: 'Auditoria',
+  attendance: 'Chancelaria — presença, visitantes e certificados',
 };
 
 const ACTION_LABELS: Record<string, string> = { read: 'Ver', write: 'Editar' };

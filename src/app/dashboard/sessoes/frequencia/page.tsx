@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { requireLodgeAccessAny } from '@/lib/rbac';
 import { computeAttendanceReport } from '@/lib/attendance-report';
 import FrequenciaClient from './FrequenciaClient';
 
@@ -18,7 +18,7 @@ export default async function FrequenciaPage(props: { searchParams: Promise<{ fr
     );
   }
 
-  const access = await requireLodgeAccess(String(lodgeId), role, 'members', 'read');
+  const access = await requireLodgeAccessAny(String(lodgeId), role, ['members', 'attendance'], 'read', session?.user?.memberId);
   if (!access.ok) {
     return (
       <main className="min-h-screen px-6 py-10">

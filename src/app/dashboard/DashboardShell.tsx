@@ -20,7 +20,7 @@ import {
   Landmark, ArrowLeftRight, Upload, Repeat, Archive, FileSpreadsheet, NotebookText, UserCheck,
   Scale, ListTree, Users2, Images, LayoutGrid, UsersRound, PencilLine,
   ArrowDownToLine, ArrowUpFromLine, HandCoins, Banknote, Percent, type LucideIcon,
-  History, BadgeCheck, ShieldCheck, UserPlus, Award, UserRoundSearch, GraduationCap, Handshake,
+  History, BadgeCheck, Stamp, BookUser, ShieldCheck, UserPlus, Award, UserRoundSearch, GraduationCap, Handshake,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; badge?: NavBadge | null; }
@@ -58,6 +58,7 @@ const categoryBadge = (g: NavGroup) => sumItems(allItems(g));
 // Ícone de cada categoria (usado no menu recolhido, onde só cabe um ícone por área).
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Social: Users2,
+  Chancelaria: Stamp,
   Secretaria: Briefcase,
   Tesouraria: Wallet,
   Hospitalaria: HeartHandshake,
@@ -108,6 +109,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/relatorios/fluxo-caixa': TrendingUp,
   '/dashboard/relatorios/orcamento': PieChart,
   '/dashboard/sessoes': CalendarDays,
+  '/dashboard/chancelaria': BookUser,
   '/dashboard/sessoes/frequencia': UserCheck,
   '/dashboard/visitantes': UserPlus,
   '/dashboard/certificados': Award,

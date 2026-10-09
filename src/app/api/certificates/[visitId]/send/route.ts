@@ -6,7 +6,7 @@ import { longDateBR } from '@/lib/letterhead';
 import { buildLodgeChannels } from '@/lib/lodge-channels';
 import { dispatch } from '@/lib/messaging';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { requireLodgeAccessAny } from '@/lib/rbac';
 import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
 import { NextResponse } from 'next/server';
 
@@ -18,7 +18,7 @@ export async function POST(request: Request, { params }: Ctx) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
   if (!lodgeId || !session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const access = await requireLodgeAccess(lodgeId, session.user.role, 'members', 'write');
+  const access = await requireLodgeAccessAny(lodgeId, session.user.role, ['members', 'attendance'], 'write', session?.user?.memberId);
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { visitId } = await params;

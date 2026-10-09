@@ -91,8 +91,6 @@ const NAV: NavGroupDef[] = [
         label: 'Sessões',
         items: [
           { href: '/dashboard/sessoes', label: 'Sessões', roles: ['admin', 'venerable', 'secretary'] },
-          { href: '/dashboard/sessoes/frequencia', label: 'Frequência às sessões', roles: ['admin', 'venerable', 'secretary'] },
-          { href: '/dashboard/visitantes', label: 'Visitantes', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/veneralato', label: 'Veneralato', roles: ['admin', 'venerable', 'secretary'] },
         ],
       },
@@ -101,10 +99,19 @@ const NAV: NavGroupDef[] = [
         items: [
           { href: '/dashboard/documentos', label: 'Documentos', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
           { href: '/dashboard/comunicacao', label: 'Comunicação', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
-          { href: '/dashboard/certificados', label: 'Certificados de presença', roles: ['admin', 'venerable', 'secretary'] },
-          { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: [], resources: ['materials', 'inventory'] },
         ],
       },
+    ],
+  },
+  // Chancelaria: presença e visitantes. Visível a quem tem a permissão 'attendance' (Secretário, Venerável, Administrador
+  // e o Chanceler — papel por cargo, sem acesso ao cadastro dos irmãos). Ver comentário do recurso em lib/rbac.ts.
+  {
+    category: 'Chancelaria',
+    items: [
+      { href: '/dashboard/chancelaria', label: 'Livro de presença', roles: [], resource: 'attendance' },
+      { href: '/dashboard/sessoes/frequencia', label: 'Frequência às sessões', roles: [], resource: 'attendance' },
+      { href: '/dashboard/visitantes', label: 'Visitantes', roles: [], resource: 'attendance' },
+      { href: '/dashboard/certificados', label: 'Certificados de presença', roles: [], resource: 'attendance' },
     ],
   },
   {
@@ -145,7 +152,6 @@ const NAV: NavGroupDef[] = [
         label: 'Cadastros',
         items: [
           { href: '/dashboard/cadastros-financeiros', label: 'Cadastros financeiros', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/patrimonio', label: 'Patrimônio', roles: ['admin', 'venerable', 'treasurer'] },
         ],
       },
       {
@@ -186,6 +192,13 @@ const NAV: NavGroupDef[] = [
           { href: '/dashboard/configuracoes/importar', label: 'Importar cadastros', roles: ['admin', 'secretary'] },
           { href: '/dashboard/configuracoes/importar-financeiro', label: 'Importar backup financeiro', roles: ['admin', 'treasurer'] },
           { href: '/dashboard/auditoria', label: 'Auditoria', roles: [], resource: 'audit' },
+        ],
+      },
+      {
+        label: 'Bens da loja',
+        items: [
+          { href: '/dashboard/patrimonio', label: 'Patrimônio', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/materiais', label: 'Materiais da loja', roles: [], resources: ['materials', 'inventory'] },
         ],
       },
     ],
@@ -268,7 +281,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   // Itens ligados a uma permissão da matriz (ex.: Auditoria) aparecem só para quem a tem.
   const allowedResources = new Set<string>();
-  for (const resource of ['audit', 'materials', 'inventory', 'social'] as const) {
+  for (const resource of ['audit', 'materials', 'inventory', 'social', 'attendance'] as const) {
     if (await canLodgeAccessFor({ lodgeId: lodgeId ? String(lodgeId) : null, role, memberId: memberId ? String(memberId) : null }, resource, 'read')) allowedResources.add(resource);
   }
   const badges = lodgeId ? await loadNavBadges(String(lodgeId), role) : {};

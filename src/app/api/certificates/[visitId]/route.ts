@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { normalizeTemplate } from '@/lib/certificate';
 import { buildCertificatePdf, CertificateArtUnavailable, ensureIssued, loadCertificateContext, sessionEnded } from '@/lib/certificate-server';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { requireLodgeAccessAny } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 type Ctx = { params: Promise<{ visitId: string }> };
@@ -15,7 +15,7 @@ export async function GET(request: Request, { params }: Ctx) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const access = await requireLodgeAccess(lodgeId, session?.user?.role, 'members', 'write');
+  const access = await requireLodgeAccessAny(lodgeId, session?.user?.role, ['members', 'attendance'], 'write', session?.user?.memberId);
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { visitId } = await params;

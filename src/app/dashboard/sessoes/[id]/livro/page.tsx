@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { requireLodgeAccessAny } from '@/lib/rbac';
 import { loadSessionSheet } from '@/lib/session-sheets-server';
 import { ensureSessionQr } from '@/lib/tronco-qr-server';
 import SessionSheetClient from '../SessionSheetClient';
@@ -15,7 +15,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     </main>
   );
   if (!lodgeId) return denied('Sessão expirada.');
-  const access = await requireLodgeAccess(lodgeId, session?.user?.role, 'members', 'read');
+  const access = await requireLodgeAccessAny(lodgeId, session?.user?.role, ['members', 'attendance'], 'read', session?.user?.memberId);
   if (!access.ok) return denied('Acesso restrito à Secretaria.');
 
   const data = await loadSessionSheet(lodgeId, id);

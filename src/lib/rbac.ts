@@ -1,7 +1,7 @@
 import { prismaAdmin } from '@/lib/prisma';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
 
-export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns' | 'import' | 'materials' | 'inventory' | 'social' | 'audit';
+export type Resource = 'members' | 'documents' | 'messages' | 'accounts' | 'portal' | 'campaigns' | 'import' | 'materials' | 'inventory' | 'social' | 'audit' | 'attendance';
 export type Action = 'read' | 'write';
 
 // Ao adicionar um novo Resource aqui, lojas que já customizaram a matriz (têm
@@ -21,7 +21,10 @@ export type Action = 'read' | 'write';
 // Gestão, Composição da loja): todo obreiro enxerga por padrão — é para a loja se
 // ver. NÃO dá acesso ao cadastro de membros ('members'), que guarda CPF, contatos
 // e situação financeira; as telas do Social só mostram o que é próprio de um quadro.
-export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social', 'audit'];
+// 'attendance' = a Chancelaria: livro de presença, frequência às sessões, visitantes e certificados de presença.
+// Existe para o Chanceler (papel por cargo) operar isso SEM ter 'members' (CPF, contatos, situação financeira).
+// Quem já tem 'members' (Secretário etc.) continua com o acesso: as telas aceitam um OU o outro (requireLodgeAccessAny).
+export const RESOURCES: Resource[] = ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social', 'audit', 'attendance'];
 export const ACTIONS: Action[] = ['read', 'write'];
 export const ROLES = ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] as const;
 export type Role = (typeof ROLES)[number];
@@ -30,26 +33,26 @@ export type Role = (typeof ROLES)[number];
 // Usuários & acessos). Valem para o obreiro que ocupa o cargo no veneralato
 // ATIVO e SOMAM-SE ao papel dele — quando o veneralato encerra, o acesso some.
 // Aparecem como coluna na matriz de Permissões, então só a matriz amplia/reduz.
-export const CARGO_ROLES = ['architect'] as const;
+export const CARGO_ROLES = ['architect', 'chancellor'] as const;
 export type CargoRole = (typeof CARGO_ROLES)[number];
 export const MATRIX_ROLES: readonly string[] = [...ROLES, ...CARGO_ROLES];
 
 // Nome do cargo (normalizado: minúsculo, sem acento) → papel por cargo.
-const OFFICE_TO_CARGO_ROLE: Record<string, CargoRole> = { arquiteto: 'architect' };
+const OFFICE_TO_CARGO_ROLE: Record<string, CargoRole> = { arquiteto: 'architect', chanceler: 'chancellor' };
 
 // Política padrão (fallback). Lojas sem linhas em RolePermission usam isto.
 // É a fonte de verdade para semear o RBAC persistido de cada loja.
 const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = {
   admin: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social', 'audit'],
-    write: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social', 'audit', 'attendance'],
+    write: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'attendance'],
   },
   venerable: {
-    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'materials', 'inventory', 'social'],
+    read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'materials', 'inventory', 'social', 'attendance'],
     // O Venerável preside a loja e precisa editar cadastro de membro, cargos,
     // veneralato e cadastros mestre (ritos/potências) — não só a Secretaria. Também
     // cadastra os materiais e decide baixa/reposição (junto com Admin e Secretário).
-    write: ['members', 'documents', 'messages', 'portal', 'campaigns', 'materials', 'inventory'],
+    write: ['members', 'documents', 'messages', 'portal', 'campaigns', 'materials', 'inventory', 'attendance'],
   },
   treasurer: {
     read: ['members', 'documents', 'messages', 'accounts', 'portal', 'campaigns', 'social'],
@@ -58,8 +61,8 @@ const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = 
   // Sem "accounts": a Tesouraria (lançamentos e relatórios financeiros) não é da Secretaria —
   // decisão do dono, 2026-09-27. O Administrador ainda pode liberar em Configurações → Permissões.
   secretary: {
-    read: ['members', 'documents', 'messages', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social'],
-    write: ['members', 'documents', 'messages', 'portal', 'import', 'materials', 'inventory'],
+    read: ['members', 'documents', 'messages', 'portal', 'campaigns', 'import', 'materials', 'inventory', 'social', 'attendance'],
+    write: ['members', 'documents', 'messages', 'portal', 'import', 'materials', 'inventory', 'attendance'],
   },
   member: {
     read: ['portal', 'campaigns', 'documents', 'social'],
@@ -78,6 +81,13 @@ const DEFAULT_POLICY: Record<string, { read: Resource[]; write: Resource[] }> = 
   architect: {
     read: ['materials', 'inventory'],
     write: ['inventory'],
+  },
+  // Chanceler (papel por cargo, soma-se ao papel do obreiro): cuida da presença — livro de presença,
+  // frequência às sessões, visitantes e certificados de presença. NÃO vê o cadastro dos irmãos
+  // (CPF, contatos, finanças): só o que a Chancelaria precisa. O Secretário continua com tudo isso.
+  chancellor: {
+    read: ['attendance', 'social'],
+    write: ['attendance'],
   },
   // Candidato (profano em processo de admissão — lib/candidate.ts): só o portal,
   // onde vê os próprios débitos, o próprio cadastro e paga. Papel FIXO: fica fora
@@ -306,6 +316,26 @@ export async function requireLodgeAccess(
   // Escrita exige assinatura vigente (a leitura segue liberada). Ver lib/subscription-guard.ts.
   if (action === 'write') return requireActiveSubscription(lodgeId);
   return { ok: true } as const;
+}
+
+/**
+ * Como requireLodgeAccess, mas basta UM dos recursos (ex.: 'members' OU 'attendance' — a Chancelaria).
+ * Passe `memberId` (da sessão) para valerem os papéis por cargo.
+ */
+export async function requireLodgeAccessAny(
+  lodgeId: string | undefined | null,
+  role: string | undefined | null,
+  resources: Resource[],
+  action: Action,
+  memberId?: string | null,
+) {
+  for (const resource of resources) {
+    if (await canLodgeAccessFor({ lodgeId, role, memberId }, resource, action)) {
+      if (action === 'write') return requireActiveSubscription(lodgeId);
+      return { ok: true } as const;
+    }
+  }
+  return { ok: false, status: 403, error: 'Acesso negado.' } as const;
 }
 
 // Não é role×resource×action da matriz de Permissões (não existe resource

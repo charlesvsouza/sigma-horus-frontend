@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { requireLodgeAccessAny } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 type Ctx = { params: Promise<{ id: string; visitId: string }> };
@@ -12,7 +12,7 @@ export async function DELETE(_request: Request, { params }: Ctx) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId ? String(session.user.lodgeId) : null;
   if (!lodgeId || !session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const access = await requireLodgeAccess(lodgeId, session.user.role, 'members', 'write');
+  const access = await requireLodgeAccessAny(lodgeId, session.user.role, ['members', 'attendance'], 'write', session?.user?.memberId);
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { id: sessionId, visitId } = await params;

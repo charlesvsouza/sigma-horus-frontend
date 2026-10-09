@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { lodgeArtOf } from '@/lib/certificate-server';
-import { normalizeRole, requireLodgeAccess } from '@/lib/rbac';
+import { normalizeRole, requireLodgeAccessAny } from '@/lib/rbac';
 import { SESSION_TYPE_LABEL } from '@/lib/status-labels';
 import CertificadosClient, { type CertSession, type CertVisit } from './CertificadosClient';
 
@@ -16,7 +16,7 @@ export default async function CertificadosPage({ searchParams }: { searchParams:
     </main>
   );
   if (!lodgeId) return denied('Sessão expirada.');
-  const access = await requireLodgeAccess(lodgeId, session?.user?.role, 'members', 'write');
+  const access = await requireLodgeAccessAny(lodgeId, session?.user?.role, ['members', 'attendance'], 'write', session?.user?.memberId);
   if (!access.ok) return denied('Acesso restrito à Secretaria, ao Venerável e ao Administrador.');
 
   const { sessao } = await searchParams;

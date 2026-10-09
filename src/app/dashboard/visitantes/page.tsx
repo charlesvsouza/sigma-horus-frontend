@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { canLodgeAccess, requireLodgeAccess } from '@/lib/rbac';
+import { canLodgeAccessFor, requireLodgeAccessAny } from '@/lib/rbac';
 import VisitantesClient, { type VisitorRow } from './VisitantesClient';
 
 // Secretaria → Visitantes: o cadastro geral dos irmãos visitantes, com o histórico de visitas
@@ -14,9 +14,10 @@ export default async function VisitantesPage() {
     </main>
   );
   if (!lodgeId) return denied('Sessão expirada.');
-  const access = await requireLodgeAccess(lodgeId, session?.user?.role, 'members', 'read');
-  if (!access.ok) return denied('Acesso restrito à Secretaria.');
-  const canEdit = await canLodgeAccess(lodgeId, session?.user?.role, 'members', 'write');
+  const access = await requireLodgeAccessAny(lodgeId, session?.user?.role, ['members', 'attendance'], 'read', session?.user?.memberId);
+  if (!access.ok) return denied('Acesso restrito à Secretaria e à Chancelaria.');
+  const who = { lodgeId, role: session?.user?.role, memberId: session?.user?.memberId };
+  const canEdit = (await canLodgeAccessFor(who, 'members', 'write')) || (await canLodgeAccessFor(who, 'attendance', 'write'));
 
   const { visitors, removed } = await withTenant(lodgeId, async (db) => ({
     visitors: await db.visitor.findMany({

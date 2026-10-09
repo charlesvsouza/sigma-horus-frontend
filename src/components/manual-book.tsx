@@ -48,7 +48,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-contas', label: '7.2 Contas a receber e pagar' },
       { id: 'tes-cobrancas', label: '7.3 Cobranças e recorrência' },
       { id: 'tes-asaas', label: '7.4 Emitir boleto/PIX' },
-      { id: 'tes-pagamentos', label: '7.5 Registrar pagamentos' },
+      { id: 'tes-pagamentos', label: '7.5 Baixa de pagamentos' },
       { id: 'tes-relatorios', label: '7.6 Relatórios' },
       { id: 'tes-fechamento', label: '7.7 Fechamento do veneralato' },
       { id: 'tes-inadimplencia', label: '7.8 Inadimplência, Art. 002, bloqueio e acordo' },
@@ -81,7 +81,7 @@ const INDEX: IndexEntry[] = [
       { id: 'sec-veneralato', label: '8.6 Veneralato' },
       { id: 'sec-sessoes', label: '8.7 Sessões e convocação' },
       { id: 'sec-frequencia', label: '8.8 Frequência às sessões' },
-      { id: 'sec-materiais', label: '8.9 Materiais e patrimônio' },
+      { id: 'sec-materiais', label: '8.9 Materiais da loja' },
       { id: 'sec-documentos', label: '8.10 Documentos e comunicação' },
       { id: 'sec-certificados', label: '8.11 Visitantes e certificados de presença' },
       { id: 'sec-candidatos', label: '8.12 Candidatos — processo de admissão' },
@@ -265,7 +265,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 8 de outubro de 2026 · versão 1.97</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 8 de outubro de 2026 · versão 1.99</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -474,7 +474,8 @@ export function ManualBook() {
                 <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, dá baixa nos avisos &quot;Já paguei&quot; dos irmãos, envia cobranças pelo WhatsApp e registra os comprovantes que os irmãos mandam por fora, fecha o caixa, solicita transferências entre contas bancárias/Caixa e vê relatórios financeiros — inclusive o <UI>Histórico de pagamentos</UI> e a <UI>Declaração de regularidade</UI>.</li>
                 <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença, materiais e patrimônio da loja, documentos institucionais. <strong>Não acessa a Tesouraria</strong> — nem lançamentos nem relatórios financeiros; se a loja quiser, o Administrador libera em <UI>Configurações → Permissões</UI> (módulo Contas).</li>
                 <li><strong>Hospitaleiro:</strong> consulta os irmãos (somente leitura, para contato), gerencia campanhas de benemerência e acompanha o Tronco de Solidariedade.</li>
-                <li><strong>Arquiteto (por cargo):</strong> não é um papel que se atribui em <UI>Usuários &amp; acessos</UI> — o obreiro que ocupa o cargo de Arquiteto no veneralato ativo ganha, <strong>além do papel que já tem</strong>, o acesso ao inventário em <UI>Materiais e patrimônio</UI>: vê a lista de materiais, registra desgaste, dano ou perda e fornece/recebe materiais. Não edita o cadastro, não decide baixa nem reposição e não acessa a Tesouraria. Quando o veneralato é encerrado, o acesso acaba sozinho. O Administrador pode ajustar isso em <UI>Configurações → Permissões</UI> (coluna <UI>Arquiteto (cargo)</UI>).</li>
+                <li><strong>Arquiteto (por cargo):</strong> não é um papel que se atribui em <UI>Usuários &amp; acessos</UI> — o obreiro que ocupa o cargo de Arquiteto no veneralato ativo ganha, <strong>além do papel que já tem</strong>, o acesso ao inventário em <UI>Materiais da loja</UI>: vê a lista de materiais, registra desgaste, dano ou perda e fornece/recebe materiais. Não edita o cadastro, não decide baixa nem reposição e não acessa a Tesouraria. Quando o veneralato é encerrado, o acesso acaba sozinho. O Administrador pode ajustar isso em <UI>Configurações → Permissões</UI> (coluna <UI>Arquiteto (cargo)</UI>).</li>
+                <li><strong>Chanceler (por cargo):</strong> também não se atribui em <UI>Usuários &amp; acessos</UI> — o obreiro que ocupa o cargo de Chanceler no veneralato ativo ganha, <strong>além do papel que já tem</strong>, a <UI>Chancelaria</UI>: marca a presença nas sessões, cuida do livro de presença, da frequência, dos visitantes e dos certificados de presença. Não vê o cadastro dos irmãos (CPF, contatos, situação financeira), a Tesouraria nem a Secretaria. O Secretário não perde nada: continua com o mesmo acesso. O Administrador ajusta em <UI>Configurações → Permissões</UI> (coluna <UI>Chanceler (cargo)</UI>, linha <UI>Chancelaria</UI>).</li>
                 <li><strong>Membro (obreiro):</strong> o próprio portal — pendências (e o botão <UI>Pagar</UI>), extrato, histórico de pagamentos com os recibos, declaração de regularidade e documentos pertinentes — e os quadros do menu <UI>Social</UI>. Vê só o que é dele.</li>
                 <li><strong>Menu Social (todos os papéis):</strong> <UI>Quadro social</UI>, <UI>Galeria de Veneráveis</UI>, <UI>Quadro da Gestão</UI> e <UI>Composição da loja</UI> ficam abertos a todo obreiro, para que a loja se enxergue. Quem não tem acesso ao cadastro de Membros vê apenas os ativos e não vê telefone nem e-mail; o cadastro em si segue restrito. O Administrador ajusta em <UI>Configurações → Permissões</UI> (módulo <UI>Social</UI>).</li>
               </Bullets>
@@ -505,15 +506,19 @@ export function ManualBook() {
                 </li>
                 <li>
                   <strong>Secretaria:</strong> três grupos por tarefa — <UI>Irmãos</UI> (<UI>Membros</UI>, <UI>Candidatos</UI>, <UI>Cargos</UI>, <UI>Cadastros mestre</UI>),
-                  <UI> Sessões</UI> (<UI>Sessões</UI>, <UI>Frequência às sessões</UI>, <UI>Visitantes</UI>, <UI>Veneralato</UI>) e
-                  <UI> Documentos</UI> (<UI>Documentos</UI>, <UI>Comunicação</UI>, <UI>Certificados de presença</UI>, <UI>Materiais e patrimônio</UI>).
-                  O Arquiteto (por cargo) vê aqui apenas <UI>Materiais e patrimônio</UI>.
+                  <UI> Sessões</UI> (<UI>Sessões</UI>, <UI>Veneralato</UI>) e
+                  <UI> Documentos</UI> (<UI>Documentos</UI>, <UI>Comunicação</UI>).
+                </li>
+                <li>
+                  <strong>Chancelaria:</strong> <UI>Livro de presença</UI> (as sessões recentes, com atalho para marcar a presença, imprimir o livro e ver os visitantes),
+                  <UI> Frequência às sessões</UI>, <UI>Visitantes</UI> e <UI>Certificados de presença</UI>. Aparece para o <strong>Chanceler</strong> (por cargo) e, sem prejuízo,
+                  para o Secretário, o Venerável e o Administrador, que continuam com o mesmo acesso de antes.
                 </li>
                 <li>
                   <strong>Tesouraria:</strong> cinco grupos por tarefa — <UI>Lançar</UI> (<UI>Lançamento</UI>, <UI>Contas</UI>),
                   <UI> Cobrar e dar baixa</UI> (<UI>Cobranças</UI>, <UI>Baixa de pagamentos</UI>, <UI>Inadimplência (Art. 002)</UI>, <UI>Taxas de grau</UI>, <UI>Acordos</UI>),
                   <UI> Banco e caixa</UI> (<UI>Extratos de contas</UI>, <UI>Transferências entre contas</UI>, <UI>Conciliação bancária</UI>, <UI>Conferência com o banco</UI>),
-                  <UI> Cadastros</UI> (<UI>Cadastros financeiros</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (o <UI>índice dos relatórios</UI> e dois atalhos:
+                  <UI> Cadastros</UI> (<UI>Cadastros financeiros</UI>) e <UI>Relatórios</UI> (o <UI>índice dos relatórios</UI> e dois atalhos:
                   <UI> Contas a receber</UI> e <UI>Fechamento</UI>; todos os outros relatórios estão no índice e na busca).
                 </li>
                 <li>
@@ -526,9 +531,9 @@ export function ManualBook() {
                   Com o grupo fechado, o número aparece no nome do grupo. Cada pessoa vê apenas os números das telas que o seu cargo acessa.
                 </li>
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI>, <UI>Campanhas</UI> de benemerência e <UI>Fundos (Tronco e Doações)</UI>. O obreiro comum vê aqui só o item <UI>Hospitalaria</UI>, onde doa ao Tronco de Solidariedade, faz um pedido e acompanha as campanhas ativas.</li>
-                <li><strong>Administração:</strong> dois grupos — <UI>A loja</UI> (<UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>) e <UI>Dados</UI> (<UI>Importar cadastros</UI>, <UI>Importar backup financeiro</UI>, <UI>Auditoria</UI>).</li>
+                <li><strong>Administração:</strong> três grupos — <UI>A loja</UI> (<UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>), <UI>Dados</UI> (<UI>Importar cadastros</UI>, <UI>Importar backup financeiro</UI>, <UI>Auditoria</UI>) e <UI>Bens da loja</UI> (<UI>Patrimônio</UI> e <UI>Materiais da loja</UI>). O Arquiteto (por cargo) vê aqui apenas <UI>Materiais da loja</UI>.</li>
               </Bullets>
-              <p>O topo mostra o nome da loja, o usuário logado e o status da assinatura (teste, ativa ou pendente).</p>
+              <p>O topo mostra o nome da loja, o usuário logado e a situação da assinatura (teste, ativa ou pendente).</p>
               <p>
                 <strong>Navegação rápida (beta).</strong> O botão <UI>Navegação rápida</UI> (⚡), no topo, liga dois atalhos <strong>só para você</strong> (vale para o seu navegador; quem não liga vê o sistema como sempre foi, e desligar volta ao normal na hora):
                 a <strong>barra de telas irmãs</strong> — no alto de cada tela aparecem as outras telas do mesmo grupo do menu (por exemplo, em Cobranças: Inadimplência, Taxas de grau, Acordos), com a atual marcada, para trocar sem abrir o menu — e o <strong>painel do irmão</strong>: nas listas de <UI>Cobranças</UI>, <UI>Contas</UI> e <UI>Pagamentos</UI> o nome do irmão fica sublinhado; clique nele para abrir, por cima da lista, o painel com o saldo devedor, o vencido, o crédito, as pendências, o plano de taxa (com a entrada, se houver), os últimos pagamentos e o contato, e atalhos para o histórico de pagamentos, a declaração de regularidade e uma nova taxa de grau. <UI>Esc</UI> ou o X fecham o painel e você continua na mesma tela. O painel só mostra o que o seu cargo já pode ver: Tesoureiro, Venerável e Administrador veem o financeiro; o Secretário vê só contato e situação, sem dinheiro; lançamentos do Tronco não aparecem. É somente consulta — nada é gravado por ele.
@@ -540,7 +545,7 @@ export function ManualBook() {
               <p>
                 <strong>O menu fica sempre visível:</strong> no computador ele é fixo à esquerda, então apenas o
                 conteúdo rola, a barra não some. Para ganhar espaço, clique em <UI>Recolher menu</UI> no rodapé da
-                barra: ela fica compacta (só os ícones) e, ao passar o mouse sobre um ícone, o nome aparece. No
+                barra: ela fica compacta, com um ícone por área (Secretaria, Tesouraria…); ao passar o mouse sobre o ícone (ou clicar nele), abre ao lado o <strong>submenu flutuante</strong> com os grupos e as telas daquela área, já com os números de aviso, e <UI>Esc</UI> fecha. No
                 celular, o menu abre pelo botão de menu (☰) e cobre a tela enquanto você escolhe.
               </p>
               <p>
@@ -577,9 +582,9 @@ export function ManualBook() {
                 <Office name="Orador" tradition="Guardião da lei e da justiça nos trabalhos; zela pelo cumprimento dos estatutos." system="Papel Membro, com leitura do que lhe couber; apoia-se na auditoria e nos relatórios." />
                 <Office name="Secretário" tradition="A administração viva da loja: convocações, atas, correspondência e o quadro de obreiros." system="Recebe o papel Secretário: cadastra membros, cargos, períodos e sessões; registra presença; organiza o Centro de Documentos e o inventário de materiais e patrimônio." />
                 <Office name="Tesoureiro" tradition="O coração financeiro: arrecada mensalidades, paga despesas e presta contas do caixa." system="Recebe o papel Tesoureiro: emite cobranças (boleto/PIX), dá baixas, lança contas e fecha o caixa do veneralato." />
-                <Office name="Chanceler" tradition="Cuida das relações externas, diplomas, certificados e correspondência com a Potência." system="Papel Secretário ou Membro; usa o Centro de Documentos e os cadastros de membros." />
+                <Office name="Chanceler" tradition="Cuida das relações externas, diplomas, certificados e correspondência com a Potência." system="Papel por cargo (soma-se ao papel de obreiro): acessa a Chancelaria — presença, visitantes e certificados de presença —, sem ver o cadastro dos irmãos nem as finanças." />
                 <Office name="Hospitaleiro" tradition="O cuidado fraterno: assistência a obreiros e famílias, tronco de beneficência, visitas e aniversários." system="Recebe o papel Hospitaleiro: consulta os irmãos e a família para contato, gerencia campanhas de benemerência e acompanha o saldo do Tronco de Solidariedade (ver capítulo 11)." />
-                <Office name="Arquiteto" tradition="Zela pela ordem material do templo: alfaias, aventais, rituais e demais paramentos e mobiliário da loja." system="Não tem papel próprio em Usuários &amp; acessos: o acesso vem do cargo no veneralato ativo e se soma ao papel do obreiro. Opera o inventário em Materiais e patrimônio — registra desgaste, dano e perda, com pedido de reposição — sem editar o cadastro (ver capítulo 8.9)." />
+                <Office name="Arquiteto" tradition="Zela pela ordem material do templo: alfaias, aventais, rituais e demais paramentos e mobiliário da loja." system="Não tem papel próprio em Usuários &amp; acessos: o acesso vem do cargo no veneralato ativo e se soma ao papel do obreiro. Opera o inventário em Materiais da loja — registra desgaste, dano e perda, com pedido de reposição — sem editar o cadastro (ver capítulo 8.9)." />
               </div>
               <p className="text-sm text-sand-dark">
                 A nomenclatura varia conforme o rito; sua loja já nasce com os cargos corretos e pode editá-los em
@@ -644,7 +649,7 @@ export function ManualBook() {
                   <li>No Sigma Horus, vá em <UI>Administração → Integrações</UI>.</li>
                   <li>No cartão <strong>Asaas</strong>, cole a chave no campo <UI>Chave da API do Asaas</UI>.</li>
                   <li>Em <UI>Ambiente</UI>, escolha <strong>Sandbox (testes)</strong> ou <strong>Produção</strong> — o mesmo da chave que você gerou.</li>
-                  <li>Clique em <UI>Conectar Asaas</UI>. Se a chave for válida, o status muda para <strong>Conectado</strong> e mostra o ambiente e a chave mascarada.</li>
+                  <li>Clique em <UI>Conectar Asaas</UI>. Se a chave for válida, a situação muda para <strong>Conectado</strong> e mostra o ambiente e a chave mascarada.</li>
                 </Steps>
                 <p><strong>Parte C — Configurar a baixa automática (webhook) no Asaas:</strong></p>
                 <Steps>
@@ -708,8 +713,8 @@ export function ManualBook() {
                 <p>
                   Alguns módulos merecem atenção: <UI>Materiais — cadastro e baixa</UI> (quem cadastra materiais e decide
                   baixa/reposição), <UI>Inventário — ocorrências e empréstimos</UI> (quem registra desgaste, dano, perda e fornece/recebe
-                  materiais) e <UI>Social — quadros e composição da loja</UI> (por padrão, <strong>todos os papéis</strong> veem os quadros).
-                  A coluna <UI>Arquiteto (cargo)</UI> não é um papel de usuário: vale para o obreiro que ocupa o cargo de Arquiteto no
+                  materiais) <UI>Chancelaria — presença, visitantes e certificados</UI> (Administrador, Venerável, Secretário e Chanceler) e <UI>Social — quadros e composição da loja</UI> (por padrão, <strong>todos os papéis</strong> veem os quadros).
+                  As colunas <UI>Arquiteto (cargo)</UI> e <UI>Chanceler (cargo)</UI> não são papéis de usuário: valem para o obreiro que ocupa o cargo no
                   veneralato ativo, <strong>soma-se</strong> ao papel dele e some quando o veneralato encerra. Papéis e módulos novos
                   usam o padrão até você salvar a matriz — as lojas que já a personalizaram não mudam de comportamento por surpresa.
                 </p>
@@ -829,7 +834,7 @@ export function ManualBook() {
                     depósito/TED, sem intermediário. A chave Pix e os dados bancários (cadastrados em <UI>Dados bancários</UI>, no topo
                     das Configurações) aparecem na tela de Cobranças e nos lembretes enviados aos irmãos. Com a <strong>chave Pix</strong>
                     cadastrada, o irmão também paga pelo portal: o sistema gera o QR Code com o valor exato e ele avisa com
-                    <UI> Já paguei</UI>. O Tesoureiro confirma o recebimento e dá a baixa em <UI>Pagamentos</UI> (7.5). Não há tarifas.
+                    <UI> Já paguei</UI>. O Tesoureiro confirma o recebimento e dá a baixa em <UI>Baixa de pagamentos</UI> (7.5). Não há tarifas.
                   </li>
                   <li>
                     <strong>Modo Asaas</strong> — a cobrança é emitida no Asaas em <strong>Pix ou boleto</strong> (você escolhe o
@@ -989,7 +994,7 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li><strong>Editar:</strong> clique em <UI>Editar</UI> na linha da conta para corrigir valor, vencimento, título ou vínculo — não precisa excluir e recriar. Contas de um veneralato já encerrado não podem ser editadas nem excluídas.</li>
-                  <li><strong>Buscar:</strong> o campo de busca acima da lista filtra por título, membro ou status.</li>
+                  <li><strong>Buscar:</strong> o campo de busca acima da lista filtra por título, membro ou situação.</li>
                   <li><strong>É mensalidade do membro:</strong> ao vincular a conta a um membro, aparece essa opção — marque para que ela entre na regra de inadimplência do Art. 002 (capítulo 7.8). A caixa já vem <strong>marcada</strong> quando a loja aplica o Art. 002 (em <UI>Configurações</UI>) e <strong>desmarcada</strong> quando não aplica. Escolhendo a categoria, ela se ajusta: <strong>Mensalidades</strong> marca; outras categorias (venda de material, ágape…) desmarcam. Se a categoria for <strong>Mensalidades</strong>, a conta já nasce como mensalidade. <strong>Mensalidade sempre tem irmão:</strong> com categoria de mensalidade, o campo <UI>Vincular a um membro</UI> passa a ser obrigatório e o sistema não salva sem ele.</li>
                   <li><strong>Situação na lista:</strong> cada conta mostra um selo — <strong>Em aberto</strong>, <strong>Vencida</strong> ou <strong>Recebida/Paga</strong>. Quando há uma cobrança emitida no Asaas ainda sem pagamento, aparece também <strong>Aguardando Asaas</strong>.</li>
                 </Bullets>
@@ -999,7 +1004,7 @@ export function ManualBook() {
                   entrar no saldo, no extrato, no DRE e no livro-caixa (7.14 a 7.16). Sem a conta bancária/caixa, o
                   lançamento como Pago não é salvo. Também não é salvo se: a despesa está acima do limite e ainda aguarda o
                   visto do Venerável (7.9 — lance como Pendente e aprove primeiro), ou a data do pagamento cai num
-                  veneralato já encerrado. Se já existirem pagamentos na conta, o status passa a seguir a soma deles.
+                  veneralato já encerrado. Se já existirem pagamentos na conta, a situação passa a seguir a soma deles.
                 </Note>
               </Sub>
 
@@ -1045,7 +1050,7 @@ export function ManualBook() {
                   automaticamente (e, se marcado, recorrente). Na categoria Mensalidades, membros isentos (Maçom Remido) ficam de fora.
                 </p>
                 <p>
-                  Na lista <UI>Cobranças cadastradas</UI>, cada item mostra um status: <strong>Pendente</strong>,
+                  Na lista <UI>Cobranças cadastradas</UI>, cada item mostra uma situação: <strong>Pendente</strong>,
                   <strong> Emitida</strong>, <strong>Paga</strong> ou <strong>Vencida</strong>. A lista abre em <UI>Em aberto</UI>; os filtros
                   <UI>Vencidas</UI>, <UI>Pagas</UI> e <UI>Todas</UI> mostram quantas há em cada um. O campo de busca filtra por número, membro ou descrição.
                 </p>
@@ -1067,7 +1072,7 @@ export function ManualBook() {
                   <li>Confirme que o membro tem <strong>CPF</strong> preenchido em <UI>Membros</UI> (sem CPF o Asaas recusa).</li>
                   <li>Em <UI>Cobranças</UI>, localize a cobrança e clique em <UI>Emitir no Asaas</UI>.</li>
                   <li>O sistema cria o cliente do membro no Asaas, gera a cobrança em <strong>Pix ou boleto</strong> (conforme o método padrão da loja — nunca cartão) e devolve o link <UI>Abrir cobrança</UI> para enviar ao membro. Os lembretes automáticos e o lembrete avulso já levam esse link.</li>
-                  <li>O status passa a <strong>Emitida</strong>. Se precisar refazer, use <UI>Reemitir</UI> — a cobrança anterior é cancelada no Asaas, para o irmão não pagar duas vezes.</li>
+                  <li>A situação passa a <strong>Emitida</strong>. Se precisar refazer, use <UI>Reemitir</UI> — a cobrança anterior é cancelada no Asaas, para o irmão não pagar duas vezes.</li>
                 </Steps>
                 <p>
                   <strong>O irmão também paga sozinho, pelo portal.</strong> Em <UI>Meu portal → Pendências</UI> ele
@@ -1091,7 +1096,7 @@ export function ManualBook() {
                 <p>
                   <strong>Cobrança emitida = a baixa é do Asaas.</strong> Depois de emitida, a cobrança fica <strong>Aguardando
                   Asaas</strong> (selo na lista de Contas). Se o irmão pagar por fora (dinheiro em mãos, PIX direto) e você
-                  tentar baixar a conta em <UI>Contas</UI> (status Pago) ou em <UI>Pagamentos</UI>, o sistema avisa:
+                  tentar baixar a conta em <UI>Contas</UI> (situação Pago) ou em <UI>Baixa de pagamentos</UI>, o sistema avisa:
                   <em> &quot;Cobrança aberta no Asaas&quot;</em>. Só siga com <UI>Recebido fora do Asaas</UI> se o valor foi de
                   fato recebido por fora — o sistema então registra a baixa e <strong>avisa o Asaas para encerrar a
                   cobrança</strong>, evitando que o irmão pague de novo pelo boleto/PIX. Se preferir, cancele o aviso e aguarde
@@ -1105,7 +1110,13 @@ export function ManualBook() {
                 </Bullets>
               </Sub>
 
-              <Sub id="tes-pagamentos" title="7.5 Registrar pagamentos (baixa manual)">
+              <Sub id="tes-pagamentos" title="7.5 Baixa de pagamentos (conferir avisos e registrar)">
+                <p>
+                  Esta é a tela em que o Tesoureiro <strong>dá baixa (quita) nos valores a receber</strong>. O caminho de quem já pagou: o irmão avisa pelo portal
+                  (<UI>Já paguei</UI>) ou a Tesouraria registra o comprovante que ele mandou; o aviso aparece em <UI>Avisos de pagamento dos irmãos</UI>, no topo.
+                  Confira o crédito no extrato do banco e clique em <UI>Dar baixa</UI> (conferido) ou <UI>Recusar aviso</UI> (comprovante não confere — o irmão volta a ficar em aberto e pode avisar de novo).
+                  Quem <strong>ainda não pagou</strong> não aparece aqui: a cobrança é feita em <UI>Cobranças</UI>, pelo WhatsApp ou por e-mail.
+                </p>
                 <p>
                   Para pagamentos recebidos fora do Asaas (dinheiro, PIX direto, etc.) ou para baixar contas a pagar, use
                   <UI>Tesouraria → Cobrar e dar baixa → Baixa de pagamentos</UI>, bloco <UI>Novo pagamento</UI>:
@@ -1161,7 +1172,7 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li><strong>Recibo:</strong> cada pagamento tem um link <UI>Recibo</UI> — abre o comprovante com o cabeçalho da loja (CNPJ, endereço, número do documento). O recibo <strong>não leva assinatura do pagador</strong>: leva só a do <strong>Tesoureiro</strong> (ou do Venerável), em <strong>formato digital</strong>. No momento em que o Tesoureiro registra ou confirma o pagamento (<UI>Dar baixa</UI>, baixa assistida pelo extrato, pagamento do acordo, confirmação do dinheiro recebido no Asaas), o sistema grava a assinatura: o nome, o cargo, a <strong>data e a hora</strong> e um <strong>código de verificação</strong> (RC-XXXX-XXXX), que saem impressos sob o nome — <em>Assinado digitalmente em 05/10/2026 12:04:09 · Código RC-…</em>. Qualquer pessoa confere o recibo em <strong>sigmahorus.com.br/verificar/&lt;código&gt;</strong>: a página mostra quem assinou e quando, e avisa se o recibo foi alterado depois de assinado (sem mostrar valor nem pagador). Pagamento registrado por outro cargo, baixa automática do Asaas ou recibo antigo ficam <strong>sem assinatura</strong> até o Tesoureiro (ou o Venerável) abrir o recibo e clicar em <UI>Assinar recibo</UI>; cada recibo é assinado uma vez. Use <UI>Imprimir / PDF</UI>.</li>
-                  <li><strong>Estornar:</strong> lançou errado? Clique em <UI>Estornar</UI> na linha do pagamento — ele é removido e o status da conta/cobrança volta ao que era antes. Não funciona dentro de um período já encerrado.</li>
+                  <li><strong>Estornar:</strong> lançou errado? Clique em <UI>Estornar</UI> na linha do pagamento — ele é removido e a situação da conta/cobrança volta ao que era antes. Não funciona dentro de um período já encerrado.</li>
                   <li><strong>Recusar aviso</strong> (comprovante errado): se o comprovante de um aviso &quot;Já paguei&quot; não é daquele pagamento (arquivo trocado, outra conta, valor ou recebedor diferente, crédito que não caiu), clique em <UI>Recusar aviso</UI> no próprio aviso, <strong>antes</strong> de dar a baixa. Escolha um motivo pronto ou escreva o seu (obrigatório) e deixe marcado <UI>Avisar o irmão por e-mail</UI>. O aviso sai do quadro, a conta volta a <em>Em aberto</em> no portal com o motivo à vista, e o irmão (ou a Tesouraria, pelo <UI>Comprovante</UI>) envia o comprovante certo pelo mesmo caminho — sem esperar as 24 horas entre avisos. No Pix agrupado, todas as contas do grupo voltam juntas. Nada é apagado: o aviso e o arquivo recusados ficam na auditoria. Se a baixa já foi dada, o caminho é o <UI>Estornar</UI>.</li>
                   <li>Quando a conta é a receber (não a pagar), o membro recebe automaticamente um <strong>e-mail de confirmação</strong> do pagamento.</li>
                   <li><strong>Contas sem membro</strong> (fornecedor, energia, aluguel etc.): a conta passa a <strong>Paga</strong> assim que a soma dos pagamentos cobre o valor — e volta a <strong>Em aberto</strong> se um estorno deixar de cobri-lo.</li>
@@ -1474,7 +1485,7 @@ export function ManualBook() {
                   <li><strong>Verificar pagamentos no Asaas</strong> (em <UI>Integrações</UI>, se o Asaas estiver conectado): confere no Asaas cobranças emitidas que ainda não baixaram no sistema — cobre o caso raro de o aviso automático (webhook) falhar ou atrasar.</li>
                   <li><strong>Conciliação bancária</strong> (<UI>Tesouraria → Banco e caixa → Conciliação bancária</UI>): importe o extrato do seu banco (arquivo <strong>OFX</strong>, exportado pelo internet banking, ou <strong>CSV</strong> com colunas Data/Descrição/Valor). O sistema tenta casar cada linha com um pagamento já registrado (mesmo valor, data próxima, mesma direção — receber ou pagar); o que não casar sozinho fica disponível para <UI>Vincular manualmente</UI> ou <UI>Ignorar</UI>.</li>
                   <li><strong>Avisos &quot;Já paguei&quot; × extrato</strong> (Modo Loja): com o extrato importado, cada aviso em
-                  <UI> Pagamentos</UI> mostra se há um crédito correspondente, e <UI>Dar baixa</UI> já concilia a linha (7.5). Pix
+                  <UI> Baixa de pagamentos</UI> mostra se há um crédito correspondente, e <UI>Dar baixa</UI> já concilia a linha (7.5). Pix
                   agrupado aparece como um crédito só, do total do grupo.</li>
                   <li><strong>Baixa assistida pelo extrato</strong> (Modo Loja): em um crédito do extrato que ainda não tem pagamento lançado, clique em
                   <UI>Sugerir cobrança</UI>. O sistema procura as cobranças em aberto cujo <strong>valor</strong> bate com o crédito e cujo <strong>nome do irmão</strong> aparece
@@ -1482,7 +1493,7 @@ export function ManualBook() {
                   <UI> Dar baixa e conciliar</UI>: a baixa é lançada e a linha do extrato já fica conciliada. Só a sugestão em que <strong>valor e nome conferem</strong> traz o botão dourado direto; nas demais (só o valor, só o nome ou valor diferente) o botão é <UI>Conferir e dar baixa</UI> e o sistema mostra o motivo e <strong>pede confirmação</strong> antes de baixar. Nada é baixado sem o seu clique; crédito maior que o saldo
                   da cobrança não é aceito, e cobrança aberta no Asaas é recusada (nessa loja a baixa vem do Asaas).</li>
                   <li><strong>Recebido em dinheiro no painel do Asaas</strong> (Modo Asaas): se alguém marcar uma cobrança como &quot;recebida em dinheiro&quot; direto no painel do
-                  Asaas, o sistema lança a baixa no <strong>Caixa</strong> da loja (sem tarifa) e avisa o Tesoureiro e os Administradores por e-mail. Em <UI>Tesouraria → Pagamentos</UI>
+                  Asaas, o sistema lança a baixa no <strong>Caixa</strong> da loja (sem tarifa) e avisa o Tesoureiro e os Administradores por e-mail. Em <UI>Tesouraria → Cobrar e dar baixa → Baixa de pagamentos</UI>
                   aparece o quadro <UI>Recebidos em dinheiro no Asaas — confirme na Tesouraria</UI>: confira o dinheiro e clique em <UI>Confirmar recebimento</UI> (ou escolha outra conta,
                   se ele foi depositado em outro lugar). A confirmação fica na auditoria.</li>
                   <li><strong>Pix agrupado no Asaas:</strong> <UI>Verificar pagamentos no Asaas</UI> reconhece o Pix que quitou várias
@@ -1959,7 +1970,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-frequencia" title="8.8 Frequência às sessões">
                 <p>
-                  Em <UI>Secretaria → Sessões → Frequência às sessões</UI>, veja quem tem faltado — a lista de obreiros ativos
+                  Em <UI>Chancelaria → Frequência às sessões</UI>, veja quem tem faltado — a lista de obreiros ativos
                   fica ordenada pela pior frequência primeiro, com <UI>faltas seguidas</UI> destacada quando chega a 3
                   ou mais.
                 </p>
@@ -1975,9 +1986,9 @@ export function ManualBook() {
                   um dado que não foi lançado).
                 </Note>
               </Sub>
-              <Sub id="sec-materiais" title="8.9 Materiais e patrimônio">
+              <Sub id="sec-materiais" title="8.9 Materiais da loja">
                 <p>
-                  Em <UI>Secretaria → Documentos → Materiais e patrimônio</UI>, mantenha o inventário de tudo que a loja usa
+                  Em <UI>Administração → Bens da loja → Materiais da loja</UI>, mantenha o inventário de tudo que a loja usa
                   no dia a dia — não só alfaias e indumentária: colunas, altar, malhetes, espadas, tapete, urna,
                   estandarte, placa constitutiva, tábua de delinear, aventais, punhos, joias de cargo e rituais, tudo
                   num só lugar.
@@ -2119,7 +2130,7 @@ export function ManualBook() {
                 <p>
                   O fluxo completo, do papel ao certificado: nos <UI>Impressos da sessão</UI> (8.7), imprima a
                   <UI> Lista de visitantes (em branco)</UI>; na sessão, os irmãos visitantes a preenchem; depois, digite a
-                  lista em <UI>Visitantes da sessão</UI> (8.7). Os certificados ficam em <UI>Secretaria → Documentos → Certificados de presença</UI>
+                  lista em <UI>Visitantes da sessão</UI> (8.7). Os certificados ficam em <UI>Chancelaria → Certificados de presença</UI>
                   (Secretário, Venerável e Administrador).
                 </p>
                 <Steps>
@@ -2173,7 +2184,7 @@ export function ManualBook() {
                 <li><UI>Taxas de grau</UI> (7.21): cria e acompanha os planos de iniciação, elevação, exaltação, filiação e regularização, com entrada opcional, e assina o contrato.</li>
                 <li><strong>Faltas seguidas:</strong> o irmão ativo que chega a <strong>3 ou mais ausências seguidas</strong> nas últimas sessões (ordinárias, magnas e extraordinárias com presença registrada; falta é falta, sem justificativa) aparece em <UI>Visão geral → Frequência</UI> e você recebe um <strong>e-mail</strong> (junto com o Hospitaleiro), uma vez por sequência: se ele continuar faltando não repete; só volta a avisar depois que comparecer e faltar 3 vezes de novo. Presença não registrada não conta como falta.</li>
                 <li><strong>Aviso de fim de recorrência:</strong> 30 dias antes de acabar o período programado das mensalidades recorrentes, você recebe um e-mail (junto com o Tesoureiro e o Administrador) perguntando se a loja renova ou cria outro período — quem renova é o Tesoureiro ou o Administrador (7.3).</li>
-                <li><UI>Auditoria</UI> (se o Administrador liberar em 6.4): a trilha imutável de quem fez o quê e quando — base para pareceres e aprovações. O botão <UI>Relatório de intervenções por pessoa</UI> emite, para um período escolhido à mão (<UI>De</UI> e <UI>Até</UI>) e para todas as pessoas ou só uma (inclusive o <UI>Sistema</UI>, que reúne webhooks e rotinas automáticas), o resumo de criações, alterações e remoções de cada um e a lista das intervenções, com <UI>Imprimir / PDF</UI> e CSV (até as 5.000 mais recentes do período).</li>
+                <li><UI>Auditoria</UI> (se o Administrador liberar em 6.4): a trilha imutável de quem fez o quê e quando — base para pareceres e aprovações. O botão <UI>Relatório de intervenções por pessoa</UI> emite, para um período escolhido à mão (<UI>De</UI> e <UI>Até</UI>) e para todas as pessoas ou só uma (inclusive o <UI>Sistema</UI>, que reúne webhooks e rotinas automáticas), o resumo de criações, alterações e remoções de cada um e a lista das intervenções, com <UI>Imprimir / PDF</UI> e CSV (até as 5.000 mais recentes do período). Os tipos de registro, as ações e os detalhes aparecem em português (por exemplo, &quot;Assinatura digital do recibo&quot;, &quot;Aviso de faltas seguidas&quot;, valor &quot;a receber&quot;), e o selo <UI>feito pelo suporte</UI> marca o que a equipe da plataforma fez entrando como a pessoa, a pedido.</li>
               </Bullets>
             </Chapter>
 
@@ -2499,7 +2510,7 @@ export function ManualBook() {
                 <li><strong>O sistema recusou o valor de uma conta ou pagamento.</strong> O valor precisa ser maior que zero, com até 2 casas decimais. Um pagamento também não pode ultrapassar o <strong>saldo em aberto</strong> da conta (ele mostra o quanto falta) — isso evita baixar a mesma conta duas vezes por clique duplicado.</li>
                 <li><strong>Não consigo emitir boleto.</strong> Verifique se o Asaas está conectado (6.2) e se o membro tem CPF (7.4).</li>
                 <li><strong>O pagamento não baixou sozinho.</strong> Veja a situação do webhook em <UI>Integrações</UI> e, se não estiver <strong>Ativo</strong>, clique em <UI>Registrar webhook no Asaas</UI> (6.2-C); enquanto isso, <UI>Verificar pagamentos no Asaas</UI> baixa o que já foi pago.</li>
-                <li><strong>O irmão avisou que pagou (&quot;Já paguei&quot;). Onde dou a baixa?</strong> No topo de <UI>Pagamentos</UI>, em <UI>Avisos de pagamento dos irmãos</UI> — ou pelo link do e-mail do aviso. Confira o crédito no extrato e clique em <UI>Dar baixa</UI>: o formulário vem preenchido (7.5).</li>
+                <li><strong>O irmão avisou que pagou (&quot;Já paguei&quot;). Onde dou a baixa?</strong> No topo de <UI>Baixa de pagamentos</UI>, em <UI>Avisos de pagamento dos irmãos</UI> — ou pelo link do e-mail do aviso. Confira o crédito no extrato e clique em <UI>Dar baixa</UI>: o formulário vem preenchido (7.5).</li>
                 <li><strong>O irmão mandou o comprovante pelo WhatsApp. Como registro?</strong> Em <UI>Cobranças</UI>, na cobrança dele, clique em <UI>Registrar comprovante</UI> (ou <UI>Comprovante</UI> na página <UI>Envio pelo WhatsApp</UI>) e anexe o PDF ou a foto. O sistema confere como se o irmão tivesse avisado pelo portal e o aviso vai para <UI>Pagamentos</UI> (7.3).</li>
                 <li><strong>O comprovante ficou &quot;com divergência&quot;, mas parece certo.</strong> Abra <UI>Ver comprovante</UI> e confira o que o aviso diz que não bateu. Se o PDF está certo, clique em <UI>Conferir de novo</UI> — a conferência é melhorada com o tempo (ex.: bancos que quebram o número de controle em duas linhas). Persistindo, confira o crédito no extrato e dê a baixa por <UI>Dar baixa</UI>. Foto não é conferida automaticamente: confira pela imagem e pelo extrato.</li>
                 <li><strong>Enviei a cobrança pelo WhatsApp. Como sei que chegou?</strong> O WhatsApp não avisa o sistema. Ao voltar para o Sigma Horus, responda <UI>Sim, enviei</UI> para marcar como enviada; o &quot;entregue/lida&quot; (✓✓) só existiria com a integração oficial da Meta. A resposta do irmão (o comprovante) é o melhor retorno.</li>
@@ -2517,7 +2528,7 @@ export function ManualBook() {
                 <li><strong>Preciso trocar o e-mail do Administrador.</strong> Em <UI>Minha conta</UI> (6.11): informe o novo e-mail e a senha atual, e confirme pelo link enviado ao novo endereço.</li>
                 <li><strong>Não vejo um item do menu.</strong> Ele não está liberado para o seu papel; fale com o Administrador (6.3 / 6.4).</li>
                 <li><strong>Como sei quem já acessou o sistema?</strong> Na lista de <UI>Membros</UI>: <strong>★ dourada</strong> = já definiu a própria senha; <strong>☆</strong> = acesso concedido, aguardando o primeiro login (6.3).</li>
-                <li><strong>O Arquiteto não consegue editar o cadastro de materiais nem dar baixa.</strong> É de propósito: ele registra a ocorrência (desgaste, dano ou perda) e a Secretaria/Venerável/Administrador decide (8.9). Se o item de menu <UI>Materiais e patrimônio</UI> não aparece para ele, confira se o cargo de Arquiteto está vinculado no veneralato <strong>ativo</strong> (<UI>Veneralato</UI>).</li>
+                <li><strong>O Arquiteto não consegue editar o cadastro de materiais nem dar baixa.</strong> É de propósito: ele registra a ocorrência (desgaste, dano ou perda) e a Secretaria/Venerável/Administrador decide (8.9). Se o item de menu <UI>Materiais da loja</UI> não aparece para ele, confira se o cargo de Arquiteto está vinculado no veneralato <strong>ativo</strong> (<UI>Veneralato</UI>).</li>
                 <li><strong>Registrei um dano e o material sumiu do disponível.</strong> Dano e perda pendentes saem do disponível até a decisão (8.9); se foi engano, quem cuida do cadastro usa <UI>Dispensar</UI> e a unidade volta.</li>
                 <li><strong>O obreiro não vê telefone nem e-mail na Composição da loja.</strong> É de propósito: os quadros do <UI>Social</UI> não expõem dados de contato a quem não tem acesso ao cadastro de Membros (10.4).</li>
                 <li><strong>O saldo do Tronco aparece indisponível.</strong> Em Cadastros, clique em <UI>Atualizar plano de contas</UI> (7.1) para habilitar as contas do Tronco de Solidariedade.</li>
@@ -2528,7 +2539,7 @@ export function ManualBook() {
                 <li><strong>A fórmula de abertura não aparece na Composição.</strong> Ela só sai depois de preenchida em <UI>Configurações da loja → Loja maçônica</UI> (6.1).</li>
                 <li><strong>Não consigo registrar um pagamento.</strong> Desde a versão 1.3, todo pagamento exige escolher a <UI>Conta bancária/caixa</UI> que recebeu ou pagou o valor — cadastre pelo menos uma em <UI>Cadastros financeiros → Contas bancárias e Caixa</UI> (7.14) antes de registrar.</li>
                 <li><strong>A transferência entre contas não mudou o saldo.</strong> Toda transferência nasce pendente e só afeta o saldo depois que o Venerável Mestre (ou o Administrador) aprovar, no <UI>Histórico</UI> da tela de Transferências (7.14).</li>
-                <li><strong>Não consigo fornecer um ritual/material a um membro.</strong> O material tem um grau exigido e o membro ainda não chegou lá (ex.: Companheiro pedindo Ritual de Mestre) — ou não há quantidade disponível em estoque. Veja Materiais e patrimônio (capítulo 8).</li>
+                <li><strong>Não consigo fornecer um ritual/material a um membro.</strong> O material tem um grau exigido e o membro ainda não chegou lá (ex.: Companheiro pedindo Ritual de Mestre) — ou não há quantidade disponível em estoque. Veja Materiais da loja (capítulo 8).</li>
                 <li><strong>Onde encontro o Regimento Interno / Constituição da Potência?</strong> Em <UI>Meu portal → Documentos da Loja</UI>, se a Secretaria já tiver publicado (capítulo 10).</li>
                 <li><strong>O brasão não aparece nos documentos.</strong> Envie a imagem em <UI>Administração → Configurações da loja → Identificação → Enviar imagem</UI> (6.1). Documentos já gerados antes do envio não são retroativos.</li>
                 <li><strong>Marquei uma categoria na Razão por Categoria e ela não aparece / só aparece o Tronco.</strong> O relatório mostra por padrão só pagamento já efetivado — se a categoria marcada não tem nenhum pagamento ainda (só cobrança em aberto, nunca paga), ela aparece com &quot;Sem movimentação no período selecionado&quot;, não com dado nenhum. Ligue <UI>Incluir lançamentos em aberto</UI> pra ver também o que está pendente (7.18).</li>

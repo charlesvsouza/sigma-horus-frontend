@@ -1,13 +1,13 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
-import { requireLodgeAccess } from '@/lib/rbac';
+import { requireLodgeAccessAny } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const access = await requireLodgeAccess(String(lodgeId), session?.user?.role, 'members', 'write');
+  const access = await requireLodgeAccessAny(String(lodgeId), session?.user?.role, ['members', 'attendance'], 'write', session?.user?.memberId);
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const body = await request.json().catch(() => undefined);
