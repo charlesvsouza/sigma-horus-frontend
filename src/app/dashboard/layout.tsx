@@ -7,6 +7,7 @@ import { canLodgeAccessFor, type Resource } from '@/lib/rbac';
 import { Alert } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { subscriptionAccess } from '@/lib/subscription-access';
+import { loadNavBadges } from '@/lib/nav-badges-server';
 import { summarizeBlock } from '@/lib/member-block-server';
 import { restrictionNotice } from '@/lib/member-restriction';
 import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
@@ -70,37 +71,38 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/galeria-veneraveis', label: 'Galeria de Veneráveis', roles: [], resource: 'social' },
       { href: '/dashboard/quadro-gestao', label: 'Quadro da Gestão', roles: [], resource: 'social' },
       { href: '/dashboard/composicao', label: 'Composição da loja', roles: [], resource: 'social' },
-      { href: '/dashboard/certificados', label: 'Certificados de presença', roles: ['admin', 'venerable', 'secretary'] },
     ],
   },
+  // Os subgrupos são por TAREFA (o que a pessoa quer fazer), não por tipo de tela, e recolhem no menu.
   {
     category: 'Secretaria',
     subgroups: [
       {
-        label: 'Membros & Cadastros',
+        label: 'Irmãos',
         items: [
           { href: '/dashboard/membros', label: 'Membros', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
           // Processo de admissão (pré-proposta → iniciação): quem edita membros. Ver api/candidates/shared.ts.
           { href: '/dashboard/candidatos', label: 'Candidatos', roles: ['admin', 'venerable', 'secretary'] },
-          { href: '/dashboard/cadastros', label: 'Cadastros mestre', roles: ['admin', 'venerable', 'secretary'] },
-          { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: [], resources: ['materials', 'inventory'] },
           { href: '/dashboard/cargos', label: 'Cargos', roles: ['admin', 'venerable', 'secretary'] },
+          { href: '/dashboard/cadastros', label: 'Cadastros mestre', roles: ['admin', 'venerable', 'secretary'] },
         ],
       },
       {
-        label: 'Veneralato & Sessões',
+        label: 'Sessões',
         items: [
-          { href: '/dashboard/veneralato', label: 'Veneralato', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/sessoes', label: 'Sessões', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/sessoes/frequencia', label: 'Frequência às sessões', roles: ['admin', 'venerable', 'secretary'] },
           { href: '/dashboard/visitantes', label: 'Visitantes', roles: ['admin', 'venerable', 'secretary'] },
+          { href: '/dashboard/veneralato', label: 'Veneralato', roles: ['admin', 'venerable', 'secretary'] },
         ],
       },
       {
-        label: 'Documentos & Comunicação',
+        label: 'Documentos',
         items: [
           { href: '/dashboard/documentos', label: 'Documentos', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
           { href: '/dashboard/comunicacao', label: 'Comunicação', roles: ['admin', 'venerable', 'secretary', 'treasurer'] },
+          { href: '/dashboard/certificados', label: 'Certificados de presença', roles: ['admin', 'venerable', 'secretary'] },
+          { href: '/dashboard/materiais', label: 'Materiais e patrimônio', roles: [], resources: ['materials', 'inventory'] },
         ],
       },
     ],
@@ -109,37 +111,48 @@ const NAV: NavGroupDef[] = [
     category: 'Tesouraria',
     subgroups: [
       {
-        label: 'Entradas e Saídas',
+        label: 'Lançar',
         items: [
-          { href: '/dashboard/contas', label: 'Contas', roles: ['admin', 'venerable', 'treasurer'] },
           // Abre a tela de Contas com o formulário de lançamento aberto.
           { href: '/dashboard/contas/lancamento', label: 'Lançamento', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/contas', label: 'Contas', roles: ['admin', 'venerable', 'treasurer'] },
+        ],
+      },
+      {
+        label: 'Cobrar e dar baixa',
+        items: [
           { href: '/dashboard/cobrancas', label: 'Cobranças', roles: ['admin', 'treasurer'] },
+          // Conferir os avisos "Já paguei" e dar baixa (quitar) ou recusar; também registra pagamento à mão.
+          { href: '/dashboard/pagamentos', label: 'Baixa de pagamentos', roles: ['admin', 'treasurer'] },
+          { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer'] },
           // Planos de pagamento das taxas de iniciação/elevação/exaltação (decisão do dono: os três). Ver lib/degree-fee.ts.
           { href: '/dashboard/taxas-de-grau', label: 'Taxas de grau', roles: ['admin', 'venerable', 'treasurer'] },
           // Irmãos bloqueados por comunicado à Potência (Art. 002) e o acordo de regularização. Ver lib/member-block.ts.
           { href: '/dashboard/acordos', label: 'Acordos (quitação e regularização)', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/pagamentos', label: 'Pagamentos', roles: ['admin', 'treasurer'] },
-          { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/extratos', label: 'Extratos de contas', roles: ['admin', 'venerable', 'treasurer'] },
         ],
       },
       {
-        label: 'Cadastros e Conferência',
+        label: 'Banco e caixa',
         items: [
-          { href: '/dashboard/cadastros-financeiros', label: 'Cadastros financeiros', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/extratos', label: 'Extratos de contas', roles: ['admin', 'venerable', 'treasurer'] },
+          { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/conciliacao-bancaria', label: 'Conciliação bancária', roles: ['admin', 'treasurer'] },
           // Trava o livro até um dia conferido com o banco; retificação só com a ciência do Venerável. Ver lib/ledger-lock.ts.
           { href: '/dashboard/conferencia', label: 'Conferência com o banco', roles: ['admin', 'venerable', 'treasurer'] },
+        ],
+      },
+      {
+        label: 'Cadastros',
+        items: [
+          { href: '/dashboard/cadastros-financeiros', label: 'Cadastros financeiros', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/patrimonio', label: 'Patrimônio', roles: ['admin', 'venerable', 'treasurer'] },
         ],
       },
       {
         label: 'Relatórios',
         items: [
-          // Índice numerado dos relatórios + 3 atalhos para os mais usados; os demais ficam só no índice e na busca (Ctrl+K).
+          // Índice numerado dos relatórios + 2 atalhos para os mais usados; os demais ficam só no índice e na busca (Ctrl+K).
           { href: '/dashboard/relatorios', label: 'Relatórios', roles: ['admin', 'venerable', 'treasurer'] },
-          { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/relatorios/contas-a-receber', label: 'Contas a receber', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/relatorios/fechamento', label: 'Fechamento', roles: ['admin', 'venerable', 'treasurer'] },
         ],
@@ -157,14 +170,24 @@ const NAV: NavGroupDef[] = [
   },
   {
     category: 'Administração',
-    items: [
-      { href: '/dashboard/configuracoes', label: 'Configurações da loja', roles: ['admin'] },
-      { href: '/dashboard/configuracoes/usuarios', label: 'Usuários & acessos', roles: ['admin'] },
-      { href: '/dashboard/configuracoes/importar', label: 'Importar cadastros', roles: ['admin', 'secretary'] },
-      { href: '/dashboard/configuracoes/importar-financeiro', label: 'Importar backup financeiro', roles: ['admin', 'treasurer'] },
-      { href: '/dashboard/assinatura', label: 'Assinatura', roles: ['admin'] },
-      { href: '/dashboard/integracoes', label: 'Integrações', roles: ['admin'] },
-      { href: '/dashboard/auditoria', label: 'Auditoria', roles: [], resource: 'audit' },
+    subgroups: [
+      {
+        label: 'A loja',
+        items: [
+          { href: '/dashboard/configuracoes', label: 'Configurações da loja', roles: ['admin'] },
+          { href: '/dashboard/configuracoes/usuarios', label: 'Usuários & acessos', roles: ['admin'] },
+          { href: '/dashboard/assinatura', label: 'Assinatura', roles: ['admin'] },
+          { href: '/dashboard/integracoes', label: 'Integrações', roles: ['admin'] },
+        ],
+      },
+      {
+        label: 'Dados',
+        items: [
+          { href: '/dashboard/configuracoes/importar', label: 'Importar cadastros', roles: ['admin', 'secretary'] },
+          { href: '/dashboard/configuracoes/importar-financeiro', label: 'Importar backup financeiro', roles: ['admin', 'treasurer'] },
+          { href: '/dashboard/auditoria', label: 'Auditoria', roles: [], resource: 'audit' },
+        ],
+      },
     ],
   },
 ];
@@ -248,6 +271,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   for (const resource of ['audit', 'materials', 'inventory', 'social'] as const) {
     if (await canLodgeAccessFor({ lodgeId: lodgeId ? String(lodgeId) : null, role, memberId: memberId ? String(memberId) : null }, resource, 'read')) allowedResources.add(resource);
   }
+  const badges = lodgeId ? await loadNavBadges(String(lodgeId), role) : {};
   const visible = (i: NavEntry) =>
     i.resources ? i.resources.some((r) => allowedResources.has(r)) : i.resource ? allowedResources.has(i.resource) : i.roles.includes(role);
 
@@ -255,9 +279,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     .map((g) => ({
       category: g.category,
       flat: g.flat ?? false,
-      items: (g.items ?? []).filter(visible).map(({ href, label }) => ({ href, label })),
+      items: (g.items ?? []).filter(visible).map(({ href, label }) => ({ href, label, badge: badges[href] ?? null })),
       subgroups: (g.subgroups ?? [])
-        .map((sg) => ({ label: sg.label, items: sg.items.filter(visible).map(({ href, label }) => ({ href, label })) }))
+        .map((sg) => ({ label: sg.label, items: sg.items.filter(visible).map(({ href, label }) => ({ href, label, badge: badges[href] ?? null })) }))
         .filter((sg) => sg.items.length > 0),
     }))
     .filter((g) => g.items.length > 0 || g.subgroups.length > 0);

@@ -4,13 +4,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import CommandPalette, { type Command } from '@/components/command-palette';
 import { ConfirmProvider } from '@/components/ui';
 import Art002Alert from '@/components/art002-alert';
 import { QuickNavProvider, QuickNavToggle, SiblingNav } from '@/components/quick-nav';
 import { SessionGuard } from '@/components/session-guard';
 import { candidateMayVisit, isCandidateRole } from '@/lib/candidate';
+import { badgeText, sumBadges, type NavBadge } from '@/lib/nav-badges';
 import {
   LayoutDashboard, CircleUser, BookOpen, Users, Database, Briefcase, Crown, Wallet,
   ReceiptText, CreditCard, ChartColumn, BookCheck, CalendarDays, FolderClosed,
@@ -22,7 +23,7 @@ import {
   History, BadgeCheck, ShieldCheck, UserPlus, Award, UserRoundSearch, GraduationCap, Handshake,
 } from 'lucide-react';
 
-interface NavItem { href: string; label: string; }
+interface NavItem { href: string; label: string; badge?: NavBadge | null; }
 interface NavSubgroup { label: string; items: NavItem[]; }
 interface NavGroup { category: string; items: NavItem[]; subgroups: NavSubgroup[]; flat: boolean; }
 
@@ -32,6 +33,36 @@ interface NavGroup { category: string; items: NavItem[]; subgroups: NavSubgroup[
 function allItems(g: NavGroup): NavItem[] {
   return [...g.items, ...g.subgroups.flatMap((sg) => sg.items)];
 }
+
+// A tela atual pertence a este endereço do menu? (igual, ou uma tela filha dele)
+function isActiveHref(pathname: string | null, href: string): boolean {
+  if (!pathname) return false;
+  if (pathname === href) return true;
+  return href !== '/dashboard' && pathname.startsWith(`${href}/`);
+}
+
+// Aviso numérico do menu: vermelho = algo atrasado; dourado = algo esperando conferência/decisão.
+function badgePillClass(b: NavBadge): string {
+  const tone = b.tone === 'alerta' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-gold/15 text-gold border-gold/30';
+  return `inline-flex min-w-5 items-center justify-center rounded-full border px-1.5 text-[0.65rem] font-semibold tabular-nums leading-4 tracking-normal normal-case ${tone}`;
+}
+function sumItems(items: NavItem[]): NavBadge | null {
+  const count = sumBadges(items.map((i) => i.badge ?? undefined));
+  if (count === 0) return null;
+  const tone = items.some((i) => i.badge?.tone === 'alerta') ? 'alerta' : 'atencao';
+  return { count, tone, hint: '' };
+}
+const subgroupBadge = (sg: NavSubgroup) => sumItems(sg.items);
+const categoryBadge = (g: NavGroup) => sumItems(allItems(g));
+
+// Ícone de cada categoria (usado no menu recolhido, onde só cabe um ícone por área).
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Social: Users2,
+  Secretaria: Briefcase,
+  Tesouraria: Wallet,
+  Hospitalaria: HeartHandshake,
+  'Administração': Settings,
+};
 
 // Um ícone (Lucide) por destino do menu. Mantido no cliente porque componentes
 // não atravessam a fronteira RSC; o servidor passa só href/label.
@@ -154,6 +185,63 @@ export default function DashboardShell({ groups, extraCommands = [], lodgeName, 
 
   // Acordeão de UMA categoria aberta por vez (single-open).
   const [openCategory, setOpenCategory] = useState<string | null>(activeCategory);
+
+  // Subgrupos recolhíveis: por padrão só fica aberto o da tela atual (ou o primeiro da categoria da tela atual).
+  const [openSubs, setOpenSubs] = useState<Set<string>>(() => {
+    const keys = new Set<string>();
+    for (const g of groups) {
+      const hit = g.subgroups.find((sg) => sg.items.some((it) => isActiveHref(pathname, it.href)));
+      const pick = hit ?? (g.category === activeCategory ? g.subgroups[0] : undefined);
+      if (pick) keys.add(`${g.category}::${pick.label}`);
+    }
+    return keys;
+  });
+  // Submenu flutuante (menu recolhido): categoria aberta e a posição vertical do ícone que a abriu.
+  const [flyout, setFlyout] = useState<{ category: string; top: number } | null>(null);
+  const flyoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function cancelFlyoutClose() {
+    if (flyoutTimer.current) { clearTimeout(flyoutTimer.current); flyoutTimer.current = null; }
+  }
+  function scheduleFlyoutClose() {
+    cancelFlyoutClose();
+    flyoutTimer.current = setTimeout(() => setFlyout(null), 200);
+  }
+  function openFlyout(category: string, el: HTMLElement) {
+    cancelFlyoutClose();
+    setFlyout({ category, top: Math.max(8, Math.round(el.getBoundingClientRect().top)) });
+  }
+  useEffect(() => {
+    if (!flyout) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFlyout(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [flyout]);
+
+  function toggleSub(key: string) {
+    setOpenSubs((cur) => {
+      const next = new Set(cur);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  // Ao ir para uma tela (menu, busca Ctrl+K, link), abre o subgrupo dela no menu.
+  const lastPath = useRef(pathname);
+  useEffect(() => {
+    if (lastPath.current === pathname) return;
+    lastPath.current = pathname;
+    for (const g of groups) {
+      const hit = g.subgroups.find((sg) => sg.items.some((it) => isActiveHref(pathname, it.href)));
+      if (hit) {
+        const key = `${g.category}::${hit.label}`;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setOpenSubs((cur) => (cur.has(key) ? cur : new Set(cur).add(key)));
+        setOpenCategory(g.category);
+        return;
+      }
+    }
+  }, [pathname, groups]);
 
   useEffect(() => {
     try {
@@ -284,6 +372,7 @@ export default function DashboardShell({ groups, extraCommands = [], lodgeName, 
           <nav className={`flex-1 space-y-5 overflow-y-auto py-6 ${rail ? 'px-4 lg:px-2' : 'px-4'}`}>
             {groups.map((group) => {
               const isOpen = openCategory === group.category;
+              const catBadge = categoryBadge(group);
               const groupId = `nav-group-${group.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
               function renderItem(item: NavItem) {
@@ -296,14 +385,23 @@ export default function DashboardShell({ groups, extraCommands = [], lodgeName, 
                     onClick={() => setOpen(false)}
                     title={rail ? item.label : undefined}
                     aria-label={item.label}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${rail ? 'lg:justify-center lg:px-0' : ''} ${
+                    className={`relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${rail ? 'lg:justify-center lg:px-0' : ''} ${
                       active
                         ? 'bg-gold/10 font-medium text-gold'
                         : 'text-sand/70 hover:bg-white/3 hover:text-sand'
                     }`}
                   >
                     <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-gold' : 'text-sand-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                    <span className={rail ? 'lg:hidden' : ''}>{item.label}</span>
+                    <span className={`min-w-0 flex-1 ${rail ? 'lg:hidden' : ''}`}>{item.label}</span>
+                    {item.badge ? (
+                      <span
+                        title={item.badge.hint}
+                        aria-label={item.badge.hint}
+                        className={`${badgePillClass(item.badge)} ${rail ? 'lg:absolute lg:right-1 lg:top-0.5 lg:min-w-0 lg:px-1 lg:text-[0.55rem]' : ''}`}
+                      >
+                        {badgeText(item.badge.count)}
+                      </span>
+                    ) : null}
                   </Link>
                 );
               }
@@ -324,34 +422,80 @@ export default function DashboardShell({ groups, extraCommands = [], lodgeName, 
                 );
               }
 
+              const CatIcon = CATEGORY_ICONS[group.category] ?? Circle;
+              const catActive = allItems(group).some((it) => isActiveHref(pathname, it.href));
               return (
                 <div key={group.category}>
+                  {/* Menu recolhido (só desktop): um ícone por categoria; o submenu abre ao lado (flutuante). */}
+                  {rail ? (
+                    <button
+                      type="button"
+                      onMouseEnter={(e) => openFlyout(group.category, e.currentTarget)}
+                      onMouseLeave={scheduleFlyoutClose}
+                      onFocus={(e) => openFlyout(group.category, e.currentTarget)}
+                      onClick={(e) => (flyout?.category === group.category ? setFlyout(null) : openFlyout(group.category, e.currentTarget))}
+                      aria-haspopup="menu"
+                      aria-expanded={flyout?.category === group.category}
+                      aria-label={group.category}
+                      className={`relative hidden w-full items-center justify-center rounded-lg py-2.5 transition-colors lg:flex ${catActive || flyout?.category === group.category ? 'bg-gold/10 text-gold' : 'text-sand-dark hover:bg-white/3 hover:text-sand'}`}
+                    >
+                      <CatIcon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden="true" />
+                      {catBadge ? <span aria-hidden="true" className={`absolute right-2 top-1.5 h-2 w-2 rounded-full ${catBadge.tone === 'alerta' ? 'bg-rose-400' : 'bg-gold'}`} /> : null}
+                    </button>
+                  ) : null}
+                  <div className={rail ? 'lg:hidden' : ''}>
                   <button
                     onClick={() => toggleCategory(group.category)}
                     aria-expanded={isOpen}
                     aria-controls={groupId}
                     className={`flex w-full items-center justify-between px-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-sand-dark/70 transition hover:text-sand ${rail ? 'lg:hidden' : ''}`}
                   >
-                    {group.category}
-                    <svg
-                      className={`h-3 w-3 text-sand-dark/50 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
+                    <span>{group.category}</span>
+                    <span className="flex items-center gap-2">
+                      {!isOpen && catBadge ? (
+                        <span title="Há itens esperando você nesta área" className={badgePillClass(catBadge)}>{badgeText(catBadge.count)}</span>
+                      ) : null}
+                      <svg
+                        className={`h-3 w-3 text-sand-dark/50 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
                   </button>
                   <div id={groupId} className={`mt-2 space-y-3 ${isOpen ? '' : 'hidden'} ${rail ? 'lg:block! lg:mt-0 lg:space-y-0.5' : ''}`}>
                       {group.items.length > 0 ? (
                         <div className="space-y-0.5">{group.items.map(renderItem)}</div>
                       ) : null}
-                      {group.subgroups.map((sg) => (
-                        <div key={sg.label}>
-                          <p className={`px-3 pb-1 text-[0.6rem] font-medium uppercase tracking-[0.15em] text-sand-dark/45 ${rail ? 'lg:hidden' : ''}`}>
-                            {sg.label}
-                          </p>
-                          <div className="space-y-0.5">{sg.items.map(renderItem)}</div>
-                        </div>
-                      ))}
+                      {group.subgroups.map((sg) => {
+                        const subKey = `${group.category}::${sg.label}`;
+                        const subOpen = openSubs.has(subKey);
+                        const subId = `nav-sub-${subKey.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                        const subBadge = subgroupBadge(sg);
+                        return (
+                          <div key={sg.label} className={rail ? 'lg:border-t lg:border-white/5 lg:pt-1 lg:first:border-t-0 lg:first:pt-0' : ''}>
+                            <button
+                              onClick={() => toggleSub(subKey)}
+                              aria-expanded={subOpen}
+                              aria-controls={subId}
+                              className={`flex w-full items-center justify-between rounded-md px-3 pb-1 text-[0.65rem] font-medium uppercase tracking-[0.15em] text-sand-dark/60 transition hover:text-sand ${rail ? 'lg:hidden' : ''}`}
+                            >
+                              <span>{sg.label}</span>
+                              <span className="flex items-center gap-2">
+                                {!subOpen && subBadge ? <span title="Há itens esperando você aqui" className={badgePillClass(subBadge)}>{badgeText(subBadge.count)}</span> : null}
+                                <svg
+                                  className={`h-2.5 w-2.5 text-sand-dark/50 transition-transform duration-200 ${subOpen ? 'rotate-90' : ''}`}
+                                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                              </span>
+                            </button>
+                            <div id={subId} className={`space-y-0.5 ${subOpen ? '' : 'hidden'} ${rail ? 'lg:block!' : ''}`}>{sg.items.map(renderItem)}</div>
+                          </div>
+                        );
+                      })}
+                  </div>
                   </div>
                 </div>
               );
@@ -372,6 +516,48 @@ export default function DashboardShell({ groups, extraCommands = [], lodgeName, 
             </button>
           </div>
         </aside>
+
+        {/* Submenu flutuante do menu recolhido: abre ao lado do ícone da categoria (passar o mouse, focar ou clicar). */}
+        {rail && flyout ? (() => {
+          const g = groups.find((x) => x.category === flyout.category);
+          if (!g) return null;
+          const link = (it: NavItem) => {
+            const Icon = NAV_ICONS[it.href] ?? Circle;
+            const active = isActiveHref(pathname, it.href);
+            return (
+              <Link
+                key={it.href}
+                href={it.href}
+                role="menuitem"
+                onClick={() => setFlyout(null)}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${active ? 'bg-gold/10 font-medium text-gold' : 'text-sand/80 hover:bg-white/5 hover:text-sand-light'}`}
+              >
+                <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-gold' : 'text-sand-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                <span className="min-w-0 flex-1">{it.label}</span>
+                {it.badge ? <span title={it.badge.hint} aria-label={it.badge.hint} className={badgePillClass(it.badge)}>{badgeText(it.badge.count)}</span> : null}
+              </Link>
+            );
+          };
+          return (
+            <div
+              role="menu"
+              aria-label={g.category}
+              onMouseEnter={cancelFlyoutClose}
+              onMouseLeave={scheduleFlyoutClose}
+              style={{ top: flyout.top, maxHeight: `calc(100vh - ${flyout.top}px - 16px)` }}
+              className="fixed left-16 z-50 ml-1 hidden w-72 overflow-y-auto rounded-xl border border-white/10 bg-sigma-card p-2 lg:block"
+            >
+              <p className="px-3 pb-1 pt-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-gold/90">{g.category}</p>
+              {g.items.map(link)}
+              {g.subgroups.map((sg) => (
+                <div key={sg.label} className="mt-1 border-t border-white/5 pt-1">
+                  <p className="px-3 pb-1 pt-1.5 text-[0.6rem] font-medium uppercase tracking-[0.15em] text-sand-dark/60">{sg.label}</p>
+                  {sg.items.map(link)}
+                </div>
+              ))}
+            </div>
+          );
+        })() : null}
 
         <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-0">
           <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-white/6 bg-sigma-blue-deep/85 px-5 py-3.5 backdrop-blur-sm lg:px-8">

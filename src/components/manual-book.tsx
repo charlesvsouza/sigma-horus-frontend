@@ -265,7 +265,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 8 de outubro de 2026 · versão 1.95</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 8 de outubro de 2026 · versão 1.97</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -501,31 +501,37 @@ export function ManualBook() {
                 <li>
                   <strong>Social:</strong> os quadros da loja, <strong>abertos a todo obreiro</strong> —
                   <UI> Quadro social</UI>, <UI>Galeria de Veneráveis</UI>, <UI>Quadro da Gestão</UI> e
-                  <UI> Composição da loja</UI> (ver 10.4 e 8.2 a 8.4) e, para a gestão, <UI>Certificados de presença</UI>.
+                  <UI> Composição da loja</UI> (ver 10.4 e 8.2 a 8.4).
                 </li>
                 <li>
-                  <strong>Secretaria:</strong> dividida em três grupos — <UI>Membros &amp; Cadastros</UI>
-                  (<UI>Membros</UI>, <UI>Candidatos</UI>, <UI>Cadastros mestre</UI>, <UI>Materiais e patrimônio</UI>, <UI>Cargos</UI>),
-                  <UI> Veneralato &amp; Sessões</UI> (<UI>Veneralato</UI>, <UI>Sessões</UI>, <UI>Frequência às
-                  sessões</UI>, <UI>Visitantes</UI>) e <UI>Documentos &amp; Comunicação</UI> (<UI>Documentos</UI>, <UI>Comunicação</UI>).
-                  Os grupos são só rótulos visuais dentro do menu já aberto — não precisam de um clique a mais.
+                  <strong>Secretaria:</strong> três grupos por tarefa — <UI>Irmãos</UI> (<UI>Membros</UI>, <UI>Candidatos</UI>, <UI>Cargos</UI>, <UI>Cadastros mestre</UI>),
+                  <UI> Sessões</UI> (<UI>Sessões</UI>, <UI>Frequência às sessões</UI>, <UI>Visitantes</UI>, <UI>Veneralato</UI>) e
+                  <UI> Documentos</UI> (<UI>Documentos</UI>, <UI>Comunicação</UI>, <UI>Certificados de presença</UI>, <UI>Materiais e patrimônio</UI>).
                   O Arquiteto (por cargo) vê aqui apenas <UI>Materiais e patrimônio</UI>.
                 </li>
                 <li>
-                  <strong>Tesouraria:</strong> dividida em três grupos — <UI>Entradas e Saídas</UI> (<UI>Contas</UI>,
-                  <UI> Lançamento</UI>, <UI>Cobranças</UI>, <UI>Taxas de grau</UI>, <UI>Acordos de regularização</UI>, <UI>Pagamentos</UI>, <UI>Transferências entre contas</UI>, <UI>Extratos de
-                  contas</UI>),
-                  <UI> Cadastros e Conferência</UI> (<UI>Cadastros financeiros</UI>, <UI>Conciliação
-                  bancária</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (o <UI>índice dos relatórios</UI> e três atalhos para os mais usados:
-                  <UI> Inadimplência (Art. 002)</UI>, <UI>Contas a receber</UI> e <UI>Fechamento</UI>; todos os outros relatórios estão no índice).
+                  <strong>Tesouraria:</strong> cinco grupos por tarefa — <UI>Lançar</UI> (<UI>Lançamento</UI>, <UI>Contas</UI>),
+                  <UI> Cobrar e dar baixa</UI> (<UI>Cobranças</UI>, <UI>Baixa de pagamentos</UI>, <UI>Inadimplência (Art. 002)</UI>, <UI>Taxas de grau</UI>, <UI>Acordos</UI>),
+                  <UI> Banco e caixa</UI> (<UI>Extratos de contas</UI>, <UI>Transferências entre contas</UI>, <UI>Conciliação bancária</UI>, <UI>Conferência com o banco</UI>),
+                  <UI> Cadastros</UI> (<UI>Cadastros financeiros</UI>, <UI>Patrimônio</UI>) e <UI>Relatórios</UI> (o <UI>índice dos relatórios</UI> e dois atalhos:
+                  <UI> Contas a receber</UI> e <UI>Fechamento</UI>; todos os outros relatórios estão no índice e na busca).
+                </li>
+                <li>
+                  <strong>Os grupos recolhem:</strong> clique no nome do grupo (ex.: <UI>Banco e caixa</UI>) para abrir ou fechar. Ao entrar numa tela, o grupo dela abre sozinho.
+                </li>
+                <li>
+                  <strong>Números no menu:</strong> um número ao lado de um item mostra o que está esperando você — em dourado, o que pede conferência ou decisão
+                  (<UI>Baixa de pagamentos</UI>: avisos &quot;Já paguei&quot; e recebidos em dinheiro a conferir; <UI>Contas</UI>: despesas esperando aprovação do Venerável;
+                  <UI> Candidatos</UI>: processos de admissão em andamento) e, em vermelho, o que está atrasado (<UI>Inadimplência</UI>: irmãos com mensalidade vencida).
+                  Com o grupo fechado, o número aparece no nome do grupo. Cada pessoa vê apenas os números das telas que o seu cargo acessa.
                 </li>
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI>, <UI>Campanhas</UI> de benemerência e <UI>Fundos (Tronco e Doações)</UI>. O obreiro comum vê aqui só o item <UI>Hospitalaria</UI>, onde doa ao Tronco de Solidariedade, faz um pedido e acompanha as campanhas ativas.</li>
-                <li><strong>Administração:</strong> <UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Importar cadastros</UI>, <UI>Importar backup financeiro</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>, <UI>Auditoria</UI>.</li>
+                <li><strong>Administração:</strong> dois grupos — <UI>A loja</UI> (<UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>) e <UI>Dados</UI> (<UI>Importar cadastros</UI>, <UI>Importar backup financeiro</UI>, <UI>Auditoria</UI>).</li>
               </Bullets>
               <p>O topo mostra o nome da loja, o usuário logado e o status da assinatura (teste, ativa ou pendente).</p>
               <p>
                 <strong>Navegação rápida (beta).</strong> O botão <UI>Navegação rápida</UI> (⚡), no topo, liga dois atalhos <strong>só para você</strong> (vale para o seu navegador; quem não liga vê o sistema como sempre foi, e desligar volta ao normal na hora):
-                a <strong>barra de telas irmãs</strong> — no alto de cada tela aparecem as outras telas do mesmo grupo do menu (por exemplo, em Cobranças: Contas, Lançamento, Taxas de grau, Acordos, Pagamentos…), com a atual marcada, para trocar sem abrir o menu — e o <strong>painel do irmão</strong>: nas listas de <UI>Cobranças</UI>, <UI>Contas</UI> e <UI>Pagamentos</UI> o nome do irmão fica sublinhado; clique nele para abrir, por cima da lista, o painel com o saldo devedor, o vencido, o crédito, as pendências, o plano de taxa (com a entrada, se houver), os últimos pagamentos e o contato, e atalhos para o histórico de pagamentos, a declaração de regularidade e uma nova taxa de grau. <UI>Esc</UI> ou o X fecham o painel e você continua na mesma tela. O painel só mostra o que o seu cargo já pode ver: Tesoureiro, Venerável e Administrador veem o financeiro; o Secretário vê só contato e situação, sem dinheiro; lançamentos do Tronco não aparecem. É somente consulta — nada é gravado por ele.
+                a <strong>barra de telas irmãs</strong> — no alto de cada tela aparecem as outras telas do mesmo grupo do menu (por exemplo, em Cobranças: Inadimplência, Taxas de grau, Acordos), com a atual marcada, para trocar sem abrir o menu — e o <strong>painel do irmão</strong>: nas listas de <UI>Cobranças</UI>, <UI>Contas</UI> e <UI>Pagamentos</UI> o nome do irmão fica sublinhado; clique nele para abrir, por cima da lista, o painel com o saldo devedor, o vencido, o crédito, as pendências, o plano de taxa (com a entrada, se houver), os últimos pagamentos e o contato, e atalhos para o histórico de pagamentos, a declaração de regularidade e uma nova taxa de grau. <UI>Esc</UI> ou o X fecham o painel e você continua na mesma tela. O painel só mostra o que o seu cargo já pode ver: Tesoureiro, Venerável e Administrador veem o financeiro; o Secretário vê só contato e situação, sem dinheiro; lançamentos do Tronco não aparecem. É somente consulta — nada é gravado por ele.
               </p>
               <p>
                 <strong>Cada item tem um ícone</strong> para você reconhecer a tela de relance, e o item da página
@@ -658,7 +664,7 @@ export function ManualBook() {
                   login é o <strong>e-mail cadastrado</strong> e a senha inicial é <strong>gerada pelo sistema</strong>.
                 </p>
                 <Steps>
-                  <li>Em <UI>Secretaria → Membros & Cadastros → Membros</UI>, confirme que o membro tem <strong>e-mail</strong> e abra o cadastro.</li>
+                  <li>Em <UI>Secretaria → Irmãos → Membros</UI>, confirme que o membro tem <strong>e-mail</strong> e abra o cadastro.</li>
                   <li>Clique em <UI>Conceder acesso</UI>. O sistema cria o login e <strong>envia a senha provisória por e-mail</strong> ao obreiro.</li>
                   <li>No primeiro acesso, o obreiro é obrigado a <strong>definir uma nova senha</strong>.</li>
                   <li>Se precisar, use <UI>Reenviar acesso</UI> para gerar outra senha provisória.</li>
@@ -964,7 +970,7 @@ export function ManualBook() {
               </Sub>
 
               <Sub id="tes-contas" title="7.2 Lançar contas a receber e a pagar">
-                <p>Em <UI>Tesouraria → Entradas e Saídas → Contas</UI>, a tela abre pela lista <UI>Contas cadastradas</UI>. Para lançar, use o item <UI>Lançamento</UI> do menu (logo abaixo de Contas): a mesma tela abre com o formulário <UI>Lançamentos</UI> já aberto, pronto para o próximo lançamento. O botão <UI>Editar</UI> de uma conta da lista também abre o formulário, com os dados dela. Na lista, contas a receber aparecem em verde com <strong>+</strong> e contas a pagar em vermelho com <strong>−</strong>. Preencha:</p>
+                <p>Em <UI>Tesouraria → Lançar → Contas</UI>, a tela abre pela lista <UI>Contas cadastradas</UI>. Para lançar, use o item <UI>Lançamento</UI> do menu (logo abaixo de Contas): a mesma tela abre com o formulário <UI>Lançamentos</UI> já aberto, pronto para o próximo lançamento. O botão <UI>Editar</UI> de uma conta da lista também abre o formulário, com os dados dela. Na lista, contas a receber aparecem em verde com <strong>+</strong> e contas a pagar em vermelho com <strong>−</strong>. Preencha:</p>
                 <Steps>
                   <li>Escolha a <UI>Categoria (plano de contas)</UI> — ela já sugere o título e o tipo.</li>
                   <li>Confira o <UI>Título da conta</UI> e o tipo: <strong>Conta a receber</strong> ou <strong>Conta a pagar</strong>.</li>
@@ -999,7 +1005,7 @@ export function ManualBook() {
 
               <Sub id="tes-cobrancas" title="7.3 Criar cobranças e recorrência">
                 <p>
-                  Cobranças são os títulos que você gera para receber dos membros. Cada cobrança nasce com o seu próprio lançamento a receber, ligado ao membro. Em <UI>Tesouraria → Entradas e Saídas → Cobranças</UI>, a tela tem três botões no alto: <UI>Nova cobrança</UI>, <UI>Cobrança em massa</UI> e <UI>Processar recorrentes</UI>. Logo abaixo, uma faixa mostra o modo de recebimento da loja (Modo Loja ou Modo Asaas) e, quando há cobranças em aberto, o painel <UI>Cobrar quem está em aberto</UI> (quantas cobranças, de quantos irmãos, o total e quantas vencidas), com os botões <UI>Enviar lembretes por e-mail</UI> e, no Modo Loja, <UI>Envio pelo WhatsApp</UI>. Clique em <UI>Nova cobrança</UI> e preencha:
+                  Cobranças são os títulos que você gera para receber dos membros. Cada cobrança nasce com o seu próprio lançamento a receber, ligado ao membro. Em <UI>Tesouraria → Cobrar e dar baixa → Cobranças</UI>, a tela tem três botões no alto: <UI>Nova cobrança</UI>, <UI>Cobrança em massa</UI> e <UI>Processar recorrentes</UI>. Logo abaixo, uma faixa mostra o modo de recebimento da loja (Modo Loja ou Modo Asaas) e, quando há cobranças em aberto, o painel <UI>Cobrar quem está em aberto</UI> (quantas cobranças, de quantos irmãos, o total e quantas vencidas), com os botões <UI>Enviar lembretes por e-mail</UI> e, no Modo Loja, <UI>Envio pelo WhatsApp</UI>. Clique em <UI>Nova cobrança</UI> e preencha:
                 </p>
                 <Steps>
                   <li>Selecione a <UI>categoria</UI> da cobrança (centro de custo do plano de contas: Mensalidades, Taxa de Iniciação, Taxa de Elevação, Taxa de Exaltação, eventos etc.). O <strong>lançamento a receber é criado automaticamente junto com a cobrança</strong>. O Tronco de Solidariedade não aparece aqui — a doação tem fluxo próprio na Hospitalaria.</li>
@@ -1102,7 +1108,7 @@ export function ManualBook() {
               <Sub id="tes-pagamentos" title="7.5 Registrar pagamentos (baixa manual)">
                 <p>
                   Para pagamentos recebidos fora do Asaas (dinheiro, PIX direto, etc.) ou para baixar contas a pagar, use
-                  <UI>Tesouraria → Entradas e Saídas → Pagamentos</UI>, bloco <UI>Novo pagamento</UI>:
+                  <UI>Tesouraria → Cobrar e dar baixa → Baixa de pagamentos</UI>, bloco <UI>Novo pagamento</UI>:
                 </p>
                 <Steps>
                   <li>Selecione a <UI>conta</UI> correspondente. A lista mostra só as contas em aberto, cada uma com o irmão (ou fornecedor), o vencimento e o saldo — e já preenche o membro e o valor em aberto.</li>
@@ -1245,7 +1251,7 @@ export function ManualBook() {
 
               <Sub id="tes-fechamento" title="7.7 Encerramento do veneralato (3 passos)">
                 <p>
-                  Ao fim da gestão, em <UI>Secretaria → Veneralato & Sessões → Veneralato</UI> o encerramento segue <strong>três passos
+                  Ao fim da gestão, em <UI>Secretaria → Sessões → Veneralato</UI> o encerramento segue <strong>três passos
                   encadeados</strong>, cada um com um responsável — não se pula etapa:
                 </p>
                 <Steps>
@@ -1269,14 +1275,14 @@ export function ManualBook() {
                 <Steps>
                   <li>
                     Cobranças criadas pela categoria <strong>Mensalidades</strong> (7.3) já entram na regra
-                    automaticamente. Ao lançar à mão uma conta a receber vinculada a um membro em <UI>Tesouraria → Entradas e Saídas → Contas</UI>,
+                    automaticamente. Ao lançar à mão uma conta a receber vinculada a um membro em <UI>Tesouraria → Lançar → Contas</UI>,
                     escolha a categoria <strong>Mensalidades</strong> ou marque a caixa <strong>&quot;É mensalidade do membro&quot;</strong>.
                     Contam como mensalidade as contas marcadas assim <strong>ou</strong> lançadas numa categoria de
                     Mensalidades — mesmo que a caixa tenha ficado desmarcada, a categoria basta. Só elas entram na regra
                     dos 60 dias — cobranças pontuais (evento, campanha, taxas de Iniciação/Elevação/Exaltação) não contam.
                   </li>
                   <li>
-                    Para ver o comportamento do mês (mensalidades pagas até o vencimento × pagas depois × não pagas, em percentual, com a lista de irmãos de cada grupo), use <UI>Relatórios → Pontualidade das mensalidades</UI> (com o botão <UI>Lembrar por e-mail quem não pagou</UI>: abre a mesma conferência dos lembretes em lote, limitada às mensalidades daquele mês, com um e-mail por irmão e nada sai antes de você enviar), também resumido na <UI>Visão geral</UI> para Tesoureiro, Venerável e Administrador; ele conta por mensalidade e ignora isentos e canceladas. Em <UI>Tesouraria → Relatórios → Inadimplência (Art. 002)</UI>, veja todos os membros com
+                    Para ver o comportamento do mês (mensalidades pagas até o vencimento × pagas depois × não pagas, em percentual, com a lista de irmãos de cada grupo), use <UI>Relatórios → Pontualidade das mensalidades</UI> (com o botão <UI>Lembrar por e-mail quem não pagou</UI>: abre a mesma conferência dos lembretes em lote, limitada às mensalidades daquele mês, com um e-mail por irmão e nada sai antes de você enviar), também resumido na <UI>Visão geral</UI> para Tesoureiro, Venerável e Administrador; ele conta por mensalidade e ignora isentos e canceladas. Em <UI>Tesouraria → Cobrar e dar baixa → Inadimplência (Art. 002)</UI>, veja todos os membros com
                     mensalidade em aberto: quantidade de parcelas, valor total, vencimento mais antigo, dias de
                     atraso e, se configurada (7.9), a <strong>multa/juros estimados</strong>. Os enquadrados no
                     Art. 002 aparecem destacados. Em <UI>Ordenar por</UI>, a lista (e o PDF/CSV) pode vir por
@@ -1341,7 +1347,7 @@ export function ManualBook() {
                   a própria conta — o irmão pode pagar pelo portal normalmente, e o que ele pagar abate o acordo.
                 </p>
                 <p>
-                  Em <UI>Tesouraria → Entradas e Saídas → Acordos de regularização</UI> o Tesoureiro acompanha cada acordo (total, pago, saldo e as parcelas) e usa
+                  Em <UI>Tesouraria → Cobrar e dar baixa → Acordos</UI> o Tesoureiro acompanha cada acordo (total, pago, saldo e as parcelas) e usa
                   <UI> Registrar pagamento do acordo</UI> para dar baixa: o valor é repartido entre os itens (primeiro a taxa, depois a dívida mais antiga), e
                   cada parte entra na categoria certa do caixa e do DRE. Se uma parcela vencer sem estar paga, o sistema <strong>avisa por e-mail o Tesoureiro, o
                   Venerável e os Administradores</strong> (acordo quebrado); o irmão segue bloqueado e as medidas cabíveis ficam com eles.
@@ -1466,7 +1472,7 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li><strong>Verificar pagamentos no Asaas</strong> (em <UI>Integrações</UI>, se o Asaas estiver conectado): confere no Asaas cobranças emitidas que ainda não baixaram no sistema — cobre o caso raro de o aviso automático (webhook) falhar ou atrasar.</li>
-                  <li><strong>Conciliação bancária</strong> (<UI>Tesouraria → Cadastros e Conferência → Conciliação bancária</UI>): importe o extrato do seu banco (arquivo <strong>OFX</strong>, exportado pelo internet banking, ou <strong>CSV</strong> com colunas Data/Descrição/Valor). O sistema tenta casar cada linha com um pagamento já registrado (mesmo valor, data próxima, mesma direção — receber ou pagar); o que não casar sozinho fica disponível para <UI>Vincular manualmente</UI> ou <UI>Ignorar</UI>.</li>
+                  <li><strong>Conciliação bancária</strong> (<UI>Tesouraria → Banco e caixa → Conciliação bancária</UI>): importe o extrato do seu banco (arquivo <strong>OFX</strong>, exportado pelo internet banking, ou <strong>CSV</strong> com colunas Data/Descrição/Valor). O sistema tenta casar cada linha com um pagamento já registrado (mesmo valor, data próxima, mesma direção — receber ou pagar); o que não casar sozinho fica disponível para <UI>Vincular manualmente</UI> ou <UI>Ignorar</UI>.</li>
                   <li><strong>Avisos &quot;Já paguei&quot; × extrato</strong> (Modo Loja): com o extrato importado, cada aviso em
                   <UI> Pagamentos</UI> mostra se há um crédito correspondente, e <UI>Dar baixa</UI> já concilia a linha (7.5). Pix
                   agrupado aparece como um crédito só, do total do grupo.</li>
@@ -1551,7 +1557,7 @@ export function ManualBook() {
                   de cada banco/caixa.
                 </p>
                 <p>
-                  <strong>Transferir entre contas</strong> — em <UI>Tesouraria → Entradas e Saídas → Transferências entre contas</UI>:
+                  <strong>Transferir entre contas</strong> — em <UI>Tesouraria → Banco e caixa → Transferências entre contas</UI>:
                 </p>
                 <Steps>
                   <li>No topo da tela, confira o <strong>saldo atual</strong> de cada conta cadastrada.</li>
@@ -1567,7 +1573,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="tes-extratos" title="7.15 Extratos de contas">
                 <p>
-                  Em <UI>Tesouraria → Entradas e Saídas → Extratos de contas</UI>, veja a movimentação completa de uma
+                  Em <UI>Tesouraria → Banco e caixa → Extratos de contas</UI>, veja a movimentação completa de uma
                   conta bancária ou do Caixa isoladamente — o mesmo espírito de um extrato bancário: saldo inicial do
                   período, cada lançamento em ordem cronológica com saldo corrente, e saldo final.
                 </p>
@@ -1703,7 +1709,7 @@ export function ManualBook() {
               <Sub id="tes-conferencia" title="7.22 Conferência com o banco, retificação e correção de pagamentos">
                 <p>
                   Depois que o extrato do sistema bate com o do banco até um dia, o Tesoureiro <strong>trava</strong> esse período em
-                  <UI>Tesouraria → Cadastros e Conferência → Conferência com o banco</UI>. A partir daí, o saldo conferido não muda por
+                  <UI>Tesouraria → Banco e caixa → Conferência com o banco</UI>. A partir daí, o saldo conferido não muda por
                   engano: lançamento, pagamento, transferência ou saldo inicial com data <strong>até esse dia</strong> só passam com uma
                   retificação aprovada.
                 </p>
@@ -1734,7 +1740,7 @@ export function ManualBook() {
               <p>O Secretário mantém o quadro de obreiros, a estrutura de cargos, as sessões e os documentos.</p>
               <Sub id="sec-membros" title="8.1 Membros — buscar, cadastrar, editar e excluir">
                 <p>
-                  Em <UI>Secretaria → Membros & Cadastros → Membros</UI>, a tela abre com a <strong>lista de obreiros</strong> em formato
+                  Em <UI>Secretaria → Irmãos → Membros</UI>, a tela abre com a <strong>lista de obreiros</strong> em formato
                   de tabela compacta. Use a <UI>busca</UI> (por <strong>nome, CPF ou CIM</strong>) e o filtro de
                   <UI> situação</UI> para encontrar rapidamente. Clique numa linha para <strong>expandir</strong> os detalhes,
                   onde ficam os botões <UI>Editar</UI> e <UI>Excluir cadastro</UI>.
@@ -1881,7 +1887,7 @@ export function ManualBook() {
                 </p>
                 <Steps>
                   <li>Em <UI>Secretaria → Cargos</UI> fica só a <strong>lista de cargos</strong> da loja (Venerável, Secretário, Arquiteto…). Ali você não escolhe quem os exerce.</li>
-                  <li>Em <UI>Secretaria → Veneralato &amp; Sessões → Veneralato</UI>, o período em exercício já abre selecionado. Se houver mais de um, <strong>clique no período</strong> desejado na lista <UI>Períodos</UI>.</li>
+                  <li>Em <UI>Secretaria → Sessões → Veneralato</UI>, o período em exercício já abre selecionado. Se houver mais de um, <strong>clique no período</strong> desejado na lista <UI>Períodos</UI>.</li>
                   <li>No bloco <UI>Vincular cargo a um obreiro</UI>, escolha o <UI>Membro</UI> e o <UI>Cargo</UI> e clique em <UI>Vincular</UI>. Um obreiro pode acumular vários cargos.</li>
                   <li>Os vínculos aparecem em <UI>Cargos deste período</UI>, sempre na <strong>ordem cerimonial</strong>: Venerável Mestre, as duas Luzes (1º e 2º Vigilante), Orador, Secretário, Tesoureiro, Mestre de Cerimônias e, depois, os demais cargos. A mesma ordem vale no Quadro da Gestão, na Composição da loja e na lista de Cargos. Para <strong>corrigir</strong> um vínculo feito por engano (obreiro ou cargo errado), use <UI>Editar</UI> ao lado dele, troque o <UI>Membro</UI> e/ou o <UI>Cargo</UI> e clique em <UI>Salvar</UI> — o sistema avisa se o obreiro já tiver aquele cargo no período. Para desfazer de vez, use <UI>Remover</UI>. As duas ações só valem enquanto o período está em exercício; veneralato encerrado não muda.</li>
                 </Steps>
@@ -1904,7 +1910,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-sessoes" title="8.7 Sessões, ordem do dia e convocação">
                 <p>
-                  Em <UI>Secretaria → Veneralato & Sessões → Sessões</UI>, use <UI>Criar sessão</UI> informando título, <UI>Início</UI> e
+                  Em <UI>Secretaria → Sessões → Sessões</UI>, use <UI>Criar sessão</UI> informando título, <UI>Início</UI> e
                   <UI> Término</UI> (data e hora dos dois — o término define quando a presença libera, ver abaixo),
                   tipo, os <UI>Graus trabalhados</UI> e a <UI>Ordem do dia</UI> — o texto que os obreiros verão na Secretaria do
                   portal. As <UI>Observações internas</UI> ficam só para a diretoria, nunca aparecem para o membro.
@@ -1953,7 +1959,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-frequencia" title="8.8 Frequência às sessões">
                 <p>
-                  Em <UI>Secretaria → Veneralato & Sessões → Frequência às sessões</UI>, veja quem tem faltado — a lista de obreiros ativos
+                  Em <UI>Secretaria → Sessões → Frequência às sessões</UI>, veja quem tem faltado — a lista de obreiros ativos
                   fica ordenada pela pior frequência primeiro, com <UI>faltas seguidas</UI> destacada quando chega a 3
                   ou mais.
                 </p>
@@ -1971,7 +1977,7 @@ export function ManualBook() {
               </Sub>
               <Sub id="sec-materiais" title="8.9 Materiais e patrimônio">
                 <p>
-                  Em <UI>Secretaria → Membros & Cadastros → Materiais e patrimônio</UI>, mantenha o inventário de tudo que a loja usa
+                  Em <UI>Secretaria → Documentos → Materiais e patrimônio</UI>, mantenha o inventário de tudo que a loja usa
                   no dia a dia — não só alfaias e indumentária: colunas, altar, malhetes, espadas, tapete, urna,
                   estandarte, placa constitutiva, tábua de delinear, aventais, punhos, joias de cargo e rituais, tudo
                   num só lugar.
@@ -2113,7 +2119,7 @@ export function ManualBook() {
                 <p>
                   O fluxo completo, do papel ao certificado: nos <UI>Impressos da sessão</UI> (8.7), imprima a
                   <UI> Lista de visitantes (em branco)</UI>; na sessão, os irmãos visitantes a preenchem; depois, digite a
-                  lista em <UI>Visitantes da sessão</UI> (8.7). Os certificados ficam em <UI>Social → Certificados de presença</UI>
+                  lista em <UI>Visitantes da sessão</UI> (8.7). Os certificados ficam em <UI>Secretaria → Documentos → Certificados de presença</UI>
                   (Secretário, Venerável e Administrador).
                 </p>
                 <Steps>

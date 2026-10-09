@@ -263,8 +263,8 @@ export default function PagamentosClient({ accounts, members, payments, financia
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
         <div>
-          <h1 className="font-display text-2xl font-bold text-sand-light">Pagamentos</h1>
-          <p className="mt-1 text-sm text-sand-dark">Registre entradas e saídas de caixa vinculadas às contas a pagar e a receber.</p>
+          <h1 className="font-display text-2xl font-bold text-sand-light">Baixa de pagamentos</h1>
+          <p className="mt-1 text-sm text-sand-dark">Confira os pagamentos avisados pelos irmãos e dê a baixa (quite a conta) ou recuse o aviso. Para quem ainda não pagou, cobre pelo WhatsApp ou por e-mail em Cobranças.</p>
         </div>
 
         {/* Avisos que pedem ação (ex.: dinheiro marcado no painel do Asaas) vêm DEPOIS do título da página. */}
