@@ -252,7 +252,7 @@ export default function CadastrosFinanceirosClient({ chartAccounts, counterparti
             <p className="text-sm text-sand-dark">Categorias de receita e despesa típicas de uma loja maçônica.</p>
             <div className="flex flex-wrap gap-2">
               <Button variant="ghost" size="sm" onClick={() => setShowChartForm(true)}>+ Nova conta</Button>
-              <Button variant="ghost" size="sm" onClick={syncChart} disabled={linking}>{linking ? '…' : 'Sincronizar padrão'}</Button>
+              <Button variant="ghost" size="sm" onClick={syncChart} disabled={linking}>{linking ? '…' : 'Atualizar plano de contas'}</Button>
               <Button variant="ghost" size="sm" onClick={backfillChart} disabled={linking || chartAccounts.length === 0}>Vincular contas</Button>
             </div>
           </div>
