@@ -29,12 +29,15 @@ export default function SessionDetailClient({
   visits,
   initialAttendance,
   role,
+  canManage = true,
 }: {
   session: SessionInfo;
   members: Member[];
   visits: SessionVisit[];
   initialAttendance: Record<string, string>;
   role: string;
+  /** Falso para quem só cuida da presença (Chanceler): sem dados, convocação, ordem do dia, balaustre, Tronco e trava. */
+  canManage?: boolean;
 }) {
   const router = useRouter();
   const askConfirm = useConfirm();
@@ -214,7 +217,7 @@ export default function SessionDetailClient({
             ) : null}
           </div>
           <div className="flex items-center gap-4">
-            {!locked ? (
+            {!canManage ? null : !locked ? (
               <button type="button" onClick={() => void toggleLock()} disabled={lockBusy} className="text-sm text-sand-dark transition hover:text-sand-light disabled:opacity-40">
                 {lockBusy ? 'Trancando…' : '🔒 Trancar sessão'}
               </button>
@@ -235,7 +238,7 @@ export default function SessionDetailClient({
               <h2 className="text-base font-semibold text-sand-light">Dados da sessão</h2>
               <p className="mt-1 text-xs text-sand-dark">Título, horário, tipo e graus trabalhados — é daqui que sai o texto da convocação.</p>
             </div>
-            {!editing ? (
+            {!editing && canManage ? (
               <Button type="button" variant="secondary" size="sm" onClick={() => { setDataForm(formFrom(session)); setEditing(true); }} disabled={locked}>Editar</Button>
             ) : null}
           </div>
@@ -266,7 +269,7 @@ export default function SessionDetailClient({
           ) : null}
         </section>
 
-        <SessionTroncoCard sessionId={session.id} />
+        {canManage ? <SessionTroncoCard sessionId={session.id} /> : null}
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Impressos da sessão</h2>
@@ -280,6 +283,7 @@ export default function SessionDetailClient({
           </div>
         </section>
 
+        {canManage ? (
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <ConvocationPanel
             sessionId={session.id}
@@ -300,11 +304,13 @@ export default function SessionDetailClient({
             </div>
           </div>
         </section>
+        ) : null}
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <VisitorsPanel sessionId={session.id} visits={visits} />
         </section>
 
+        {canManage ? (
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Balaustre / Ata</h2>
           <p className="mt-1 text-xs text-sand-dark">
@@ -345,6 +351,7 @@ export default function SessionDetailClient({
             })}
           </div>
         </section>
+        ) : null}
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Registrar presença</h2>

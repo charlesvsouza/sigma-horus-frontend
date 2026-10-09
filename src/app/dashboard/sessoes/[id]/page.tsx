@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { NOT_CANDIDATE } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
+import { canLodgeAccessFor, requireLodgeAccessAny } from '@/lib/rbac';
 import { sessionDegrees } from '@/lib/session-convocation';
 import { minutesDegrees } from '@/lib/session-minutes';
 import { loadConvocation } from '@/lib/session-convocation-server';
@@ -12,6 +13,19 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role ?? '';
+
+  // Só quem cuida de membros ou da presença (Chancelaria) abre a sessão; antes qualquer pessoa logada abria pelo endereço.
+  const memberId = session?.user?.memberId;
+  const access = lodgeId ? await requireLodgeAccessAny(String(lodgeId), role, ['members', 'attendance'], 'read', memberId) : null;
+  if (!access?.ok) {
+    return (
+      <main className="min-h-screen px-6 py-12">
+        <p className="text-sm text-sand-dark">Acesso restrito à Secretaria e à Chancelaria.</p>
+      </main>
+    );
+  }
+  // Sem permissão de editar membros (ex.: Chanceler): vê e marca a presença, sem os controles da Secretaria.
+  const canManage = await canLodgeAccessFor({ lodgeId: String(lodgeId), role, memberId }, 'members', 'write');
 
   const data = lodgeId
     ? await withTenant(String(lodgeId), async (db) => {
@@ -84,6 +98,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
       }))}
       initialAttendance={initialAttendance}
       role={role}
+      canManage={canManage}
     />
   );
 }

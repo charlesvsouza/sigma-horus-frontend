@@ -512,7 +512,7 @@ export function ManualBook() {
                 <li>
                   <strong>Chancelaria:</strong> <UI>Livro de presença</UI> (as sessões recentes, com atalho para marcar a presença, imprimir o livro e ver os visitantes),
                   <UI> Frequência às sessões</UI>, <UI>Visitantes</UI> e <UI>Certificados de presença</UI>. Aparece para o <strong>Chanceler</strong> (por cargo) e, sem prejuízo,
-                  para o Secretário, o Venerável e o Administrador, que continuam com o mesmo acesso de antes.
+                  para o Secretário, o Venerável e o Administrador, que continuam com o mesmo acesso de antes. Ao abrir uma sessão, o Chanceler vê só a presença, os visitantes e os impressos — sem os controles da Secretaria (dados, convocação, ordem do dia, balaustre, trava).
                 </li>
                 <li>
                   <strong>Tesouraria:</strong> cinco grupos por tarefa — <UI>Lançar</UI> (<UI>Lançamento</UI>, <UI>Contas</UI>),
