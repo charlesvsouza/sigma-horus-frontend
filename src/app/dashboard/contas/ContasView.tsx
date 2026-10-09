@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { currentExpenseReceipt, EXPENSE_RECEIPT_ENTITY, EXPENSE_RECEIPT_REMOVED_ENTITY } from '@/lib/expense-receipt';
 import { donorDisplayName } from '@/lib/hospitalaria';
 import { isArt002Enabled } from '@/lib/overdue';
 import { withTenant } from '@/lib/prisma';
@@ -31,6 +32,8 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
           },
           orderBy: { dueDate: 'asc' },
         }),
+        // Despesas com comprovante anexado (o mais recente vale; remoção posterior encerra).
+        receiptRows: await db.auditLog.findMany({ where: { lodgeId: String(lodgeId), entity: { in: [EXPENSE_RECEIPT_ENTITY, EXPENSE_RECEIPT_REMOVED_ENTITY] } }, select: { entity: true, entityId: true, createdAt: true, after: true } }),
         members: await db.member.findMany({
           where: { lodgeId: String(lodgeId) },
           select: { id: true, name: true },
@@ -53,7 +56,13 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
         }),
         lodge: await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { art002Enabled: true, name: true, crestUrl: true } }),
       }))
-    : { accounts: [], members: [], chartAccounts: [], counterparties: [], financialAccounts: [], lodge: null, hiddenOld: 0 };
+    : { accounts: [], members: [], chartAccounts: [], counterparties: [], financialAccounts: [], lodge: null, hiddenOld: 0, receiptRows: [] };
+
+  const withReceipt = new Set<string>();
+  for (const id of new Set(data.receiptRows.map((r) => r.entityId))) {
+    const mine = data.receiptRows.filter((r) => r.entityId === id);
+    if (currentExpenseReceipt(mine.filter((r) => r.entity === EXPENSE_RECEIPT_ENTITY), mine.filter((r) => r.entity === EXPENSE_RECEIPT_REMOVED_ENTITY))) withReceipt.add(id);
+  }
 
   const accounts = data.accounts.map((a) => {
     const isSolidarity = a.chartAccount?.isSolidarity ?? false;
@@ -69,6 +78,7 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
       // Mensalidades com o flag desligado (recorrência antiga) não aparece desmarcada ao editar.
       isDues: a.isDues || Boolean(a.chartAccount?.isDues),
       approvalStatus: a.approvalStatus,
+      hasReceipt: withReceipt.has(a.id),
       awaitingAsaas: a.invoices.length > 0,
       paid: a.payments.reduce((sum, p) => sum + Number(p.amount), 0),
       chartAccountId: a.chartAccountId ?? null,

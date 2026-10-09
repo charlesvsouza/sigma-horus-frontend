@@ -27,6 +27,7 @@ interface AccountItem {
   description?: string | null;
   isDues: boolean;
   approvalStatus: string;
+  hasReceipt?: boolean;
   awaitingAsaas?: boolean;
   paid?: number;
   chartAccountId?: string | null;
@@ -180,6 +181,34 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
       router.refresh();
     } else {
       setMessage({ kind: 'error', text: data.error ?? 'Erro ao remover conta.' });
+    }
+  }
+
+  // Comprovante de pagamento da despesa: anexar/trocar (PDF ou foto) e remover.
+  async function handleReceiptFile(id: string, file: File | undefined) {
+    if (!file) return;
+    const body = new FormData();
+    body.append('file', file);
+    const response = await fetch(`/api/accounts/${id}/receipt`, { method: 'POST', body });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) {
+      setMessage({ kind: 'ok', text: 'Comprovante anexado.' });
+      router.refresh();
+    } else {
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao anexar o comprovante.' });
+    }
+  }
+
+  async function handleReceiptRemove(id: string) {
+    const ok = await askConfirm({ title: 'Remover comprovante', message: 'Remover o comprovante anexado a esta despesa?', confirmLabel: 'Remover', intent: 'danger' });
+    if (!ok) return;
+    const response = await fetch(`/api/accounts/${id}/receipt`, { method: 'DELETE' });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) {
+      setMessage({ kind: 'ok', text: 'Comprovante removido.' });
+      router.refresh();
+    } else {
+      setMessage({ kind: 'error', text: data.error ?? 'Erro ao remover o comprovante.' });
     }
   }
 
@@ -365,6 +394,20 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                 <div className="flex items-center gap-3">
                   {account.approvalStatus === 'pending' && canApprove ? (
                     <button onClick={() => void handleApprove(account.id)} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Aprovar</button>
+                  ) : null}
+                  {account.type === 'PAYABLE' ? (
+                    <span className="flex items-center gap-2">
+                      {account.hasReceipt ? (
+                        <>
+                          <a href={`/api/accounts/${account.id}/receipt`} target="_blank" rel="noopener noreferrer" className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Ver comprovante</a>
+                          <button onClick={() => void handleReceiptRemove(account.id)} className="text-xs px-1 py-1 text-sand-dark transition hover:text-sand">Tirar</button>
+                        </>
+                      ) : null}
+                      <label className="cursor-pointer text-xs px-1 py-1 text-gold transition hover:text-gold-light">
+                        {account.hasReceipt ? 'Trocar' : 'Anexar comprovante'}
+                        <input type="file" accept="application/pdf,image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; void handleReceiptFile(account.id, f); }} />
+                      </label>
+                    </span>
                   ) : null}
                   <button onClick={() => startEdit(account)} className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Editar</button>
                   <button onClick={() => void handleDelete(account.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Remover</button>

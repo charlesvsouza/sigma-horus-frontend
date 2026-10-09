@@ -241,7 +241,7 @@ export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   // 1.2 Outras Receitas
   { code: '1.2.01', name: 'Rendimentos de Aplicação Financeira', type: 'REVENUE', category: 'Outras Receitas' },
   { code: '1.2.02', name: 'Empréstimos Captados', type: 'REVENUE', category: 'Outras Receitas' },
-  { code: '1.2.03', name: 'Cessão / Aluguel do Templo', type: 'REVENUE', category: 'Outras Receitas' },
+  { code: '1.2.03', name: 'Aluguel do Templo (sublocação)', type: 'REVENUE', category: 'Outras Receitas' },
   { code: '1.2.04', name: 'Venda de Materiais e Paramentos', type: 'REVENUE', category: 'Outras Receitas' },
   { code: '1.2.05', name: 'Estorno de Despesa', type: 'REVENUE', category: 'Outras Receitas' },
   // 1.5 Abertura / Eventos
@@ -254,7 +254,7 @@ export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   { code: '2.1.02', name: 'Telefone', type: 'EXPENSE', category: 'Despesas Administrativas' },
   { code: '2.1.03', name: 'Impostos e Taxas', type: 'EXPENSE', category: 'Despesas Administrativas' },
   { code: '2.1.04', name: 'Material de Expediente', type: 'EXPENSE', category: 'Despesas Administrativas' },
-  { code: '2.1.05', name: 'Concessão / Aluguel da Sede', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.05', name: 'Aluguel do Templo', type: 'EXPENSE', category: 'Despesas Administrativas' },
   { code: '2.1.06', name: 'Despesas Bancárias', type: 'EXPENSE', category: 'Despesas Administrativas' },
   { code: '2.1.07', name: 'Serviços de Terceiros', type: 'EXPENSE', category: 'Despesas Administrativas' },
   { code: '2.1.08', name: 'Pagamento de Parcela de Empréstimo', type: 'EXPENSE', category: 'Despesas Administrativas' },
@@ -266,6 +266,8 @@ export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   { code: '2.1.14', name: 'Limpeza e Copa', type: 'EXPENSE', category: 'Despesas Administrativas' },
   { code: '2.1.15', name: 'Contribuição à Potência / Grande Loja', type: 'EXPENSE', category: 'Despesas Administrativas' },
   { code: '2.1.16', name: 'Tarifas de Cobrança (Asaas)', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  // 2.1.17 é a Devolução de Taxas de Grau (criada sob demanda, ver degree-fee.ts).
+  { code: '2.1.18', name: 'Aluguel da Sede', type: 'EXPENSE', category: 'Despesas Administrativas' },
   // 2.2 Investimentos
   { code: '2.2.02', name: 'Móveis e Utensílios', type: 'EXPENSE', category: 'Investimentos' },
   { code: '2.2.03', name: 'Equipamentos', type: 'EXPENSE', category: 'Investimentos' },

@@ -265,7 +265,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 8 de outubro de 2026 · versão 1.99</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 9 de outubro de 2026 · versão 1.100</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -946,7 +946,7 @@ export function ManualBook() {
                 <p>
                   O plano de contas classifica receitas e despesas no formato de <strong>livro caixa</strong>, com
                   codificação hierárquica (grupo.subgrupo.conta) — por exemplo <code>1.1.01 Mensalidades</code>,
-                  <code>2.1.05 Concessão/Aluguel</code>, <code>8.9.03 Ação Social e Caridade</code>. O código serve de
+                  <code>2.1.05 Aluguel do Templo</code>, <code>8.9.03 Ação Social e Caridade</code>. O código serve de
                   base para a totalização por grupo no balancete e no fechamento.
                 </p>
                 <p>
@@ -984,6 +984,9 @@ export function ManualBook() {
                   <li>Opcional: <UI>Vincular a um membro</UI> ou <UI>Vincular a um cliente/fornecedor</UI> (cadastro de quem não é membro — ver 7.13), escolher a <UI>Conta bancária/caixa prevista</UI> (ver 7.14) e escrever uma <UI>Descrição</UI>.</li>
                   <li>Clique em <UI>Salvar conta</UI>. A conta aparece na lista <UI>Contas cadastradas</UI> e o formulário fica limpo e aberto para o próximo lançamento; use <UI>Remover</UI> para excluir.</li>
                 </Steps>
+                <p>
+                  <strong>Comprovante de pagamento da despesa.</strong> Em toda <strong>conta a pagar</strong> da lista, o botão <UI>Anexar comprovante</UI> guarda o comprovante (PDF ou foto, até 4 MB) do que a loja pagou — aluguel, energia, fornecedor. Depois de anexado, a conta passa a mostrar <UI>Ver comprovante</UI> (abre o arquivo), <UI>Trocar</UI> e <UI>Tirar</UI>. É o mesmo cuidado do comprovante de mensalidade: o arquivo fica em armazenamento privado da loja, só abre para quem tem acesso a Contas, e a inclusão e a remoção ficam na auditoria. O comprovante é um registro de apoio: não dá baixa nem muda o saldo.
+                </p>
                 <p>
                   <strong>Filtros da lista de Contas.</strong> Com a <UI>Navegação rápida</UI> ligada (capítulo 4) — ou ao chegar por um atalho já filtrado, como os da Visão geral — a lista ganha a barra de filtros:
                   <UI>Todas / A receber / A pagar</UI>; a <strong>situação</strong> (<UI>Todas</UI>, <UI>Em aberto</UI>, <UI>Vencidas</UI>, <UI>A vencer</UI>, <UI>Pagas</UI>), cada uma com a quantidade e o valor que o clique traria;

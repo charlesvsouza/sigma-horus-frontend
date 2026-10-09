@@ -127,6 +127,11 @@ export async function syncChartAccounts(
     data: { name: 'Taxa de Iniciação' },
   });
 
+  // Aluguel do templo: despesa (2.1.05) e receita de sublocação (1.2.03) ganharam
+  // nomes claros. Renomeia só o nome original — nome customizado é preservado.
+  await db.chartAccount.updateMany({ where: { lodgeId, code: '2.1.05', name: 'Concessão / Aluguel da Sede' }, data: { name: 'Aluguel do Templo' } });
+  await db.chartAccount.updateMany({ where: { lodgeId, code: '1.2.03', name: 'Cessão / Aluguel do Templo' }, data: { name: 'Aluguel do Templo (sublocação)' } });
+
   // Atualiza isSolidarity nas contas existentes que estão no padrão canônico,
   // para corrigir registros criados antes do campo existir (ex.: Tronco).
   for (const c of MASONIC_CHART_OF_ACCOUNTS) {
