@@ -46,7 +46,7 @@ export default function CompliancePage() {
       <Section n={3} title="Separação de papéis no dinheiro">
         <p>
           O Sigma Horus é software e não retém valores. As cobranças aos membros são liquidadas diretamente na conta da
-          loja, pelo Gateway que ela própria conecta. Essa separação evita conflito de interesse e mantém o controle do
+          loja, pelo provedor de pagamentos que ela própria conecta. Essa separação evita conflito de interesse e mantém o controle do
           caixa com a loja.
         </p>
       </Section>

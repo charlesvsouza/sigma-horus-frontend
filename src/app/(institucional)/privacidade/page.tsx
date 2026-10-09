@@ -132,7 +132,7 @@ export default function PrivacidadePage() {
           <li><strong>Railway</strong> — banco de dados PostgreSQL gerenciado.</li>
           <li><strong>Cloudflare R2</strong> — armazenamento de documentos (privado) e de imagens como foto e brasão.</li>
           <li><strong>Stripe</strong> — processamento da assinatura da loja (dados de cobrança da plataforma).</li>
-          <li><strong>Asaas</strong> (ou gateway equivalente conectado pela loja) — cobranças que a loja faz aos seus irmãos; os valores são liquidados diretamente à loja.</li>
+          <li><strong>Asaas</strong> (ou provedor de pagamentos equivalente conectado pela loja) — cobranças que a loja faz aos seus irmãos; os valores são liquidados diretamente à loja.</li>
           <li><strong>Resend</strong> — envio dos e-mails do sistema (cobranças, lembretes, convocações e avisos).</li>
         </ul>
         <p className="mt-3">Também podemos comunicar dados, na medida do necessário:</p>
@@ -268,7 +268,7 @@ export default function PrivacidadePage() {
 
       <Section n={15} title="Links externos">
         <p>
-          Alguns pontos do sistema podem levar a sites de terceiros, como o link de pagamento de um gateway ou a página da ANPD.
+          Alguns pontos do sistema podem levar a sites de terceiros, como o link de pagamento de um provedor de pagamentos ou a página da ANPD.
           Não somos responsáveis pelo conteúdo nem pelas práticas desses sites; recomendamos ler a política de privacidade de
           cada um antes de informar dados.
         </p>

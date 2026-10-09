@@ -672,7 +672,7 @@ export default function PortalPage() {
       >
         <table>
           <thead>
-            <tr><th>Vencimento</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Status</th><th className="num">Valor</th></tr>
+            <tr><th>Vencimento</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Situação</th><th className="num">Valor</th></tr>
           </thead>
           <tbody>
             {filteredAccounts.map((account) => (

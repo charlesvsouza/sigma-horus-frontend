@@ -112,7 +112,7 @@ export default function IntegracoesClient({ asaas, messaging }: { asaas: AsaasSt
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-base font-semibold text-sand-light">Asaas</h2>
-              <p className="mt-2 text-sm text-sand-dark">Gateway de cobrança via boleto, Pix e cartão. O dinheiro cai direto na conta da sua loja.</p>
+              <p className="mt-2 text-sm text-sand-dark">Provedor de cobrança via boleto, Pix e cartão. O dinheiro cai direto na conta da sua loja.</p>
             </div>
             {asaas.configured ? (
               <span className="rounded-full border border-emerald-500/20 bg-emerald-500/12 px-2.5 py-0.5 text-xs font-medium text-emerald-300">

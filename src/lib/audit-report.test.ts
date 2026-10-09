@@ -21,7 +21,7 @@ test('ator: usuário, ator de sistema e sistema sem nome', () => {
 });
 
 test('resumo dos detalhes: esconde ruído e objetos, corta o excesso', () => {
-  assert.equal(summarizeDetail('{"amount":10,"viaSuperadmin":true,"x":{"a":1},"n":null,"method":"pix"}'), 'amount: 10 · method: pix');
+  assert.equal(summarizeDetail('{"amount":10,"viaSuperadmin":true,"x":{"a":1},"n":null,"method":"pix"}'), 'valor: 10 · forma de pagamento: pix');
   assert.equal(summarizeDetail('texto solto'), 'texto solto');
   assert.ok(summarizeDetail(JSON.stringify({ a: 'z'.repeat(300) })).length <= 160);
 });

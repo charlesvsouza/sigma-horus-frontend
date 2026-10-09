@@ -222,7 +222,7 @@ export default function BackupsPlataformaPage() {
                 <thead className="border-b border-white/6 bg-sigma-card">
                   <tr>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Data</th>
-                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Status</th>
+                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Situação</th>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Registros</th>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Tamanho</th>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Duração</th>

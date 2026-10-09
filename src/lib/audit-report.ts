@@ -11,13 +11,76 @@ export const AUDIT_ENTITY_LABEL: Record<string, string> = {
   term: 'Período',
   memberOffice: 'Vinculação',
   cashClose: 'Fechamento',
+  user: 'Usuário',
+  lodge: 'Loja',
+  candidate: 'Candidato',
+  integration: 'Integração',
+  venerableGalleryEntry: 'Galeria de Veneráveis',
+  materialLoan: 'Empréstimo de material',
+  material: 'Material',
+  materialIncident: 'Ocorrência de material',
+  degreeFeePlan: 'Taxa de grau',
+  financialAccount: 'Conta bancária',
+  counterparty: 'Cliente ou fornecedor',
+  campaign: 'Campanha',
+  asset: 'Patrimônio',
+  visitor: 'Visitante',
+  legacy_import: 'Importação de backup',
+  balancete: 'Balancete',
+  accountTransfer: 'Transferência entre contas',
+  rolePermission: 'Permissão do cargo',
+  platform_impersonation: 'Acesso pelo suporte da plataforma',
+  login_failed: 'Entrada recusada',
+  password_reset_requested: 'Pedido de nova senha',
+  message: 'Mensagem',
+  donation: 'Doação',
+  document: 'Documento',
+  certificate: 'Certificado',
+  budget: 'Orçamento',
 };
 
 export const AUDIT_ACTION_LABEL: Record<string, string> = {
   CREATE: 'Criação',
   UPDATE: 'Alteração',
   DELETE: 'Remoção',
+  approve: 'Aprovação',
+  approve_expense: 'Aprovação de despesa',
+  asaas_charge: 'Cobrança emitida (Asaas)',
+  asaas_group_charge: 'Cobrança agrupada (Asaas)',
+  block: 'Bloqueio',
+  end: 'Encerramento',
+  lock: 'Trava',
+  unlock: 'Destrava',
+  preview: 'Prévia',
+  recurring: 'Recorrência',
+  renegotiate: 'Renegociação',
+  send: 'Envio',
 };
+
+/** Nomes em português para as chaves gravadas nos detalhes (o que não está aqui aparece como veio). */
+const DETAIL_KEY_LABEL: Record<string, string> = {
+  emailStatus: 'situação do e-mail',
+  via: 'por meio de',
+  email: 'e-mail',
+  role: 'cargo',
+  resetPassword: 'nova senha pedida',
+  passwordReset: 'senha redefinida',
+  memberId: 'irmão',
+  lastSessionId: 'última sessão',
+  grantedAccess: 'acesso liberado',
+  event: 'evento',
+  emailChanged: 'e-mail alterado para',
+  emailChangeRequested: 'troca de e-mail pedida para',
+  changedPassword: 'senha alterada',
+  count: 'quantidade',
+  code: 'código',
+  asaasPaymentId: 'cobrança no Asaas',
+  amount: 'valor',
+  name: 'nome',
+  method: 'forma de pagamento',
+};
+const detailKey = (k: string) => DETAIL_KEY_LABEL[k] ?? k;
+const detailValue = (v: unknown) => (v === true ? 'sim' : v === false ? 'não' : String(v));
 
 export const entityLabel = (e: string) => AUDIT_ENTITY_LABEL[e] ?? e;
 export const actionLabel = (a: string) => AUDIT_ACTION_LABEL[a] ?? a;
@@ -96,7 +159,7 @@ export function summarizeDetail(after: string | null | undefined, max = 160): st
   for (const [k, v] of Object.entries(obj)) {
     if (HIDDEN_KEYS.has(k) || v === null || v === undefined || v === '') continue;
     if (typeof v === 'object') continue;
-    parts.push(`${k}: ${String(v)}`);
+    parts.push(`${detailKey(k)}: ${detailValue(v)}`);
   }
   const text = parts.join(' · ');
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;

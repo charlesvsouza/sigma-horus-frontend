@@ -47,7 +47,7 @@ export default function AuditReportClient({
   ];
 
   const csvRows = [
-    ['Quem', 'Data e hora', 'Ação', 'Entidade', 'Registro', 'Detalhes', 'Via superadmin'],
+    ['Quem', 'Data e hora', 'Ação', 'Item', 'Registro', 'Detalhes', 'Feito pelo suporte'],
     ...report.actors.flatMap((a) => a.rows.map((r) => [a.name, fmtAt(r.at), actionLabel(r.action), entityLabel(r.entity), r.entityId, r.detail, r.viaSuperadmin ? 'sim' : ''])),
   ];
 
@@ -134,7 +134,7 @@ export default function AuditReportClient({
                       <tr className="text-left text-xs uppercase tracking-wide text-sand-dark/70">
                         <th className="border-b border-white/10 px-2 py-2">Data e hora</th>
                         <th className="border-b border-white/10 px-2 py-2">Ação</th>
-                        <th className="border-b border-white/10 px-2 py-2">Entidade</th>
+                        <th className="border-b border-white/10 px-2 py-2">Item</th>
                         <th className="border-b border-white/10 px-2 py-2">Detalhes</th>
                       </tr>
                     </thead>
@@ -146,7 +146,7 @@ export default function AuditReportClient({
                           <td className="border-b border-white/5 px-2 py-1.5 text-sand">{entityLabel(r.entity)}</td>
                           <td className="border-b border-white/5 px-2 py-1.5 text-xs text-sand-dark">
                             {r.detail || '—'}
-                            {r.viaSuperadmin ? <span className="ml-2 text-amber-300">(via superadmin)</span> : null}
+                            {r.viaSuperadmin ? <span className="ml-2 text-amber-300">(feito pelo suporte)</span> : null}
                           </td>
                         </tr>
                       ))}

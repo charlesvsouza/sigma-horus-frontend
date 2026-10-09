@@ -422,7 +422,7 @@ export default function MembrosPage() {
           <div className="mt-4 overflow-hidden rounded-lg border border-white/6">
             {/* Cabeçalho */}
             <div className="hidden grid-cols-[1.6fr_0.9fr_0.7fr_0.9fr_1fr_auto] gap-3 border-b border-white/6 bg-sigma-blue-deep/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-sand-dark md:grid">
-              <span>Nome</span><span>Grau</span><span>Status</span><span>Rito</span><span>Telefone</span><span className="text-right">Ações</span>
+              <span>Nome</span><span>Grau</span><span>Situação</span><span>Rito</span><span>Telefone</span><span className="text-right">Ações</span>
             </div>
 
             {loading ? (

@@ -27,7 +27,7 @@ export default function TermosPage() {
           <li><strong>Sigma Horus / Fornecedor:</strong> [razão social a inserir], inscrita no CNPJ sob nº [CNPJ a inserir], com sede na [endereço a inserir], e-mail <a className="text-gold hover:text-gold-light" href="mailto:contato@sigmahorus.com.br">contato@sigmahorus.com.br</a>.</li>
           <li><strong>Loja / Cliente:</strong> a pessoa jurídica (loja maçônica, associação civil sem fins lucrativos) que assina o serviço.</li>
           <li><strong>Usuário:</strong> a pessoa autorizada pela loja a acessar a Plataforma (admin, tesoureiro, secretário, venerável, membro).</li>
-          <li><strong>Gateway:</strong> o provedor de pagamentos (ex.: Asaas) conectado pela loja para cobrar seus membros.</li>
+          <li><strong>Provedor de pagamentos:</strong> empresa (ex.: Asaas) conectada pela loja para cobrar seus membros.</li>
           <li><strong>DPA (Data Processing Agreement):</strong> Contrato de Tratamento de Dados que formaliza a relação entre operador e controlador nos termos da LGPD, disponível mediante solicitação.</li>
         </ul>
       </Section>
@@ -36,7 +36,7 @@ export default function TermosPage() {
         <p>
           O Sigma Horus fornece <em>software</em> de gestão administrativa e financeira. A Plataforma <strong>não</strong>
           é instituição financeira, meio de pagamento ou custodiante de valores. As cobranças aos membros são
-          processadas pela conta da própria loja no Gateway, e os valores são liquidados diretamente à loja.
+          processadas pela conta da própria loja no provedor de pagamentos, e os valores são liquidados diretamente à loja.
         </p>
       </Section>
 
@@ -123,7 +123,7 @@ export default function TermosPage() {
         <ul className="list-disc space-y-2 pl-5">
           <li>Usar os dados de membros conforme a LGPD, com base legal e finalidade legítima, atuando como controladora e responsabilizando-se pelo tratamento que realiza.</li>
           <li>Manter corretas as informações cadastrais, fiscais e bancárias.</li>
-          <li>Conectar e operar o Gateway segundo as regras do próprio provedor.</li>
+          <li>Conectar e operar o provedor de pagamentos segundo as regras do próprio provedor.</li>
           <li>Não compartilhar credenciais nem permitir acessos não autorizados.</li>
           <li>Revisar periodicamente as permissões de acesso e remover usuários inativos.</li>
           <li>Informar os membros sobre o tratamento de seus dados na plataforma, nos termos da LGPD.</li>
@@ -152,7 +152,7 @@ export default function TermosPage() {
       <Section n={11} title="Limitação de responsabilidade">
         <p>
           Na máxima extensão permitida em lei, o Sigma Horus não responde por danos indiretos ou lucros cessantes,
-          nem por atos do Gateway, de instituições bancárias ou de terceiros. A responsabilidade eventual por danos
+          nem por atos do provedor de pagamentos, de instituições bancárias ou de terceiros. A responsabilidade eventual por danos
           diretos comprovados, decorrentes da utilização da Plataforma, fica limitada ao valor pago pela loja nos
           12 (doze) meses anteriores ao fato.
         </p>

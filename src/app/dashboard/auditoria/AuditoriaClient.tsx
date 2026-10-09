@@ -44,7 +44,7 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="w-full rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-2.5 text-sm text-sand-light placeholder:text-sand-dark outline-none transition-all duration-200 ease-out focus:border-gold/50 focus:ring-2 focus:ring-gold/20"
-          placeholder="Filtrar por entidade, ação..."
+          placeholder="Filtrar por item ou ação..."
         />
 
         <div className="overflow-x-auto rounded-xl border border-white/6">
@@ -54,7 +54,7 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Data</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Quem</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Ação</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Entidade</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Item</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase text-sand-dark">Detalhes</th>
               </tr>
             </thead>
@@ -66,10 +66,10 @@ export default function AuditoriaClient({ entries }: { entries: AuditEntry[] }) 
                     {e.userName ?? '—'}
                     {e.viaSuperadmin ? (
                       <span
-                        title="Ação feita por alguém logado como esta pessoa via login de superadmin da plataforma, não pela própria pessoa"
+                        title="Ação feita pelo suporte da plataforma, entrando como esta pessoa, e não pela própria pessoa"
                         className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300"
                       >
-                        via superadmin
+                        feito pelo suporte
                       </span>
                     ) : null}
                   </td>

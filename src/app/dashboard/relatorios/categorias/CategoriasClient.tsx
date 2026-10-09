@@ -107,7 +107,7 @@ export default function CategoriasClient({
   }
 
   function exportCsv() {
-    const lines: string[] = [csvRow(['Categoria', 'Data', 'Status', 'Histórico', 'Pessoa', 'Conta/Caixa', 'Forma', 'Entrada', 'Saída', ...(showBalance ? ['Saldo'] : [])])];
+    const lines: string[] = [csvRow(['Categoria', 'Data', 'Situação', 'Histórico', 'Pessoa', 'Conta/Caixa', 'Forma', 'Entrada', 'Saída', ...(showBalance ? ['Saldo'] : [])])];
     for (const g of ledger.groups) {
       const label = `${g.code} ${g.name}`;
       if (g.empty) {

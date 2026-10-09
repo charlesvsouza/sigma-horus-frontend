@@ -52,7 +52,7 @@ export default function SobrePage() {
       <Section n={4} title="Como o dinheiro funciona">
         <p>
           O Sigma Horus é um <em>software</em> de gestão — não é um meio de pagamento e não retém valores.
-          As cobranças dos membros são emitidas pela conta da própria loja em um gateway (Asaas), e os
+          As cobranças dos membros são emitidas pela conta da própria loja em um provedor de pagamentos (Asaas), e os
           valores caem diretamente na conta bancária da loja. A assinatura da plataforma é cobrada à parte,
           pela loja ao Sigma Horus.
         </p>

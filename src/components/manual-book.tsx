@@ -622,7 +622,7 @@ export function ManualBook() {
 
               <Sub id="admin-asaas" title="6.2 Conectar o Asaas (cobrança aos membros)">
                 <p>
-                  O Asaas é o gateway que emite <strong>boleto e PIX</strong> para os membros. No modelo do Sigma Horus,
+                  O Asaas é o provedor de pagamentos que emite <strong>boleto e PIX</strong> para os membros. No modelo do Sigma Horus,
                   <strong> cada loja conecta a própria conta Asaas</strong> — a plataforma Sigma Horus nunca toca no dinheiro. O
                   pagamento do irmão cai primeiro na conta Asaas da loja e depois é <strong>repassado, manualmente pelo Tesoureiro,
                   para a conta corrente da loja</strong> (ver 6.9). A conexão só vale no <strong>Modo Asaas</strong>. Veja o passo a passo completo.
@@ -969,7 +969,7 @@ export function ManualBook() {
                   <li>Escolha a <UI>Categoria (plano de contas)</UI> — ela já sugere o título e o tipo.</li>
                   <li>Confira o <UI>Título da conta</UI> e o tipo: <strong>Conta a receber</strong> ou <strong>Conta a pagar</strong>.</li>
                   <li>Informe o <UI>Valor</UI> e a <UI>Data</UI> de vencimento.</li>
-                  <li>Defina o <UI>Status</UI> (Pendente, Pago ou Vencido). Ao escolher <strong>Pago</strong>, aparecem a <UI>Data do pagamento</UI> (em branco = hoje) e a <UI>Conta bancária/caixa do pagamento</UI>, que passa a ser <strong>obrigatória</strong> — ver o quadro abaixo.</li>
+                  <li>Defina o <UI>Situação</UI> (Pendente, Pago ou Vencido). Ao escolher <strong>Pago</strong>, aparecem a <UI>Data do pagamento</UI> (em branco = hoje) e a <UI>Conta bancária/caixa do pagamento</UI>, que passa a ser <strong>obrigatória</strong> — ver o quadro abaixo.</li>
                   <li>Opcional: <UI>Vincular a um membro</UI> ou <UI>Vincular a um cliente/fornecedor</UI> (cadastro de quem não é membro — ver 7.13), escolher a <UI>Conta bancária/caixa prevista</UI> (ver 7.14) e escrever uma <UI>Descrição</UI>.</li>
                   <li>Clique em <UI>Salvar conta</UI>. A conta aparece na lista <UI>Contas cadastradas</UI> e o formulário fica limpo e aberto para o próximo lançamento; use <UI>Remover</UI> para excluir.</li>
                 </Steps>

@@ -323,7 +323,7 @@ export default function ConvitesPlataformaPage() {
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Nota</th>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Plano</th>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark" title="Dias de teste concedidos no cadastro (contam a partir do cadastro, não da criação do convite)">Dias</th>
-                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Status</th>
+                    <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark">Situação</th>
                     <th className="px-3 py-3 text-xs font-semibold uppercase text-sand-dark" title="Prazo para usar o convite — o trial só começa a contar no cadastro">Link até</th>
                     <th className="hidden px-3 py-3 text-xs font-semibold uppercase text-sand-dark xl:table-cell">Criado</th>
                     <th className="px-3 py-3" />

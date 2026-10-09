@@ -249,7 +249,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                 <Field label="Data de vencimento">
                   <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT_CLASS} required />
                 </Field>
-                <Field label="Status">
+                <Field label="Situação">
                   <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className={INPUT_CLASS}>
                     <option value="pending">Pendente</option>
                     <option value="paid">Pago</option>
