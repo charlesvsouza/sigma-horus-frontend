@@ -147,6 +147,8 @@ model Lodge {
   sessionMinutes SessionMinutes[]
   memberBlockSignatures MemberBlockSignature[]
   memberRestrictions MemberRestriction[]
+  reimbursements     Reimbursement[]
+  reimbursementFiles ReimbursementFile[]
   ledgerCheckpoints  LedgerCheckpoint[]
   ledgerRectifications LedgerRectification[]
   paymentReceiptSignatures PaymentReceiptSignature[]
@@ -258,6 +260,7 @@ model Member {
   degreeFeePlans     DegreeFeePlan[]
   memberBlocks       MemberBlock[]
   restrictions       MemberRestriction[]
+  reimbursements     Reimbursement[]
   @@index([lodgeId])
 }
 
@@ -1446,6 +1449,62 @@ model MemberRestriction {
   member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
   @@index([lodgeId, memberId])
   @@index([lodgeId, status])
+}
+
+// Pedido de reembolso: o irmão pagou um gasto da loja do próprio bolso e pede a devolução, nota/recibo em anexo
+// (1 a 3 arquivos — uma nota por pedido). Fluxo: draft (rascunho, ainda sem enviar) → submitted (Tesouraria confere)
+// → awaiting_vm (Venerável decide) → approved (a conta a pagar nasce e o Tesoureiro devolve o dinheiro) → paid.
+// returned = a Tesouraria devolveu ao irmão para corrigir; rejected/cancelled são finais. A categoria é a do GASTO
+// real (a Tesouraria confirma antes de pedir a liberação). A conta a pagar fica em accountId (sem FK, como nos acordos).
+model Reimbursement {
+  id                String    @id @default(cuid())
+  lodgeId           String
+  memberId          String    // o credor: quem gastou e será reembolsado
+  requestedByUserId String    // quem digitou o pedido (o próprio irmão ou a Tesouraria/Venerável em nome dele)
+  requestedVia      String    // member | staff
+  status            String    @default("draft")
+  description       String
+  vendorName        String?   // estabelecimento/fornecedor da nota
+  amount            Float     // valor da nota
+  expenseDate       DateTime  // data do gasto (só dia)
+  chartAccountId    String?   // categoria do gasto (sugerida pelo irmão, confirmada pela Tesouraria)
+  submittedAt       DateTime?
+  reviewedById      String?
+  reviewedAt        DateTime?
+  reviewNote        String?   // por que a Tesouraria devolveu ao irmão
+  decidedById       String?
+  decidedAt         DateTime?
+  decisionNote      String?   // motivo da rejeição (ou da aprovação de valor menor)
+  approvedAmount    Float?
+  implicitApproval  Boolean   @default(false) // lançado pelo próprio Venerável/Administrador: aprovação implícita
+  accountId         String?   // conta a pagar criada na aprovação
+  paidAt            DateTime?
+  paidById          String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  lodge  Lodge  @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  files  ReimbursementFile[]
+  @@index([lodgeId, status])
+  @@index([lodgeId, memberId])
+}
+
+// Anexo (nota fiscal, recibo, foto) de um pedido de reembolso. Arquivo no storage privado
+// (reimbursements/<loja>/…); no máximo 3 por pedido.
+model ReimbursementFile {
+  id              String   @id @default(cuid())
+  lodgeId         String
+  reimbursementId String
+  key             String
+  name            String
+  type            String
+  size            Int
+  createdAt       DateTime @default(now())
+
+  lodge         Lodge         @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  reimbursement Reimbursement @relation(fields: [reimbursementId], references: [id], onDelete: Cascade)
+  @@index([lodgeId, reimbursementId])
 }
 
 // Conferência do livro com o banco: "conferido até" um dia, com o saldo do banco informado por conta.

@@ -32,6 +32,8 @@ export const BACKUP_MODELS = [
   'memberBlockItem', // depois de memberBlock (o item aponta para a conta, sem FK)
   'memberBlockSignature', // depois de memberBlock (assinatura digital do termo do acordo)
   'memberRestriction', // depois de member (restrição do cadastro com motivo)
+  'reimbursement', // depois de member (pedido de reembolso de gasto do irmão)
+  'reimbursementFile', // depois de reimbursement (anexos da nota/recibo)
   'ledgerCheckpoint', // conferência do livro com o banco (trava por data)
   'ledgerRectification', // pedido de retificação de período conferido (ciência do Venerável)
   'user',

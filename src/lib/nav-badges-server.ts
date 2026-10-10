@@ -5,6 +5,7 @@ import { badge, pendingNoticeAccountIds, pendingWithoutConfirmation, plural, typ
 import { DUES_ACCOUNT_WHERE } from '@/lib/overdue';
 import { PAYMENT_NOTICE_ENTITY, PAYMENT_NOTICE_REJECT_ENTITY } from '@/lib/portal-dues';
 import { withTenant } from '@/lib/prisma';
+import { pendingForRole, type ReimbursementStatus } from '@/lib/reimbursement';
 
 const SIXTY_DAYS = 60 * 86_400_000;
 
@@ -19,7 +20,7 @@ export async function loadNavBadges(lodgeId: string, role: string): Promise<Reco
     const today = todayBR();
     const out: Record<string, NavBadge> = {};
     await withTenant(lodgeId, async (db) => {
-      const [notices, rejections, cashPending, cashConfirmed, overdue, approvals, candidates] = await Promise.all([
+      const [notices, rejections, cashPending, cashConfirmed, overdue, approvals, candidates, reimbursementCounts] = await Promise.all([
         cashier ? db.auditLog.findMany({ where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, createdAt: { gte: since } }, select: { entityId: true, createdAt: true }, take: 2000 }) : [],
         cashier ? db.auditLog.findMany({ where: { lodgeId, entity: PAYMENT_NOTICE_REJECT_ENTITY, createdAt: { gte: since } }, select: { entityId: true, createdAt: true }, take: 2000 }) : [],
         cashier ? db.auditLog.findMany({ where: { lodgeId, entity: ASAAS_CASH_PENDING_ENTITY, createdAt: { gte: since } }, select: { entityId: true }, take: 500 }) : [],
@@ -33,6 +34,7 @@ export async function loadNavBadges(lodgeId: string, role: string): Promise<Reco
           : [],
         treasury ? db.account.count({ where: { lodgeId, type: 'PAYABLE', approvalStatus: 'pending', status: { not: 'paid' } } }) : 0,
         admission ? db.candidateProcess.count({ where: { lodgeId, closedAt: null, initiatedAt: null } }) : 0,
+        treasury ? db.reimbursement.groupBy({ by: ['status'], where: { lodgeId, status: { in: ['submitted', 'awaiting_vm', 'approved'] } }, _count: { _all: true } }) : [],
       ]);
 
       if (cashier) {
@@ -51,6 +53,10 @@ export async function loadNavBadges(lodgeId: string, role: string): Promise<Reco
         if (o) out['/dashboard/relatorios/inadimplencia'] = o;
         const a = badge(approvals, 'atencao', (n) => `${plural(n, 'despesa', 'despesas')} esperando aprovação`);
         if (a) out['/dashboard/contas'] = a;
+        const counts: Partial<Record<ReimbursementStatus, number>> = {};
+        for (const g of reimbursementCounts) counts[g.status as ReimbursementStatus] = g._count._all;
+        const rb = badge(pendingForRole(role, counts), 'atencao', (n) => `${plural(n, 'reembolso', 'reembolsos')} esperando você`);
+        if (rb) out['/dashboard/reembolsos'] = rb;
       }
       if (admission) {
         const c = badge(candidates, 'atencao', (n) => `${plural(n, 'processo', 'processos')} de admissão em andamento`);

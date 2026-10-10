@@ -54,6 +54,8 @@ const NAV: NavGroupDef[] = [
       { href: '/dashboard/portal', label: 'Meu portal', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller', 'candidate'] },
       // Todo oficial também é obreiro — o calendário de sessões vale pra
       // todos, não só pra quem tem papel "member".
+      // Pedir reembolso de gasto pago do próprio bolso (nota/recibo em anexo) e acompanhar. Candidato não pede.
+      { href: '/dashboard/portal/reembolsos', label: 'Meus reembolsos', roles: ['venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
       { href: '/dashboard/portal/secretaria', label: 'Calendário de sessões', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
       { href: '/manual', label: 'Manual & ajuda', roles: ['admin', 'venerable', 'treasurer', 'secretary', 'member', 'hospitaller'] },
     ],
@@ -123,6 +125,8 @@ const NAV: NavGroupDef[] = [
           // Abre a tela de Contas com o formulário de lançamento aberto.
           { href: '/dashboard/contas/lancamento', label: 'Lançamento', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/contas', label: 'Contas', roles: ['admin', 'venerable', 'treasurer'] },
+          // Pedidos de reembolso dos irmãos: Tesouraria confere, Venerável autoriza, Tesouraria paga. Ver lib/reimbursement.ts.
+          { href: '/dashboard/reembolsos', label: 'Reembolsos', roles: ['admin', 'venerable', 'treasurer'] },
         ],
       },
       {

@@ -66,6 +66,7 @@ const INDEX: IndexEntry[] = [
       { id: 'tes-declaracao', label: '7.20 Declaração de regularidade financeira' },
       { id: 'tes-taxas-grau', label: '7.21 Taxas de grau (iniciação, elevação, exaltação, filiação e regularização)' },
       { id: 'tes-conferencia', label: '7.22 Conferência com o banco, retificação e correção de pagamentos' },
+      { id: 'tes-reembolsos', label: '7.23 Reembolsos de gastos dos irmãos' },
     ],
   },
   {
@@ -265,7 +266,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 9 de outubro de 2026 · versão 1.101</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 10 de outubro de 2026 · versão 1.102</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1747,6 +1748,25 @@ export function ManualBook() {
                   se ela foi registrada por engano.
                 </Note>
               </Sub>
+
+              <Sub id="tes-reembolsos" title="7.23 Reembolsos de gastos dos irmãos">
+                <p>
+                  Quando um irmão paga um gasto da loja do próprio bolso (por exemplo, 2 barris de chope por R$ 780,00), ele pede o
+                  reembolso em <UI>Início → Meus reembolsos</UI> (ou a Tesouraria digita por ele, em <UI>Tesouraria → Lançar → Reembolsos</UI>).
+                  <strong> Cada nota ou recibo é um pedido.</strong> O pedido leva a descrição do gasto, o valor, a data, o estabelecimento
+                  (opcional), a categoria e de <strong>1 a 3 arquivos</strong> (foto ou PDF de até 4 MB cada — frente, verso, páginas da nota).
+                  <strong> Sem ao menos um arquivo, o pedido não é enviado.</strong>
+                </p>
+                <Bullets>
+                  <li><strong>1. Conferência da Tesouraria.</strong> O pedido do irmão chega à Tesouraria (aviso numérico no menu e e-mail). O Tesoureiro abre a nota, confere e <strong>confirma a categoria do gasto</strong> — a do gasto de verdade (ex.: Jantar Ritualístico), não &quot;reembolso&quot;, para o balancete, a DRE e o Razão por categoria ficarem certos. Se a nota confere, clique em <UI>Pedir liberação ao Venerável</UI>. Se falta algo, <UI>Devolver ao irmão</UI> com o que corrigir: o irmão ajusta e reenvia.</li>
+                  <li><strong>2. Decisão do Venerável.</strong> O Venerável (ou o Administrador) vê o pedido, a nota e a categoria e clica em <UI>Autorizar</UI> ou <UI>Rejeitar</UI>. A rejeição <strong>exige o motivo</strong>, que o irmão lê no pedido. Pode autorizar <strong>valor menor</strong> que o da nota, informando o motivo. Se o irmão está bloqueado (Art. 002) ou tem dívida em aberto, a tela avisa antes de decidir. <strong>Quem pediu o reembolso não decide sobre o próprio pedido</strong> (o Venerável que pede o dele depende do Administrador).</li>
+                  <li><strong>3. A conta a pagar nasce sozinha.</strong> Autorizado, o sistema cria a conta a pagar já com a categoria, o valor, a descrição e o fornecedor do pedido — ninguém lança nada à mão. Ela <strong>ainda não está paga</strong>: a loja ainda não devolveu o dinheiro.</li>
+                  <li><strong>4. Pagamento.</strong> O Tesoureiro devolve o valor ao irmão e, no próprio pedido, informa a <strong>conta ou o caixa que pagou, a data, a forma e anexa o comprovante do pagamento (obrigatório)</strong>. Só então a conta vira paga, o valor entra no extrato e o irmão recebe o aviso. O comprovante fica na conta, em <UI>Contas</UI>.</li>
+                </Bullets>
+                <Note>
+                  <strong>Quem digita muda o caminho.</strong> Se o <em>Tesoureiro</em> digita o pedido pelo irmão, ele pula a própria conferência e vai direto ao Venerável (a categoria é obrigatória). Se o <em>Venerável ou o Administrador</em> digita o pedido por outro irmão, a autorização é <strong>implícita</strong>: o pedido já nasce autorizado, com a conta a pagar criada. Pedido enviado e ainda sem decisão pode ser cancelado (pelo autor até a conferência; pela Tesouraria até a decisão do Venerável). Só irmão ativo (ou bloqueado por acordo) pede reembolso; candidato não pede. Um aviso aparece quando já existe pedido do mesmo irmão com o mesmo valor e a mesma data (nota possivelmente repetida).
+                </Note>
+              </Sub>
             </Chapter>
 
             {/* ============== 8. SECRETÁRIO ============== */}
@@ -2184,6 +2204,7 @@ export function ManualBook() {
                 <li><UI>Histórico de pagamentos</UI> (7.19): o que cada irmão pagou, com recibos — para conferir uma reclamação sem depender de terceiros.</li>
                 <li><UI>Declaração de regularidade</UI> (7.20): a declaração de &quot;nada consta&quot; financeiro, que você assina com o Tesoureiro — para transferência, elevação, filiação ou candidatura.</li>
                 <li><UI>Acordos de regularização</UI> (7.8): é o Venerável (ou o Administrador) que <strong>bloqueia o cadastro</strong> de quem está no Art. 002 depois do comunicado à Potência, define a taxa de regularização (valor aberto) e as parcelas, <strong>assina o termo</strong> do acordo e <strong>libera o irmão</strong> quando o acordo é quitado. Você também recebe o e-mail de acordo quebrado.</li>
+                <li><UI>Reembolsos</UI> (7.23): a Tesouraria confere a nota do irmão que pagou um gasto da loja do próprio bolso e pede a sua liberação; você <strong>autoriza</strong> (podendo reduzir o valor, com motivo) ou <strong>rejeita informando o motivo</strong>. Quando você mesmo digita o pedido por outro irmão, a autorização é implícita. O pedido que é seu outro responsável decide.</li>
                 <li><UI>Taxas de grau</UI> (7.21): cria e acompanha os planos de iniciação, elevação, exaltação, filiação e regularização, com entrada opcional, e assina o contrato.</li>
                 <li><strong>Faltas seguidas:</strong> o irmão ativo que chega a <strong>3 ou mais ausências seguidas</strong> nas últimas sessões (ordinárias, magnas e extraordinárias com presença registrada; falta é falta, sem justificativa) aparece em <UI>Visão geral → Frequência</UI> e você recebe um <strong>e-mail</strong> (junto com o Hospitaleiro), uma vez por sequência: se ele continuar faltando não repete; só volta a avisar depois que comparecer e faltar 3 vezes de novo. Presença não registrada não conta como falta.</li>
                 <li><strong>Aviso de fim de recorrência:</strong> 30 dias antes de acabar o período programado das mensalidades recorrentes, você recebe um e-mail (junto com o Tesoureiro e o Administrador) perguntando se a loja renova ou cria outro período — quem renova é o Tesoureiro ou o Administrador (7.3).</li>
@@ -2204,6 +2225,7 @@ export function ManualBook() {
                 <li><strong>Extrato:</strong> (começa recolhido — clique no título para abrir, ou use <UI>Recibos e extrato</UI> no cartão Comprovantes) cada conta vinculada a você — tipo (<UI>Débito</UI> = você deve; <UI>Crédito</UI> = a loja deve a você), categoria do plano de contas (ex.: Mensalidades, Tronco de Beneficência), vencimento, valor e status. Filtre por tipo e por status, e use <UI>Relatório PDF</UI> para imprimir/salvar o extrato filtrado — sai com o cabeçalho da loja, o saldo do filtro e o aviso de que é um documento informativo (o comprovante oficial de um pagamento é o recibo da Tesouraria, que você abre pelo link <UI>Recibo</UI> de cada conta paga).</li>
                 <li><strong>Histórico de pagamentos:</strong> no cartão <UI>Comprovantes</UI>, abra <UI>Histórico de pagamentos</UI> para ver tudo o que você já pagou à loja, por período (padrão: o ano corrente): data, a que se refere, vencimento, forma de pagamento e valor, com o <UI>Recibo</UI> de cada pagamento e o total. Use <UI>Imprimir / PDF</UI> ou <UI>Exportar CSV</UI> para guardar. Assim você confere, por conta própria, o que já quitou.</li>
                 <li><strong>Declaração de regularidade:</strong> em dia com a Tesouraria (nada vencido)? Abra <UI>Declaração de regularidade</UI> no cartão <UI>Comprovantes</UI> e imprima a declaração oficial da loja, com as assinaturas do Tesoureiro e do Venerável — para transferência, elevação, filiação ou candidatura. Com algum débito vencido, a tela mostra o que falta e o caminho para pagar.</li>
+                <li><strong>Meus reembolsos:</strong> pagou algo pela loja do próprio bolso? Em <UI>Início → Meus reembolsos</UI> clique em <UI>Pedir reembolso</UI>, descreva o gasto, informe o valor e a data e anexe a nota ou o recibo (de 1 a 3 arquivos; um pedido para cada nota). A Tesouraria confere, o Venerável autoriza e a Tesouraria devolve o valor; você acompanha cada passo na tela e recebe um e-mail a cada etapa. Se a Tesouraria devolver para correção, ou o Venerável rejeitar, o motivo aparece no pedido (7.23).</li>
                 <li><strong>Minhas taxas de grau:</strong> se você tem um plano de taxa (iniciação, elevação, exaltação, filiação ou regularização), o cartão mostra o valor, as cotas — com a <strong>entrada</strong>, se houver —, o que já pagou e o que falta; quitada antes do evento, vira &quot;Crédito referente à taxa…&quot;, reservado para a cerimônia (7.21).</li>
                 <li><strong>Documentos recentes:</strong> os arquivos disponibilizados a você pela loja (o cartão só aparece quando há algum).</li>
                 <li><strong>Documentos da Loja:</strong> regimento interno, regulamento geral, constituição da Potência e outros documentos institucionais, publicados pela Secretaria pra todos os obreiros — abra ou baixe direto por aqui.</li>
