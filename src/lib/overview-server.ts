@@ -6,6 +6,7 @@ import { missingRecordFields } from '@/lib/incomplete-record';
 import { getTroncoBalance } from '@/lib/hospitalaria';
 import { getLodgeOverdueDuesReport, isArt002Enabled } from '@/lib/overdue';
 import { birthdayWithin, type OverviewScope } from '@/lib/overview-roles';
+import { pendingForRole, type ReimbursementStatus } from '@/lib/reimbursement';
 import { loadDuesPunctuality } from '@/lib/dues-punctuality-server';
 import { loadEndingMothers } from '@/lib/recurring-renewal';
 import { loadTroncoBySession } from '@/lib/tronco-server';
@@ -27,7 +28,7 @@ export async function loadOverviewGroups(
   db: Db,
   lodgeId: string,
   scope: OverviewScope,
-  links: { fundos: boolean },
+  links: { fundos: boolean; role?: string },
   now: Date = new Date(),
 ): Promise<OverviewGroup[]> {
   const today = todayBR(now);
@@ -42,6 +43,13 @@ export async function loadOverviewGroups(
     ]);
     treasuryItems.push({ key: 'extrato', label: 'Créditos do extrato sem conciliar', value: unmatched, href: '/dashboard/conciliacao-bancaria', tone: 'gold' });
     treasuryItems.push({ key: 'recorrencias', label: 'Recorrências chegando ao fim', value: ending.length, href: '/dashboard/cobrancas', tone: 'gold' });
+  }
+  // Pedidos de reembolso esperando a ação do cargo (conferir, decidir ou pagar).
+  if (links.role && ['admin', 'venerable', 'treasurer'].includes(links.role)) {
+    const rows = await db.reimbursement.groupBy({ by: ['status'], where: { lodgeId, status: { in: ['submitted', 'awaiting_vm', 'approved'] } }, _count: { _all: true } });
+    const counts: Partial<Record<ReimbursementStatus, number>> = {};
+    for (const r of rows) counts[r.status as ReimbursementStatus] = r._count._all;
+    treasuryItems.push({ key: 'reembolsos', label: 'Reembolsos esperando você', value: pendingForRole(links.role, counts), href: '/dashboard/reembolsos', tone: 'gold' });
   }
   if (scope.approvals) {
     const awaiting = await db.account.count({ where: { lodgeId, type: 'PAYABLE', approvalStatus: 'pending' } });

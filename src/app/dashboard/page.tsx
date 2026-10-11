@@ -10,7 +10,9 @@ import { countAccountsByDue, countInvoicesByDue } from '@/lib/dashboard-counts';
 import { todayBR } from '@/lib/date-only';
 import { overviewScope } from '@/lib/overview-roles';
 import { loadOverviewGroups } from '@/lib/overview-server';
-import OverviewGroups from './OverviewGroups';
+import { OverviewAttention, OverviewFollow } from './OverviewGroups';
+import { splitOverview } from '@/lib/overview-layout';
+import type { OverviewItem } from '@/lib/overview-server';
 import { invoiceOpenBalance } from '@/lib/charge-notice';
 
 export default async function DashboardPage() {
@@ -52,31 +54,19 @@ export default async function DashboardPage() {
   // Indicadores por cargo (fora a posição financeira).
   const role = String(session?.user?.role ?? '').toLowerCase();
   const groups = await withTenant(String(lodgeId), (db) =>
-    loadOverviewGroups(db, String(lodgeId), scope!, { fundos: ['admin', 'venerable', 'hospitaller', 'treasurer'].includes(role) }),
+    loadOverviewGroups(db, String(lodgeId), scope!, { fundos: ['admin', 'venerable', 'hospitaller', 'treasurer'].includes(role), role }),
   );
 
   if (!financeAllowed) {
-    const quick = role === 'secretary'
-      ? [{ href: '/dashboard/sessoes', label: 'Sessões', desc: 'Convocação, presença e balaústre' }, { href: '/dashboard/membros', label: 'Membros', desc: 'Cadastro e vínculos' }, { href: '/dashboard/candidatos', label: 'Candidatos', desc: 'Processos de admissão' }]
-      : [{ href: '/dashboard/hospitalaria/campanhas', label: 'Campanhas', desc: 'Benemerência e auxílios' }, { href: '/dashboard/hospitalaria/fundos', label: 'Fundos', desc: 'Tronco de Solidariedade' }, { href: '/dashboard/hospitalaria/irmaos', label: 'Irmãos (consulta)', desc: 'Contato para visitas' }];
+    const layout = splitOverview(groups);
     return (
       <div className="mx-auto max-w-6xl space-y-8 px-6 py-8 lg:px-8">
         <div className="animate-slide-up">
           <h1 className="font-display text-2xl font-bold text-sand-light">Visão geral</h1>
           <p className="mt-1 text-sm text-sand-dark">{role === 'secretary' ? 'O que pede atenção na Secretaria' : 'O que pede atenção na Hospitalaria'}</p>
         </div>
-        <OverviewGroups groups={groups} />
-        <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
-          <h2 className="text-base font-semibold text-sand-light">Ações rápidas</h2>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            {quick.map((item) => (
-              <Link key={item.href} href={item.href} className="group rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4 transition-colors hover:border-white/10">
-                <p className="text-sm font-medium text-sand/80 transition-colors group-hover:text-sand-light">{item.label}</p>
-                <p className="text-xs text-sand-dark/60">{item.desc}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
+        <OverviewAttention items={layout.attention} />
+        <OverviewFollow items={layout.follow} />
       </div>
     );
   }
@@ -124,22 +114,20 @@ export default async function DashboardPage() {
   // O mesmo total, aberto por conta (Caixinha, Conta corrente…): a soma das linhas é o Saldo em caixa.
   const cashByAccount = financialAccounts.map((f) => ({ id: f.id, name: f.name, saldo: accountBalances.find((b) => b.id === f.id)?.saldo ?? Number(f.openingBalance) }));
 
-  const receivedTotal = sumMoney(payments.filter((p) => p.account?.type === 'RECEIVABLE').map((p) => Number(p.amount ?? 0)));
   // Vencida/pendente pelo VENCIMENTO e pelo saldo em aberto, não pelo status gravado (a conta fica "pending" depois de vencer).
   const today = todayBR();
-  const { overdue: overdueAccounts, pending: pendingAccounts } = countAccountsByDue(
+  const { overdue: overdueAccounts } = countAccountsByDue(
     accounts.map((a) => ({ id: a.id, amount: Number(a.amount ?? 0), dueDate: a.dueDate, status: a.status, approvalStatus: a.approvalStatus })),
     paidByAccount,
     today,
   );
-  const { overdue: overdueInvoices, pending: pendingInvoices } = countInvoicesByDue(
+  const { overdue: overdueInvoices } = countInvoicesByDue(
     invoices.map((i) => {
       const account = accounts.find((a) => a.id === i.accountId);
       return { status: i.status, dueDate: i.dueDate, openBalance: invoiceOpenBalance(Number(i.amount ?? 0), account ? { amount: Number(account.amount ?? 0), status: account.status, payments: [{ amount: paidByAccount.get(account.id) ?? 0 }] } : null) };
     }),
     today,
   );
-  const netBalance = sumMoney([receivableTotal, -payableTotal]);
 
   // Ocorrências de inventário (Arquiteto) aguardando decisão de baixa/reposição —
   // só aparecem para quem decide (cadastro de materiais).
@@ -152,125 +140,62 @@ export default async function DashboardPage() {
     ? await withTenant(String(lodgeId), (db) => db.materialIncident.count({ where: { lodgeId: String(lodgeId), status: 'open' } }))
     : 0;
 
-  const attention = [
-    { href: '/dashboard/contas?sit=overdue', label: 'Contas vencidas', value: overdueAccounts, tone: 'rose' as const },
-    { href: '/dashboard/contas?sit=upcoming', label: 'Contas a vencer', value: pendingAccounts, tone: 'gold' as const },
-    { href: '/dashboard/cobrancas?filtro=overdue', label: 'Cobranças vencidas', value: overdueInvoices, tone: 'rose' as const },
-    { href: '/dashboard/cobrancas?filtro=upcoming', label: 'Cobranças a vencer', value: pendingInvoices, tone: 'muted' as const },
-    ...(canDecideInventory ? [{ href: '/dashboard/materiais', label: 'Ocorrências de inventário', value: pendingIncidents, tone: 'gold' as const }] : []),
+  // Vencidos e ocorrências de inventário entram na lista única de atenção (só quando maiores que zero).
+  const financeAttention: OverviewItem[] = [
+    { key: 'contas-vencidas', label: 'Contas vencidas', value: overdueAccounts, href: '/dashboard/contas?sit=overdue', tone: 'rose' },
+    { key: 'cobrancas-vencidas', label: 'Cobranças vencidas', value: overdueInvoices, href: '/dashboard/cobrancas?filtro=overdue', tone: 'rose' },
+    ...(canDecideInventory ? [{ key: 'inventario', label: 'Ocorrências de inventário', value: pendingIncidents, href: '/dashboard/materiais', tone: 'gold' as const }] : []),
   ];
-  const toneText: Record<string, string> = { rose: 'text-rose-300', gold: 'text-gold', muted: 'text-sand' };
-  const nothingPending = overdueAccounts === 0 && pendingAccounts === 0 && overdueInvoices === 0 && pendingInvoices === 0 && pendingIncidents === 0;
+  const layout = splitOverview(groups, financeAttention);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-6 py-8 lg:px-8">
       <div className="animate-slide-up">
         <h1 className="font-display text-2xl font-bold text-sand-light">Visão geral</h1>
-        <p className="mt-1 text-sm text-sand-dark">
-          Resumo financeiro consolidado da loja
-        </p>
+        <p className="mt-1 text-sm text-sand-dark">O que precisa de você e a situação da loja</p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        {/* Posição financeira: o que há em caixa hoje e o que ainda está em aberto, com o mesmo peso */}
-        <section className="rounded-xl border border-white/6 bg-sigma-card p-6 lg:p-7">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-sand-light">Posição financeira</h2>
-            <Link href="/dashboard/relatorios" className="text-xs font-medium text-gold transition hover:text-gold-light">Relatórios</Link>
-          </div>
+      <OverviewAttention items={layout.attention} />
 
-          <div className="mt-5 grid gap-px overflow-hidden rounded-lg border border-white/6 bg-white/6 sm:grid-cols-2">
-            <div className="bg-sigma-blue-deep/60 p-5">
-              <p className="text-xs text-sand-dark">Saldo em caixa</p>
-              <p className={`mt-2 font-display text-3xl font-bold tabular-nums ${cashBalance >= 0 ? 'text-sand-light' : 'text-rose-300'}`}>{brl(cashBalance)}</p>
-              <p className="mt-1 text-xs text-sand-dark">Somando todos os caixas e contas bancárias.</p>
-              {cashByAccount.length > 0 ? (
-                <ul className="mt-3 space-y-1 border-t border-white/6 pt-3 text-xs">
-                  {cashByAccount.map((c) => (
-                    <li key={c.id} className="flex items-baseline justify-between gap-3">
-                      <span className="text-sand-dark">{c.name}</span>
-                      <span className={`tabular-nums ${c.saldo >= 0 ? 'text-sand' : 'text-rose-300'}`}>{brl(c.saldo)}</span>
-                    </li>
-                  ))}
-                  <li className="flex items-baseline justify-between gap-3 border-t border-white/6 pt-1 font-medium">
-                    <span className="text-sand-light">Total</span>
-                    <span className="tabular-nums text-sand-light">{brl(cashBalance)}</span>
-                  </li>
-                </ul>
-              ) : null}
-              <Link href="/dashboard/extratos" className="mt-3 inline-block text-xs font-medium text-gold transition hover:text-gold-light">Ver extratos</Link>
-            </div>
-            <div className="bg-sigma-blue-deep/60 p-5">
-              <p className="text-xs text-sand-dark">A receber menos a pagar (em aberto)</p>
-              <p className={`mt-2 font-display text-3xl font-bold tabular-nums ${netBalance >= 0 ? 'text-sand-light' : 'text-rose-300'}`}>{brl(netBalance)}</p>
-              <p className="mt-1 text-xs text-sand-dark">O que ainda vai entrar e sair.</p>
-              <Link href="/dashboard/contas" className="mt-3 inline-block text-xs font-medium text-gold transition hover:text-gold-light">Ver contas</Link>
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/6 bg-white/6">
-            <div className="bg-sigma-blue-deep/60 p-4">
-              <p className="text-xs text-sand-dark">A receber (em aberto)</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums text-emerald-300">{brl(receivableTotal)}</p>
-            </div>
-            <div className="bg-sigma-blue-deep/60 p-4">
-              <p className="text-xs text-sand-dark">A pagar (em aberto)</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums text-rose-300">{brl(payableTotal)}</p>
-            </div>
-          </div>
-          <p className="mt-4 text-sm text-sand-dark">
-            Recebido (acumulado): <span className="font-medium tabular-nums text-gold">{brl(receivedTotal)}</span>
-          </p>
-        </section>
-
-        {/* Rail: o que exige ação + atalhos */}
-        <div className="space-y-5">
-          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
-            <h2 className="text-base font-semibold text-sand-light">Precisa de atenção</h2>
-            {nothingPending ? (
-              <p className="mt-4 text-sm text-sand-dark">Tudo em dia. Nenhuma pendência no momento.</p>
-            ) : (
-              <ul className="mt-4 divide-y divide-white/5">
-                {attention.map((a) => (
-                  <li key={a.label}>
-                    <Link href={a.href} className="group flex items-center justify-between py-2.5 transition-colors">
-                      <span className="text-sm text-sand-dark transition-colors group-hover:text-sand-light">{a.label}</span>
-                      <span className={`text-lg font-semibold tabular-nums ${a.value > 0 ? toneText[a.tone] : 'text-sand-dark/40'}`}>{a.value}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
-            <h2 className="text-base font-semibold text-sand-light">Ações rápidas</h2>
-            <div className="mt-4 space-y-2">
-              {[
-                { href: '/dashboard/cobrancas', label: 'Nova cobrança', desc: 'Emitir boleto ou Pix' },
-                { href: '/dashboard/pagamentos', label: 'Registrar pagamento', desc: 'Baixa manual' },
-                { href: '/dashboard/membros', label: 'Gerenciar membros', desc: 'Cadastro e vínculos' },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="group flex items-center justify-between rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4 transition-all duration-150 hover:border-white/10 hover:bg-sigma-blue-deep/70"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-sand/80 transition-colors group-hover:text-sand-light">{item.label}</p>
-                    <p className="text-xs text-sand-dark/60">{item.desc}</p>
-                  </div>
-                  <svg className="h-4 w-4 text-sand-dark/40 transition-colors group-hover:text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              ))}
-            </div>
-          </section>
+      {/* Situação financeira: três números; o saldo por conta fica recolhido */}
+      <section aria-labelledby="ov-financeiro" className="rounded-xl border border-white/6 bg-sigma-card p-6">
+        <div className="flex items-center justify-between">
+          <h2 id="ov-financeiro" className="text-base font-semibold text-sand-light">Situação financeira</h2>
+          <Link href="/dashboard/relatorios" className="text-xs font-medium text-gold transition hover:text-gold-light">Relatórios</Link>
         </div>
-      </div>
+        <div className="mt-4 grid gap-px overflow-hidden rounded-lg border border-white/6 bg-white/6 sm:grid-cols-3">
+          <div className="bg-sigma-blue-deep/60 p-5">
+            <p className="text-xs text-sand-dark">Saldo em caixa</p>
+            <p className={`mt-2 font-display text-2xl font-bold tabular-nums ${cashBalance >= 0 ? 'text-sand-light' : 'text-rose-300'}`}>{brl(cashBalance)}</p>
+            <Link href="/dashboard/extratos" className="mt-2 inline-block text-xs font-medium text-gold transition hover:text-gold-light">Ver extratos</Link>
+          </div>
+          <div className="bg-sigma-blue-deep/60 p-5">
+            <p className="text-xs text-sand-dark">A receber (em aberto)</p>
+            <p className="mt-2 font-display text-2xl font-bold tabular-nums text-emerald-300">{brl(receivableTotal)}</p>
+            <Link href="/dashboard/relatorios/contas-a-receber" className="mt-2 inline-block text-xs font-medium text-gold transition hover:text-gold-light">Ver contas a receber</Link>
+          </div>
+          <div className="bg-sigma-blue-deep/60 p-5">
+            <p className="text-xs text-sand-dark">A pagar (em aberto)</p>
+            <p className="mt-2 font-display text-2xl font-bold tabular-nums text-rose-300">{brl(payableTotal)}</p>
+            <Link href="/dashboard/contas?tipo=PAYABLE&sit=open" className="mt-2 inline-block text-xs font-medium text-gold transition hover:text-gold-light">Ver contas a pagar</Link>
+          </div>
+        </div>
+        {cashByAccount.length > 1 ? (
+          <details className="mt-3 text-xs">
+            <summary className="cursor-pointer text-sand-dark transition-colors hover:text-sand-light">Saldo por conta</summary>
+            <ul className="mt-2 space-y-1 border-t border-white/6 pt-2">
+              {cashByAccount.map((c) => (
+                <li key={c.id} className="flex items-baseline justify-between gap-3">
+                  <span className="text-sand-dark">{c.name}</span>
+                  <span className={`tabular-nums ${c.saldo >= 0 ? 'text-sand' : 'text-rose-300'}`}>{brl(c.saldo)}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+      </section>
 
-      <OverviewGroups groups={groups} />
+      <OverviewFollow items={layout.follow} />
     </div>
   );
 }
