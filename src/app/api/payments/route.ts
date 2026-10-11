@@ -17,6 +17,8 @@ import { autoSignReceipt } from '@/lib/receipt-signature-server';
 import { formatDayMixed, firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from '@/lib/date-only';
 import { LATE_CHARGE_CHART, lateChargeMarker } from '@/lib/late-charge';
 import { checkManualSettlement } from '@/lib/settlement-type';
+import { PROOF_REQUIRED_MESSAGE, readProofRef } from '@/lib/payment-proof';
+import { proofKeyUsed, recordPaymentProof } from '@/lib/payment-proof-server';
 
 export async function GET() {
   const session = await auth();
@@ -99,6 +101,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Multa e juros: informe um valor maior que zero, com até 2 casas decimais (ou deixe em branco).' }, { status: 400 });
   }
 
+  // Comprovante da baixa de despesa (um por baixa): enviado antes por /api/payment-proofs.
+  const proof = readProofRef(String(lodgeId), body);
+  if (!proof.ok) return NextResponse.json({ error: proof.error }, { status: 400 });
+
   const result = await withTenant(String(lodgeId), async (db) => {
     // Trava de período: não permite baixar com data dentro de veneralato encerrado.
     const locked = await findClosedTermForDate(db, String(lodgeId), paidAt);
@@ -119,6 +125,11 @@ export async function POST(request: Request) {
     await lockKey(db, `account:${accountId}`);
     if (account.type === 'PAYABLE' && account.approvalStatus === 'pending') {
       return { pendingApproval: true as const };
+    }
+    // Despesa: toda baixa leva o comprovante do pagamento (sem saída por justificativa).
+    if (account.type === 'PAYABLE') {
+      if (!proof.ref) return { proofRequired: true as const };
+      if (await proofKeyUsed(db, String(lodgeId), proof.ref.key)) return { proofUsed: true as const };
     }
 
     const bank = await db.financialAccount.findFirst({ where: { id: bankAccountId, lodgeId: String(lodgeId), active: true }, select: { id: true } });
@@ -180,6 +191,8 @@ export async function POST(request: Request) {
         bankAccount: { select: { id: true, name: true, kind: true } },
       },
     });
+
+    if (account.type === 'PAYABLE' && proof.ref) await recordPaymentProof(db, { lodgeId: String(lodgeId), userId: String(session.user.id), paymentId: created.id, accountId, ref: proof.ref });
 
     // Recibo assinado digitalmente no ato da baixa, quando quem registra é o Tesoureiro ou o Venerável.
     await autoSignReceipt(db, String(lodgeId), created.id, session?.user?.id ? String(session.user.id) : null);
@@ -293,8 +306,11 @@ export async function POST(request: Request) {
   }
 
   if ('pendingApproval' in result) {
-    return NextResponse.json({ error: 'Esta despesa está aguardando aprovação do Venerável Mestre antes de ser paga.' }, { status: 409 });
+    return NextResponse.json({ error: 'Esta despesa está aguardando aprovação antes de ser paga (veja quem falta aprovar em Contas).' }, { status: 409 });
   }
+
+  if ('proofRequired' in result) return NextResponse.json({ error: PROOF_REQUIRED_MESSAGE, code: 'PROOF_REQUIRED' }, { status: 400 });
+  if ('proofUsed' in result) return NextResponse.json({ error: 'Este comprovante já foi usado em outra baixa. Envie o arquivo deste pagamento.' }, { status: 409 });
 
   if ('invalidMember' in result) {
     return NextResponse.json({ error: 'Irmão não encontrado nesta loja.' }, { status: 400 });

@@ -74,6 +74,8 @@ interface PaymentItem {
   /** Tipo de baixa (gravado ou deduzido); null = lançamento que não é baixa (doação, custeio, tarifa, estorno). */
   settlementType?: string | null;
   note?: string | null;
+  /** Despesa: a baixa tem comprovante de pagamento guardado. */
+  hasProof?: boolean;
   account?: { id: string; title: string; type: string } | null;
   member?: { id: string; name: string } | null;
   bankAccount?: { id: string; name: string; kind: string } | null;
@@ -210,14 +212,32 @@ export default function PagamentosClient({ accounts, members, payments, financia
     }
   }
 
+  // Comprovante da baixa de despesa (obrigatório): sobe antes; a baixa leva a referência.
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofKey, setProofKey] = useState(0);
+  const needsProof = byId.get(form.accountId)?.type === 'PAYABLE';
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!consent) {
       setMessage({ kind: 'error', text: 'Confirme a ciência sobre os lançamentos antes de registrar.' });
       return;
     }
+    if (needsProof && !proofFile) {
+      setMessage({ kind: 'error', text: 'Anexe o comprovante do pagamento (PDF ou foto): toda baixa de despesa precisa dele.' });
+      return;
+    }
     setSubmitting(true);
     try {
+      let proofRef: { key: string; name: string; type: string } | null = null;
+      if (needsProof && proofFile) {
+        const fd = new FormData();
+        fd.append('file', proofFile);
+        const up = await fetch('/api/payment-proofs', { method: 'POST', body: fd });
+        const upData = await up.json().catch(() => ({}));
+        if (!up.ok) { setMessage({ kind: 'error', text: upData.error ?? 'Não foi possível enviar o comprovante.' }); return; }
+        proofRef = upData.proof;
+      }
       const send = (confirmOutsideAsaas: boolean) => fetch('/api/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -226,6 +246,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
           amount: Number(form.amount),
           lateCharge: form.lateCharge ? Number(form.lateCharge) : undefined,
           memberId: form.memberId || undefined,
+          ...(proofRef ? { proofKey: proofRef.key, proofName: proofRef.name, proofType: proofRef.type } : {}),
           ...(confirmOutsideAsaas ? { confirmOutsideAsaas: true } : {}),
         }),
       });
@@ -242,6 +263,8 @@ export default function PagamentosClient({ accounts, members, payments, financia
       if (response.ok) {
         setMessage(data.asaasWarning ? { kind: 'error', text: data.asaasWarning } : { kind: 'ok', text: 'Pagamento registrado com sucesso.' });
         setForm(EMPTY_FORM);
+        setProofFile(null);
+        setProofKey((k) => k + 1);
         setConsent(false);
         router.refresh();
       } else {
@@ -452,6 +475,12 @@ export default function PagamentosClient({ accounts, members, payments, financia
                   {financialAccounts.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
                 </select>
               </Field>
+              {needsProof ? (
+                <Field label="Comprovante do pagamento (obrigatório)" className="md:col-span-2">
+                  <input key={proofKey} type="file" accept="application/pdf,image/png,image/jpeg,image/webp" onChange={(e) => setProofFile(e.target.files?.[0] ?? null)} className={INPUT} required />
+                  <span className="mt-1 block text-xs text-sand-dark">PDF ou foto, até 4 MB. Toda baixa de despesa leva o seu comprovante (se pagar em duas vezes, um para cada).</span>
+                </Field>
+              ) : null}
               <Field label="Observação" className="md:col-span-2">
                 <textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className={`${INPUT} md:col-span-2`} rows={3} />
               </Field>
@@ -491,6 +520,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
                   <p className="mt-0.5">Data: {formatDayMixed(payment.paidAt)}</p>
                   <div className="mt-1 flex items-center justify-end gap-3">
                     <Link href={`/dashboard/pagamentos/${payment.id}/recibo`} target="_blank" className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Recibo</Link>
+                    {payment.hasProof ? <a href={`/api/payments/${payment.id}/proof`} target="_blank" rel="noreferrer" className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Comprovante</a> : null}
                     {canEditPayment(payment) ? <button onClick={() => setPanel(panel?.id === payment.id && panel.mode === 'edit' ? null : { id: payment.id, mode: 'edit' })} className="text-xs px-1 py-1 text-sand transition hover:text-sand-light">Editar</button> : null}
                     {canSplitPayment(payment) ? <button onClick={() => setPanel(panel?.id === payment.id && panel.mode === 'split' ? null : { id: payment.id, mode: 'split' })} className="text-xs px-1 py-1 text-sand transition hover:text-sand-light">Dividir</button> : null}
                     <button onClick={() => void handleEstorno(payment.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Estornar</button>

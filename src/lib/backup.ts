@@ -50,6 +50,7 @@ export const BACKUP_MODELS = [
   'sessionVisitor', // depois de session e visitor
   'chartAccount',
   'account',
+  'expenseApproval', // depois de account (dupla aprovação de despesa)
   'materialLoan', // depois de account: a venda aponta para a conta a receber
   'invoice',
   'payment',

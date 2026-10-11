@@ -4,6 +4,7 @@ import { INVALID_DATE_MESSAGE, parseDateInput, todayBR } from '@/lib/date-only';
 import { EXPENSE_RECEIPT_ENTITY } from '@/lib/expense-receipt';
 import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import { lockKey } from '@/lib/locks';
+import { recordPaymentProof } from '@/lib/payment-proof-server';
 import { withTenant } from '@/lib/prisma';
 import { getActor, hasTreasuryWrite, sendMails, unauthorized } from '@/lib/reimbursement-server';
 import { findClosedTermForDate } from '@/lib/term-lock';
@@ -84,6 +85,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       await db.reimbursement.update({ where: { id }, data: { status: 'paid', paidAt, paidById: actor.userId } });
       // Comprovante do pagamento: o mesmo registro que as demais despesas usam (aparece em Contas).
       await logAudit(db, { lodgeId: actor.lodgeId, userId: actor.userId, action: 'CREATE', entity: EXPENSE_RECEIPT_ENTITY, entityId: account.id, metadata: { receiptKey: key, receiptName: file.name.slice(0, 120), receiptType: file.type, replaced: false, reimbursementId: id } });
+      await recordPaymentProof(db, { lodgeId: actor.lodgeId, userId: actor.userId, paymentId: payment.id, accountId: account.id, ref: { key, name: file.name.slice(0, 120), type: file.type } });
       await logAudit(db, { lodgeId: actor.lodgeId, userId: actor.userId, action: 'CREATE', entity: 'payment', entityId: payment.id, metadata: { accountId: account.id, amount, method, reimbursementId: id } });
       await logAudit(db, { lodgeId: actor.lodgeId, userId: actor.userId, action: 'UPDATE', entity: 'reimbursement', entityId: id, metadata: { step: 'paid', paymentId: payment.id, bankAccountId: bank.id } });
       const lodge = await db.lodge.findUnique({ where: { id: actor.lodgeId }, select: { name: true } });

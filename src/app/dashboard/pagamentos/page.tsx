@@ -1,3 +1,4 @@
+import { PAYMENT_PROOF_ENTITY } from '@/lib/payment-proof';
 import { auth } from '@/lib/auth';
 import { isAsaasMode } from '@/lib/collection';
 import { settlementTypeOf } from '@/lib/settlement-type';
@@ -51,6 +52,8 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           },
           orderBy: { paidAt: 'desc' },
         }),
+        // Comprovante por baixa de despesa.
+        proofRows: await db.auditLog.findMany({ where: { lodgeId: String(lodgeId), entity: PAYMENT_PROOF_ENTITY }, select: { entityId: true } }),
         lodgeMode: await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { collectionMode: true } }),
         revenueCharts: await db.chartAccount.findMany({ where: { lodgeId: String(lodgeId), type: 'REVENUE' }, select: { id: true, code: true, name: true }, orderBy: { code: 'asc' } }),
         financialAccounts: await db.financialAccount.findMany({
@@ -92,7 +95,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           select: { id: true, date: true, amount: true, description: true },
         }),
       }))
-    : { accounts: [], members: [], payments: [], revenueCharts: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], receiptChecks: [], cashPayments: [], cashConfirmed: [], hiddenOld: 0, lodgeMode: null };
+    : { accounts: [], members: [], payments: [], revenueCharts: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], proofRows: [], receiptChecks: [], cashPayments: [], cashConfirmed: [], hiddenOld: 0, lodgeMode: null };
 
   const accounts = data.accounts
     .map((a) => {
@@ -171,7 +174,9 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
   );
   const notices = rawNotices.map((n) => ({ ...n, bankMatch: bankMatches.get(leader(n)) ?? null }));
 
+  const proofPaymentIds = new Set(data.proofRows.map((r) => r.entityId));
   const payments = data.payments.map((p) => ({
+    hasProof: proofPaymentIds.has(p.id),
     id: p.id,
     amount: Number(p.amount),
     paidAt: p.paidAt.toISOString(),

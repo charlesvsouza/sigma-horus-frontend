@@ -11,7 +11,7 @@ const EMPTY: Record<string, string> = {
   expenseApprovalThreshold: '', lateFeePercent: '', lateInterestPercentMonth: '',
   initiationFee: '', elevationFee: '', exaltationFee: '', affiliationFee: '', powerDuesAmount: '',
   degreeFeeCardEnabled: 'false', cardFeePercentOneTime: '', cardFeePercentInstallment: '', cardFeeFixed: '',
-  autoBalanceteEnabled: 'false', art002Enabled: 'true', chargeLateFeesOnPix: 'false',
+  autoBalanceteEnabled: 'false', art002Enabled: 'true', chargeLateFeesOnPix: 'false', expenseDualApproval: 'false',
   notifyBirthdaysEnabled: 'true', notifyMilestonesEnabled: 'true', notifyBillingRemindersEnabled: 'true',
   notifyFoundationAnniversaryEnabled: 'true',
 };
@@ -32,7 +32,7 @@ export default async function ConfiguracoesPage() {
             expenseApprovalThreshold: true, lateFeePercent: true, lateInterestPercentMonth: true,
         initiationFee: true, elevationFee: true, exaltationFee: true, affiliationFee: true, powerDuesAmount: true,
         degreeFeeCardEnabled: true, cardFeePercentOneTime: true, cardFeePercentInstallment: true, cardFeeFixed: true,
-            autoBalanceteEnabled: true, art002Enabled: true, chargeLateFeesOnPix: true,
+            autoBalanceteEnabled: true, art002Enabled: true, chargeLateFeesOnPix: true, expenseDualApproval: true,
             notifyBirthdaysEnabled: true, notifyMilestonesEnabled: true, notifyBillingRemindersEnabled: true,
             notifyFoundationAnniversaryEnabled: true,
           },

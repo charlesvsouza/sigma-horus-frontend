@@ -49,6 +49,9 @@ model Lodge {
   // Aprovação de despesa (visto do Venerável): contas a pagar com valor >= este
   // limite nascem "pending" e só podem ser pagas após aprovação. null = desativado.
   expenseApprovalThreshold Float?
+  // Dupla aprovação (opcional): despesa acima do limite precisa de DUAS aprovações de pessoas diferentes —
+  // Venerável + Tesoureiro (quem lançou não aprova); o Administrador pode aprovar sozinho. Ver lib/expense-approval.ts.
+  expenseDualApproval      Boolean  @default(false)
   // Multa/juros de mora sobre mensalidade em atraso (informativo — não altera o
   // valor lançado; usado no relatório de inadimplência e na renegociação).
   lateFeePercent           Float? // multa única, ex.: 2 = 2%
@@ -149,6 +152,7 @@ model Lodge {
   memberRestrictions MemberRestriction[]
   reimbursements     Reimbursement[]
   reimbursementFiles ReimbursementFile[]
+  expenseApprovals   ExpenseApproval[]
   ledgerCheckpoints  LedgerCheckpoint[]
   ledgerRectifications LedgerRectification[]
   paymentReceiptSignatures PaymentReceiptSignature[]
@@ -430,6 +434,7 @@ model Account {
   degreeFeePlan DegreeFeePlan? @relation(fields: [degreeFeePlanId], references: [id], onDelete: SetNull)
   payments     Payment[]
   invoices     Invoice[]
+  expenseApprovals ExpenseApproval[]
   materialLoans MaterialLoan[]
 
   @@index([chartAccountId])
@@ -1449,6 +1454,23 @@ model MemberRestriction {
   member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
   @@index([lodgeId, memberId])
   @@index([lodgeId, status])
+}
+
+// Aprovação de uma despesa acima do limite (dupla aprovação opcional por loja). Uma linha por pessoa; `valve` = o
+// Administrador aprovou sozinho (valendo pelo Venerável e pelo Tesoureiro, ex.: Venerável ausente) — fica marcado.
+model ExpenseApproval {
+  id        String   @id @default(cuid())
+  lodgeId   String
+  accountId String
+  userId    String
+  role      String   // venerable | treasurer | admin (papel no momento da aprovação)
+  valve     Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  lodge   Lodge   @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  @@unique([accountId, userId])
+  @@index([lodgeId, accountId])
 }
 
 // Pedido de reembolso: o irmão pagou um gasto da loja do próprio bolso e pede a devolução, nota/recibo em anexo

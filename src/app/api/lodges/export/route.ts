@@ -64,7 +64,7 @@ export async function GET() {
     const [
       financialAccounts, accountTransfers, counterparties, hospitalityRequests,
       materials, materialLoans, materialIncidents, venerableGalleryEntries,
-      visitors, sessionVisitors, candidateProcesses, candidateInquirers, degreeFeePlans, memberBlocks, memberBlockItems, sessionMinutes, memberBlockSignatures, memberRestrictions, reimbursements, reimbursementFiles, ledgerCheckpoints, ledgerRectifications,
+      visitors, sessionVisitors, candidateProcesses, candidateInquirers, degreeFeePlans, memberBlocks, memberBlockItems, sessionMinutes, memberBlockSignatures, memberRestrictions, reimbursements, reimbursementFiles, expenseApprovals, ledgerCheckpoints, ledgerRectifications,
     ] = await Promise.all([
       db.financialAccount.findMany({ where: { lodgeId: id } }),
       db.accountTransfer.findMany({ where: { lodgeId: id } }),
@@ -86,6 +86,7 @@ export async function GET() {
       db.memberRestriction.findMany({ where: { lodgeId: id } }),
       db.reimbursement.findMany({ where: { lodgeId: id } }),
       db.reimbursementFile.findMany({ where: { lodgeId: id } }),
+      db.expenseApproval.findMany({ where: { lodgeId: id } }),
       db.ledgerCheckpoint.findMany({ where: { lodgeId: id } }),
       db.ledgerRectification.findMany({ where: { lodgeId: id } }),
     ]);
@@ -110,7 +111,7 @@ export async function GET() {
         campaigns, campaignDonations, rolePermissions, subscription, auditLogs,
         financialAccounts, accountTransfers, counterparties, hospitalityRequests,
         materials, materialLoans, materialIncidents, venerableGalleryEntries,
-        visitors, sessionVisitors, candidateProcesses, candidateInquirers, degreeFeePlans, memberBlocks, memberBlockItems, sessionMinutes, memberBlockSignatures, memberRestrictions, reimbursements, reimbursementFiles, ledgerCheckpoints, ledgerRectifications,
+        visitors, sessionVisitors, candidateProcesses, candidateInquirers, degreeFeePlans, memberBlocks, memberBlockItems, sessionMinutes, memberBlockSignatures, memberRestrictions, reimbursements, reimbursementFiles, expenseApprovals, ledgerCheckpoints, ledgerRectifications,
       },
     };
   }, { timeoutMs: 45_000 });

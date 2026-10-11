@@ -266,7 +266,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 10 de outubro de 2026 · versão 1.102</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 10 de outubro de 2026 · versão 1.103</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1122,6 +1122,12 @@ export function ManualBook() {
                   Quem <strong>ainda não pagou</strong> não aparece aqui: a cobrança é feita em <UI>Cobranças</UI>, pelo WhatsApp ou por e-mail.
                 </p>
                 <p>
+                  <strong>Pagamento de despesa (conta a pagar):</strong> toda baixa leva o <strong>comprovante do pagamento</strong> (PDF ou foto de até 4 MB), <strong>sem exceção</strong> —
+                  sem o arquivo a baixa não é salva. Vale em <UI>Novo pagamento</UI> e também ao lançar ou editar uma despesa já como <UI>Paga</UI> em <UI>Contas</UI>.
+                  É <strong>um comprovante por baixa</strong>: se a despesa for paga em duas vezes, cada pagamento leva o seu, e o mesmo arquivo não vale para duas baixas.
+                  Os comprovantes aparecem como <UI>Comprovante</UI> ao lado de cada pagamento (Pagamentos) e como <UI>Ver comprovante</UI> na despesa (Contas). Receitas (o que a loja recebe) seguem como antes.
+                </p>
+                <p>
                   Para pagamentos recebidos fora do Asaas (dinheiro, PIX direto, etc.) ou para baixar contas a pagar, use
                   <UI>Tesouraria → Cobrar e dar baixa → Baixa de pagamentos</UI>, bloco <UI>Novo pagamento</UI>:
                 </p>
@@ -1428,6 +1434,7 @@ export function ManualBook() {
                 </p>
                 <Bullets>
                   <li><strong>Limite para aprovação de despesa:</strong> contas a pagar com valor igual ou acima desse limite nascem &quot;aguardando aprovação&quot; — só o Venerável Mestre ou o Administrador podem liberar (botão <UI>Aprovar</UI> em Contas), e só depois disso o Tesoureiro consegue registrar o pagamento. Deixe em branco para não exigir aprovação de nada.</li>
+                  <li><strong>Exigir duas aprovações nas despesas acima do limite</strong> (desligado por padrão): ligado, a despesa acima do limite só pode ser paga depois de aprovada por <strong>duas pessoas diferentes — o Venerável e o Tesoureiro</strong>. <strong>Quem lançou a despesa não aprova.</strong> Se o Tesoureiro lançou, a segunda aprovação é do Administrador (Venerável + Administrador). O Administrador também pode <UI>Aprovar sozinho</UI> quando o Venerável não puder: a aprovação vale pelas duas, fica marcada e vai para a auditoria. Em <UI>Contas</UI>, cada despesa aguardando mostra quem já aprovou e quem falta (&quot;Falta: Venerável e Tesoureiro&quot;); quem falta recebe um e-mail. Se o valor ou o tipo da despesa for alterado depois, as aprovações já dadas são zeradas (corrigir só o título não derruba). O reembolso de irmão não precisa da segunda aprovação, porque já passa pela conferência da Tesouraria e pela decisão do Venerável (7.23). Desligado, basta o visto do Venerável ou do Administrador.</li>
                   <li><strong>Multa por atraso (%)</strong> e <strong>Juros de mora ao mês (%)</strong>: por padrão, informativos — aparecem no relatório de Inadimplência e na renegociação de dívida, mas não alteram sozinhos o valor das contas já lançadas.</li>
                   <li><strong>Cobrar multa e juros no Pix de cobrança vencida</strong> (Modo Loja, desligado por padrão): ligado, o Pix do portal e o do WhatsApp de uma cobrança vencida saem com o saldo <strong>mais a multa (única) e os juros pro-rata por dia até hoje</strong>, e a mensagem/tela mostra o cálculo (ex.: &quot;Com multa (R$ 2,40) e juros (R$ 1,20) por atraso até hoje, o valor atualizado é R$ 123,60&quot;); o aviso automático de cobrança vencida também traz o valor atualizado. A conferência do comprovante aceita o valor com acréscimo de qualquer dia desde o vencimento (o irmão pode pagar com o Pix de dias atrás). Na baixa, a mensalidade quita pelo valor original e o acréscimo é lançado <strong>à parte</strong>, já pago, em <strong>1.2.06 Multas e Juros por Atraso</strong> (criada sozinha na primeira vez) — o &quot;Confirmar e dar baixa&quot; faz isso sozinho; no formulário de baixa, use o campo <UI>Multa e juros recebidos</UI>. Estornar a baixa estorna o acréscimo junto. No Modo Asaas, multa e juros são os configurados no próprio Asaas.</li>
                 </Bullets>

@@ -7,6 +7,8 @@ import { findClosedTermForDate } from '@/lib/term-lock';
 import { settleAccountAsPaid } from '@/lib/account-status';
 import { isValidMoney, round2 } from '@/lib/money';
 import { blockedMemberError } from '@/lib/member-block-server';
+import { readProofRef } from '@/lib/payment-proof';
+import { notifyApprovers } from '@/lib/expense-approval-server';
 import { NextResponse } from 'next/server';
 
 // Só 'paid' dispara a baixa; qualquer outro texto criaria conta "paga" sem Payment.
@@ -73,6 +75,9 @@ export async function POST(request: Request) {
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
   const isDues = Boolean(body?.isDues);
   const paidAt = body?.paidAt ? new Date(body.paidAt) : todayBR();
+  // Comprovante da baixa (despesa lançada já como paga): enviado antes por /api/payment-proofs.
+  const proof = readProofRef(String(lodgeId), body);
+  if (!proof.ok) return NextResponse.json({ error: proof.error }, { status: 400 });
 
   if (!title || !['RECEIVABLE', 'PAYABLE'].includes(type)) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 });
@@ -127,10 +132,14 @@ export async function POST(request: Request) {
     // Visto do Venerável: despesa acima do limite configurado nasce "pending"
     // e só pode ser paga depois de aprovada (ver POST /api/accounts/[id]/approve).
     let approvalStatus = 'approved';
+    let dualApproval = false;
+    let lodgeName = '';
     if (type === 'PAYABLE') {
-      const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { expenseApprovalThreshold: true } });
+      const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { expenseApprovalThreshold: true, expenseDualApproval: true, name: true } });
       const threshold = lodge?.expenseApprovalThreshold;
       if (threshold != null && amount >= threshold) approvalStatus = 'pending';
+      dualApproval = Boolean(lodge?.expenseDualApproval);
+      lodgeName = lodge?.name ?? '';
     }
 
     const created = await db.account.create({
@@ -166,6 +175,8 @@ export async function POST(request: Request) {
         account: { id: created.id, amount, memberId, type, approvalStatus },
         bankAccountId: validBankAccountId,
         paidAt,
+        proof: proof.ref,
+        userId: String(session.user.id),
       });
       if (!settled.ok) {
         await db.account.delete({ where: { id: created.id } });
@@ -174,7 +185,11 @@ export async function POST(request: Request) {
     }
 
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'account', entityId: created.id, metadata: { title, type, amount, status } });
-    return { created } as const;
+    // Dupla aprovação: avisa quem pode aprovar (menos quem lançou); o envio é depois da transação.
+    const notify = approvalStatus === 'pending' && dualApproval
+      ? await notifyApprovers(db, String(lodgeId), { id: created.id, title, amount, lodgeName }, [String(session.user.id)])
+      : null;
+    return { created, notify } as const;
   });
 
   if ('invalidMember' in result) {
@@ -200,5 +215,6 @@ export async function POST(request: Request) {
     );
   }
 
+  if ('notify' in result && result.notify) await result.notify().catch(() => {});
   return NextResponse.json({ item: result.created });
 }

@@ -11,6 +11,7 @@ import { checkLedgerOpen } from '@/lib/ledger-lock-server';
 import { coversAmount, isValidMoney, round2 } from '@/lib/money';
 import { asaasConflictBody, findOpenAsaasCharges, groupedChargeNumbers, notifyAsaasReceivedInCash } from '@/lib/asaas-manual';
 import { brl } from '@/lib/currency';
+import { readProofRef } from '@/lib/payment-proof';
 import { NextResponse } from 'next/server';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -28,6 +29,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const badDate = firstInvalidDate(body, ['dueDate', 'paidAt']);
   if (badDate) return NextResponse.json({ error: `${INVALID_DATE_MESSAGE} (campo: ${badDate})` }, { status: 400 });
   const paidAt = body?.paidAt ? new Date(body.paidAt) : todayBR();
+  // Comprovante da baixa (conta a pagar que passa a paga nesta edição): enviado antes por /api/payment-proofs.
+  const proof = readProofRef(String(lodgeId), body);
+  if (!proof.ok) return NextResponse.json({ error: proof.error }, { status: 400 });
   if (body?.amount !== undefined && !isValidMoney(Number(body.amount))) {
     return NextResponse.json({ error: 'Informe um valor maior que zero, com até 2 casas decimais.' }, { status: 400 });
   }
@@ -81,12 +85,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (body?.amount !== undefined || body?.type !== undefined) {
       const nextType = body?.type !== undefined ? String(body.type).trim().toUpperCase() : existing.type;
       const nextAmount = body?.amount !== undefined ? Number(body.amount) : Number(existing.amount);
-      if (nextType === 'PAYABLE') {
-        const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { expenseApprovalThreshold: true } });
-        const threshold = lodge?.expenseApprovalThreshold;
-        approvalStatus = threshold != null && nextAmount >= threshold ? 'pending' : 'approved';
-      } else {
-        approvalStatus = 'approved';
+      // Corrigir só o título/descrição não derruba uma aprovação já dada: só valor ou tipo diferentes refazem o visto.
+      const changed = nextType !== existing.type || round2(nextAmount) !== round2(Number(existing.amount));
+      if (changed) {
+        if (nextType === 'PAYABLE') {
+          const lodge = await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { expenseApprovalThreshold: true } });
+          const threshold = lodge?.expenseApprovalThreshold;
+          approvalStatus = threshold != null && nextAmount >= threshold ? 'pending' : 'approved';
+        } else {
+          approvalStatus = 'approved';
+        }
+        // Valor novo = aprovações novas (dupla aprovação: as já dadas valiam para o valor antigo).
+        await db.expenseApproval.deleteMany({ where: { accountId: id, lodgeId: String(lodgeId) } });
       }
     }
 
@@ -133,6 +143,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         account: { id, amount: nextAmount, memberId: nextMemberId, type: nextType, approvalStatus: approvalStatus ?? existing.approvalStatus },
         bankAccountId,
         paidAt,
+        proof: proof.ref,
+        userId: String(session.user.id),
       });
       if (!settled.ok) return { error: 'settle' as const, settled };
     } else if (nextStatus !== undefined && (nextMemberId || (await isPlainAccount(db, { id, memberId: nextMemberId })))) {

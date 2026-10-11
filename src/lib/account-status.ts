@@ -3,6 +3,8 @@ import { coversAmount, remainingAmount } from '@/lib/money';
 import { findClosedTermForDate } from '@/lib/term-lock';
 import { lockKey } from '@/lib/locks';
 import { checkLedgerOpen } from '@/lib/ledger-lock-server';
+import { PROOF_REQUIRED_MESSAGE, type ProofRef } from '@/lib/payment-proof';
+import { proofKeyUsed, recordPaymentProof } from '@/lib/payment-proof-server';
 
 /**
  * "Conta simples": sem membro fixo e sem cobranças (Invoice) — despesa de
@@ -39,9 +41,12 @@ export async function settleAccountAsPaid(
     account: { id: string; amount: number; memberId: string | null; type: string; approvalStatus: string };
     bankAccountId: string | null;
     paidAt: Date;
+    /** Comprovante da baixa: obrigatório quando a conta é a pagar (um por baixa). */
+    proof?: ProofRef | null;
+    userId?: string | null;
   },
 ): Promise<SettleResult> {
-  const { lodgeId, account, bankAccountId, paidAt } = params;
+  const { lodgeId, account, bankAccountId, paidAt, proof } = params;
   await lockKey(db, `account:${account.id}`);
 
   const aggregate = await db.payment.aggregate({ _sum: { amount: true }, where: { accountId: account.id } });
@@ -50,6 +55,11 @@ export async function settleAccountAsPaid(
 
   if (account.type === 'PAYABLE' && account.approvalStatus === 'pending') {
     return { ok: false, status: 409, error: 'Despesa acima do limite precisa do visto do Venerável antes de ser paga. Lance como Pendente e aprove primeiro.' };
+  }
+  // Despesa: sem comprovante da baixa, não baixa (decisão do dono, 2026-10-10).
+  if (account.type === 'PAYABLE') {
+    if (!proof) return { ok: false, status: 400, error: PROOF_REQUIRED_MESSAGE };
+    if (await proofKeyUsed(db, lodgeId, proof.key)) return { ok: false, status: 409, error: 'Este comprovante já foi usado em outra baixa. Envie o arquivo deste pagamento.' };
   }
   if (!bankAccountId) {
     return { ok: false, status: 400, error: 'Para lançar como Pago, selecione a conta bancária/caixa que recebeu ou pagou este valor.' };
@@ -65,7 +75,7 @@ export async function settleAccountAsPaid(
   const ledger = await checkLedgerOpen(db, lodgeId, [paidAt], { what: 'account.settle' });
   if (!ledger.ok) return { ok: false, status: 409, error: ledger.error };
 
-  await db.payment.create({
+  const payment = await db.payment.create({
     data: {
       lodgeId,
       accountId: account.id,
@@ -77,6 +87,8 @@ export async function settleAccountAsPaid(
       settlementType: 'manual_other',
       note: 'Lançamento registrado como pago',
     },
+    select: { id: true },
   });
+  if (account.type === 'PAYABLE' && proof) await recordPaymentProof(db, { lodgeId, userId: params.userId ?? '', paymentId: payment.id, accountId: account.id, ref: proof });
   return { ok: true, created: true };
 }

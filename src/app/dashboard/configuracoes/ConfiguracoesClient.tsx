@@ -376,6 +376,16 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
               <Field label="Multa por atraso (%)" value={form.lateFeePercent} onChange={(v) => set('lateFeePercent', v)} type="number" inputMode="decimal" step="0.1" min="0" placeholder="Ex.: 2" />
               <Field label="Juros de mora ao mês (%)" value={form.lateInterestPercentMonth} onChange={(v) => set('lateInterestPercentMonth', v)} type="number" inputMode="decimal" step="0.1" min="0" placeholder="Ex.: 1" />
             </div>
+            <label className="mt-4 flex items-start gap-2 text-sm text-sand">
+              <input type="checkbox" checked={form.expenseDualApproval === 'true'} onChange={(e) => set('expenseDualApproval', String(e.target.checked))} className="mt-0.5" />
+              <span>
+                Exigir duas aprovações nas despesas acima do limite
+                <span className="mt-0.5 block text-xs text-sand-dark">
+                  Ligado: a despesa acima do limite só pode ser paga depois de aprovada pelo Venerável <strong>e</strong> pelo Tesoureiro (duas pessoas diferentes; quem lançou a despesa não aprova).
+                  Se o Tesoureiro lançou, a segunda aprovação é do Administrador. O Administrador pode aprovar sozinho quando o Venerável não puder (fica registrado). Desligado: basta o visto do Venerável ou do Administrador. Só vale com o limite preenchido.
+                </span>
+              </span>
+            </label>
             <div className="mt-5 max-w-sm">
               <Field label="Parte da Potência na mensalidade (R$)" value={form.powerDuesAmount} onChange={(v) => set('powerDuesAmount', v)} type="number" inputMode="decimal" step="0.01" min="0" placeholder="Ex.: 110" />
               <p className="mt-1 text-xs text-sand-dark">

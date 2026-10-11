@@ -28,7 +28,11 @@ interface AccountItem {
   description?: string | null;
   isDues: boolean;
   approvalStatus: string;
+  /** Aprovação da despesa: o que o usuário logado pode fazer e, com a dupla aprovação, quem já aprovou/quem falta. */
+  approval?: { canApprove: boolean; canValve: boolean; summary: string | null };
   hasReceipt?: boolean;
+  /** Comprovantes de pagamento, um por baixa de despesa. */
+  proofs?: { paymentId: string; label: string }[];
   awaitingAsaas?: boolean;
   paid?: number;
   chartAccountId?: string | null;
@@ -41,8 +45,7 @@ interface AccountItem {
 
 const INPUT_CLASS = inputClass; // fonte única do design system
 
-export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, role, startWithForm = false, art002Enabled = true, lodgeName = 'Loja', crestUrl = null, issuedBy = null }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string; startWithForm?: boolean; art002Enabled?: boolean; lodgeName?: string; crestUrl?: string | null; issuedBy?: string | null }) {
-  const canApprove = role === 'venerable' || role === 'admin';
+export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, startWithForm = false, art002Enabled = true, lodgeName = 'Loja', crestUrl = null, issuedBy = null }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string; startWithForm?: boolean; art002Enabled?: boolean; lodgeName?: string; crestUrl?: string | null; issuedBy?: string | null }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -52,7 +55,8 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   const emptyForm = () => ({ title: '', type: 'RECEIVABLE', chartAccountId: '', amount: '', dueDate: '', status: 'pending', description: '', memberId: '', counterpartyId: '', bankAccountId: '', isDues: art002Enabled, paidAt: '' });
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
-  // Comprovante de pagamento (só despesa): sobe junto com o salvamento. `fileKey` zera o campo de arquivo.
+  // Comprovante da baixa (despesa lançada/editada como Paga): obrigatório; sobe ANTES, e a baixa leva a referência.
+  // `fileKey` zera o campo de arquivo.
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [fileKey, setFileKey] = useState(0);
   // O formulário de lançamento abre pelo item "Lançamento" do menu (startWithForm) — e fica aberto
@@ -131,14 +135,25 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    // Confere o comprovante antes de gravar a conta, para não salvar pela metade por arquivo inválido.
-    const withReceipt = form.type === 'PAYABLE' ? receiptFile : null;
-    if (withReceipt) {
-      const invalid = receiptUploadError(withReceipt);
+    // Despesa que passa a paga agora (nova baixa): sem comprovante, não salva. Conta já quitada (só edição de dados) não pede.
+    const editing = editingId ? accounts.find((a) => a.id === editingId) : null;
+    const needsProof = form.type === 'PAYABLE' && form.status === 'paid' && !(editing && editing.status === 'paid');
+    if (needsProof) {
+      if (!receiptFile) { setMessage({ kind: 'error', text: 'Anexe o comprovante do pagamento (PDF ou foto): toda baixa de despesa precisa dele.' }); return; }
+      const invalid = receiptUploadError(receiptFile);
       if (invalid) { setMessage({ kind: 'error', text: invalid }); return; }
     }
     setSubmitting(true);
     try {
+      let proofRef: { key: string; name: string; type: string } | null = null;
+      if (needsProof && receiptFile) {
+        const fd = new FormData();
+        fd.append('file', receiptFile);
+        const up = await fetch('/api/payment-proofs', { method: 'POST', body: fd });
+        const upData = await up.json().catch(() => ({}));
+        if (!up.ok) { setMessage({ kind: 'error', text: upData.error ?? 'Não foi possível enviar o comprovante.' }); return; }
+        proofRef = upData.proof;
+      }
       // A categoria vem pré-carregada na edição (startEdit), então o que está no form é o que vale.
       const payload = {
         ...form,
@@ -148,6 +163,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
         memberId: form.memberId || undefined,
         counterpartyId: form.counterpartyId || undefined,
         bankAccountId: form.bankAccountId || undefined,
+        ...(proofRef ? { proofKey: proofRef.key, proofName: proofRef.name, proofType: proofRef.type } : {}),
       };
       const send = (confirmOutsideAsaas: boolean) => fetch(editingId ? `/api/accounts/${editingId}` : '/api/accounts', {
         method: editingId ? 'PATCH' : 'POST',
@@ -166,18 +182,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
       }
       if (response.ok) {
         const savedText = editingId ? 'Conta atualizada com sucesso.' : 'Conta cadastrada com sucesso.';
-        let receiptError: string | null = null;
-        const accountId = editingId ?? data.item?.id ?? null;
-        if (withReceipt && accountId) {
-          const body = new FormData();
-          body.append('file', withReceipt);
-          const up = await fetch(`/api/accounts/${accountId}/receipt`, { method: 'POST', body });
-          if (!up.ok) receiptError = ((await up.json().catch(() => ({}))) as { error?: string }).error ?? 'Erro ao enviar o comprovante.';
-        }
         setMessage(
-          receiptError ? { kind: 'error', text: `${savedText} Mas o comprovante não foi enviado: ${receiptError} Use "Anexar comprovante" na lista para tentar de novo.` }
-          : data.asaasWarning ? { kind: 'error', text: data.asaasWarning }
-          : { kind: 'ok', text: withReceipt ? `${savedText} Comprovante anexado.` : savedText },
+          data.asaasWarning ? { kind: 'error', text: data.asaasWarning }
+          : { kind: 'ok', text: proofRef ? `${savedText} Comprovante anexado.` : savedText },
         );
         cancelEdit();
         router.refresh();
@@ -237,11 +244,15 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
     }
   }
 
-  async function handleApprove(id: string) {
-    const response = await fetch(`/api/accounts/${id}/approve`, { method: 'POST' });
+  async function handleApprove(id: string, valve = false) {
+    if (valve) {
+      const ok = await askConfirm({ title: 'Aprovar sozinho', message: 'Sua aprovação valerá pelo Venerável e pelo Tesoureiro. Use quando o Venerável não puder aprovar; fica registrado na auditoria.', confirmLabel: 'Aprovar sozinho' });
+      if (!ok) return;
+    }
+    const response = await fetch(`/api/accounts/${id}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valve }) });
     const data = await response.json().catch(() => ({}));
     if (response.ok) {
-      setMessage({ kind: 'ok', text: 'Despesa aprovada.' });
+      setMessage({ kind: 'ok', text: data.complete === false ? `Sua aprovação foi registrada. ${data.summary ?? ''}` : 'Despesa aprovada.' });
       router.refresh();
     } else {
       setMessage({ kind: 'error', text: data.error ?? 'Erro ao aprovar despesa.' });
@@ -355,10 +366,10 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                     {!art002Enabled ? <span className="text-xs text-sand-dark/70">· Art. 002 desligado em Configurações</span> : null}
                   </label>
                 ) : null}
-                {form.type === 'PAYABLE' ? (
-                  <Field label="Comprovante de pagamento (opcional)">
+                {form.type === 'PAYABLE' && form.status === 'paid' ? (
+                  <Field label="Comprovante do pagamento (obrigatório)">
                     <input key={fileKey} type="file" accept="application/pdf,image/png,image/jpeg,image/webp" onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)} className={INPUT_CLASS} />
-                    <p className="mt-1 text-xs text-sand-dark">PDF ou foto, até 4 MB. Guardado junto com a despesa; não dá baixa nem muda o saldo.</p>
+                    <p className="mt-1 text-xs text-sand-dark">PDF ou foto, até 4 MB. Toda baixa de despesa leva o seu comprovante; sem ele a conta não é salva como paga. Para só registrar a despesa, deixe como Pendente e dê a baixa depois.</p>
                   </Field>
                 ) : null}
                 <Field label="Descrição">
@@ -412,8 +423,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                     {account.awaitingAsaas && account.status !== 'paid' ? <span className="ml-2 rounded-full border border-sky-500/20 bg-sky-500/12 px-2 py-0.5 text-xs font-medium text-sky-200">Aguardando Asaas</span> : null}
                     {account.approvalStatus === 'pending' ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">Aguardando aprovação</span> : null}
                   </p>
+                  {account.approvalStatus === 'pending' && account.approval?.summary ? <p className="mt-1 text-xs text-amber-300">{account.approval.summary}</p> : null}
                   <p className="mt-1 text-xs text-sand-dark">
-                    {account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} • {account.member ? <MemberLink id={account.member.id} name={account.member.name} /> : (account.counterparty?.name ?? 'Sem vínculo')}
+                    {account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} •{account.member ? <MemberLink id={account.member.id} name={account.member.name} /> : (account.counterparty?.name ?? 'Sem vínculo')}
                   </p>
                 </div>
                 <div className="min-w-28 text-right">
@@ -423,11 +435,17 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                   <p className="mt-0.5 text-xs text-sand-dark">{formatDateOnly(account.dueDate)}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  {account.approvalStatus === 'pending' && canApprove ? (
+                  {account.approvalStatus === 'pending' && account.approval?.canApprove ? (
                     <button onClick={() => void handleApprove(account.id)} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Aprovar</button>
+                  ) : null}
+                  {account.approvalStatus === 'pending' && account.approval?.canValve ? (
+                    <button onClick={() => void handleApprove(account.id, true)} className="text-xs px-1 py-1 text-amber-300 transition hover:text-amber-200">Aprovar sozinho</button>
                   ) : null}
                   {account.type === 'PAYABLE' ? (
                     <span className="flex items-center gap-2">
+                      {(account.proofs ?? []).map((pr) => (
+                        <a key={pr.paymentId} href={`/api/payments/${pr.paymentId}/proof`} target="_blank" rel="noopener noreferrer" className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">{(account.proofs ?? []).length > 1 ? pr.label : 'Ver comprovante'}</a>
+                      ))}
                       {account.hasReceipt ? (
                         <>
                           <a href={`/api/accounts/${account.id}/receipt`} target="_blank" rel="noopener noreferrer" className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Ver comprovante</a>
