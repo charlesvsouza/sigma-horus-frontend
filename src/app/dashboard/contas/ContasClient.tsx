@@ -320,6 +320,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                     <option value="paid">Pago</option>
                     <option value="overdue">Vencido</option>
                   </select>
+                  {form.type === 'PAYABLE' && form.status !== 'paid' ? (
+                    <span className="mt-1 block text-xs text-sand-dark">Para dar baixa nesta despesa, mude para Pago e anexe o comprovante do pagamento (obrigatório) — ou use Baixa de pagamentos.</span>
+                  ) : null}
                 </Field>
                 {form.status === 'paid' ? (
                   <Field label="Data do pagamento">
