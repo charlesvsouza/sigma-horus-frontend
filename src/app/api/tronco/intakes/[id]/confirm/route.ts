@@ -18,10 +18,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
   const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(String(body?.date ?? '')) ? String(body.date) : todayBR().toISOString().slice(0, 10);
   const date = new Date(dateStr);
-  if (Number.isNaN(date.getTime()) || date.getTime() > todayBR().getTime()) return NextResponse.json({ error: 'A data do recebimento não pode ser futura.' }, { status: 400 });
+  if (Number.isNaN(date.getTime()) || date.getTime() > todayBR().getTime()) return NextResponse.json({ error: 'A data da captação não pode ser futura.' }, { status: 400 });
   const paidAt = date; // dia contábil (só dia), não o instante
+  const alreadyInCashbox = body?.alreadyInCashbox === true;
   const result = await withTenant(String(lodgeId), (db) =>
-    confirmTronco(db, String(lodgeId), id, { id: String(session.user.id), name: String(session.user.name ?? 'Usuário'), role: session.user.role }, { bankAccountId, date, paidAt }),
+    confirmTronco(db, String(lodgeId), id, { id: String(session.user.id), name: String(session.user.name ?? 'Usuário'), role: session.user.role }, { bankAccountId, date, paidAt, alreadyInCashbox }),
   );
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ ok: true, paymentId: result.paymentId });

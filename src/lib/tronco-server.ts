@@ -108,12 +108,19 @@ export async function recordTronco(db: Db, input: RecordTroncoInput): Promise<{ 
 
 /** Lança no caixa uma entrada que estava aguardando (declarada pelo Hospitaleiro ou vinda do QR da sessão). */
 export async function confirmTronco(
-  db: Db, lodgeId: string, intakeId: string, user: TroncoUser, input: { bankAccountId: string | null; date: Date; paidAt: Date },
-): Promise<{ ok: true; paymentId: string } | Fail> {
+  db: Db, lodgeId: string, intakeId: string, user: TroncoUser, input: { bankAccountId: string | null; date: Date; paidAt: Date; alreadyInCashbox?: boolean },
+): Promise<{ ok: true; paymentId: string | null } | Fail> {
   if (!canConfirmTronco(user.role)) return { ok: false, status: 403, error: 'Só o Tesoureiro, o Venerável e o Administrador confirmam entradas do Tronco.' };
   const intake = await db.troncoIntake.findFirst({ where: { id: intakeId, lodgeId } });
   if (!intake) return { ok: false, status: 404, error: 'Entrada não encontrada.' };
   if (intake.status !== 'pending') return { ok: false, status: 409, error: intake.status === 'confirmed' ? 'Esta entrada já foi lançada no caixa.' : 'Esta entrada foi recusada.' };
+  // Valor que já estava no caixa (ex.: dentro do saldo de abertura): só registra a conferência, sem criar pagamento — não duplica o dinheiro.
+  if (input.alreadyInCashbox) {
+    const day = input.date.toISOString().slice(0, 10).split('-').reverse().join('/');
+    await db.troncoIntake.update({ where: { id: intake.id }, data: { status: 'confirmed', confirmedById: user.id, confirmedAt: new Date(), note: [intake.note, `Captado em ${day}; já estava no caixa (só registrado, sem novo lançamento).`].filter(Boolean).join(' ') } });
+    await logAudit(db, { lodgeId, userId: user.id, action: 'UPDATE', entity: 'tronco-intake', entityId: intake.id, metadata: { code: intake.code, confirmed: true, alreadyInCashbox: true, capturedOn: input.date.toISOString().slice(0, 10), amount: Number(intake.amount) } });
+    return { ok: true, paymentId: null };
+  }
   const method = intake.channel === 'cash' ? 'cash' : intake.channel.startsWith('pix') ? 'pix' : 'other';
   // Pix do QR da sessão: o dinheiro está no Asaas; sem conta escolhida, vai para a conta de repasse da loja.
   let bankAccountId = input.bankAccountId;

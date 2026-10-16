@@ -35,6 +35,9 @@ export default function TroncoPorSessao({
   const router = useRouter();
   const [bank, setBank] = useState<Record<string, string>>({});
   const [reason, setReason] = useState<Record<string, string>>({});
+  const [capturedOn, setCapturedOn] = useState<Record<string, string>>({});
+  const [inCashbox, setInCashbox] = useState<Record<string, boolean>>({});
+  const todayBR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const defaultBank = (accounts.find((a) => a.isDefault) ?? accounts[0])?.id ?? '';
@@ -68,12 +71,12 @@ export default function TroncoPorSessao({
     setBusy(id);
     setMessage(null);
     const item = pending.find((x) => x.id === id);
-    const body = kind === 'confirm' ? { bankAccountId: item ? bankFor(item) : defaultBank } : { reason: reason[id] ?? '' };
+    const body = kind === 'confirm' ? { bankAccountId: item ? bankFor(item) : defaultBank, date: capturedOn[id] || todayBR, alreadyInCashbox: Boolean(inCashbox[id]) } : { reason: reason[id] ?? '' };
     const res = await fetch(`/api/tronco/intakes/${id}/${kind}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json().catch(() => ({}));
     setBusy(null);
     if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Não foi possível concluir.' }); return; }
-    setMessage({ kind: 'ok', text: kind === 'confirm' ? 'Lançado no caixa.' : 'Entrada recusada.' });
+    setMessage({ kind: 'ok', text: kind === 'confirm' ? (inCashbox[id] ? 'Registrado: o valor já estava no caixa.' : 'Lançado no caixa.') : 'Entrada recusada.' });
     router.refresh();
   }
 
@@ -136,7 +139,7 @@ export default function TroncoPorSessao({
       {pending.length > 0 ? (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6">
           <h3 className="text-sm font-semibold text-amber-200">Entradas aguardando confirmação ({pending.length})</h3>
-          <p className="mt-1 text-xs text-sand-dark">{canConfirm ? 'Confira o valor e lance no caixa (escolhendo a conta que recebeu), ou recuse com o motivo.' : 'Só o Tesoureiro, o Venerável e o Administrador confirmam.'}</p>
+          <p className="mt-1 text-xs text-sand-dark">{canConfirm ? 'Informe quando foi captado e confira o valor: lance no caixa (escolhendo a conta que recebeu), marque "Já estava no caixa" para só registrar, ou recuse com o motivo.' : 'Só o Tesoureiro, o Venerável e o Administrador confirmam.'}</p>
           <ul className="mt-3 divide-y divide-white/5">
             {pending.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
@@ -146,10 +149,17 @@ export default function TroncoPorSessao({
                 </div>
                 {canConfirm ? (
                   <div className="flex flex-wrap items-center gap-2">
+                    <label className="flex items-center gap-1 text-xs text-sand-dark">Captado em
+                      <input type="date" max={todayBR} value={capturedOn[p.id] ?? todayBR} onChange={(e) => setCapturedOn((m) => ({ ...m, [p.id]: e.target.value }))} className={`${inputClass} w-auto`} />
+                    </label>
+                    <label className="flex items-center gap-1 text-xs text-sand-dark">
+                      <input type="checkbox" checked={Boolean(inCashbox[p.id])} onChange={(e) => setInCashbox((m) => ({ ...m, [p.id]: e.target.checked }))} />
+                      Já estava no caixa (só registrar)
+                    </label>
                     <select aria-label={`Conta que recebeu — ${p.code}`} value={bankFor(p)} onChange={(e) => setBank((b) => ({ ...b, [p.id]: e.target.value }))} className={`${inputClass} w-auto`}>
                       {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
-                    <Button size="sm" disabled={busy === p.id} onClick={() => void act(p.id, 'confirm')}>{busy === p.id ? '…' : 'Lançar no caixa'}</Button>
+                    <Button size="sm" disabled={busy === p.id} onClick={() => void act(p.id, 'confirm')}>{busy === p.id ? '…' : inCashbox[p.id] ? 'Registrar' : 'Lançar no caixa'}</Button>
                     <input aria-label={`Motivo da recusa — ${p.code}`} value={reason[p.id] ?? ''} onChange={(e) => setReason((r) => ({ ...r, [p.id]: e.target.value }))} placeholder="Motivo para recusar" className={`${inputClass} w-44`} />
                     <Button size="sm" variant="ghost" disabled={busy === p.id || !(reason[p.id] ?? '').trim()} onClick={() => void act(p.id, 'reject')}>Recusar</Button>
                   </div>
