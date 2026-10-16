@@ -80,7 +80,7 @@ async function postAsaasFee(db: Db, lodgeId: string, fee: number, bankId: string
  */
 export async function recordTronco(db: Db, input: RecordTroncoInput): Promise<{ ok: true; intakeId: string; code: string; status: 'confirmed' | 'pending'; paymentId: string | null } | Fail> {
   const { lodgeId, user } = input;
-  if (!canDeclareTronco(user.role)) return { ok: false, status: 403, error: 'Só o Tesoureiro, o Venerável, o Administrador e o Hospitaleiro registram o Tronco.' };
+  if (!canDeclareTronco(user.role)) return { ok: false, status: 403, error: 'Só o Tesoureiro, o Venerável e o Administrador registram o Tronco.' };
   if (!isValidMoney(input.amount)) return { ok: false, status: 400, error: 'Informe um valor maior que zero, com até 2 casas decimais.' };
   if (input.sessionId) {
     const s = await db.session.findFirst({ where: { id: input.sessionId, lodgeId }, select: { id: true } });

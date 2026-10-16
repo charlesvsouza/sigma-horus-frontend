@@ -8,7 +8,7 @@ const S = (id: string, date: string, endDate?: string): SessionLike => ({ id, ti
 test('quem declara e quem confirma o Tronco', () => {
   for (const r of ['admin', 'venerable', 'treasurer']) { assert.equal(canConfirmTronco(r), true, r); assert.equal(canDeclareTronco(r), true, r); }
   assert.equal(canConfirmTronco('hospitaller'), false);
-  assert.equal(canDeclareTronco('hospitaller'), true);   // declara, fica aguardando
+  assert.equal(canDeclareTronco('hospitaller'), false);  // sem prerrogativa: Fundos é da Tesouraria
   for (const r of ['secretary', 'member', 'candidate', '', null, undefined]) { assert.equal(canConfirmTronco(r), false, String(r)); assert.equal(canDeclareTronco(r), false, String(r)); }
 });
 

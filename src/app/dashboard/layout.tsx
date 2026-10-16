@@ -145,6 +145,8 @@ const NAV: NavGroupDef[] = [
       {
         label: 'Banco e caixa',
         items: [
+          // Tronco e Doações como categorias: só quem lança no caixa (o Hospitaleiro não tem acesso). Ver lib/funds.ts.
+          { href: '/dashboard/hospitalaria/fundos', label: 'Fundos (Tronco e Doações)', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/extratos', label: 'Extratos de contas', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/transferencias', label: 'Transferências entre contas', roles: ['admin', 'venerable', 'treasurer'] },
           { href: '/dashboard/conciliacao-bancaria', label: 'Conciliação bancária', roles: ['admin', 'treasurer'] },
@@ -174,7 +176,6 @@ const NAV: NavGroupDef[] = [
     items: [
       { href: '/dashboard/hospitalaria/irmaos', label: 'Irmãos (consulta)', roles: ['admin', 'venerable', 'hospitaller'] },
       { href: '/dashboard/hospitalaria/campanhas', label: 'Campanhas', roles: ['admin', 'venerable', 'hospitaller', 'treasurer'] },
-      { href: '/dashboard/hospitalaria/fundos', label: 'Fundos (Tronco e Doações)', roles: ['admin', 'venerable', 'hospitaller', 'treasurer'] },
       { href: '/dashboard/portal/hospitalaria', label: 'Hospitalaria', roles: ['member'] },
     ],
   },

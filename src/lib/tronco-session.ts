@@ -16,8 +16,8 @@ const norm = (role: string | null | undefined) => (role ?? '').toLowerCase().tri
 
 /** Quem lança no caixa / confirma / recusa uma entrada do Tronco. */
 export const canConfirmTronco = (role: string | null | undefined) => ['admin', 'venerable', 'treasurer'].includes(norm(role));
-/** Quem declara uma entrada: os que confirmam (já entra confirmada) e o Hospitaleiro (fica aguardando confirmação). */
-export const canDeclareTronco = (role: string | null | undefined) => canConfirmTronco(role) || norm(role) === 'hospitaller';
+/** Quem registra uma entrada do Tronco: os mesmos que confirmam (a entrada já nasce lançada). O Hospitaleiro não tem esta prerrogativa. */
+export const canDeclareTronco = (role: string | null | undefined) => canConfirmTronco(role);
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 /** DNA da entrada: TR-XXXX-XXXX (sem I, O, 0, 1). */

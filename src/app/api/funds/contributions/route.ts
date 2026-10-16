@@ -62,7 +62,7 @@ export async function POST(request: Request) {
   // o Venerável e o Administrador lançam no caixa. Entrada SEM doador identificado segue o fluxo novo (com DNA e sessão); com
   // doador identificado (irmão, nome ou anônimo) só quem confirma registra.
   if (fund === 'tronco') {
-    if (!canDeclareTronco(role)) return NextResponse.json({ error: 'Só o Tesoureiro, o Venerável, o Administrador e o Hospitaleiro registram o Tronco.' }, { status: 403 });
+    if (!canDeclareTronco(role)) return NextResponse.json({ error: 'Só o Tesoureiro, o Venerável e o Administrador registram o Tronco.' }, { status: 403 });
     if (!memberId && !donorName && !anonymous) {
       const recorded = await withTenant(String(lodgeId), (db) =>
         recordTronco(db, {

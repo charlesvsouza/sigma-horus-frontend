@@ -37,7 +37,8 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
   // Extrato, saídas e doadores são de gestão (Contas). O Membro vê só o saldo do Tronco,
   // no portal Hospitalaria.
   const byAccounts = await requireLodgeAccess(String(lodgeId), role, 'accounts', 'read');
-  if (!byAccounts.ok) {
+  // Fundos é da Tesouraria: só Administrador, Venerável e Tesoureiro (o Hospitaleiro não tem esta prerrogativa).
+  if (!byAccounts.ok || !canConfirmTronco(role)) {
     return (
       <main className="min-h-screen px-6 py-10">
         <p className="text-sm text-sand-dark">Acesso negado.</p>

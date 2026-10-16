@@ -54,7 +54,7 @@ export default async function DashboardPage() {
   // Indicadores por cargo (fora a posição financeira).
   const role = String(session?.user?.role ?? '').toLowerCase();
   const groups = await withTenant(String(lodgeId), (db) =>
-    loadOverviewGroups(db, String(lodgeId), scope!, { fundos: ['admin', 'venerable', 'hospitaller', 'treasurer'].includes(role), role }),
+    loadOverviewGroups(db, String(lodgeId), scope!, { fundos: ['admin', 'venerable', 'treasurer'].includes(role), role }),
   );
 
   if (!financeAllowed) {
