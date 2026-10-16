@@ -408,6 +408,7 @@ model Account {
   counterpartyId String?  // vínculo ao cadastro de cliente/fornecedor (quando não é membro)
   bankAccountId  String?  // conta bancária/caixa PREVISTA (só pré-preenche o pagamento; não é obrigatória)
   sessionId      String?  // sessão do dia em que o lançamento ocorreu (ex.: doação ao Tronco na sessão em curso)
+  sessionDate    DateTime? // Tronco de uma sessão que não está cadastrada no sistema (sessão antiga): só o dia em que ocorreu
   degreeFeePlanId String? // cota de um plano de taxa de grau (iniciação/elevação/exaltação)
   type           String   // RECEIVABLE | PAYABLE
   title          String

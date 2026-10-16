@@ -9,6 +9,7 @@ import { TRONCO_SOURCES, TRONCO_SOURCE_LABEL, type TroncoSource } from '@/lib/tr
 
 export interface UnassignedItem { paymentId: string; amount: number; paidAt: string; bankName: string | null; method: string; note: string | null; source: TroncoSource | null; suggestedSessionId: string | null }
 
+const OTHER = '__other';
 const METHOD_LABEL: Record<string, string> = { cash: 'Dinheiro', pix: 'Pix', transfer: 'Transferência', donation: 'Doação', other: 'Outro' };
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
@@ -18,15 +19,18 @@ export default function TroncoSemSessao({ items, sessions }: { items: Unassigned
   const router = useRouter();
   const [pick, setPick] = useState<Record<string, string>>({});
   const [src, setSrc] = useState<Record<string, TroncoSource>>({});
+  const [otherDate, setOtherDate] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   async function assign(it: UnassignedItem) {
-    const sessionId = pick[it.paymentId] ?? it.suggestedSessionId ?? '';
-    if (!sessionId) { setMessage({ kind: 'error', text: 'Escolha a sessão.' }); return; }
+    const chosen = pick[it.paymentId] ?? it.suggestedSessionId ?? '';
+    const other = chosen === OTHER;
+    if (!chosen) { setMessage({ kind: 'error', text: 'Escolha a sessão.' }); return; }
+    if (other && !otherDate[it.paymentId]) { setMessage({ kind: 'error', text: 'Informe o dia em que a sessão ocorreu.' }); return; }
     setBusy(it.paymentId);
     setMessage(null);
-    const res = await fetch('/api/tronco/assign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentId: it.paymentId, sessionId, source: src[it.paymentId] ?? it.source ?? 'mixed' }) });
+    const res = await fetch('/api/tronco/assign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentId: it.paymentId, sessionId: other ? null : chosen, sessionDate: other ? otherDate[it.paymentId] : null, source: src[it.paymentId] ?? it.source ?? 'mixed' }) });
     const data = await res.json().catch(() => ({}));
     setBusy(null);
     if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Não foi possível atribuir.' }); return; }
@@ -52,7 +56,9 @@ export default function TroncoSemSessao({ items, sessions }: { items: Unassigned
                 <select aria-label={`Sessão — ${brl(it.amount)}`} value={pick[it.paymentId] ?? it.suggestedSessionId ?? ''} onChange={(e) => setPick((p) => ({ ...p, [it.paymentId]: e.target.value }))} className={`${inputClass} w-auto`}>
                   <option value="">Selecione a sessão…</option>
                   {sessions.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  <option value={OTHER}>Sessão não cadastrada (informar o dia)…</option>
                 </select>
+                {(pick[it.paymentId] ?? it.suggestedSessionId) === OTHER ? <input type="date" aria-label={`Dia da sessão — ${brl(it.amount)}`} max={new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })} value={otherDate[it.paymentId] ?? ''} onChange={(e) => setOtherDate((p) => ({ ...p, [it.paymentId]: e.target.value }))} className={`${inputClass} w-auto`} /> : null}
                 <select aria-label={`Origem do dinheiro — ${brl(it.amount)}`} value={src[it.paymentId] ?? it.source ?? 'mixed'} onChange={(e) => setSrc((p) => ({ ...p, [it.paymentId]: e.target.value as TroncoSource }))} className={`${inputClass} w-auto`}>
                   {TRONCO_SOURCES.map((k) => <option key={k} value={k}>{TRONCO_SOURCE_LABEL[k]}</option>)}
                 </select>

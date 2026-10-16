@@ -36,6 +36,9 @@ interface AccountItem {
   awaitingAsaas?: boolean;
   paid?: number;
   chartAccountId?: string | null;
+  /** Tronco: sessão cadastrada ou, se a sessão não está no sistema, o dia em que ocorreu. */
+  sessionId?: string | null;
+  sessionDate?: string | null;
   chartName?: string | null;
   personHidden?: boolean;
   member?: MemberOption | null;
@@ -43,9 +46,10 @@ interface AccountItem {
   bankAccount?: FinancialAccountOption | null;
 }
 
+const OTHER_SESSION = '__other';
 const INPUT_CLASS = inputClass; // fonte única do design system
 
-export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, troncoSessions = [], startWithForm = false, art002Enabled = true, lodgeName = 'Loja', crestUrl = null, issuedBy = null }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string; troncoSessions?: { id: string; title: string; day: string }[]; startWithForm?: boolean; art002Enabled?: boolean; lodgeName?: string; crestUrl?: string | null; issuedBy?: string | null }) {
+export default function ContasClient({ accounts, members, chartAccounts, counterparties, financialAccounts, troncoSessions = [], canAssignTronco = false, startWithForm = false, art002Enabled = true, lodgeName = 'Loja', crestUrl = null, issuedBy = null }: { accounts: AccountItem[]; members: MemberOption[]; chartAccounts: ChartAccountOption[]; counterparties: CounterpartyOption[]; financialAccounts: FinancialAccountOption[]; role: string; troncoSessions?: { id: string; title: string; day: string }[]; canAssignTronco?: boolean; startWithForm?: boolean; art002Enabled?: boolean; lodgeName?: string; crestUrl?: string | null; issuedBy?: string | null }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -57,7 +61,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   const [editingId, setEditingId] = useState<string | null>(null);
   // Tronco: sessão de origem (null = ainda não escolhida: vale a sessão do dia da data informada) e origem do dinheiro.
   const [sessionPick, setSessionPick] = useState<string | null>(null);
-  const [troncoSource, setTroncoSource] = useState<'members' | 'visitors' | 'mixed'>('mixed');
+  const [troncoSource, setTroncoSource] = useState<'members' | 'visitors' | 'mixed' | null>(null);
+  // Sessão que não está cadastrada no sistema (sessão antiga): informa só o dia em que ocorreu.
+  const [otherDate, setOtherDate] = useState('');
   // Comprovante da baixa (despesa lançada/editada como Paga): obrigatório; sobe ANTES, e a baixa leva a referência.
   // `fileKey` zera o campo de arquivo.
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -100,6 +106,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   function startEdit(account: AccountItem) {
     setEditingId(account.id);
     setFormOpen(true);
+    setSessionPick(account.sessionId ?? (account.sessionDate ? OTHER_SESSION : ''));
+    setOtherDate(account.sessionDate ?? '');
+    setTroncoSource(null);
     setForm({
       title: account.title,
       type: account.type,
@@ -119,7 +128,8 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
 
   function cancelEdit() {
     setSessionPick(null);
-    setTroncoSource('mixed');
+    setTroncoSource(null);
+    setOtherDate('');
     setReceiptFile(null);
     setFileKey((k) => k + 1);
     setEditingId(null);
@@ -132,10 +142,12 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   const duesEntry = form.type === 'RECEIVABLE' && (chosenChart ? Boolean(chosenChart.isDues) : Boolean(editingId) && form.isDues);
 
   // Tronco passado em sessão: só quem confirma o Tronco (a lista vem vazia para os outros cargos) e só em lançamento novo.
-  const askTroncoSession = !editingId && form.type === 'RECEIVABLE' && Boolean(chosenChart?.isTronco) && troncoSessions.length > 0;
+  const askTroncoSession = canAssignTronco && form.type === 'RECEIVABLE' && Boolean(chosenChart?.isTronco);
   const troncoRefDay = (form.status === 'paid' && form.paidAt ? form.paidAt : form.dueDate) || '';
   const sameDaySession = troncoSessions.find((x) => x.day === troncoRefDay) ?? null;
-  const troncoSessionId = sessionPick ?? sameDaySession?.id ?? '';
+  // Lançamento novo sugere a sessão do dia; na edição só vale o que está gravado ou o que a pessoa escolher.
+  const troncoSessionId = sessionPick ?? (editingId ? '' : sameDaySession?.id ?? '');
+  const otherSession = troncoSessionId === OTHER_SESSION;
   const fmtDay = (d: string) => d.split('-').reverse().join('/');
 
   function selectChart(id: string) {
@@ -155,6 +167,7 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
       const invalid = receiptUploadError(receiptFile);
       if (invalid) { setMessage({ kind: 'error', text: invalid }); return; }
     }
+    if (askTroncoSession && otherSession && !otherDate) { setMessage({ kind: 'error', text: 'Informe o dia em que a sessão ocorreu.' }); return; }
     setSubmitting(true);
     try {
       let proofRef: { key: string; name: string; type: string } | null = null;
@@ -175,7 +188,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
         memberId: form.memberId || undefined,
         counterpartyId: form.counterpartyId || undefined,
         bankAccountId: form.bankAccountId || undefined,
-        ...(askTroncoSession && troncoSessionId ? { sessionId: troncoSessionId, troncoSource } : {}),
+        ...(askTroncoSession && (troncoSessionId || editingId)
+          ? { sessionId: otherSession ? '' : troncoSessionId, sessionDate: otherSession ? otherDate : '', ...(troncoSource ? { troncoSource } : {}) }
+          : {}),
         ...(proofRef ? { proofKey: proofRef.key, proofName: proofRef.name, proofType: proofRef.type } : {}),
       };
       const send = (confirmOutsideAsaas: boolean) => fetch(editingId ? `/api/accounts/${editingId}` : '/api/accounts', {
@@ -328,17 +343,24 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                   <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className={INPUT_CLASS} required />
                 </Field>
                 {askTroncoSession ? (
-                  <Field label={sameDaySession && troncoSessionId === sameDaySession.id ? `Atribuir à sessão do dia ${fmtDay(sameDaySession.day)}` : 'Sessão em que o Tronco foi passado'}>
+                  <Field label={!editingId && sameDaySession && troncoSessionId === sameDaySession.id ? `Atribuir à sessão do dia ${fmtDay(sameDaySession.day)}` : 'Sessão em que o Tronco foi passado'}>
                     <select value={troncoSessionId} onChange={(e) => setSessionPick(e.target.value)} className={INPUT_CLASS}>
                       <option value="">Sem sessão por enquanto (atribuir depois)</option>
+                      {troncoSessionId && troncoSessionId !== OTHER_SESSION && !troncoSessions.some((x) => x.id === troncoSessionId) ? <option value={troncoSessionId}>Sessão já atribuída</option> : null}
                       {troncoSessions.map((x) => <option key={x.id} value={x.id}>{fmtDay(x.day)} — {x.title}</option>)}
+                      <option value={OTHER_SESSION}>Sessão não cadastrada no sistema (informar o dia)…</option>
                     </select>
-                    {!sameDaySession && troncoRefDay ? <span className="mt-1 block text-xs text-amber-300">Não há sessão em {fmtDay(troncoRefDay)}. Escolha a sessão de origem ou deixe sem sessão: a entrada fica em &quot;Tronco sem sessão&quot; até ser atribuída.</span> : null}
+                    {!sameDaySession && troncoRefDay && !troncoSessionId ? <span className="mt-1 block text-xs text-amber-300">Não há sessão cadastrada em {fmtDay(troncoRefDay)}. Escolha a sessão, informe o dia de uma sessão antiga ou deixe sem sessão: a entrada fica em &quot;Tronco sem sessão&quot; até ser atribuída.</span> : null}
+                  </Field>
+                ) : null}
+                {askTroncoSession && otherSession ? (
+                  <Field label="Dia em que a sessão ocorreu">
+                    <input type="date" max={new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })} value={otherDate} onChange={(e) => setOtherDate(e.target.value)} className={INPUT_CLASS} required />
                   </Field>
                 ) : null}
                 {askTroncoSession && troncoSessionId ? (
                   <Field label="Origem do dinheiro">
-                    <select value={troncoSource} onChange={(e) => setTroncoSource(e.target.value as 'members' | 'visitors' | 'mixed')} className={INPUT_CLASS}>
+                    <select value={troncoSource ?? 'mixed'} onChange={(e) => setTroncoSource(e.target.value as 'members' | 'visitors' | 'mixed')} className={INPUT_CLASS}>
                       <option value="mixed">Obreiros e visitantes (sem divisão)</option>
                       <option value="members">Obreiros</option>
                       <option value="visitors">Visitantes</option>

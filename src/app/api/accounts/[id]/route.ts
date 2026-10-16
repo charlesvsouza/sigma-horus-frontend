@@ -1,4 +1,6 @@
 import { auth } from '@/lib/auth';
+import { canConfirmTronco, isTroncoSource } from '@/lib/tronco-session';
+import { assignTroncoToAccount, resolveTroncoTarget } from '@/lib/tronco-server';
 import { firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from '@/lib/date-only';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
@@ -44,6 +46,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     // (nem no vencimento atual, nem mover para dentro de um período fechado).
     const lockedCurrent = await findClosedTermForDate(db, String(lodgeId), existing.dueDate);
     if (lockedCurrent) return { error: 'locked' as const, term: lockedCurrent };
+
+    // Tronco de sessão (cadastrada ou só a data de uma sessão antiga): confere cargo e destino antes de mexer em qualquer coisa.
+    const touchesTroncoSession = body?.sessionId !== undefined || body?.sessionDate !== undefined;
+    const troncoTarget = {
+      sessionId: body?.sessionId ? String(body.sessionId) : null,
+      sessionDate: body?.sessionDate ? String(body.sessionDate) : null,
+      source: isTroncoSource(body?.troncoSource) ? body.troncoSource : undefined,
+    };
+    if (touchesTroncoSession) {
+      if (!canConfirmTronco(role)) return { error: 'tronco' as const, tronco: { status: 403, error: 'Só o Tesoureiro, o Venerável e o Administrador atribuem o Tronco a uma sessão.' } };
+      const target = await resolveTroncoTarget(db, String(lodgeId), troncoTarget);
+      if (!target.ok) return { error: 'tronco' as const, tronco: target };
+    }
 
     const nextDueDate = body?.dueDate ? new Date(body.dueDate) : existing.dueDate;
     if (body?.dueDate) {
@@ -190,6 +205,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       await syncMemberBlock(db, String(lodgeId), mId);
     }
 
+    if (touchesTroncoSession) {
+      const assigned = await assignTroncoToAccount(db, String(lodgeId), { id: String(session.user.id), name: String(session.user.name ?? 'Usuário'), role }, { accountId: id, ...troncoTarget });
+      if (!assigned.ok && assigned.status !== 404) return { error: 'tronco' as const, tronco: assigned };
+    }
+
     return { updated, chargeIds };
   });
 
@@ -204,6 +224,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (result.error === 'payment-edit') {
       return NextResponse.json({ error: result.message, ...(result.code ? { code: result.code } : {}) }, { status: result.status });
     }
+    if (result.error === 'tronco') return NextResponse.json({ error: result.tronco.error }, { status: result.tronco.status });
     if (result.error === 'invalid-member') return NextResponse.json({ error: 'Irmão não encontrado nesta loja.' }, { status: 400 });
     if (result.error === 'dues-no-member') return NextResponse.json({ error: 'Mensalidade precisa estar vinculada a um irmão. Escolha o membro em "Vincular a um membro".' }, { status: 400 });
     if (result.error === 'asaas-group') {

@@ -8,7 +8,7 @@ import { FUND_LABELS, fundChartWhere, isFundPurpose, type FundPurpose } from '@/
 import { buildFundReport, type FundMovementRow } from '@/lib/funds-report';
 import { getReportSignatories } from '@/lib/report-signatories';
 import { activeSessionFor, canConfirmTronco } from '@/lib/tronco-session';
-import { findStatementMatches, loadTroncoBySession, loadUnassignedTronco } from '@/lib/tronco-server';
+import { findStatementMatches, loadTroncoBySession, loadUnassignedTronco, UNREGISTERED_PREFIX } from '@/lib/tronco-server';
 import FundosClient from './FundosClient';
 import TroncoPorSessao from './TroncoPorSessao';
 import TroncoSemSessao from './TroncoSemSessao';
@@ -78,6 +78,7 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
               description: true,
               counterpartyName: true,
               sessionId: true,
+              sessionDate: true,
               counterparty: { select: { name: true } },
               session: { select: { date: true } },
               chartAccount: { select: { name: true } },
@@ -100,7 +101,7 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
       ...troncoSessionsRaw,
       ...extraSessions.map((x) => ({ sessionId: x.id, title: x.title, date: x.date, confirmed: 0, pending: 0, bySource: { members: 0, visitors: 0, mixed: 0 } })),
     ].sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
-    const statementMatches = fund === 'tronco' ? await findStatementMatches(db, lid, troncoSessions.map((r) => r.sessionId!)) : [];
+    const statementMatches = fund === 'tronco' ? await findStatementMatches(db, lid, troncoSessions.map((r) => r.sessionId!).filter((id) => !id.startsWith(UNREGISTERED_PREFIX))) : [];
     const pendingIntakes = fund === 'tronco'
       ? await db.troncoIntake.findMany({ where: { lodgeId: lid, status: 'pending' }, orderBy: { declaredAt: 'desc' }, take: 50, include: { session: { select: { title: true, date: true } } } })
       : [];
@@ -121,7 +122,7 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
   const movements: FundMovementRow[] = data.payments.map((p) => {
     const dir: 'in' | 'out' = p.account?.type === 'RECEIVABLE' ? 'in' : 'out';
     const campaignTitle = data.donationCampaign.get(p.id);
-    const origin = campaignTitle ? 'campaign' : p.account?.sessionId ? 'session' : 'other';
+    const origin = campaignTitle ? 'campaign' : p.account?.sessionId || p.account?.sessionDate ? 'session' : 'other';
     const raw = dir === 'in' ? p.member?.name ?? p.account?.counterparty?.name ?? p.account?.counterpartyName ?? (p.method === 'donation' ? p.account?.description : null) ?? null : null;
     return {
       id: p.id,
@@ -132,7 +133,7 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
       category: p.account?.chartAccount?.name ?? 'Sem categoria',
       method: p.method,
       origin,
-      originLabel: campaignTitle ?? (p.account?.session?.date ? `Sessão ${fmtBR(p.account.session.date)}` : null),
+      originLabel: campaignTitle ?? (p.account?.session?.date ? `Sessão ${fmtBR(p.account.session.date)}` : p.account?.sessionDate ? `Sessão ${p.account.sessionDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}` : null),
       // Quem doou só aparece para Administrador/Venerável/Tesoureiro (regra do Tronco).
       donor: donorDisplayName(raw, fund === 'tronco', role),
     };

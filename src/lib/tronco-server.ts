@@ -2,7 +2,7 @@ import type { Prisma } from '@/generated/prisma/client';
 import { logAudit } from '@/lib/audit';
 import { findFundChart, fundChartWhere, resolveBankAccount } from '@/lib/funds';
 import { ASAAS_FEE_CHART } from '@/lib/collection';
-import { dateOnlyUTC, todayBR } from '@/lib/date-only';
+import { dateOnlyUTC, parseDateInput, todayBR } from '@/lib/date-only';
 import { identifierInText } from '@/lib/tronco-loja-pix';
 import { isValidMoney } from '@/lib/money';
 import { findClosedTermForDate } from '@/lib/term-lock';
@@ -190,7 +190,7 @@ export interface UnassignedTronco { paymentId: string; amount: number; paidAt: D
 /** Entradas do Tronco já lançadas no caixa que não estão ligadas a nenhuma sessão (extrato, Pagamentos, aporte avulso…). */
 export async function loadUnassignedTronco(db: Db, lodgeId: string): Promise<UnassignedTronco[]> {
   const payments = await db.payment.findMany({
-    where: { lodgeId, account: { type: 'RECEIVABLE', sessionId: null, chartAccount: fundChartWhere('tronco') } },
+    where: { lodgeId, account: { type: 'RECEIVABLE', sessionId: null, sessionDate: null, chartAccount: fundChartWhere('tronco') } },
     select: { id: true, amount: true, paidAt: true, method: true, note: true, bankAccount: { select: { name: true } } },
     orderBy: { paidAt: 'desc' },
     take: 100,
@@ -208,41 +208,87 @@ export async function loadUnassignedTronco(db: Db, lodgeId: string): Promise<Una
     .map((p) => ({ paymentId: p.id, amount: Number(p.amount), paidAt: p.paidAt, bankName: p.bankAccount?.name ?? null, method: p.method, note: p.note, source: src.get(p.id) ?? null }));
 }
 
+export interface TroncoSessionTarget {
+  /** Sessão cadastrada. */
+  sessionId: string | null;
+  /** Dia (AAAA-MM-DD) de uma sessão que não está cadastrada no sistema (sessão antiga). Vale só sem `sessionId`. */
+  sessionDate: string | null;
+  /** Origem do dinheiro; sem informar, mantém a que já estava (ou "sem divisão"). */
+  source?: TroncoSource;
+}
+
+/** Valida o destino: sessão da loja ou data real, não futura. */
+export async function resolveTroncoTarget(db: Db, lodgeId: string, t: TroncoSessionTarget): Promise<{ ok: true; sessionId: string | null; sessionDate: Date | null } | Fail> {
+  if (t.sessionId) {
+    const s = await db.session.findFirst({ where: { id: t.sessionId, lodgeId }, select: { id: true } });
+    if (!s) return { ok: false, status: 404, error: 'Sessão não encontrada.' };
+    return { ok: true, sessionId: s.id, sessionDate: null };
+  }
+  if (t.sessionDate) {
+    const d = parseDateInput(t.sessionDate);
+    if (!d) return { ok: false, status: 400, error: 'Informe a data em que a sessão ocorreu (ano com 4 dígitos).' };
+    if (d.getTime() > todayBR().getTime()) return { ok: false, status: 400, error: 'A data da sessão não pode ser futura.' };
+    return { ok: true, sessionId: null, sessionDate: dateOnlyUTC(d) };
+  }
+  return { ok: true, sessionId: null, sessionDate: null };
+}
+
 /**
- * Liga uma entrada do Tronco já lançada a uma sessão (ou troca/solta a sessão) e guarda a origem do dinheiro. Não mexe em valor,
- * data nem conta: o saldo e o extrato do banco ficam como estão. Só quem confirma o Tronco.
+ * Liga uma entrada do Tronco a uma sessão cadastrada, ou ao DIA de uma sessão que não está cadastrada (sessão antiga), ou solta
+ * a ligação. Não mexe em valor, data nem conta: o saldo e o extrato do banco ficam como estão. Só quem confirma o Tronco.
+ * Conta ainda sem pagamento (pendente) só recebe a ligação; a origem do dinheiro vale quando houver pagamento.
  */
-export async function assignTroncoToSession(
-  db: Db, lodgeId: string, user: TroncoUser, input: { paymentId: string; sessionId: string | null; source: TroncoSource },
+export async function assignTroncoToAccount(
+  db: Db, lodgeId: string, user: TroncoUser, input: TroncoSessionTarget & { accountId: string },
 ): Promise<{ ok: true } | Fail> {
   if (!canConfirmTronco(user.role)) return { ok: false, status: 403, error: 'Só o Tesoureiro, o Venerável e o Administrador atribuem o Tronco a uma sessão.' };
-  const payment = await db.payment.findFirst({
-    where: { id: input.paymentId, lodgeId, account: { type: 'RECEIVABLE', chartAccount: fundChartWhere('tronco') } },
-    select: { id: true, amount: true, method: true, accountId: true, account: { select: { sessionId: true } } },
+  const account = await db.account.findFirst({
+    where: { id: input.accountId, lodgeId, type: 'RECEIVABLE', chartAccount: fundChartWhere('tronco') },
+    select: { id: true, sessionId: true, sessionDate: true, payments: { select: { id: true, amount: true, method: true }, orderBy: { paidAt: 'desc' } } },
   });
-  if (!payment || !payment.accountId) return { ok: false, status: 404, error: 'Entrada do Tronco não encontrada.' };
-  if (await db.campaignDonation.findFirst({ where: { lodgeId, paymentId: payment.id }, select: { id: true } })) return { ok: false, status: 409, error: 'Esta entrada é doação de uma campanha, não do Tronco de sessão.' };
-  if (input.sessionId) {
-    const s = await db.session.findFirst({ where: { id: input.sessionId, lodgeId }, select: { id: true } });
-    if (!s) return { ok: false, status: 404, error: 'Sessão não encontrada.' };
+  if (!account) return { ok: false, status: 404, error: 'Entrada do Tronco não encontrada.' };
+  const payments = account.payments;
+  if (payments.length > 0 && (await db.campaignDonation.findFirst({ where: { lodgeId, paymentId: { in: payments.map((p) => p.id) } }, select: { id: true } }))) {
+    return { ok: false, status: 409, error: 'Esta entrada é doação de uma campanha, não do Tronco de sessão.' };
   }
-  const previous = payment.account?.sessionId ?? null;
-  await db.account.update({ where: { id: payment.accountId }, data: { sessionId: input.sessionId, description: input.sessionId ? 'Tronco passado em sessão' : 'Doador não identificado' } });
-  const intake = await db.troncoIntake.findFirst({ where: { lodgeId, paymentId: payment.id }, select: { id: true } });
-  if (intake) {
-    await db.troncoIntake.update({ where: { id: intake.id }, data: { sessionId: input.sessionId, source: input.source } });
-  } else {
-    await db.troncoIntake.create({
-      data: {
-        lodgeId, sessionId: input.sessionId, source: input.source, channel: payment.method === 'cash' ? 'cash' : payment.method === 'pix' ? 'pix' : 'other',
-        amount: payment.amount, status: 'confirmed', code: generateTroncoCode(), note: 'Atribuída à sessão depois do lançamento',
-        declaredById: user.id, declaredByName: user.name, confirmedById: user.id, confirmedAt: new Date(), paymentId: payment.id,
-      },
-    });
+  const target = await resolveTroncoTarget(db, lodgeId, input);
+  if (!target.ok) return target;
+  await db.account.update({
+    where: { id: account.id },
+    data: { sessionId: target.sessionId, sessionDate: target.sessionDate, description: target.sessionId || target.sessionDate ? 'Tronco passado em sessão' : 'Doador não identificado' },
+  });
+  for (const pay of payments.slice(0, 1)) {
+    const intake = await db.troncoIntake.findFirst({ where: { lodgeId, paymentId: pay.id }, select: { id: true, source: true } });
+    if (intake) {
+      await db.troncoIntake.update({ where: { id: intake.id }, data: { sessionId: target.sessionId, ...(input.source ? { source: input.source } : {}) } });
+    } else {
+      await db.troncoIntake.create({
+        data: {
+          lodgeId, sessionId: target.sessionId, source: input.source ?? 'mixed', channel: pay.method === 'cash' ? 'cash' : pay.method === 'pix' ? 'pix' : 'other',
+          amount: pay.amount, status: 'confirmed', code: generateTroncoCode(), note: 'Atribuída à sessão depois do lançamento',
+          declaredById: user.id, declaredByName: user.name, confirmedById: user.id, confirmedAt: new Date(), paymentId: pay.id,
+        },
+      });
+    }
   }
-  await logAudit(db, { lodgeId, userId: user.id, action: 'UPDATE', entity: 'tronco-assign', entityId: payment.id, metadata: { from: previous, to: input.sessionId, source: input.source, amount: Number(payment.amount) } });
+  await logAudit(db, {
+    lodgeId, userId: user.id, action: 'UPDATE', entity: 'tronco-assign', entityId: account.id,
+    metadata: { from: account.sessionId ?? (account.sessionDate ? account.sessionDate.toISOString().slice(0, 10) : null), to: target.sessionId ?? (target.sessionDate ? target.sessionDate.toISOString().slice(0, 10) : null), source: input.source ?? null },
+  });
   return { ok: true };
 }
+
+/** Atribui pelo pagamento (quadro "Tronco sem sessão"). */
+export async function assignTroncoToSession(
+  db: Db, lodgeId: string, user: TroncoUser, input: TroncoSessionTarget & { paymentId: string },
+): Promise<{ ok: true } | Fail> {
+  const payment = await db.payment.findFirst({ where: { id: input.paymentId, lodgeId }, select: { accountId: true } });
+  if (!payment?.accountId) return { ok: false, status: 404, error: 'Entrada do Tronco não encontrada.' };
+  return assignTroncoToAccount(db, lodgeId, user, { accountId: payment.accountId, sessionId: input.sessionId, sessionDate: input.sessionDate, source: input.source });
+}
+
+/** Chave de uma sessão que não está cadastrada: `d:AAAA-MM-DD`. */
+export const UNREGISTERED_PREFIX = 'd:';
 
 export interface TroncoSessionTotals extends TroncoSessionRow { title: string | null; date: Date | null }
 
@@ -251,24 +297,25 @@ export interface TroncoSessionTotals extends TroncoSessionRow { title: string | 
  * (entradas declaradas ainda não lançadas) e a divisão por origem do confirmado. Visível a todos os cargos.
  */
 export async function loadTroncoBySession(db: Db, lodgeId: string, opts: { sessionIds?: string[]; limit?: number } = {}): Promise<TroncoSessionTotals[]> {
-  const sessionFilter = opts.sessionIds ? { in: opts.sessionIds } : { not: null };
   const [payments, intakes] = await Promise.all([
     db.payment.findMany({
-      where: { lodgeId, account: { type: 'RECEIVABLE', sessionId: sessionFilter, chartAccount: fundChartWhere('tronco') } },
-      select: { id: true, amount: true, account: { select: { sessionId: true } } },
+      where: { lodgeId, account: { type: 'RECEIVABLE', ...(opts.sessionIds ? { sessionId: { in: opts.sessionIds } } : { OR: [{ sessionId: { not: null } }, { sessionDate: { not: null } }] }), chartAccount: fundChartWhere('tronco') } },
+      select: { id: true, amount: true, account: { select: { sessionId: true, sessionDate: true } } },
     }),
     db.troncoIntake.findMany({ where: { lodgeId, ...(opts.sessionIds ? { sessionId: { in: opts.sessionIds } } : {}), status: { in: ['pending', 'confirmed'] } }, select: { status: true, amount: true, source: true, sessionId: true, paymentId: true } }),
   ]);
   const sourceByPayment = new Map(intakes.filter((i) => i.paymentId).map((i) => [i.paymentId!, i.source as TroncoSource]));
   const rows = summarizeBySession([
-    ...payments.map((p) => ({ sessionId: p.account?.sessionId ?? null, amount: Number(p.amount), status: 'confirmed', source: sourceByPayment.get(p.id) ?? null })),
+    ...payments.map((p) => ({ sessionId: p.account?.sessionId ?? (p.account?.sessionDate ? `${UNREGISTERED_PREFIX}${p.account.sessionDate.toISOString().slice(0, 10)}` : null), amount: Number(p.amount), status: 'confirmed', source: sourceByPayment.get(p.id) ?? null })),
     ...intakes.filter((i) => i.status === 'pending').map((i) => ({ sessionId: i.sessionId, amount: Number(i.amount), status: 'pending', source: i.source as TroncoSource })),
   ]).filter((r) => r.sessionId);
-  const ids = rows.map((r) => r.sessionId!) ;
+  const ids = rows.map((r) => r.sessionId!).filter((id) => !id.startsWith(UNREGISTERED_PREFIX));
   const sessions = ids.length ? await db.session.findMany({ where: { lodgeId, id: { in: ids } }, select: { id: true, title: true, date: true } }) : [];
   const info = new Map(sessions.map((s) => [s.id, s]));
   return rows
-    .map((r) => ({ ...r, title: info.get(r.sessionId!)?.title ?? null, date: info.get(r.sessionId!)?.date ?? null }))
+    .map((r) => (r.sessionId!.startsWith(UNREGISTERED_PREFIX)
+      ? { ...r, title: null, date: new Date(`${r.sessionId!.slice(UNREGISTERED_PREFIX.length)}T12:00:00Z`) }
+      : { ...r, title: info.get(r.sessionId!)?.title ?? null, date: info.get(r.sessionId!)?.date ?? null }))
     .sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0))
     .slice(0, opts.limit ?? 50);
 }

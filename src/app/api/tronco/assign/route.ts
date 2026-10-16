@@ -16,10 +16,11 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const paymentId = String(body?.paymentId ?? '');
   const sessionId = body?.sessionId ? String(body.sessionId) : null;
-  const source = isTroncoSource(body?.source) ? body.source : 'mixed';
+  const sessionDate = body?.sessionDate ? String(body.sessionDate) : null;
+  const source = isTroncoSource(body?.source) ? body.source : undefined;
   if (!paymentId) return NextResponse.json({ error: 'Informe a entrada do Tronco.' }, { status: 400 });
   const result = await withTenant(String(lodgeId), (db) =>
-    assignTroncoToSession(db, String(lodgeId), { id: String(session.user.id), name: String(session.user.name ?? 'Usuário'), role: session.user.role }, { paymentId, sessionId, source }),
+    assignTroncoToSession(db, String(lodgeId), { id: String(session.user.id), name: String(session.user.name ?? 'Usuário'), role: session.user.role }, { paymentId, sessionId, sessionDate, source }),
   );
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ ok: true });

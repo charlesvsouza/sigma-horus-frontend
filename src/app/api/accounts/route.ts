@@ -12,7 +12,7 @@ import { notifyApprovers } from '@/lib/expense-approval-server';
 import { NextResponse } from 'next/server';
 import { fundChartWhere } from '@/lib/funds';
 import { canConfirmTronco, isTroncoSource } from '@/lib/tronco-session';
-import { assignTroncoToSession } from '@/lib/tronco-server';
+import { assignTroncoToSession, resolveTroncoTarget } from '@/lib/tronco-server';
 
 // Só 'paid' dispara a baixa; qualquer outro texto criaria conta "paga" sem Payment.
 const ACCOUNT_STATUSES = ['pending', 'paid'];
@@ -78,7 +78,8 @@ export async function POST(request: Request) {
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
   const isDues = Boolean(body?.isDues);
   const troncoSessionId = body?.sessionId ? String(body.sessionId) : null;
-  const troncoSource = isTroncoSource(body?.troncoSource) ? body.troncoSource : 'mixed';
+  const troncoSessionDate = body?.sessionDate ? String(body.sessionDate) : null;
+  const troncoSource = isTroncoSource(body?.troncoSource) ? body.troncoSource : undefined;
   const paidAt = body?.paidAt ? new Date(body.paidAt) : todayBR();
   // Comprovante da baixa (despesa lançada já como paga): enviado antes por /api/payment-proofs.
   const proof = readProofRef(String(lodgeId), body);
@@ -120,15 +121,17 @@ export async function POST(request: Request) {
     // Mensalidade é sempre de um irmão: sem o vínculo, não entra no Art. 002 de ninguém.
     if ((isDues || chartIsDues) && type === 'RECEIVABLE' && !memberId) return { duesNoMember: true } as const;
 
-    // Tronco passado em sessão: só em receita do Tronco, por quem confirma o Tronco, com sessão desta loja.
+    // Tronco passado em sessão (cadastrada ou só a data de uma sessão antiga): só em receita do Tronco, por quem confirma o Tronco.
     let validSessionId: string | null = null;
-    if (troncoSessionId) {
+    let validSessionDate: Date | null = null;
+    if (troncoSessionId || troncoSessionDate) {
       if (!canConfirmTronco(role)) return { troncoError: 'Só o Tesoureiro, o Venerável e o Administrador atribuem o Tronco a uma sessão.' } as const;
       const isTroncoChart = validChartId && type === 'RECEIVABLE' ? await db.chartAccount.findFirst({ where: { id: validChartId, lodgeId: String(lodgeId), ...fundChartWhere('tronco') }, select: { id: true } }) : null;
       if (!isTroncoChart) return { troncoError: 'A sessão só vale para entradas na categoria do Tronco.' } as const;
-      const sessionRow = await db.session.findFirst({ where: { id: troncoSessionId, lodgeId: String(lodgeId) }, select: { id: true } });
-      if (!sessionRow) return { troncoError: 'Sessão não encontrada.' } as const;
-      validSessionId = sessionRow.id;
+      const target = await resolveTroncoTarget(db, String(lodgeId), { sessionId: troncoSessionId, sessionDate: troncoSessionDate });
+      if (!target.ok) return { troncoError: target.error } as const;
+      validSessionId = target.sessionId;
+      validSessionDate = target.sessionDate;
     }
 
     // Garante que a contraparte informada pertence à loja.
@@ -171,6 +174,7 @@ export async function POST(request: Request) {
         counterpartyId: validCounterpartyId,
         chartAccountId: validChartId,
         sessionId: validSessionId,
+        sessionDate: validSessionDate,
         bankAccountId: validBankAccountId,
         isDues: isDues || chartIsDues,
         approvalStatus,
@@ -200,9 +204,9 @@ export async function POST(request: Request) {
         return { settleError: settled } as const;
       }
       // Guarda a origem do dinheiro (obreiros/visitantes) do Tronco da sessão.
-      if (validSessionId) {
+      if (validSessionId || validSessionDate) {
         const pay = await db.payment.findFirst({ where: { lodgeId: String(lodgeId), accountId: created.id }, select: { id: true } });
-        if (pay) await assignTroncoToSession(db, String(lodgeId), { id: String(session.user.id), name: String(session.user.name ?? 'Usuário'), role }, { paymentId: pay.id, sessionId: validSessionId, source: troncoSource });
+        if (pay) await assignTroncoToSession(db, String(lodgeId), { id: String(session.user.id), name: String(session.user.name ?? 'Usuário'), role }, { paymentId: pay.id, sessionId: validSessionId, sessionDate: validSessionDate ? validSessionDate.toISOString().slice(0, 10) : null, source: troncoSource });
       }
     }
 

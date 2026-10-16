@@ -138,6 +138,8 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
       awaitingAsaas: a.invoices.length > 0,
       paid: a.payments.reduce((sum, p) => sum + Number(p.amount), 0),
       chartAccountId: a.chartAccountId ?? null,
+      sessionId: a.sessionId ?? null,
+      sessionDate: a.sessionDate ? a.sessionDate.toISOString().slice(0, 10) : null,
       chartName: a.chartAccount?.name ?? null,
       // Doador do Tronco cujo nome está mascarado para este cargo: nem o filtro por pessoa pode revelar quem é.
       personHidden: Boolean(isSolidarity && ((a.member && donorDisplayName(a.member.name, isSolidarity, role) !== a.member.name) || (a.counterparty && donorDisplayName(a.counterparty.name, isSolidarity, role) !== a.counterparty.name))),
@@ -175,7 +177,7 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
           <Link href="/dashboard/acordos" className="mt-2 inline-block text-xs text-gold hover:underline">Ver os acordos →</Link>
         </section>
       ) : null}
-      <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} troncoSessions={troncoSessions} startWithForm={startWithForm} lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} issuedBy={session?.user?.name ?? null} art002Enabled={isArt002Enabled(data.lodge)} />
+      <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} troncoSessions={troncoSessions} canAssignTronco={canConfirmTronco(role)} startWithForm={startWithForm} lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} issuedBy={session?.user?.name ?? null} art002Enabled={isArt002Enabled(data.lodge)} />
     </>
   );
 }

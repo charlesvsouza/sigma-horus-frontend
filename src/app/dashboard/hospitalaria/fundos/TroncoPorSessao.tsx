@@ -106,7 +106,7 @@ export default function TroncoPorSessao({
                 {sessions.map((r) => (
                   <tr key={r.sessionId}>
                     <td className="border-b border-white/5 px-2 py-2 text-sand">
-                      {fmtDate(r.date)} — {r.title ?? 'Sessão'}
+                      {fmtDate(r.date)} — {r.sessionId.startsWith('d:') ? 'Sessão não cadastrada no sistema' : (r.title ?? 'Sessão')}
                       {r.identifiers && r.identifiers.length > 0 ? (
                         <span className="mt-0.5 block text-xs text-sand-dark">
                           Identificador no extrato: {r.identifiers.map((i) => <span key={i.identifier} className="mr-3">{i.source === 'visitors' ? 'visitantes' : 'obreiros'} <span className="font-mono text-sand-light">{i.identifier}</span></span>)}
@@ -118,7 +118,7 @@ export default function TroncoPorSessao({
                           {canConfirm ? <Button size="sm" variant="secondary" disabled={busy === `st-${r.sessionId}-${st.source}`} onClick={() => void postStatement(r, st.source)}>{busy === `st-${r.sessionId}-${st.source}` ? '…' : 'Lançar do extrato'}</Button> : null}
                         </span>
                       ))}
-                      {canConfirm ? <Link href={`/dashboard/hospitalaria/fundos?lancar=${r.sessionId}`} className="mt-1 inline-block text-xs text-gold underline underline-offset-2">Lançar nesta sessão</Link> : null}
+                      {canConfirm && !r.sessionId.startsWith('d:') ? <Link href={`/dashboard/hospitalaria/fundos?lancar=${r.sessionId}`} className="mt-1 inline-block text-xs text-gold underline underline-offset-2">Lançar nesta sessão</Link> : null}
                     </td>
                     <td className="border-b border-white/5 px-2 py-2 text-right tabular-nums text-sand-light">{brl(r.confirmed)}</td>
                     <td className="border-b border-white/5 px-2 py-2 text-right tabular-nums text-sand-dark">{brl(r.members)}</td>
