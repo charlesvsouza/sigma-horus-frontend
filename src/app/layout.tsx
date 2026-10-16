@@ -4,6 +4,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SourceCapture } from "@/components/source-capture";
 import { NetworkGuard } from "@/components/network-guard";
+import { DateYearGuard } from "@/components/date-year-guard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,6 +79,7 @@ export default function RootLayout({
         {children}
         <SourceCapture />
         <NetworkGuard />
+        <DateYearGuard />
         <Analytics />
       </body>
     </html>

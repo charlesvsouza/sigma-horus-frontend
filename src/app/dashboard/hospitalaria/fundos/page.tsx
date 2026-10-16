@@ -8,9 +8,10 @@ import { FUND_LABELS, fundChartWhere, isFundPurpose, type FundPurpose } from '@/
 import { buildFundReport, type FundMovementRow } from '@/lib/funds-report';
 import { getReportSignatories } from '@/lib/report-signatories';
 import { activeSessionFor, canConfirmTronco } from '@/lib/tronco-session';
-import { findStatementMatches, loadTroncoBySession } from '@/lib/tronco-server';
+import { findStatementMatches, loadTroncoBySession, loadUnassignedTronco } from '@/lib/tronco-server';
 import FundosClient from './FundosClient';
 import TroncoPorSessao from './TroncoPorSessao';
+import TroncoSemSessao from './TroncoSemSessao';
 
 const BR = 'America/Sao_Paulo';
 const fmtBR = (d: Date) => d.toLocaleDateString('pt-BR', { timeZone: BR });
@@ -104,6 +105,8 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
       ? await db.troncoIntake.findMany({ where: { lodgeId: lid, status: 'pending' }, orderBy: { declaredAt: 'desc' }, take: 50, include: { session: { select: { title: true, date: true } } } })
       : [];
 
+    const unassignedTronco = fund === 'tronco' && canConfirmTronco(role) ? await loadUnassignedTronco(db, lid) : [];
+
     const campaigns =
       fund === 'tronco'
         ? await db.campaign.findMany({ where: { lodgeId: lid }, include: { donations: { select: { amount: true, receivedAt: true, paymentId: true } } }, orderBy: { createdAt: 'desc' } })
@@ -112,7 +115,7 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
     const donationCampaign = new Map<string, string>();
     for (const c of campaigns) for (const dn of c.donations) if (dn.paymentId) donationCampaign.set(dn.paymentId, c.title);
 
-    return { lodge, payments, members, recentSessions, bankAccounts, campaigns, donationCampaign, troncoSessions, pendingIntakes, lodgeQrs, statementMatches };
+    return { lodge, payments, members, recentSessions, bankAccounts, campaigns, donationCampaign, troncoSessions, pendingIntakes, lodgeQrs, statementMatches, unassignedTronco };
   });
 
   const movements: FundMovementRow[] = data.payments.map((p) => {
@@ -156,8 +159,15 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
   const activeSession = activeSessionFor(data.recentSessions, new Date());
   const canConfirm = canConfirmTronco(role);
 
+  const sessionDay = (d: Date) => new Date(d.getTime() - 3 * 3_600_000).toISOString().slice(0, 10);
+  const unassigned = data.unassignedTronco.map((u) => ({
+    paymentId: u.paymentId, amount: u.amount, paidAt: u.paidAt.toISOString(), bankName: u.bankName, method: u.method, note: u.note, source: u.source,
+    suggestedSessionId: data.recentSessions.find((x) => sessionDay(x.date) === u.paidAt.toISOString().slice(0, 10))?.id ?? null,
+  }));
+
   return (
     <>
+    <TroncoSemSessao items={unassigned} sessions={data.recentSessions.map((x) => ({ id: x.id, label: `${fmtBR(x.date)} — ${x.title}` }))} />
     <FundosClient
       fund={fund}
       fundLabels={FUND_LABELS}

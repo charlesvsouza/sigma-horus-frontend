@@ -185,6 +185,65 @@ export async function postStatementCredits(
   return { ok: true, total: m.total, count: m.count, paymentId: rec.paymentId! };
 }
 
+export interface UnassignedTronco { paymentId: string; amount: number; paidAt: Date; bankName: string | null; method: string; note: string | null; source: TroncoSource | null }
+
+/** Entradas do Tronco já lançadas no caixa que não estão ligadas a nenhuma sessão (extrato, Pagamentos, aporte avulso…). */
+export async function loadUnassignedTronco(db: Db, lodgeId: string): Promise<UnassignedTronco[]> {
+  const payments = await db.payment.findMany({
+    where: { lodgeId, account: { type: 'RECEIVABLE', sessionId: null, chartAccount: fundChartWhere('tronco') } },
+    select: { id: true, amount: true, paidAt: true, method: true, note: true, bankAccount: { select: { name: true } } },
+    orderBy: { paidAt: 'desc' },
+    take: 100,
+  });
+  if (payments.length === 0) return [];
+  const ids = payments.map((p) => p.id);
+  const [intakes, donations] = await Promise.all([
+    db.troncoIntake.findMany({ where: { lodgeId, paymentId: { in: ids } }, select: { paymentId: true, source: true } }),
+    db.campaignDonation.findMany({ where: { lodgeId, paymentId: { in: ids } }, select: { paymentId: true } }),
+  ]);
+  const inCampaign = new Set(donations.map((d) => d.paymentId));
+  const src = new Map(intakes.map((i) => [i.paymentId, i.source as TroncoSource]));
+  return payments
+    .filter((p) => !inCampaign.has(p.id))
+    .map((p) => ({ paymentId: p.id, amount: Number(p.amount), paidAt: p.paidAt, bankName: p.bankAccount?.name ?? null, method: p.method, note: p.note, source: src.get(p.id) ?? null }));
+}
+
+/**
+ * Liga uma entrada do Tronco já lançada a uma sessão (ou troca/solta a sessão) e guarda a origem do dinheiro. Não mexe em valor,
+ * data nem conta: o saldo e o extrato do banco ficam como estão. Só quem confirma o Tronco.
+ */
+export async function assignTroncoToSession(
+  db: Db, lodgeId: string, user: TroncoUser, input: { paymentId: string; sessionId: string | null; source: TroncoSource },
+): Promise<{ ok: true } | Fail> {
+  if (!canConfirmTronco(user.role)) return { ok: false, status: 403, error: 'Só o Tesoureiro, o Venerável e o Administrador atribuem o Tronco a uma sessão.' };
+  const payment = await db.payment.findFirst({
+    where: { id: input.paymentId, lodgeId, account: { type: 'RECEIVABLE', chartAccount: fundChartWhere('tronco') } },
+    select: { id: true, amount: true, method: true, accountId: true, account: { select: { sessionId: true } } },
+  });
+  if (!payment || !payment.accountId) return { ok: false, status: 404, error: 'Entrada do Tronco não encontrada.' };
+  if (await db.campaignDonation.findFirst({ where: { lodgeId, paymentId: payment.id }, select: { id: true } })) return { ok: false, status: 409, error: 'Esta entrada é doação de uma campanha, não do Tronco de sessão.' };
+  if (input.sessionId) {
+    const s = await db.session.findFirst({ where: { id: input.sessionId, lodgeId }, select: { id: true } });
+    if (!s) return { ok: false, status: 404, error: 'Sessão não encontrada.' };
+  }
+  const previous = payment.account?.sessionId ?? null;
+  await db.account.update({ where: { id: payment.accountId }, data: { sessionId: input.sessionId, description: input.sessionId ? 'Tronco passado em sessão' : 'Doador não identificado' } });
+  const intake = await db.troncoIntake.findFirst({ where: { lodgeId, paymentId: payment.id }, select: { id: true } });
+  if (intake) {
+    await db.troncoIntake.update({ where: { id: intake.id }, data: { sessionId: input.sessionId, source: input.source } });
+  } else {
+    await db.troncoIntake.create({
+      data: {
+        lodgeId, sessionId: input.sessionId, source: input.source, channel: payment.method === 'cash' ? 'cash' : payment.method === 'pix' ? 'pix' : 'other',
+        amount: payment.amount, status: 'confirmed', code: generateTroncoCode(), note: 'Atribuída à sessão depois do lançamento',
+        declaredById: user.id, declaredByName: user.name, confirmedById: user.id, confirmedAt: new Date(), paymentId: payment.id,
+      },
+    });
+  }
+  await logAudit(db, { lodgeId, userId: user.id, action: 'UPDATE', entity: 'tronco-assign', entityId: payment.id, metadata: { from: previous, to: input.sessionId, source: input.source, amount: Number(payment.amount) } });
+  return { ok: true };
+}
+
 export interface TroncoSessionTotals extends TroncoSessionRow { title: string | null; date: Date | null }
 
 /**

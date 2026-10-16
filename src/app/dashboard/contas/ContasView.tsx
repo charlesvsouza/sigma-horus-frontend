@@ -5,8 +5,12 @@ import { isArt002Enabled } from '@/lib/overdue';
 import { approvalSummary, canApproveExpense, evaluateApprovals, isApproverRole } from '@/lib/expense-approval';
 import { loadLaunchers } from '@/lib/expense-approval-server';
 import { PAYMENT_PROOF_ENTITY } from '@/lib/payment-proof';
+import { brl } from '@/lib/currency';
+import { summarizeBlock } from '@/lib/member-block-server';
 import { withTenant } from '@/lib/prisma';
+import Link from 'next/link';
 import { normalizeRole } from '@/lib/rbac';
+import { canConfirmTronco } from '@/lib/tronco-session';
 import HistoryWindowNote from '@/components/history-window-note';
 import { historyCutoff } from '@/lib/list-window';
 import ContasClient from './ContasClient';
@@ -20,11 +24,25 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
   const cutoff = historyCutoff();
   const data = lodgeId
     ? await withTenant(String(lodgeId), async (db) => {
+      // Contas que fazem parte de um acordo em aberto saem da lista: o valor foi somado no acordo e
+      // é cobrado pelas parcelas dele (continuam no banco, onde os pagamentos do acordo as abatem).
+      const openBlocks = await db.memberBlock.findMany({
+        where: { lodgeId: String(lodgeId), status: 'open' },
+        include: { items: true, member: { select: { name: true } } },
+        orderBy: { blockedAt: 'asc' },
+      });
+      const inAgreement = openBlocks.flatMap((b) => b.items.map((i) => i.accountId));
+      const agreements = await Promise.all(openBlocks.map(async (b) => {
+        const s = await summarizeBlock(db, b);
+        return { id: b.id, memberName: b.member.name, total: s.total, paid: s.paid, remaining: s.remaining, installments: s.installments };
+      }));
+      const notInAgreement = inAgreement.length ? { id: { notIn: inAgreement } } : {};
       const base = {
+        agreements,
         // Em aberto (qualquer data) + o que venceu nos últimos 12 meses; o resto fica em "Ver todo o histórico".
-        hiddenOld: fullHistory ? 0 : await db.account.count({ where: { lodgeId: String(lodgeId), status: 'paid', dueDate: { lt: cutoff } } }),
+        hiddenOld: fullHistory ? 0 : await db.account.count({ where: { lodgeId: String(lodgeId), ...notInAgreement, status: 'paid', dueDate: { lt: cutoff } } }),
         accounts: await db.account.findMany({
-          where: { lodgeId: String(lodgeId), ...(fullHistory ? {} : { OR: [{ status: { not: 'paid' } }, { dueDate: { gte: cutoff } }] }) },
+          where: { lodgeId: String(lodgeId), ...notInAgreement, ...(fullHistory ? {} : { OR: [{ status: { not: 'paid' } }, { dueDate: { gte: cutoff } }] }) },
           include: {
             member: { select: { id: true, name: true } },
             counterparty: { select: { id: true, name: true, kind: true } },
@@ -47,9 +65,12 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
         }),
         chartAccounts: await db.chartAccount.findMany({
           where: { lodgeId: String(lodgeId) },
-          select: { id: true, code: true, name: true, type: true, isDues: true },
+          select: { id: true, code: true, name: true, type: true, isDues: true, fundPurpose: true, isSolidarity: true },
           orderBy: { code: 'asc' },
         }),
+        troncoSessions: canConfirmTronco(role)
+          ? await db.session.findMany({ where: { lodgeId: String(lodgeId), date: { lte: new Date(new Date().getTime() + 6 * 3_600_000) } }, select: { id: true, title: true, date: true }, orderBy: { date: 'desc' }, take: 40 })
+          : [],
         counterparties: await db.counterparty.findMany({
           where: { lodgeId: String(lodgeId), active: true },
           select: { id: true, name: true, kind: true },
@@ -71,7 +92,7 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
       const people = userIds.length ? await db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true, role: true } }) : [];
       return { ...base, approvalRows, launchers, people };
     })
-    : { accounts: [], members: [], chartAccounts: [], counterparties: [], financialAccounts: [], lodge: null, hiddenOld: 0, receiptRows: [], proofRows: [], approvalRows: [], launchers: new Map<string, string>(), people: [] as { id: string; name: string; role: string }[] };
+    : { agreements: [] as { id: string; memberName: string; total: number; paid: number; remaining: number; installments: number }[], accounts: [], members: [], chartAccounts: [], troncoSessions: [], counterparties: [], financialAccounts: [], lodge: null, hiddenOld: 0, receiptRows: [], proofRows: [], approvalRows: [], launchers: new Map<string, string>(), people: [] as { id: string; name: string; role: string }[] };
 
   const withReceipt = new Set<string>();
   for (const id of new Set(data.receiptRows.map((r) => r.entityId))) {
@@ -132,12 +153,29 @@ export default async function ContasView({ startWithForm = false, fullHistory = 
     name: c.name,
     type: c.type,
     isDues: c.isDues,
+    isTronco: c.type === 'REVENUE' && (c.fundPurpose === 'tronco' || c.isSolidarity),
   }));
+  const troncoSessions = data.troncoSessions.map((x) => ({ id: x.id, title: x.title, day: new Date(x.date.getTime() - 3 * 3_600_000).toISOString().slice(0, 10) }));
 
   return (
     <>
       <HistoryWindowNote full={fullHistory} hidden={data.hiddenOld} noun="lançamentos" basePath={basePath} />
-      <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} startWithForm={startWithForm} lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} issuedBy={session?.user?.name ?? null} art002Enabled={isArt002Enabled(data.lodge)} />
+      {data.agreements.length > 0 ? (
+        <section className="mx-auto mb-4 max-w-6xl rounded-xl border border-white/10 px-4 py-3 sm:px-6" aria-label="Acordos em aberto">
+          <h2 className="text-sm font-medium">Acordos em aberto</h2>
+          <p className="mt-1 text-xs text-sand-dark">As contas que entraram em um acordo não aparecem mais na lista abaixo: o valor está somado no acordo e é cobrado pelas parcelas dele.</p>
+          <ul className="mt-2 divide-y divide-white/10 text-sm">
+            {data.agreements.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span>{a.memberName} · {a.installments === 1 ? 'à vista' : `${a.installments} parcelas`}</span>
+                <span className="tabular-nums text-sand-dark">Total {brl(a.total)} · pago {brl(a.paid)} · saldo <strong className="text-emerald-300">{brl(a.remaining)}</strong></span>
+              </li>
+            ))}
+          </ul>
+          <Link href="/dashboard/acordos" className="mt-2 inline-block text-xs text-gold hover:underline">Ver os acordos →</Link>
+        </section>
+      ) : null}
+      <ContasClient accounts={accounts} members={data.members} chartAccounts={chartAccounts} counterparties={data.counterparties} financialAccounts={data.financialAccounts} role={role} troncoSessions={troncoSessions} startWithForm={startWithForm} lodgeName={data.lodge?.name ?? 'Loja'} crestUrl={data.lodge?.crestUrl ?? null} issuedBy={session?.user?.name ?? null} art002Enabled={isArt002Enabled(data.lodge)} />
     </>
   );
 }

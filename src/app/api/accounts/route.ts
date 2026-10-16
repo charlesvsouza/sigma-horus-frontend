@@ -10,6 +10,9 @@ import { blockedMemberError } from '@/lib/member-block-server';
 import { readProofRef } from '@/lib/payment-proof';
 import { notifyApprovers } from '@/lib/expense-approval-server';
 import { NextResponse } from 'next/server';
+import { fundChartWhere } from '@/lib/funds';
+import { canConfirmTronco, isTroncoSource } from '@/lib/tronco-session';
+import { assignTroncoToSession } from '@/lib/tronco-server';
 
 // Só 'paid' dispara a baixa; qualquer outro texto criaria conta "paga" sem Payment.
 const ACCOUNT_STATUSES = ['pending', 'paid'];
@@ -74,6 +77,8 @@ export async function POST(request: Request) {
   const chartAccountId = body?.chartAccountId ? String(body.chartAccountId) : null;
   const bankAccountId = body?.bankAccountId ? String(body.bankAccountId) : null;
   const isDues = Boolean(body?.isDues);
+  const troncoSessionId = body?.sessionId ? String(body.sessionId) : null;
+  const troncoSource = isTroncoSource(body?.troncoSource) ? body.troncoSource : 'mixed';
   const paidAt = body?.paidAt ? new Date(body.paidAt) : todayBR();
   // Comprovante da baixa (despesa lançada já como paga): enviado antes por /api/payment-proofs.
   const proof = readProofRef(String(lodgeId), body);
@@ -115,6 +120,17 @@ export async function POST(request: Request) {
     // Mensalidade é sempre de um irmão: sem o vínculo, não entra no Art. 002 de ninguém.
     if ((isDues || chartIsDues) && type === 'RECEIVABLE' && !memberId) return { duesNoMember: true } as const;
 
+    // Tronco passado em sessão: só em receita do Tronco, por quem confirma o Tronco, com sessão desta loja.
+    let validSessionId: string | null = null;
+    if (troncoSessionId) {
+      if (!canConfirmTronco(role)) return { troncoError: 'Só o Tesoureiro, o Venerável e o Administrador atribuem o Tronco a uma sessão.' } as const;
+      const isTroncoChart = validChartId && type === 'RECEIVABLE' ? await db.chartAccount.findFirst({ where: { id: validChartId, lodgeId: String(lodgeId), ...fundChartWhere('tronco') }, select: { id: true } }) : null;
+      if (!isTroncoChart) return { troncoError: 'A sessão só vale para entradas na categoria do Tronco.' } as const;
+      const sessionRow = await db.session.findFirst({ where: { id: troncoSessionId, lodgeId: String(lodgeId) }, select: { id: true } });
+      if (!sessionRow) return { troncoError: 'Sessão não encontrada.' } as const;
+      validSessionId = sessionRow.id;
+    }
+
     // Garante que a contraparte informada pertence à loja.
     let validCounterpartyId: string | null = null;
     if (counterpartyId) {
@@ -154,6 +170,7 @@ export async function POST(request: Request) {
         memberId,
         counterpartyId: validCounterpartyId,
         chartAccountId: validChartId,
+        sessionId: validSessionId,
         bankAccountId: validBankAccountId,
         isDues: isDues || chartIsDues,
         approvalStatus,
@@ -182,6 +199,11 @@ export async function POST(request: Request) {
         await db.account.delete({ where: { id: created.id } });
         return { settleError: settled } as const;
       }
+      // Guarda a origem do dinheiro (obreiros/visitantes) do Tronco da sessão.
+      if (validSessionId) {
+        const pay = await db.payment.findFirst({ where: { lodgeId: String(lodgeId), accountId: created.id }, select: { id: true } });
+        if (pay) await assignTroncoToSession(db, String(lodgeId), { id: String(session.user.id), name: String(session.user.name ?? 'Usuário'), role }, { paymentId: pay.id, sessionId: validSessionId, source: troncoSource });
+      }
     }
 
     await logAudit(db, { lodgeId: String(lodgeId), userId: session.user.id, action: 'CREATE', entity: 'account', entityId: created.id, metadata: { title, type, amount, status } });
@@ -191,6 +213,10 @@ export async function POST(request: Request) {
       : null;
     return { created, notify } as const;
   });
+
+  if ('troncoError' in result) {
+    return NextResponse.json({ error: result.troncoError }, { status: 400 });
+  }
 
   if ('invalidMember' in result) {
     return NextResponse.json({ error: 'Irmão não encontrado nesta loja.' }, { status: 400 });
