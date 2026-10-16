@@ -6,6 +6,7 @@ import { Button, EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { csvRow } from '@/lib/csv';
 import { ReportActions, ReportDocument } from '@/components/report/report-document';
+import { formatDayMixed } from '@/lib/date-only';
 
 interface ChartOption { id: string; code: string; name: string; type: string; group: string; fund: 'tronco' | 'donations' | null; dues: boolean }
 interface LedgerRow { id: string; date: string; description: string; person: string | null; bank: string | null; method: string | null; in: number; out: number; balance: number; status: 'paid' | 'open' }
@@ -20,7 +21,7 @@ const FUND_LABEL = { tronco: 'Tronco', donations: 'Doações' } as const;
 const TH = 'border-b border-white/10 px-2 py-2 text-left text-xs uppercase tracking-wide text-sand-dark/70';
 const TD = 'border-b border-white/5 px-2 py-2';
 
-const fmtDay = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+const fmtDay = (iso: string) => formatDayMixed(iso);
 const fmtInput = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 const num = (n: number) => n.toFixed(2).replace('.', ',');
 

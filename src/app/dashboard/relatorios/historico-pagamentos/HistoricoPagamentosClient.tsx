@@ -7,7 +7,7 @@ import { EmptyState, inputClass } from '@/components/ui';
 import { ReportActions, ReportDocument } from '@/components/report/report-document';
 import { brl } from '@/lib/currency';
 import { csvNumber } from '@/lib/csv';
-import { formatDateOnly } from '@/lib/date-only';
+import { formatDateOnly, formatDayMixed } from '@/lib/date-only';
 import { PAYMENT_HISTORY_SORT_LABEL, paymentMethodLabel, paymentSortHasGroups, type PaymentHistory, type PaymentHistoryRow, type PaymentHistorySort } from '@/lib/payment-history';
 
 // Histórico de pagamentos — mesma tela para a loja (Tesoureiro/Admin/Venerável, todos os
@@ -15,7 +15,7 @@ import { PAYMENT_HISTORY_SORT_LABEL, paymentMethodLabel, paymentSortHasGroups, t
 // como nos demais relatórios, para o link e o PDF refletirem o recorte.
 
 function fmtPaidAt(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  return formatDayMixed(iso);
 }
 
 export default function HistoricoPagamentosClient({

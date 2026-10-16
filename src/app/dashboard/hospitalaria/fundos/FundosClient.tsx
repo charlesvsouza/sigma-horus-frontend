@@ -9,6 +9,7 @@ import { csvNumber } from '@/lib/csv';
 import { ReportActions, ReportDocument, type Signatory } from '@/components/report/report-document';
 import type { FundPurpose } from '@/lib/funds';
 import ContributionForm from './ContributionForm';
+import { formatDayMixed } from '@/lib/date-only';
 
 interface Bucket { label: string; total: number; count: number }
 interface Report {
@@ -28,8 +29,8 @@ interface Report {
 }
 interface CampaignRow { id: string; title: string; status: string; goal: number | null; donated: number; donatedInPeriod: number; fundAllocated: number }
 
-const BR = 'America/Sao_Paulo';
-const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { timeZone: BR });
+// Dia contábil: data digitada (só dia) e instante (Asaas) saem no dia certo (lib/date-only).
+const fmtDate = (iso: string) => formatDayMixed(iso);
 const fmtMonth = (ym: string) => `${ym.slice(5)}/${ym.slice(0, 4)}`;
 const KIND_LABEL: Record<string, string> = { payment_in: 'Entrada', payment_out: 'Saída', transfer_in: 'Transf. recebida', transfer_out: 'Transf. enviada' };
 const STATUS_LABEL: Record<string, string> = { active: 'Ativa', completed: 'Concluída', canceled: 'Cancelada' };
