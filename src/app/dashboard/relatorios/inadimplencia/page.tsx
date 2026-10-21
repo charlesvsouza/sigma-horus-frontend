@@ -34,7 +34,7 @@ export default async function InadimplenciaPage() {
     db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
   ]));
 
-  const serialized = rows.map((r) => ({ ...r, oldestDueDate: r.oldestDueDate.toISOString() }));
+  const serialized = rows.map((r) => ({ ...r, oldestDueDate: r.oldestDueDate.toISOString(), items: r.items.map((i) => ({ dueDate: i.dueDate.toISOString(), amount: i.amount })) }));
   const canWrite = (await requireLodgeAccess(String(lodgeId), role, 'accounts', 'write')).ok;
   return (
     <InadimplenciaClient

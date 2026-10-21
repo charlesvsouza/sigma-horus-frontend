@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, EmptyState, inputClass } from '@/components/ui';
 import { brl } from '@/lib/currency';
@@ -10,6 +10,7 @@ import { MEMBER_FILTER_STATUSES, memberStatusLabel } from '@/lib/member-status';
 import { BLOCKED_STATUS, buildInstallments, MAX_AGREEMENT_INSTALLMENTS } from '@/lib/member-block';
 import Link from 'next/link';
 import { formatDateOnly } from '@/lib/date-only';
+import { referenceLabel } from '@/lib/accounts-report';
 import { OverdueNoticeDialog } from '@/components/overdue-notice-dialog';
 
 interface LateCharge { fee: number; interest: number; total: number; }
@@ -23,6 +24,7 @@ interface Row {
   daysOverdue: number;
   art002: boolean;
   lateCharge: LateCharge;
+  items: { dueDate: string; amount: number }[];
 }
 
 
@@ -272,6 +274,12 @@ export default function InadimplenciaClient({
   const [statusFilter, setStatusFilter] = useState('');
   const [sort, setSort] = useState<OverdueSort>('atraso');
   const [noticeOpen, setNoticeOpen] = useState(false);
+  // "Ver acumulado por irmão" (padrão): uma linha por irmão com o total; clicar abre as mensalidades dele, da mais antiga à mais nova.
+  // Desmarcado, todas as mensalidades de todos os irmãos aparecem abertas. O relatório impresso sempre traz o detalhe.
+  const [accumulate, setAccumulate] = useState(true);
+  const [openRows, setOpenRows] = useState<Set<string>>(() => new Set());
+  const isOpen = (id: string) => !accumulate || openRows.has(id);
+  const toggleRow = (id: string) => setOpenRows((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
 
   const buckets: AgingBucket[] = ['1-30', '31-60', '61-90', '90+'];
   const aging = buckets.map((bucket) => {
@@ -311,6 +319,8 @@ export default function InadimplenciaClient({
     const lines = [csvRow(['Membro', 'Situação cadastral', 'Mensalidades em aberto', 'Vencimento mais antigo', 'Dias em atraso', 'Art. 002', 'Valor em aberto', 'Multa', 'Juros', 'Total com encargos'])];
     for (const r of visibleRows) {
       lines.push(csvRow([r.memberName, memberStatusLabel(r.memberStatus), String(r.openCount), formatDateOnly(r.oldestDueDate), String(r.daysOverdue), r.art002 ? 'Sim' : 'Não', num(r.totalAmount), num(r.lateCharge.fee), num(r.lateCharge.interest), num(r.lateCharge.total)]));
+      // Detalhe: cada mensalidade em aberto, da mais antiga à mais nova.
+      for (const it of r.items) lines.push(csvRow(['', `  ${referenceLabel(new Date(it.dueDate)) ?? ''}`, '', formatDateOnly(it.dueDate), '', '', num(it.amount), '', '', '']));
     }
     lines.push(csvRow(['Total', '', String(visibleRows.reduce((s, r) => s + r.openCount, 0)), '', '', '', num(visibleTotal), '', '', num(visibleWithCharges)]));
     const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
@@ -371,6 +381,12 @@ export default function InadimplenciaClient({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-sand-light">Membros em aberto</h2>
             {rows.length > 0 ? (
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-sand" title="Uma linha por irmão, com o valor acumulado. Clique na linha para ver as mensalidades dele. Desmarcado, mostra todas as mensalidades de todos.">
+                <input type="checkbox" checked={accumulate} onChange={(e) => { setAccumulate(e.target.checked); setOpenRows(new Set()); }} className="h-4 w-4 accent-gold" />
+                Ver acumulado por irmão
+              </label>
+            ) : null}
+            {rows.length > 0 ? (
               <ReportActions disabled={visibleRows.length === 0}>
                 <Button type="button" variant="secondary" onClick={exportCsv} disabled={visibleRows.length === 0}>Exportar CSV</Button>
               </ReportActions>
@@ -421,7 +437,9 @@ export default function InadimplenciaClient({
                 <div key={row.memberId} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium text-sand-light">{row.memberName}</p>
+                      <button type="button" onClick={() => toggleRow(row.memberId)} aria-expanded={isOpen(row.memberId)} className="text-left text-sm font-medium text-sand-light hover:text-gold">
+                        {row.memberName} <span className="ml-1 text-xs font-normal text-gold">{isOpen(row.memberId) ? '▾ recolher' : '▸ ver mensalidades'}</span>
+                      </button>
                       <p className="mt-1 text-xs text-sand-dark">
                         {row.openCount} mensalidade{row.openCount > 1 ? 's' : ''} em aberto • vencimento mais antigo em{' '}
                         {formatDateOnly(row.oldestDueDate)} • situação atual: {memberStatusLabel(row.memberStatus)}
@@ -463,6 +481,16 @@ export default function InadimplenciaClient({
                       )}
                     </div>
                   </div>
+                  {isOpen(row.memberId) ? (
+                    <ul className="mt-3 space-y-1 border-t border-white/6 pt-3 text-xs">
+                      {row.items.map((it, i) => (
+                        <li key={i} className="flex items-baseline justify-between gap-3 text-sand">
+                          <span>{referenceLabel(new Date(it.dueDate)) ?? '—'} <span className="text-sand-dark">· venceu em {formatDateOnly(it.dueDate)}</span></span>
+                          <span className="tabular-nums text-sand-light">{brl(it.amount)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                   {blockingId === row.memberId ? (
                     <BlockForm memberId={row.memberId} memberName={row.memberName} onDone={() => { setBlockingId(null); router.refresh(); }} />
                   ) : null}
@@ -500,7 +528,8 @@ export default function InadimplenciaClient({
           </thead>
           <tbody>
             {visibleRows.map((r) => (
-              <tr key={r.memberId}>
+              <Fragment key={r.memberId}>
+              <tr>
                 <td>{r.memberName}</td>
                 <td>{memberStatusLabel(r.memberStatus)}</td>
                 <td className="num">{r.openCount}</td>
@@ -510,6 +539,16 @@ export default function InadimplenciaClient({
                 <td className="num">{brl(r.totalAmount)}</td>
                 <td className="num">{brl(r.lateCharge.total)}</td>
               </tr>
+              {r.items.map((it, i) => (
+                <tr key={i} className="text-xs">
+                  <td colSpan={3} style={{ paddingLeft: '1.2em' }}>{referenceLabel(new Date(it.dueDate)) ?? '—'}</td>
+                  <td>{formatDateOnly(it.dueDate)}</td>
+                  <td colSpan={2} />
+                  <td className="num">{brl(it.amount)}</td>
+                  <td />
+                </tr>
+              ))}
+              </Fragment>
             ))}
             <tr className="rpt-total">
               <td colSpan={2}>Total — {visibleRows.length} membro{visibleRows.length !== 1 ? 's' : ''}</td>

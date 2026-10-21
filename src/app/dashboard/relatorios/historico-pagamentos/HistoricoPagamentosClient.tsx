@@ -7,6 +7,7 @@ import { EmptyState, inputClass } from '@/components/ui';
 import { ReportActions, ReportDocument } from '@/components/report/report-document';
 import { brl } from '@/lib/currency';
 import { csvNumber } from '@/lib/csv';
+import { groupByPerson } from '@/lib/person-groups';
 import { formatDateOnly, formatDayMixed } from '@/lib/date-only';
 import { PAYMENT_HISTORY_SORT_LABEL, paymentMethodLabel, paymentSortHasGroups, type PaymentHistory, type PaymentHistoryRow, type PaymentHistorySort } from '@/lib/payment-history';
 
@@ -55,6 +56,11 @@ export default function HistoricoPagamentosClient({
   const [sortVal, setSortVal] = useState(sort);
   const [subVal, setSubVal] = useState(subtotals);
   const staff = mode === 'staff';
+  // Na lista corrida de todos os irmãos, "Ver acumulado por irmão" junta os pagamentos de cada um numa linha (clique abre o detalhe).
+  // No papel e no CSV o detalhe sai sempre, do mais antigo ao mais novo.
+  const [accumulate, setAccumulate] = useState(true);
+  const [openKeys, setOpenKeys] = useState<Set<string>>(() => new Set());
+  const toggleKey = (k: string) => setOpenKeys((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const showMemberColumn = staff && !memberId;
   // "Nome" só faz sentido com vários irmãos na lista.
   const sortOptions: PaymentHistorySort[] = showMemberColumn ? ['data', 'referencia', 'nome'] : ['data', 'referencia'];
@@ -94,8 +100,8 @@ export default function HistoricoPagamentosClient({
     ['Total', ...(showMemberColumn ? [''] : []), '', '', '', '', csvNumber(report.total)],
   ];
 
-  const renderRow = (r: PaymentHistoryRow) => (
-    <tr key={r.id}>
+  const renderRow = (r: PaymentHistoryRow, hiddenOnScreen = false) => (
+    <tr key={r.id} className={hiddenOnScreen ? 'hidden print:table-row' : undefined}>
       <td className="border-b border-white/5 px-2 py-2 text-sand">{fmtPaidAt(r.paidAt)}</td>
       {showMemberColumn ? <td className="border-b border-white/5 px-2 py-2 text-sand">{r.memberName ?? '—'}</td> : null}
       <td className="border-b border-white/5 px-2 py-2 text-sand">
@@ -111,6 +117,11 @@ export default function HistoricoPagamentosClient({
       </td>
     </tr>
   );
+
+  const canAccumulate = staff && showMemberColumn && !report.groups;
+  const entries = canAccumulate
+    ? groupByPerson(report.rows, { key: (r) => r.memberId ?? null, name: (r) => r.memberName ?? '—', amount: (r) => r.amount, date: (r) => r.paidAt }, accumulate)
+    : null;
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -194,7 +205,14 @@ export default function HistoricoPagamentosClient({
         <ReportActions
           disabled={report.rows.length === 0}
           csv={() => ({ filename: `historico-pagamentos_${from || 'inicio'}_${to || 'hoje'}`, rows: csvRows })}
-        />
+        >
+          {canAccumulate ? (
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-sand" title="Uma linha por irmão, com o valor acumulado. Clique para ver os pagamentos dele. O PDF e o CSV sempre trazem o detalhe.">
+              <input type="checkbox" checked={accumulate} onChange={(e) => { setAccumulate(e.target.checked); setOpenKeys(new Set()); }} className="h-4 w-4 accent-gold" />
+              Ver acumulado por irmão
+            </label>
+          ) : null}
+        </ReportActions>
 
         {showMemberColumn && report.byMember.length > 0 ? (
           <section className="rpt-noprint rounded-xl border border-white/6 bg-sigma-card p-6">
@@ -254,7 +272,7 @@ export default function HistoricoPagamentosClient({
                               {g.label}
                             </td>
                           </tr>
-                          {g.rows.map(renderRow)}
+                          {g.rows.map((r) => renderRow(r))}
                           <tr className="rpt-subtotal">
                             <td colSpan={cols - 1} className="px-2 py-2 text-right text-xs text-sand-dark">
                               Subtotal — {g.label} · {g.rows.length} pagamento{g.rows.length !== 1 ? 's' : ''}
@@ -264,7 +282,25 @@ export default function HistoricoPagamentosClient({
                           </tr>
                         </Fragment>
                       ))
-                    : report.rows.map(renderRow)}
+                    : entries
+                    ? entries.map((e) => {
+                        if (e.kind === 'row') return renderRow(e.row);
+                        const open = openKeys.has(e.key);
+                        return (
+                          <Fragment key={`g-${e.key}`}>
+                            <tr className="rpt-noprint cursor-pointer hover:bg-white/5" onClick={() => toggleKey(e.key)}>
+                              <td colSpan={cols - 1} className="border-b border-white/5 px-2 py-2 text-sand-light">
+                                <button type="button" aria-expanded={open} className="text-left font-medium hover:text-gold">{open ? '▾' : '▸'} {e.name}</button>
+                                <span className="ml-2 text-xs text-sand-dark">{e.rows.length} pagamentos · o mais antigo em {fmtPaidAt(e.oldest)} · acumulado</span>
+                              </td>
+                              <td className="border-b border-white/5 px-2 py-2 text-right num tabular-nums text-sand-light">{brl(e.total)}</td>
+                              <td className="border-b border-white/5 px-2 py-2" />
+                            </tr>
+                            {e.rows.map((r) => renderRow(r, !open))}
+                          </Fragment>
+                        );
+                      })
+                    : report.rows.map((r) => renderRow(r))}
                   <tr className="rpt-total">
                     <td className="px-2 py-2 font-semibold text-sand-light" colSpan={showMemberColumn ? 5 : 4}>
                       Total — {report.rows.length} pagamento{report.rows.length !== 1 ? 's' : ''}

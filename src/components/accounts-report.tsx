@@ -18,7 +18,7 @@ function situationText(a: FilterAccount, today: Date): string {
 }
 
 export default function AccountsReport({
-  rows, filters, details, today, lodgeName, crestUrl, issuedBy,
+  rows: rowsIn, filters, details, today, lodgeName, crestUrl, issuedBy,
 }: {
   rows: FilterAccount[];
   filters: Filters;
@@ -28,6 +28,8 @@ export default function AccountsReport({
   crestUrl: string | null;
   issuedBy: string | null;
 }) {
+  // O relatório sempre lista os débitos um a um, do mais antigo ao mais novo (o acumulado é só da tela); por pessoa, cada irmão também em ordem de data.
+  const rows = [...rowsIn].sort((x, y) => (filters.sort === 'person' ? (x.personName ?? '~').localeCompare(y.personName ?? '~', 'pt-BR') : 0) || x.dueDate.localeCompare(y.dueDate) || x.title.localeCompare(y.title));
   const title = reportTitleFor(filters.tipo);
   const grouped = filters.sort === 'person';
   const groups = grouped

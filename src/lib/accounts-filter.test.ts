@@ -139,3 +139,29 @@ test('totalsOf separa o em aberto (saldo restante) do já liquidado', () => {
   assert.deepEqual(t.payableOpen, { value: 30, count: 1 });
   assert.deepEqual(t.payableDone, { value: 20, count: 1 });
 });
+
+import { buildDebtList } from './accounts-filter.ts';
+
+test('buildDebtList: acumulado junta quem tem mais de um débito e mantém o irmão de um só débito', () => {
+  const rows = applyFilters([ACCOUNTS[0], ACCOUNTS[1], ACCOUNTS[5], acc({ id: 'n1', dueDate: '2026-07-01T00:00:00.000Z' })], F({ sit: 'overdue' }), TODAY); // Carlos: n1 e a; Roberto: b; a pagar: f
+  const list = buildDebtList(rows, true, 'due-asc');
+  const g = list.find((e) => e.kind === 'group');
+  assert.ok(g && g.kind === 'group');
+  assert.equal(g.personName, 'Carlos');
+  assert.deepEqual(g.rows.map((r) => r.id), ['n1', 'a']);
+  assert.equal(g.total, 280);
+  assert.equal(list.filter((e) => e.kind === 'row' && e.row.id === 'b').length, 1); // Roberto: um débito só, linha normal
+  assert.equal(list.filter((e) => e.kind === 'row' && e.row.id === 'f').length, 1); // a pagar não entra no acumulado
+});
+
+test('buildDebtList: sem acumulado, débitos do mesmo irmão ficam juntos do mais antigo ao mais novo', () => {
+  const rows = applyFilters([ACCOUNTS[0], ACCOUNTS[1], acc({ id: 'n1', dueDate: '2026-09-25T00:00:00.000Z' })], F({ sit: 'overdue', tipo: 'RECEIVABLE' }), TODAY);
+  // ordem por vencimento: b (Roberto 05/08), a (Carlos 21/09), g (Carlos 25/09)
+  const ids = buildDebtList(rows, false, 'due-asc').map((e) => (e.kind === 'row' ? e.row.id : '?'));
+  assert.deepEqual(ids, ['b', 'a', 'n1']);
+  const mixed = buildDebtList([acc({ id: 'x', dueDate: '2026-08-01T00:00:00.000Z' }), acc({ id: 'y', dueDate: '2026-08-02T00:00:00.000Z', personId: 'p2', personName: 'Roberto' }), acc({ id: 'z', dueDate: '2026-08-03T00:00:00.000Z' })], false, 'due-asc');
+  assert.deepEqual(mixed.map((e) => (e.kind === 'row' ? e.row.id : '?')), ['x', 'z', 'y']);
+  // outra ordem escolhida na tela é respeitada
+  const kept = buildDebtList([acc({ id: 'x', dueDate: '2026-08-01T00:00:00.000Z' }), acc({ id: 'y', dueDate: '2026-08-02T00:00:00.000Z', personId: 'p2', personName: 'Roberto' }), acc({ id: 'z', dueDate: '2026-08-03T00:00:00.000Z' })], false, 'due-desc');
+  assert.deepEqual(kept.map((e) => (e.kind === 'row' ? e.row.id : '?')), ['x', 'y', 'z']);
+});

@@ -301,3 +301,48 @@ export function describeFilters(
 
 /** Título do relatório conforme o tipo escolhido. */
 export const reportTitleFor = (tipo: Filters['tipo']) => (tipo === 'RECEIVABLE' ? 'Contas a receber' : tipo === 'PAYABLE' ? 'Contas a pagar' : 'Contas a receber e a pagar');
+
+// ---------------------------------------------------------------------------
+// Lista por irmão: acumulado × detalhado
+// ---------------------------------------------------------------------------
+
+export type ListEntry =
+  | { kind: 'row'; row: FilterAccount }
+  | { kind: 'group'; key: string; personName: string; rows: FilterAccount[]; total: number; oldestDue: string };
+
+/**
+ * Organiza a lista de Contas por irmão (decisão do dono, 2026-10-21). Só entram na regra os débitos em aberto a receber de uma
+ * pessoa; "vários" = mais de um. Os demais lançamentos (pagos, a pagar, sem pessoa) ficam como estão.
+ * - `accumulate` ligado: quem tem mais de um débito vira UMA linha com o valor acumulado (ao abrir, mostra os débitos dele,
+ *   do mais antigo ao mais novo); quem tem um só continua com a linha normal.
+ * - `accumulate` desligado: todos os débitos aparecem; com a ordem padrão (vencimento, mais antigo primeiro) os de cada irmão
+ *   ficam juntos, do mais antigo ao mais novo, e os irmãos seguem pelo débito mais antigo de cada um. Com outra ordem
+ *   escolhida na tela, a escolha é respeitada.
+ * A linha do grupo ocupa o lugar do primeiro débito do irmão na ordem recebida.
+ */
+export function buildDebtList(rows: FilterAccount[], accumulate: boolean, sort: SortKey): ListEntry[] {
+  const isDebt = (r: FilterAccount) => r.type === 'RECEIVABLE' && r.status !== 'paid' && Boolean(r.personId);
+  const byDue = (x: FilterAccount, y: FilterAccount) => x.dueDate.localeCompare(y.dueDate) || x.title.localeCompare(y.title);
+  const people = new Map<string, FilterAccount[]>();
+  for (const r of rows) if (isDebt(r)) people.set(r.personId!, [...(people.get(r.personId!) ?? []), r]);
+
+  const regroup = accumulate || sort === 'due-asc';
+  if (!regroup) return rows.map((row) => ({ kind: 'row', row }));
+
+  const out: ListEntry[] = [];
+  const done = new Set<string>();
+  for (const r of rows) {
+    if (!isDebt(r)) { out.push({ kind: 'row', row: r }); continue; }
+    const pid = r.personId!;
+    if (done.has(pid)) continue;
+    done.add(pid);
+    const list = [...people.get(pid)!].sort(byDue);
+    if (accumulate && list.length > 1) {
+      const total = Math.round(list.reduce((s, x) => s + cents(lineValue(x)), 0)) / 100;
+      out.push({ kind: 'group', key: pid, personName: list[0].personName ?? 'Sem nome', rows: list, total, oldestDue: list[0].dueDate });
+    } else {
+      for (const row of list) out.push({ kind: 'row', row });
+    }
+  }
+  return out;
+}

@@ -8,6 +8,7 @@ import { ReportActions, ReportDocument } from '@/components/report/report-docume
 import { brl } from '@/lib/currency';
 import { formatDayMixed } from '@/lib/date-only';
 import { csvNumber } from '@/lib/csv';
+import { groupByPerson } from '@/lib/person-groups';
 import { ACCOUNTS_SORT_LABEL, sortHasGroups, type AccountsSort } from '@/lib/accounts-report';
 
 interface PersonOption { id: string; name: string; }
@@ -66,6 +67,11 @@ export default function ContasReportClient({
   const [sortVal, setSortVal] = useState(sort);
   const [subVal, setSubVal] = useState(subtotals);
   const canGroup = sortHasGroups(sortVal);
+  // Na lista corrida, "Ver acumulado por pessoa" junta os lançamentos de cada uma numa linha (clique abre o detalhe).
+  // No papel, no CSV e no XLS o detalhe sai sempre, do mais antigo ao mais novo.
+  const [accumulate, setAccumulate] = useState(true);
+  const [openKeys, setOpenKeys] = useState<Set<string>>(() => new Set());
+  const toggleKey = (k: string) => setOpenKeys((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   // A ordem 'data' segue a coluna de data da tela (Vencimento, Recebimento ou Pagamento).
   const sortLabel = (s: AccountsSort) => (s === 'data' ? dateLabel : ACCOUNTS_SORT_LABEL[s]);
@@ -100,8 +106,8 @@ export default function ContasReportClient({
     ['Total', '', '', '', ...(showSettlement ? [''] : []), '', csvNumber(report.total)],
   ];
 
-  const renderRow = (r: ReportRow) => (
-    <tr key={r.id}>
+  const renderRow = (r: ReportRow, hiddenOnScreen = false) => (
+    <tr key={r.id} className={hiddenOnScreen ? 'hidden print:table-row' : undefined}>
       <td className="border-b border-white/5 px-2 py-2 text-sand">{fmtDate(r.date)}</td>
       <td className="border-b border-white/5 px-2 py-2 text-sand">{r.personName ?? '—'}</td>
       <td className="border-b border-white/5 px-2 py-2 text-sand">{r.reference ?? '—'}</td>
@@ -113,6 +119,11 @@ export default function ContasReportClient({
       <td className="border-b border-white/5 px-2 py-2 text-right num tabular-nums text-sand-light">{brl(r.amount)}</td>
     </tr>
   );
+
+  const canAccumulate = !report.groups && report.rows.some((r) => r.personId);
+  const entries = canAccumulate
+    ? groupByPerson(report.rows, { key: (r) => r.personId, name: (r) => r.personName ?? '—', amount: (r) => r.amount, date: (r) => r.date }, accumulate)
+    : null;
 
   return (
     <main className="min-h-screen px-6 py-12">
@@ -198,6 +209,12 @@ export default function ContasReportClient({
           <a href={xlsHref} className="rounded-full border border-gold/40 px-5 py-2.5 text-sm font-medium text-gold/90 transition-colors hover:border-gold/60 hover:text-gold">
             Baixar XLS
           </a>
+          {canAccumulate ? (
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-sand" title="Uma linha por pessoa, com o valor acumulado. Clique para ver os lançamentos. O PDF, o CSV e o XLS sempre trazem o detalhe.">
+              <input type="checkbox" checked={accumulate} onChange={(e) => { setAccumulate(e.target.checked); setOpenKeys(new Set()); }} className="h-4 w-4 accent-gold" />
+              Ver acumulado por pessoa
+            </label>
+          ) : null}
         </ReportActions>
 
         <ReportDocument lodgeName={lodgeName} crestUrl={crestUrl} title={title} details={details} issuedBy={issuedBy} orientation="landscape">
@@ -225,7 +242,7 @@ export default function ContasReportClient({
                               {g.label}
                             </td>
                           </tr>
-                          {g.rows.map(renderRow)}
+                          {g.rows.map((r) => renderRow(r))}
                           <tr className="rpt-subtotal">
                             <td colSpan={cols - 1} className="px-2 py-2 text-right text-xs text-sand-dark">
                               Subtotal — {g.label} · {g.rows.length} lançamento{g.rows.length !== 1 ? 's' : ''}
@@ -234,7 +251,24 @@ export default function ContasReportClient({
                           </tr>
                         </Fragment>
                       ))
-                    : report.rows.map(renderRow)}
+                    : entries
+                    ? entries.map((e) => {
+                        if (e.kind === 'row') return renderRow(e.row);
+                        const open = openKeys.has(e.key);
+                        return (
+                          <Fragment key={`g-${e.key}`}>
+                            <tr className="rpt-noprint cursor-pointer hover:bg-white/5" onClick={() => toggleKey(e.key)}>
+                              <td colSpan={cols - 1} className="border-b border-white/5 px-2 py-2 text-sand-light">
+                                <button type="button" aria-expanded={open} className="text-left font-medium hover:text-gold">{open ? '▾' : '▸'} {e.name}</button>
+                                <span className="ml-2 text-xs text-sand-dark">{e.rows.length} lançamentos · o mais antigo em {fmtDate(e.oldest)} · acumulado</span>
+                              </td>
+                              <td className="border-b border-white/5 px-2 py-2 text-right num tabular-nums text-sand-light">{brl(e.total)}</td>
+                            </tr>
+                            {e.rows.map((r) => renderRow(r, !open))}
+                          </Fragment>
+                        );
+                      })
+                    : report.rows.map((r) => renderRow(r))}
                   <tr className="rpt-total">
                     <td className="px-2 py-2 font-semibold text-sand-light" colSpan={cols - 1}>Total — {report.rows.length} lançamento{report.rows.length !== 1 ? 's' : ''}</td>
                     <td className="px-2 py-2 text-right num font-semibold text-gold">{brl(report.total)}</td>

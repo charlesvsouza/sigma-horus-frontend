@@ -139,6 +139,8 @@ export interface OverdueReportRow {
   daysOverdue: number;
   art002: boolean;
   lateCharge: LateCharge; // multa/juros informativos sobre o total, calculados no vencimento mais antigo
+  /** Cada mensalidade em aberto (saldo), da mais antiga para a mais nova — o detalhe do acumulado. */
+  items: { dueDate: Date; amount: number }[];
 }
 
 /** Relatório de inadimplência de mensalidades de todos os membros da loja. */
@@ -176,6 +178,7 @@ export async function getLodgeOverdueDuesReport(
       daysOverdue: overdue,
       art002: overdue > ART_002_THRESHOLD_DAYS,
       lateCharge: sumLateCharges(items, now, lodge?.lateFeePercent, lodge?.lateInterestPercentMonth),
+      items: items.map((i) => ({ dueDate: i.dueDate, amount: i.amount })).sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()),
     };
   });
 

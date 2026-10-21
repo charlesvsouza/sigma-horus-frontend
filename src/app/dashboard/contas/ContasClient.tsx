@@ -7,7 +7,7 @@ import { brl } from '@/lib/currency';
 import { MemberLink, useQuickNav } from '@/components/quick-nav';
 import AccountsFilterBar, { FilterSummary } from '@/components/accounts-filter-bar';
 import AccountsReport from '@/components/accounts-report';
-import { applyFilters, describeFilters, isDefaultFilters, parseFilters, serializeFilters, type Filters, type FilterAccount } from '@/lib/accounts-filter';
+import { applyFilters, buildDebtList, describeFilters, isDefaultFilters, parseFilters, serializeFilters, type Filters, type FilterAccount, type ListEntry } from '@/lib/accounts-filter';
 import { receiptUploadError } from '@/lib/upload-guards';
 import { daysOverdueBR, formatDateOnly, todayBR } from '@/lib/date-only';
 
@@ -82,6 +82,9 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
   // Quem chega por um link já filtrado (ex.: "Contas vencidas" da Visão geral) vê a barra de filtros mesmo sem a navegação rápida ligada.
   const [arrivedFiltered] = useState(() => !isDefaultFilters(parseFilters(searchParams)));
   const newFilters = betaOn || arrivedFiltered;
+  // "Ver acumulado": quem tem mais de um débito em aberto vira uma linha só (valor acumulado); clicar abre os débitos dele.
+  const [accumulate, setAccumulate] = useState(() => searchParams.get('acum') === '1');
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
   const today = useMemo(() => todayBR(), []);
   const filterRows = useMemo<FilterAccount[]>(() => accounts.map((a) => ({
     id: a.id, title: a.title, type: a.type, amount: a.amount, paid: a.paid ?? 0, dueDate: a.dueDate, status: a.status, isDues: a.isDues,
@@ -99,6 +102,17 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
       for (const k of ['tipo', 'sit', 'amin', 'amax', 'de', 'ate', 'pessoa', 'cat', 'conta', 'mens', 'min', 'max', 'q', 'ord']) params.delete(k);
       const mine = serializeFilters(next);
       const qs = [params.toString(), mine].filter(Boolean).join('&');
+      window.history.replaceState(null, '', qs ? `${pathname}?${qs}` : pathname);
+    } catch {}
+  }
+
+  function changeAccumulate(on: boolean) {
+    setAccumulate(on);
+    setOpenGroups(new Set());
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (on) params.set('acum', '1'); else params.delete('acum');
+      const qs = params.toString();
       window.history.replaceState(null, '', qs ? `${pathname}?${qs}` : pathname);
     } catch {}
   }
@@ -298,6 +312,65 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
     ? accounts.filter((a) => a.title.toLowerCase().includes(q) || a.member?.name.toLowerCase().includes(q) || a.counterparty?.name.toLowerCase().includes(q) || a.status.toLowerCase().includes(q))
     : accounts;
 
+
+  // Lista por irmão: acumulado (um débito por linha só quando há mais de um) ou detalhado, sempre do mais antigo ao mais novo.
+  const entries: ListEntry[] = newFilters
+    ? buildDebtList(shownRows, accumulate, filters.sort)
+    : filteredAccounts.map((a) => ({ kind: 'row' as const, row: { id: a.id } as FilterAccount }));
+
+  const renderAccount = (account: AccountItem, nested = false) => (
+              <div key={account.id} className={`grid items-center gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto] rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8${nested ? ' ml-4 border-l-2 border-l-gold/30' : ''}`}>
+                <div>
+                  <p className="text-sm font-medium text-sand-light">
+                    {account.title}
+                    {account.isDues ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">Mensalidade</span> : null}
+                    <span className={`ml-2 rounded-full border px-2 py-0.5 text-xs font-medium ${account.status === 'paid' ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300' : isOverdue(account) ? 'border-rose-500/20 bg-rose-500/12 text-rose-300' : 'border-gold/15 bg-gold/10 text-gold'}`}>
+                      {account.status === 'paid' ? (account.type === 'RECEIVABLE' ? 'Recebida' : 'Paga') : isOverdue(account) ? 'Vencida' : 'Em aberto'}
+                    </span>
+                    {account.awaitingAsaas && account.status !== 'paid' ? <span className="ml-2 rounded-full border border-sky-500/20 bg-sky-500/12 px-2 py-0.5 text-xs font-medium text-sky-200">Aguardando Asaas</span> : null}
+                    {account.approvalStatus === 'pending' ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">Aguardando aprovação</span> : null}
+                  </p>
+                  {account.approvalStatus === 'pending' && account.approval?.summary ? <p className="mt-1 text-xs text-amber-300">{account.approval.summary}</p> : null}
+                  <p className="mt-1 text-xs text-sand-dark">
+                    {account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} •{account.member ? <MemberLink id={account.member.id} name={account.member.name} /> : (account.counterparty?.name ?? 'Sem vínculo')}
+                  </p>
+                </div>
+                <div className="min-w-28 text-right">
+                  <p className={`text-sm font-medium tabular-nums ${account.type === 'RECEIVABLE' ? 'text-emerald-300' : 'text-rose-300'}`}>
+                    {account.type === 'RECEIVABLE' ? '+' : '−'}{brl(account.amount)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-sand-dark">{formatDateOnly(account.dueDate)}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {account.approvalStatus === 'pending' && account.approval?.canApprove ? (
+                    <button onClick={() => void handleApprove(account.id)} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Aprovar</button>
+                  ) : null}
+                  {account.approvalStatus === 'pending' && account.approval?.canValve ? (
+                    <button onClick={() => void handleApprove(account.id, true)} className="text-xs px-1 py-1 text-amber-300 transition hover:text-amber-200">Aprovar sozinho</button>
+                  ) : null}
+                  {account.type === 'PAYABLE' ? (
+                    <span className="flex items-center gap-2">
+                      {(account.proofs ?? []).map((pr) => (
+                        <a key={pr.paymentId} href={`/api/payments/${pr.paymentId}/proof`} target="_blank" rel="noopener noreferrer" className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">{(account.proofs ?? []).length > 1 ? pr.label : 'Ver comprovante'}</a>
+                      ))}
+                      {account.hasReceipt ? (
+                        <>
+                          <a href={`/api/accounts/${account.id}/receipt`} target="_blank" rel="noopener noreferrer" className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Ver comprovante</a>
+                          <button onClick={() => void handleReceiptRemove(account.id)} className="text-xs px-1 py-1 text-sand-dark transition hover:text-sand">Tirar</button>
+                        </>
+                      ) : null}
+                      <label className="cursor-pointer text-xs px-1 py-1 text-gold transition hover:text-gold-light">
+                        {account.hasReceipt ? 'Trocar' : 'Anexar comprovante'}
+                        <input type="file" accept="application/pdf,image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; void handleReceiptFile(account.id, f); }} />
+                      </label>
+                    </span>
+                  ) : null}
+                  <button onClick={() => startEdit(account)} className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Editar</button>
+                  <button onClick={() => void handleDelete(account.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Remover</button>
+                </div>
+              </div>
+  );
+
   return (
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -459,6 +532,10 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                 />
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <FilterSummary rows={shownRows} />
+                  <label className="flex cursor-pointer items-center gap-2 text-xs text-sand" title="Quem tem mais de um débito em aberto aparece em uma linha só, com o valor acumulado. Clique na linha para ver os débitos.">
+                    <input type="checkbox" checked={accumulate} onChange={(e) => changeAccumulate(e.target.checked)} className="h-4 w-4 accent-gold" />
+                    Ver acumulado por irmão
+                  </label>
                   <button type="button" onClick={() => setReportOpen((v) => !v)} aria-expanded={reportOpen} className="rounded-full border border-gold/40 px-4 py-1.5 text-xs font-medium text-gold hover:text-gold-light">{reportOpen ? 'Fechar relatório' : 'Relatório / Imprimir'}</button>
                 </div>
               </div>
@@ -467,58 +544,33 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
               <EmptyState title="Nenhum lançamento. O Livro está limpo." description="Lance a primeira conta a receber ou a pagar para acompanhar vencimentos e o fluxo de caixa." />
             ) : filteredAccounts.length === 0 ? (
               <p className="text-sm text-sand-dark">{newFilters && !isDefaultFilters(filters) ? 'Nenhuma conta com esses filtros. Tire algum filtro ou use “limpar filtros”.' : `Nenhuma conta encontrada para “${search}”.`}</p>
-            ) : filteredAccounts.map((account) => (
-              <div key={account.id} className="grid items-center gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto] rounded-lg border border-white/5 bg-sigma-blue-deep/50 px-4 py-4 transition-colors hover:border-white/8">
-                <div>
-                  <p className="text-sm font-medium text-sand-light">
-                    {account.title}
-                    {account.isDues ? <span className="ml-2 rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold">Mensalidade</span> : null}
-                    <span className={`ml-2 rounded-full border px-2 py-0.5 text-xs font-medium ${account.status === 'paid' ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300' : isOverdue(account) ? 'border-rose-500/20 bg-rose-500/12 text-rose-300' : 'border-gold/15 bg-gold/10 text-gold'}`}>
-                      {account.status === 'paid' ? (account.type === 'RECEIVABLE' ? 'Recebida' : 'Paga') : isOverdue(account) ? 'Vencida' : 'Em aberto'}
+            ) : entries.map((entry) => {
+              if (entry.kind === 'row') return renderAccount(accountById.get(entry.row.id)!);
+              const open = openGroups.has(entry.key);
+              return (
+                <div key={`grp-${entry.key}`} className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setOpenGroups((prev) => { const next = new Set(prev); if (next.has(entry.key)) next.delete(entry.key); else next.add(entry.key); return next; })}
+                    aria-expanded={open}
+                    className="grid w-full items-center gap-3 rounded-lg border border-rose-500/20 bg-sigma-blue-deep/50 px-4 py-4 text-left transition-colors hover:border-rose-500/40 sm:grid-cols-[minmax(0,1fr)_8rem_auto]"
+                  >
+                    <span>
+                      <span className="block text-sm font-medium text-sand-light">{entry.personName}
+                        <span className="ml-2 rounded-full border border-rose-500/20 bg-rose-500/12 px-2 py-0.5 text-xs font-medium text-rose-300">{entry.rows.length} débitos em aberto</span>
+                      </span>
+                      <span className="mt-1 block text-xs text-sand-dark">Acumulado · o mais antigo venceu em {formatDateOnly(entry.oldestDue)}</span>
                     </span>
-                    {account.awaitingAsaas && account.status !== 'paid' ? <span className="ml-2 rounded-full border border-sky-500/20 bg-sky-500/12 px-2 py-0.5 text-xs font-medium text-sky-200">Aguardando Asaas</span> : null}
-                    {account.approvalStatus === 'pending' ? <span className="ml-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">Aguardando aprovação</span> : null}
-                  </p>
-                  {account.approvalStatus === 'pending' && account.approval?.summary ? <p className="mt-1 text-xs text-amber-300">{account.approval.summary}</p> : null}
-                  <p className="mt-1 text-xs text-sand-dark">
-                    {account.type === 'RECEIVABLE' ? 'Conta a receber' : 'Conta a pagar'} •{account.member ? <MemberLink id={account.member.id} name={account.member.name} /> : (account.counterparty?.name ?? 'Sem vínculo')}
-                  </p>
-                </div>
-                <div className="min-w-28 text-right">
-                  <p className={`text-sm font-medium tabular-nums ${account.type === 'RECEIVABLE' ? 'text-emerald-300' : 'text-rose-300'}`}>
-                    {account.type === 'RECEIVABLE' ? '+' : '−'}{brl(account.amount)}
-                  </p>
-                  <p className="mt-0.5 text-xs text-sand-dark">{formatDateOnly(account.dueDate)}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {account.approvalStatus === 'pending' && account.approval?.canApprove ? (
-                    <button onClick={() => void handleApprove(account.id)} className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Aprovar</button>
-                  ) : null}
-                  {account.approvalStatus === 'pending' && account.approval?.canValve ? (
-                    <button onClick={() => void handleApprove(account.id, true)} className="text-xs px-1 py-1 text-amber-300 transition hover:text-amber-200">Aprovar sozinho</button>
-                  ) : null}
-                  {account.type === 'PAYABLE' ? (
-                    <span className="flex items-center gap-2">
-                      {(account.proofs ?? []).map((pr) => (
-                        <a key={pr.paymentId} href={`/api/payments/${pr.paymentId}/proof`} target="_blank" rel="noopener noreferrer" className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">{(account.proofs ?? []).length > 1 ? pr.label : 'Ver comprovante'}</a>
-                      ))}
-                      {account.hasReceipt ? (
-                        <>
-                          <a href={`/api/accounts/${account.id}/receipt`} target="_blank" rel="noopener noreferrer" className="text-xs px-1 py-1 text-emerald-300 transition hover:text-emerald-200">Ver comprovante</a>
-                          <button onClick={() => void handleReceiptRemove(account.id)} className="text-xs px-1 py-1 text-sand-dark transition hover:text-sand">Tirar</button>
-                        </>
-                      ) : null}
-                      <label className="cursor-pointer text-xs px-1 py-1 text-gold transition hover:text-gold-light">
-                        {account.hasReceipt ? 'Trocar' : 'Anexar comprovante'}
-                        <input type="file" accept="application/pdf,image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; void handleReceiptFile(account.id, f); }} />
-                      </label>
+                    <span className="min-w-28 text-right">
+                      <span className="block text-sm font-medium tabular-nums text-emerald-300">+{brl(entry.total)}</span>
+                      <span className="mt-0.5 block text-xs text-sand-dark">acumulado</span>
                     </span>
-                  ) : null}
-                  <button onClick={() => startEdit(account)} className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Editar</button>
-                  <button onClick={() => void handleDelete(account.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Remover</button>
+                    <span className="text-xs text-gold">{open ? 'Recolher' : 'Ver débitos'}</span>
+                  </button>
+                  {open ? entry.rows.map((r) => renderAccount(accountById.get(r.id)!, true)) : null}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CollapsibleCard>
 
