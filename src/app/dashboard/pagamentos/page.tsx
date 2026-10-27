@@ -1,4 +1,5 @@
 import { PAYMENT_PROOF_ENTITY } from '@/lib/payment-proof';
+import { currentExpenseReceipt, EXPENSE_RECEIPT_ENTITY, EXPENSE_RECEIPT_REMOVED_ENTITY } from '@/lib/expense-receipt';
 import { auth } from '@/lib/auth';
 import { isAsaasMode } from '@/lib/collection';
 import { canRegisterPreOpening, settlementTypeOf } from '@/lib/settlement-type';
@@ -54,6 +55,8 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           orderBy: { paidAt: 'desc' },
         }),
         // Comprovante por baixa de despesa.
+        // Despesas que já têm comprovante anexado em Contas (o mais recente vale; remoção posterior encerra).
+        expenseReceiptRows: await db.auditLog.findMany({ where: { lodgeId: String(lodgeId), entity: { in: [EXPENSE_RECEIPT_ENTITY, EXPENSE_RECEIPT_REMOVED_ENTITY] } }, select: { entity: true, entityId: true, createdAt: true, after: true } }),
         proofRows: await db.auditLog.findMany({ where: { lodgeId: String(lodgeId), entity: PAYMENT_PROOF_ENTITY }, select: { entityId: true } }),
         lodgeMode: await db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { collectionMode: true } }),
         revenueCharts: await db.chartAccount.findMany({ where: { lodgeId: String(lodgeId), type: 'REVENUE' }, select: { id: true, code: true, name: true }, orderBy: { code: 'asc' } }),
@@ -96,7 +99,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           select: { id: true, date: true, amount: true, description: true },
         }),
       }))
-    : { accounts: [], members: [], payments: [], revenueCharts: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], proofRows: [], receiptChecks: [], cashPayments: [], cashConfirmed: [], hiddenOld: 0, lodgeMode: null };
+    : { accounts: [], members: [], payments: [], revenueCharts: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], proofRows: [], expenseReceiptRows: [], receiptChecks: [], cashPayments: [], cashConfirmed: [], hiddenOld: 0, lodgeMode: null };
 
   const accounts = data.accounts
     .map((a) => {
@@ -114,6 +117,8 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
       bankAccountId: a.bankAccountId ?? null,
       memberId: a.memberId ?? null,
       who: a.member?.name ?? a.counterpartyName ?? (shared ? 'vários irmãos' : null),
+      // Comprovante já anexado à despesa e ainda sem baixa: serve para a primeira baixa, sem enviar de novo.
+      hasReceipt: withExpenseReceipt.has(a.id) && a.payments.length === 0,
       category: a.chartAccount ? `${a.chartAccount.code} ${a.chartAccount.name}` : null,
       };
     })
@@ -176,6 +181,11 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
   );
   const notices = rawNotices.map((n) => ({ ...n, bankMatch: bankMatches.get(leader(n)) ?? null }));
 
+  const withExpenseReceipt = new Set<string>();
+  for (const id of new Set(data.expenseReceiptRows.map((r) => r.entityId))) {
+    const mine = data.expenseReceiptRows.filter((r) => r.entityId === id);
+    if (currentExpenseReceipt(mine.filter((r) => r.entity === EXPENSE_RECEIPT_ENTITY), mine.filter((r) => r.entity === EXPENSE_RECEIPT_REMOVED_ENTITY))) withExpenseReceipt.add(id);
+  }
   const proofPaymentIds = new Set(data.proofRows.map((r) => r.entityId));
   const payments = data.payments.map((p) => ({
     hasProof: proofPaymentIds.has(p.id),

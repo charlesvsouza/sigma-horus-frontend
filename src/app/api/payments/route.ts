@@ -18,7 +18,7 @@ import { formatDayMixed, firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from 
 import { LATE_CHARGE_CHART, lateChargeMarker } from '@/lib/late-charge';
 import { checkManualSettlement, checkPreOpening, isPreOpening } from '@/lib/settlement-type';
 import { PROOF_REQUIRED_MESSAGE, readProofRef } from '@/lib/payment-proof';
-import { proofKeyUsed, recordPaymentProof } from '@/lib/payment-proof-server';
+import { attachedReceiptAsProof, proofKeyUsed, recordPaymentProof } from '@/lib/payment-proof-server';
 
 export async function GET() {
   const session = await auth();
@@ -136,9 +136,12 @@ export async function POST(request: Request) {
       return { pendingApproval: true as const };
     }
     // Despesa: toda baixa leva o comprovante do pagamento (sem saída por justificativa).
+    // Sem arquivo novo, vale o comprovante já anexado à própria despesa (se houver e ainda não foi usado em outra baixa).
+    let proofRef = proof.ref;
     if (account.type === 'PAYABLE') {
-      if (!proof.ref) return { proofRequired: true as const };
-      if (await proofKeyUsed(db, String(lodgeId), proof.ref.key)) return { proofUsed: true as const };
+      if (!proofRef) proofRef = await attachedReceiptAsProof(db, String(lodgeId), accountId);
+      if (!proofRef) return { proofRequired: true as const };
+      if (await proofKeyUsed(db, String(lodgeId), proofRef.key)) return { proofUsed: true as const };
     }
 
     const bank = preOpening
@@ -203,7 +206,7 @@ export async function POST(request: Request) {
       },
     });
 
-    if (account.type === 'PAYABLE' && proof.ref) await recordPaymentProof(db, { lodgeId: String(lodgeId), userId: String(session.user.id), paymentId: created.id, accountId, ref: proof.ref });
+    if (account.type === 'PAYABLE' && proofRef) await recordPaymentProof(db, { lodgeId: String(lodgeId), userId: String(session.user.id), paymentId: created.id, accountId, ref: proofRef });
 
     // Recibo assinado digitalmente no ato da baixa, quando quem registra é o Tesoureiro ou o Venerável.
     await autoSignReceipt(db, String(lodgeId), created.id, session?.user?.id ? String(session.user.id) : null);

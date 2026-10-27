@@ -25,6 +25,8 @@ interface AccountOption {
   who: string | null;
   /** Categoria do plano de contas (código e nome): diz a ORIGEM do débito. */
   category?: string | null;
+  /** Despesa com comprovante já anexado em Contas: a baixa o aproveita, sem novo envio. */
+  hasReceipt?: boolean;
 }
 /** "Já paguei" do portal (Modo Loja) ainda sem baixa. */
 interface BankMatch { lineId: string; date: string; amount: number; description: string; by: 'txid' | 'amount'; }
@@ -230,7 +232,8 @@ export default function PagamentosClient({ accounts, members, payments, financia
   // Comprovante da baixa de despesa (obrigatório): sobe antes; a baixa leva a referência.
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofKey, setProofKey] = useState(0);
-  const needsProof = byId.get(form.accountId)?.type === 'PAYABLE';
+  const chosenAccount = byId.get(form.accountId);
+  const needsProof = chosenAccount?.type === 'PAYABLE' && !chosenAccount.hasReceipt;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -540,6 +543,11 @@ export default function PagamentosClient({ accounts, members, payments, financia
                   </select>
                 </Field>
               )}
+              {chosenAccount?.type === 'PAYABLE' && chosenAccount.hasReceipt ? (
+                <p className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 md:col-span-2">
+                  Esta despesa já tem o comprovante anexado em Contas: ele será usado nesta baixa, sem enviar de novo.
+                </p>
+              ) : null}
               {needsProof ? (
                 <Field label="Comprovante do pagamento (obrigatório)" className="md:col-span-2">
                   <input key={proofKey} type="file" accept="application/pdf,image/png,image/jpeg,image/webp" onChange={(e) => setProofFile(e.target.files?.[0] ?? null)} className={INPUT} required />

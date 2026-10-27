@@ -1,6 +1,7 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { logAudit } from '@/lib/audit';
-import { PAYMENT_PROOF_ENTITY, type ProofRef } from '@/lib/payment-proof';
+import { PAYMENT_PROOF_ENTITY, proofPrefix, type ProofRef } from '@/lib/payment-proof';
+import { currentExpenseReceipt, EXPENSE_RECEIPT_ENTITY, EXPENSE_RECEIPT_REMOVED_ENTITY } from '@/lib/expense-receipt';
 
 // Parte com banco do comprovante por baixa (a regra pura está em lib/payment-proof.ts).
 
@@ -33,4 +34,20 @@ export async function proofsByPayment(db: Prisma.TransactionClient, lodgeId: str
     } catch { /* registro sem metadados legíveis */ }
   }
   return out;
+}
+
+/**
+ * Comprovante que já foi anexado à própria despesa (Contas → "Anexar comprovante"), aproveitado como o da baixa
+ * para a Tesouraria não enviar o mesmo arquivo duas vezes. Só vale se for desta loja e ainda não tiver sido usado
+ * em outra baixa (pagamento parcial pede um comprovante para cada).
+ */
+export async function attachedReceiptAsProof(db: Prisma.TransactionClient, lodgeId: string, accountId: string): Promise<ProofRef | null> {
+  const [attached, removed] = await Promise.all([
+    db.auditLog.findMany({ where: { lodgeId, entity: EXPENSE_RECEIPT_ENTITY, entityId: accountId }, select: { createdAt: true, after: true }, orderBy: { createdAt: 'desc' }, take: 20 }),
+    db.auditLog.findMany({ where: { lodgeId, entity: EXPENSE_RECEIPT_REMOVED_ENTITY, entityId: accountId }, select: { createdAt: true }, orderBy: { createdAt: 'desc' }, take: 20 }),
+  ]);
+  const current = currentExpenseReceipt(attached, removed);
+  if (!current || !current.receiptKey.startsWith(proofPrefix(lodgeId)) || current.receiptKey.includes('..')) return null;
+  if (await proofKeyUsed(db, lodgeId, current.receiptKey)) return null;
+  return { key: current.receiptKey, name: current.receiptName, type: current.receiptType };
 }
