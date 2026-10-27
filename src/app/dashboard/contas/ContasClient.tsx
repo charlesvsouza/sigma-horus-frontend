@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import { FormEvent, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, CollapsibleCard, EmptyState, Field, FormCard, inputClass, useConfirm, Toast } from '@/components/ui';
@@ -364,6 +365,11 @@ export default function ContasClient({ accounts, members, chartAccounts, counter
                         <input type="file" accept="application/pdf,image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; void handleReceiptFile(account.id, f); }} />
                       </label>
                     </span>
+                  ) : null}
+                  {account.status !== 'paid' && account.approvalStatus !== 'pending' ? (
+                    <Link href={`/dashboard/pagamentos?conta=${account.id}#novo-pagamento`} className="text-xs px-1 py-1 font-medium text-emerald-300 transition hover:text-emerald-200">
+                      {account.type === 'PAYABLE' ? 'Dar baixa (pagar)' : 'Dar baixa (receber)'}
+                    </Link>
                   ) : null}
                   <button onClick={() => startEdit(account)} className="text-xs px-1 py-1 text-gold transition hover:text-gold-light">Editar</button>
                   <button onClick={() => void handleDelete(account.id)} className="text-xs px-1 py-1 text-rose-300 transition hover:text-rose-200">Remover</button>
