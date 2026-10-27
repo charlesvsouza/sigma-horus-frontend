@@ -47,6 +47,8 @@ function accountLabel(a: AccountOption): string {
   return [a.title, a.who, `venc. ${formatDateOnly(a.dueDate)}`, `saldo ${brl(a.balance)}`].filter(Boolean).join(' · ');
 }
 
+const foldText = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
 const EMPTY_FORM = { accountId: '', memberId: '', bankAccountId: '', amount: '', lateCharge: '', paidAt: '', method: 'manual', settlementType: '', note: '', bankTransactionId: '' };
 
 /** Formulário pronto para a baixa de uma conta (saldo, irmão, conta prevista); com aviso do portal, Pix na data do aviso. */
@@ -93,6 +95,13 @@ export default function PagamentosClient({ accounts, members, payments, financia
     return account ? formFor(account, notices.find((n) => n.accountId === account.id)) : EMPTY_FORM;
   });
   const byId = new Map(accounts.map((a) => [a.id, a]));
+  // Busca por digitação (sem acento, sem diferença de maiúscula): o nome do devedor traz todos os débitos em aberto dele.
+  const [accountSearch, setAccountSearch] = useState('');
+  const accountChoices = (() => {
+    const terms = foldText(accountSearch).split(/\s+/).filter(Boolean);
+    if (terms.length === 0) return accounts;
+    return accounts.filter((a) => a.id === form.accountId || terms.every((t) => foldText(`${a.title} ${a.who ?? ''}`).includes(t)));
+  })();
 
   function selectAccount(id: string) {
     const account = byId.get(id);
@@ -434,9 +443,23 @@ export default function PagamentosClient({ accounts, members, payments, financia
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Selecione uma conta">
-                <select value={form.accountId} onChange={(event) => selectAccount(event.target.value)} className={INPUT} required>
-                  <option value="">Selecione…</option>
-                  {accounts.map((account) => <option key={account.id} value={account.id}>{accountLabel(account)}</option>)}
+                <input
+                  type="search"
+                  value={accountSearch}
+                  onChange={(event) => setAccountSearch(event.target.value)}
+                  placeholder="Digite o nome do devedor ou o título…"
+                  aria-label="Buscar conta por nome do devedor ou título"
+                  className={`${INPUT} mb-2`}
+                />
+                <select
+                  value={form.accountId}
+                  onChange={(event) => selectAccount(event.target.value)}
+                  className={INPUT}
+                  size={accountSearch.trim() ? Math.min(8, Math.max(2, accountChoices.length + 1)) : undefined}
+                  required
+                >
+                  <option value="">{accountSearch.trim() ? `${accountChoices.length} conta(s) em aberto encontrada(s)` : 'Selecione…'}</option>
+                  {accountChoices.map((account) => <option key={account.id} value={account.id}>{accountLabel(account)}</option>)}
                 </select>
               </Field>
               <Field label="Vincular a um membro">
