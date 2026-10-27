@@ -46,11 +46,11 @@ export default async function ConfiguracoesPage() {
     ? await withTenant(String(lodgeId), async (db) => ({
         lodge: await db.lodge.findUnique({
           where: { id: String(lodgeId) },
-          select: { collectionMode: true, asaasSettlementAccountId: true, asaasBillingType: true, asaasAutoEmit: true, asaasApiKeyEnc: true, pixKey: true, bankName: true, bankAccount: true },
+          select: { collectionMode: true, asaasSettlementAccountId: true, asaasBillingType: true, asaasAutoEmit: true, asaasApiKeyEnc: true, pixKey: true, bankName: true, bankAgency: true, bankAccount: true },
         }),
         accounts: await db.financialAccount.findMany({
           where: { lodgeId: String(lodgeId), active: true, kind: 'bank', isInvestment: false, purpose: 'general' },
-          select: { id: true, name: true },
+          select: { id: true, name: true, bankName: true, agency: true, accountNumber: true },
           orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
         }),
       }))
@@ -62,7 +62,8 @@ export default async function ConfiguracoesPage() {
     autoEmit: Boolean(collectionData?.lodge?.asaasAutoEmit),
     asaasConnected: Boolean(collectionData?.lodge?.asaasApiKeyEnc),
     hasPaymentData: Boolean(collectionData?.lodge?.pixKey || collectionData?.lodge?.bankAccount),
-    accounts: collectionData?.accounts ?? [],
+    accounts: (collectionData?.accounts ?? []).map((a) => ({ id: a.id, name: a.name, bankName: a.bankName ?? null, agency: a.agency ?? null, accountNumber: a.accountNumber ?? null })),
+    lodgeBank: { bankName: collectionData?.lodge?.bankName ?? null, agency: collectionData?.lodge?.bankAgency ?? null, account: collectionData?.lodge?.bankAccount ?? null },
   };
 
   const initialForm = { ...EMPTY };

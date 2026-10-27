@@ -60,7 +60,9 @@ export async function settleAsaasInvoicePayment(
   const cashBank = receivedInCash
     ? pickCashAccount(await db.financialAccount.findMany({ where: { lodgeId }, select: { id: true, kind: true, active: true, isDefault: true } }))
     : null;
-  const bankAccountId = cashBank?.id ?? account?.bankAccountId ?? lodge?.asaasSettlementAccountId ?? null;
+  // Pix/boleto do Asaas: o repasse vai para a conta escolhida pela loja em Configurações (a conta antiga que o lançamento ainda
+  // carrega — de antes de a loja trocar de banco — só vale se a loja não escolheu nenhuma).
+  const bankAccountId = cashBank?.id ?? lodge?.asaasSettlementAccountId ?? account?.bankAccountId ?? null;
   const created = await db.payment.create({
     // paidAt = DIA de Brasília (só-dia, 00:00 UTC), como toda data digitada: um Pix das 22h do último dia do mês
     // fica no mês certo nos relatórios, que agrupam por dia/UTC.

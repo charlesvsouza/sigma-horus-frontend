@@ -13,8 +13,13 @@ export interface CollectionProps {
   autoEmit: boolean;
   asaasConnected: boolean;
   hasPaymentData: boolean; // chave Pix / dados bancários da loja cadastrados
-  accounts: { id: string; name: string }[]; // contas correntes elegíveis ao repasse
+  accounts: { id: string; name: string; bankName: string | null; agency: string | null; accountNumber: string | null }[]; // contas correntes elegíveis ao repasse
+  /** Dados bancários cadastrados em "Dados bancários" da loja (para conferir com a conta de repasse). */
+  lodgeBank: { bankName: string | null; agency: string | null; account: string | null };
 }
+
+const digits = (v: string | null | undefined) => (v ?? '').replace(/\D/g, '').replace(/^0+/, '');
+const norm = (v: string | null | undefined) => (v ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 
 function Option({ value, current, onSelect, title, children }: { value: 'lodge' | 'asaas'; current: 'lodge' | 'asaas'; onSelect: (v: 'lodge' | 'asaas') => void; title: string; children: React.ReactNode }) {
   return (
@@ -30,7 +35,7 @@ function Option({ value, current, onSelect, title, children }: { value: 'lodge' 
 
 // "Recebimento das cobranças": a loja escolhe como recebe — direto na sua conta (Modo Loja)
 // ou pelo Asaas (Modo Asaas). O dinheiro sempre é lançado na conta corrente da loja.
-export default function CollectionSettings({ mode: initialMode, settlementAccountId, billingType, autoEmit: initialAutoEmit, asaasConnected, hasPaymentData, accounts }: CollectionProps) {
+export default function CollectionSettings({ mode: initialMode, settlementAccountId, billingType, autoEmit: initialAutoEmit, asaasConnected, hasPaymentData, accounts, lodgeBank }: CollectionProps) {
   const router = useRouter();
   const [mode, setMode] = useState(initialMode);
   const [settlement, setSettlement] = useState(settlementAccountId);
@@ -38,6 +43,17 @@ export default function CollectionSettings({ mode: initialMode, settlementAccoun
   const [autoEmit, setAutoEmit] = useState(initialAutoEmit);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+
+  // A conta de repasse é um cadastro de Cadastros financeiros; os "Dados bancários" da loja são outro. Se os dois divergem, avisa.
+  const chosen = accounts.find((a) => a.id === settlement) ?? null;
+  const mismatch = (() => {
+    if (!chosen) return null;
+    const diffs: string[] = [];
+    if (lodgeBank.bankName && chosen.bankName && !norm(lodgeBank.bankName).includes(norm(chosen.bankName)) && !norm(chosen.bankName).includes(norm(lodgeBank.bankName))) diffs.push('banco');
+    if (digits(lodgeBank.agency) && digits(chosen.agency) && digits(lodgeBank.agency) !== digits(chosen.agency)) diffs.push('agência');
+    if (digits(lodgeBank.account) && digits(chosen.accountNumber) && digits(lodgeBank.account) !== digits(chosen.accountNumber)) diffs.push('conta');
+    return diffs.length ? diffs : null;
+  })();
 
   const dirty = mode !== initialMode || settlement !== settlementAccountId || billing !== billingType || (mode === 'asaas' && autoEmit !== initialAutoEmit);
 
@@ -91,8 +107,15 @@ export default function CollectionSettings({ mode: initialMode, settlementAccoun
             Conta corrente que recebe o repasse
             <select value={settlement} onChange={(e) => setSettlement(e.target.value)} className={`mt-1.5 ${inputClass}`} aria-label="Conta de repasse">
               <option value="">Selecione a conta corrente</option>
-              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {accounts.map((a) => <option key={a.id} value={a.id}>{[a.name, a.bankName, a.agency ? `ag. ${a.agency}` : null, a.accountNumber ? `c/c ${a.accountNumber}` : null].filter(Boolean).join(' · ')}</option>)}
             </select>
+            {!settlement ? <span className="mt-1 block text-xs text-amber-300">Escolha a conta: sem ela, o Asaas não emite cobranças e o repasse não tem onde ser lançado.</span> : null}
+            {mismatch ? (
+              <span className="mt-1 block text-xs text-amber-300">
+                Atenção: o {mismatch.join(', ')} desta conta de repasse não confere com os <em>Dados bancários</em> da loja ({[lodgeBank.bankName, lodgeBank.agency ? `ag. ${lodgeBank.agency}` : null, lodgeBank.account ? `c/c ${lodgeBank.account}` : null].filter(Boolean).join(' · ')}).
+                Se a conta mudou, cadastre a conta nova em <Link href="/dashboard/cadastros-financeiros" className="underline">Cadastros financeiros</Link> e escolha-a aqui: os recebimentos do Asaas são lançados nela.
+              </span>
+            ) : null}
             {accounts.length === 0 ? (
               <span className="mt-1 block text-xs text-amber-300">
                 Nenhuma conta corrente cadastrada — crie em <Link href="/dashboard/cadastros-financeiros" className="underline">Cadastros financeiros</Link>.
