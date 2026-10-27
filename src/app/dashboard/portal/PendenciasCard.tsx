@@ -18,6 +18,7 @@ export interface PendingAccount {
   effectiveStatus: 'paid' | 'overdue' | 'pending';
   balance: number;
   paidNoticeAt?: string | null;
+  paidNoticeCanAddReceipt?: boolean;
   /** Último aviso recusado pela Tesouraria (comprovante não conferiu), enquanto não houver aviso novo. */
   paidNoticeRejected?: { at: string; reason: string | null } | null;
   chartAccount?: { name: string; category: string | null } | null;
@@ -59,6 +60,7 @@ export function PendenciasCard({
   const [copied, setCopied] = useState(false);
   const [note, setNote] = useState('');
   const [receipt, setReceipt] = useState<File | null>(null);
+  const [lateMsg, setLateMsg] = useState<{ id: string; kind: 'ok' | 'error'; text: string } | null>(null);
   const [noticeMsg, setNoticeMsg] = useState('');
   const [sendingNotice, setSendingNotice] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
@@ -144,6 +146,22 @@ export function PendenciasCard({
     setSendingNotice(false);
     if (!res.ok) { setError(data.error ?? 'Não foi possível avisar a Tesouraria.'); return; }
     setNoticeMsg('Tesouraria avisada. A baixa é feita depois de conferir o extrato da loja.');
+    onChanged();
+  }
+
+  // Avisou sem comprovante e agora manda o arquivo: complementa o aviso (a Tesouraria vê o mais recente).
+  async function sendLateReceipt(accountId: string, f: File | null) {
+    if (!f) return;
+    const invalid = receiptUploadError(f);
+    if (invalid) { setLateMsg({ id: accountId, kind: 'error', text: invalid }); return; }
+    setLateMsg({ id: accountId, kind: 'ok', text: 'Enviando o comprovante…' });
+    const form = new FormData();
+    form.append('file', f);
+    form.append('addReceipt', '1');
+    const res = await fetch(`/api/portal/accounts/${accountId}/paid-notice`, { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { setLateMsg({ id: accountId, kind: 'error', text: data.error ?? 'Não foi possível enviar o comprovante.' }); return; }
+    setLateMsg({ id: accountId, kind: 'ok', text: 'Comprovante enviado à Tesouraria.' });
     onChanged();
   }
 
@@ -297,6 +315,15 @@ export function PendenciasCard({
                     </p>
                     {a.paidNoticeAt ? (
                       <p className="mt-1 text-xs text-sky-200">Você avisou o pagamento em {new Date(a.paidNoticeAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}. Aguardando a Tesouraria.</p>
+                    ) : null}
+                    {a.paidNoticeAt && a.paidNoticeCanAddReceipt ? (
+                      <p className="mt-1 text-xs text-sand-dark">
+                        <label className="cursor-pointer font-medium text-gold hover:text-gold-light">
+                          Enviar o comprovante (foto ou PDF)
+                          <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="sr-only" onChange={(e) => { const f = e.target.files?.[0] ?? null; e.target.value = ''; void sendLateReceipt(a.id, f); }} />
+                        </label>
+                        {lateMsg?.id === a.id ? <span className={`ml-2 ${lateMsg.kind === 'ok' ? 'text-emerald-300' : 'text-rose-300'}`}>{lateMsg.text}</span> : null}
+                      </p>
                     ) : a.paidNoticeRejected ? (
                       <p className="mt-1 text-xs text-amber-300">
                         A Tesouraria não confirmou seu aviso de pagamento{a.paidNoticeRejected.reason ? `: ${a.paidNoticeRejected.reason}` : ''}. Se já pagou, envie o comprovante correto em &quot;Já paguei&quot;.

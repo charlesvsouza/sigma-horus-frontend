@@ -26,6 +26,11 @@ export type NoticeResult =
   | { ok: true; paidNoticeAt: Date; notified: number; receipt: boolean; receiptCheck: ReceiptCheck | null }
   | { ok: false; status: number; error: string; paidNoticeAt?: Date; code?: 'exists' | 'paid-at-required' };
 
+/** O aviso (registro de auditoria) trouxe comprovante anexado? */
+export function noticeHasReceipt(after: string | null | undefined): boolean {
+  try { return typeof (JSON.parse(after ?? '{}') as { receiptKey?: unknown }).receiptKey === 'string'; } catch { return false; }
+}
+
 export interface NoticeRegisteredBy { userId: string; name: string; role: string }
 
 export async function submitPaymentNotice(params: {
@@ -43,6 +48,8 @@ export async function submitPaymentNotice(params: {
   notifyMember?: boolean;
   /** Já existe aviso desta conta: substitui (o mais recente vale no quadro de Pagamentos). */
   replace?: boolean;
+  /** O irmão avisou sem comprovante e agora envia o arquivo: vale mesmo dentro da carência de 24 h (só se o último aviso não tinha comprovante). */
+  addReceipt?: boolean;
 }): Promise<NoticeResult> {
   const { lodgeId, memberId, userId, registeredBy } = params;
   const paidAtInformed = params.paidAtInformed && /^\d{4}-\d{2}-\d{2}$/.test(params.paidAtInformed) ? params.paidAtInformed : null;
@@ -68,7 +75,7 @@ export async function submitPaymentNotice(params: {
       db.member.findUnique({ where: { id: memberId }, select: { name: true, email: true } }),
       db.auditLog.findMany({
         where: { lodgeId, entity: PAYMENT_NOTICE_ENTITY, entityId: { in: accountIds } },
-        select: { entityId: true, createdAt: true },
+        select: { entityId: true, createdAt: true, after: true },
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),
@@ -99,7 +106,7 @@ export async function submitPaymentNotice(params: {
       return { ok: false, status: 409, code: 'exists', error: 'Já existe um aviso de pagamento desta cobrança.', paidNoticeAt: last.createdAt };
     }
     if (!params.file) return { ok: false, status: 400, error: 'Anexe o comprovante.' };
-  } else if (last && Date.now() - last.createdAt.getTime() < PAYMENT_NOTICE_COOLDOWN_MS) {
+  } else if (last && Date.now() - last.createdAt.getTime() < PAYMENT_NOTICE_COOLDOWN_MS && !(params.addReceipt && params.file && !noticeHasReceipt(last.after))) {
     return { ok: false, status: 429, error: 'Você já avisou a Tesouraria sobre esta conta nas últimas 24 horas.', paidNoticeAt: last.createdAt };
   }
 

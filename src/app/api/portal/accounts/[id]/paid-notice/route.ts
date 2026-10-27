@@ -19,17 +19,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   let note = '';
   let file: File | null = null;
+  let addReceipt = false;
   if ((request.headers.get('content-type') ?? '').includes('multipart/form-data')) {
     const form = await request.formData().catch(() => null);
     note = String(form?.get('note') ?? '');
     const f = form?.get('file');
     file = f instanceof File && f.size > 0 ? f : null;
+    addReceipt = form?.get('addReceipt') === '1';
   } else {
     const body = await request.json().catch(() => ({}));
     note = String(body?.note ?? '');
   }
 
-  const r = await submitPaymentNotice({ lodgeId, memberId, userId: session!.user.id, accountIds: [id], note, file });
+  const r = await submitPaymentNotice({ lodgeId, memberId, userId: session!.user.id, accountIds: [id], note, file, addReceipt });
   if (!r.ok) return NextResponse.json({ error: r.error, ...(r.paidNoticeAt ? { paidNoticeAt: r.paidNoticeAt } : {}) }, { status: r.status });
   return NextResponse.json({ success: true, paidNoticeAt: r.paidNoticeAt, notified: r.notified, receipt: r.receipt });
 }

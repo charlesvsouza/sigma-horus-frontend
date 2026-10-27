@@ -116,7 +116,7 @@ export async function GET() {
     ? await withTenant(String(lodgeId), async (db) => ({
         notices: await db.auditLog.findMany({
           where: { lodgeId: String(lodgeId), entity: PAYMENT_NOTICE_ENTITY, entityId: { in: openIds } },
-          select: { entityId: true, createdAt: true },
+          select: { entityId: true, createdAt: true, after: true },
           orderBy: { createdAt: 'desc' },
         }),
         rejections: await db.auditLog.findMany({
@@ -127,7 +127,15 @@ export async function GET() {
       }))
     : { notices: [], rejections: [] };
   const lastNotice = new Map<string, Date>();
-  for (const n of withoutRejected(notices, rejections)) if (!lastNotice.has(n.entityId)) lastNotice.set(n.entityId, n.createdAt);
+  // Aviso sem comprovante (e que não é de Pix agrupado): o irmão pode mandar o arquivo depois.
+  const canAddReceipt = new Set<string>();
+  for (const n of withoutRejected(notices, rejections)) {
+    if (lastNotice.has(n.entityId)) continue;
+    lastNotice.set(n.entityId, n.createdAt);
+    let meta: { receiptKey?: unknown; groupAccountIds?: unknown } = {};
+    try { meta = JSON.parse(n.after ?? '{}'); } catch { meta = {}; }
+    if (typeof meta.receiptKey !== 'string' && !Array.isArray(meta.groupAccountIds)) canAddReceipt.add(n.entityId);
+  }
   const lastRejection = new Map<string, { at: Date; reason: string | null }>();
   for (const r of rejections) {
     if (lastRejection.has(r.entityId)) continue;
@@ -152,6 +160,7 @@ export async function GET() {
       payable: !inAgreement.has(a.id) && canPay({ ...a, memberId: owner, approvalStatus }, String(memberId), balance),
       inAgreement: inAgreement.has(a.id),
       paidNoticeAt: lastNotice.get(a.id) ?? null,
+      paidNoticeCanAddReceipt: canAddReceipt.has(a.id),
       // Só enquanto não houver aviso novo: depois dele, a recusa antiga é história.
       paidNoticeRejected: !lastNotice.has(a.id) && lastRejection.has(a.id) ? lastRejection.get(a.id)! : null,
     };
