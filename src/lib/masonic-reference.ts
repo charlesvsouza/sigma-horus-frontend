@@ -268,6 +268,7 @@ export const MASONIC_CHART_OF_ACCOUNTS: ChartAccountSeed[] = [
   { code: '2.1.16', name: 'Tarifas de Cobrança (Asaas)', type: 'EXPENSE', category: 'Despesas Administrativas' },
   // 2.1.17 é a Devolução de Taxas de Grau (criada sob demanda, ver degree-fee.ts).
   { code: '2.1.18', name: 'Aluguel da Sede', type: 'EXPENSE', category: 'Despesas Administrativas' },
+  { code: '2.1.19', name: 'Sistema Sigma Horus (assinatura)', type: 'EXPENSE', category: 'Despesas Administrativas' },
   // 2.2 Investimentos
   { code: '2.2.02', name: 'Móveis e Utensílios', type: 'EXPENSE', category: 'Investimentos' },
   { code: '2.2.03', name: 'Equipamentos', type: 'EXPENSE', category: 'Investimentos' },
