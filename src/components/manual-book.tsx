@@ -1404,6 +1404,13 @@ export function ManualBook() {
                   Enquanto bloqueado, o próprio irmão vê no painel o aviso com o total, o pago e o saldo do acordo.
                 </p>
                 <p>
+                  <strong>Cancelar um acordo (só o Venerável):</strong> em <UI>Tesouraria → Acordos</UI>, o Venerável clica em <UI>Cancelar acordo</UI> e escreve o motivo.
+                  As dívidas <strong>voltam ao saldo em aberto</strong>, cada uma pelo que ainda falta (o que já foi pago continua pago); a taxa e a multa/juros do acordo que ninguém pagou deixam de existir
+                  e, se alguma parte já foi recebida, a conta fica com o valor recebido. <strong>O irmão continua bloqueado e no Art. 002.</strong> Depois, o Venerável ou o Administrador abre um
+                  <UI> Novo acordo</UI> (quitação ou regularização, à vista ou até 3 parcelas) com as dívidas em aberto de agora, ou as dívidas são pagas normalmente em <UI>Pagamentos</UI>. Quando não houver mais
+                  dívida, <UI>Liberar o irmão</UI> devolve o cadastro a Ativo. O acordo cancelado fica no histórico, com o motivo.
+                </p>
+                <p>
                   <strong>Renegociar a dívida:</strong> no próprio relatório de Inadimplência, clique em <UI>Negociar</UI>
                   na linha do membro. Escolha a data do <strong>1º vencimento</strong> e, se quiser, marque
                   <UI> Incluir multa/juros no total</UI>. O sistema soma as mensalidades vencidas (mais o encargo, se

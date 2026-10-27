@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  allocatePayment, buildInstallments, buildPackage, canBlockMembers, checkCanBlock, installmentStates, paidSoFar, parseBlockInput,
+  allocatePayment, buildInstallments, buildPackage, canBlockMembers, canCancelAgreement, checkCancelReason, checkCanBlock, installmentStates, paidSoFar, parseBlockInput,
 } from './member-block';
 
 const d = (s: string) => new Date(`${s}T00:00:00Z`);
@@ -112,4 +112,13 @@ test('allocatePayment: respeita a ordem do pacote, não passa do saldo e devolve
 test('paidSoFar: soma o que cada item já abateu (nunca negativo nem acima do saldo original)', () => {
   assert.equal(paidSoFar([{ openAmount: 150, remaining: 0 }, { openAmount: 100, remaining: 40 }, { openAmount: 50, remaining: 50 }]), 210);
   assert.equal(paidSoFar([{ openAmount: 100, remaining: 120 }]), 0); // saldo cresceu (estorno): não é "pago negativo"
+});
+
+test('cancelar acordo: só o Venerável (nem o Administrador), com motivo escrito', () => {
+  assert.equal(canCancelAgreement('venerable'), true);
+  assert.equal(canCancelAgreement('Venerable'), true);
+  for (const r of ['admin', 'treasurer', 'secretary', 'member', '', null, undefined]) assert.equal(canCancelAgreement(r), false);
+  assert.equal(checkCancelReason(undefined).ok, false);
+  assert.equal(checkCancelReason('  abc ').ok, false);
+  assert.deepEqual(checkCancelReason('  Erro nos valores do acordo  '), { ok: true, reason: 'Erro nos valores do acordo' });
 });

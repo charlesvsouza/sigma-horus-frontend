@@ -331,9 +331,18 @@ export async function liftBlock(lodgeId: string, memberId: string, actorId: stri
     await lockKey(db, `member-block:${memberId}`);
     await syncMemberBlock(db, lodgeId, memberId, now);
     const block = await db.memberBlock.findFirst({ where: { lodgeId, memberId, status: { in: ['open', 'settled'] } } });
-    if (!block) return { ok: false, status: 404, error: 'Este irmão não está bloqueado.' };
-    if (block.status !== 'settled') return { ok: false, status: 409, error: 'O irmão só volta depois que o acordo estiver totalmente pago.' };
-    if (outcome === 'placet' && !isSettlementKind(block.kind)) return { ok: false, status: 409, error: 'O Placet por este caminho vale só para o acordo de quitação de dívidas.' };
+    // Sem acordo em andamento (cancelado): o irmão só é liberado se não deve mais nada à loja.
+    let afterCancel = false;
+    if (!block) {
+      const member = await db.member.findFirst({ where: { id: memberId, lodgeId }, select: { status: true } });
+      const cancelled = await db.memberBlock.findFirst({ where: { lodgeId, memberId, status: 'cancelled' }, select: { id: true } });
+      if (member?.status !== BLOCKED_STATUS || !cancelled) return { ok: false, status: 404, error: 'Este irmão não está bloqueado.' };
+      if ((await loadMemberDebts(db, lodgeId, memberId)).length > 0) return { ok: false, status: 409, error: 'O acordo foi cancelado e ainda há dívida em aberto: faça um novo acordo ou quite as dívidas antes de liberar o irmão.' };
+      afterCancel = true;
+    } else if (block.status !== 'settled') {
+      return { ok: false, status: 409, error: 'O irmão só volta depois que o acordo estiver totalmente pago.' };
+    }
+    if (outcome === 'placet' && (!block || !isSettlementKind(block.kind))) return { ok: false, status: 409, error: 'O Placet por este caminho vale só para o acordo de quitação de dívidas.' };
 
     const today = todayBR(now);
     // O período bloqueado não gera mensalidade: pula as ocorrências vencidas das recorrências do irmão.
@@ -346,9 +355,9 @@ export async function liftBlock(lodgeId: string, memberId: string, actorId: stri
       await db.invoice.update({ where: { id: t.id }, data: { nextDueDate: next.nextDueDate, recurringCount: next.remaining, isRecurring: next.isRecurring } });
     }
 
-    await db.memberBlock.update({ where: { id: block.id }, data: { status: 'lifted', liftedAt: now, liftedById: actorId } });
+    if (block) await db.memberBlock.update({ where: { id: block.id }, data: { status: 'lifted', liftedAt: now, liftedById: actorId } });
     await db.member.update({ where: { id: memberId }, data: { status: outcome === 'placet' ? 'quit_placet' : 'active' } });
-    await logAudit(db, { lodgeId, userId: actorId, action: 'UPDATE', entity: 'member-block', entityId: block.id, metadata: { action: outcome === 'placet' ? 'placet' : 'lift', memberId, skippedRecurrences: templates.length } });
+    await logAudit(db, { lodgeId, userId: actorId, action: 'UPDATE', entity: 'member-block', entityId: block?.id ?? memberId, metadata: { action: outcome === 'placet' ? 'placet' : 'lift', memberId, skippedRecurrences: templates.length, ...(afterCancel ? { afterCancel: true } : {}) } });
     return { ok: true };
   });
 }
@@ -407,6 +416,119 @@ export async function regularizeSettledBlock(
     });
     return { ok: true, blockId: block.id };
   });
+}
+
+// ── Cancelamento do acordo (só o Venerável) ───────────────────────────────────
+
+export type CancelAgreementResult =
+  | { ok: true; returnedDebts: number; returnedAmount: number; removedCharges: number; keptReceived: number }
+  | Fail;
+
+/**
+ * O Venerável cancela o acordo (aberto ou quitado) e as dívidas voltam ao que eram: as contas originais nunca
+ * deixaram de existir, então seguem em aberto pelo saldo que ainda falta (o que já foi pago fica pago).
+ * A taxa e a multa/juros do acordo — contas criadas só para ele — somem se nada foi pago; se algo foi pago, a conta
+ * fica com o valor já recebido (quitada). O irmão continua BLOQUEADO (Art. 002); o novo acordo ou a liberação vêm depois.
+ */
+export async function cancelAgreement(lodgeId: string, memberId: string, actorId: string, reason: string, now: Date = new Date()): Promise<CancelAgreementResult> {
+  return withTenant(lodgeId, async (db): Promise<CancelAgreementResult> => {
+    await lockKey(db, `member-block:${memberId}`);
+    await syncMemberBlock(db, lodgeId, memberId, now);
+    const block = await db.memberBlock.findFirst({ where: { lodgeId, memberId, status: { in: ['open', 'settled'] } }, include: { items: true } });
+    if (!block) return { ok: false, status: 404, error: 'Este irmão não tem acordo em andamento para cancelar.' };
+
+    const remainders = await itemRemainders(db, block.items);
+    let returnedDebts = 0;
+    let returnedAmount = 0;
+    let removedCharges = 0;
+    let keptReceived = 0;
+    for (const item of block.items) {
+      if (item.kind === 'debt') {
+        const left = remainders.get(item.accountId) ?? 0;
+        if (left > 0) { returnedDebts++; returnedAmount = round2(returnedAmount + left); }
+        continue;
+      }
+      const account = await db.account.findFirst({ where: { id: item.accountId, lodgeId }, select: { id: true, description: true, payments: { select: { amount: true } } } });
+      if (!account) continue;
+      await lockKey(db, `account:${account.id}`);
+      const received = round2(account.payments.reduce((s, p) => s + Number(p.amount), 0));
+      if (received <= 0) {
+        await db.account.delete({ where: { id: account.id } });
+        removedCharges++;
+      } else {
+        await db.account.update({ where: { id: account.id }, data: { amount: received, status: 'paid', description: [account.description, 'acordo cancelado: mantido o valor já recebido'].filter(Boolean).join(' · ') } });
+        keptReceived = round2(keptReceived + received);
+      }
+    }
+
+    const stamp = `Acordo cancelado em ${formatDateOnly(todayBR(now))}: ${reason}`;
+    await db.memberBlock.update({
+      where: { id: block.id },
+      data: { status: 'cancelled', liftedAt: now, liftedById: actorId, note: block.note ? `${block.note}\n${stamp}` : stamp },
+    });
+    // O irmão segue bloqueado: o status do cadastro NÃO muda aqui.
+    await logAudit(db, {
+      lodgeId, userId: actorId, action: 'UPDATE', entity: 'member-block', entityId: block.id,
+      metadata: { action: 'cancel', memberId, reason, previousStatus: block.status, returnedDebts, returnedAmount, removedCharges, keptReceived },
+    });
+    return { ok: true, returnedDebts, returnedAmount, removedCharges, keptReceived };
+  });
+}
+
+/**
+ * Novo acordo para o irmão que continua bloqueado depois de um acordo cancelado. Monta o pacote com as dívidas
+ * que estão em aberto agora (mais taxa e multa/juros, se for o caso). Protocolo e data do comunicado à Potência
+ * acompanham o bloqueio original.
+ */
+export async function reopenAgreement(lodgeId: string, memberId: string, actorId: string, input: BlockInput, now: Date = new Date()): Promise<BlockResult> {
+  const asaasToCancel: string[] = [];
+  const result = await withTenant(lodgeId, async (db): Promise<BlockResult> => {
+    await lockKey(db, `member-block:${memberId}`);
+    await syncMemberBlock(db, lodgeId, memberId, now);
+    const member = await db.member.findFirst({ where: { id: memberId, lodgeId }, select: { status: true } });
+    if (!member) return { ok: false, status: 404, error: 'Membro não encontrado.' };
+    if (member.status !== BLOCKED_STATUS) return { ok: false, status: 409, error: 'Só um irmão que continua bloqueado recebe novo acordo por aqui.' };
+    const running = await db.memberBlock.findFirst({ where: { lodgeId, memberId, status: { in: ['open', 'settled'] } }, select: { id: true } });
+    if (running) return { ok: false, status: 409, error: 'Este irmão já tem um acordo em andamento.' };
+    const previous = await db.memberBlock.findFirst({ where: { lodgeId, memberId, status: 'cancelled' }, orderBy: { blockedAt: 'desc' } });
+    if (!previous) return { ok: false, status: 409, error: 'Não há acordo cancelado para este irmão.' };
+
+    const debts = await loadMemberDebts(db, lodgeId, memberId);
+    const pkg = buildPackage(debts, input.fee, input.extra);
+    if (pkg.total <= 0) return { ok: false, status: 409, error: 'Não há dívida em aberto nem taxa a regularizar: nada a incluir no acordo. Se está tudo pago, libere o irmão.' };
+    const locked = await findClosedTermForDate(db, lodgeId, input.firstDueDate);
+    if (locked) return { ok: false, status: 409, error: `Período encerrado (${locked.title}). O vencimento do acordo não pode cair num veneralato já fechado.` };
+
+    const note = `${agreementKindLabel(input.kind)} — novo acordo de ${formatDateOnly(todayBR(now))}`;
+    const created = await createFeeAccounts(db, lodgeId, memberId, pkg.items, input.firstDueDate, note);
+    if (!created.ok) return created;
+    const block = await db.memberBlock.create({
+      data: {
+        lodgeId, memberId, blockedById: actorId, kind: input.kind,
+        powerProtocol: previous.powerProtocol, powerSentAt: previous.powerSentAt, note: null,
+        overdueDaysAtBlock: previous.overdueDaysAtBlock, overdueAmountAtBlock: previous.overdueAmountAtBlock,
+        debtsTotal: pkg.debtsTotal, regularizationFee: input.fee, extraCharge: input.extra, total: pkg.total,
+        installments: input.installments, firstDueDate: input.firstDueDate,
+        items: {
+          create: pkg.items.map((i) => ({
+            lodgeId,
+            accountId: i.accountId ?? (i.kind === 'fee' ? created.ids.fee! : created.ids.extra!),
+            kind: i.kind, title: i.title, openAmount: i.openAmount, sortOrder: i.sortOrder,
+          })),
+        },
+      },
+      select: { id: true },
+    });
+    asaasToCancel.push(...(await releaseAsaasCharges(db, pkg.items.filter((i) => i.kind === 'debt' && i.accountId).map((i) => i.accountId as string))));
+    await logAudit(db, {
+      lodgeId, userId: actorId, action: 'UPDATE', entity: 'member-block', entityId: block.id,
+      metadata: { action: 'reopen-after-cancel', memberId, previousBlockId: previous.id, kind: input.kind, total: pkg.total, fee: input.fee, extra: input.extra, installments: input.installments },
+    });
+    return { ok: true, blockId: block.id };
+  });
+  if (!result.ok || asaasToCancel.length === 0) return result;
+  const asaasWarning = await cancelAsaasCharges(lodgeId, asaasToCancel).catch(() => 'Não foi possível cancelar as cobranças antigas no Asaas; cancele no painel do Asaas para o irmão não pagar o valor antigo.');
+  return { ...result, asaasWarning };
 }
 
 // ── Alerta de quebra de acordo ────────────────────────────────────────────────

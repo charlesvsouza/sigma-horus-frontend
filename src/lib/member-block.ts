@@ -15,7 +15,8 @@ import { ART_002_THRESHOLD_DAYS } from './overdue-rules';
 export const BLOCKED_STATUS = 'blocked';
 export const MAX_AGREEMENT_INSTALLMENTS = 3;
 
-export type BlockStatus = 'open' | 'settled' | 'lifted';
+// cancelled: acordo cancelado pelo Venerável (liftedAt/liftedById = quando/quem). O irmão SEGUE bloqueado até novo acordo ou liberação.
+export type BlockStatus = 'open' | 'settled' | 'lifted' | 'cancelled';
 export type ItemKind = 'debt' | 'fee' | 'extra';
 
 // Tipo do acordo: regularização (dívidas + taxa de regularização) ou quitação (só as dívidas com a loja,
@@ -33,6 +34,18 @@ export const isBlockedStatus = (status: string | null | undefined) => status ===
 export function canBlockMembers(role: string | null | undefined): boolean {
   const r = (role ?? '').toLowerCase().trim();
   return r === 'admin' || r === 'venerable';
+}
+
+/** Só o Venerável cancela um acordo (o Administrador não): é decisão de quem comunica a Potência. O cancelamento NÃO tira o bloqueio. */
+export function canCancelAgreement(role: string | null | undefined): boolean {
+  return (role ?? '').toLowerCase().trim() === 'venerable';
+}
+
+/** Motivo do cancelamento: obrigatório e escrito (fica no acordo e na auditoria). */
+export function checkCancelReason(raw: unknown): { ok: true; reason: string } | { ok: false; error: string } {
+  const reason = typeof raw === 'string' ? raw.trim() : '';
+  if (reason.length < 5) return { ok: false, error: 'Escreva o motivo do cancelamento do acordo (mínimo de 5 caracteres).' };
+  return { ok: true, reason: reason.slice(0, 500) };
 }
 
 export type BlockCheck = { ok: true } | { ok: false; error: string };

@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { partyForSigner } from '@/lib/agreement-signature';
 import { canHandleAgreementCharge } from '@/lib/agreement-charge';
 import { agreementChargeRows } from '@/lib/agreement-charge-server';
-import { canBlockMembers } from '@/lib/member-block';
+import { BLOCKED_STATUS, canBlockMembers, canCancelAgreement } from '@/lib/member-block';
 import { summarizeBlock } from '@/lib/member-block-server';
 import { syncMemberBlock } from '@/lib/member-block-sync';
 import { withTenant } from '@/lib/prisma';
@@ -30,14 +30,14 @@ export default async function AcordosPage() {
   const data = await withTenant(lodgeId, async (db) => {
     const blocks = await db.memberBlock.findMany({
       where: { lodgeId },
-      include: { items: true, member: { select: { id: true, name: true } }, signatures: { select: { party: true } } },
+      include: { items: true, member: { select: { id: true, name: true, status: true } }, signatures: { select: { party: true } } },
       orderBy: { blockedAt: 'desc' },
       take: 100,
     });
     // Reconcilia antes de mostrar: um pagamento feito por qualquer caminho pode ter quitado o acordo.
-    for (const b of blocks) if (b.status !== 'lifted') await syncMemberBlock(db, lodgeId, b.memberId);
+    for (const b of blocks) if (b.status === 'open' || b.status === 'settled') await syncMemberBlock(db, lodgeId, b.memberId);
     const fresh = blocks.length
-      ? await db.memberBlock.findMany({ where: { id: { in: blocks.map((b) => b.id) } }, include: { items: true, member: { select: { id: true, name: true } }, signatures: { select: { party: true } } }, orderBy: { blockedAt: 'desc' } })
+      ? await db.memberBlock.findMany({ where: { id: { in: blocks.map((b) => b.id) } }, include: { items: true, member: { select: { id: true, name: true, status: true } }, signatures: { select: { party: true } } }, orderBy: { blockedAt: 'desc' } })
       : [];
     const summaries = await Promise.all(fresh.map(async (b) => {
       const s = await summarizeBlock(db, b);
@@ -47,11 +47,16 @@ export default async function AcordosPage() {
     return { summaries, banks };
   });
 
+  // O acordo cancelado mais recente de um irmão que segue bloqueado fica à vista: dali sai o novo acordo ou a liberação.
+  const latestByMember = new Map<string, string>();
+  for (const { b } of data.summaries) if (!latestByMember.has(b.memberId)) latestByMember.set(b.memberId, b.id);
+
   const agreements: AgreementView[] = data.summaries.map(({ b, s, charges }) => ({
     id: s.id,
+    awaitingNew: s.status === 'cancelled' && latestByMember.get(b.memberId) === b.id && b.member.status === BLOCKED_STATUS,
     signedParties: b.signatures.map((x) => x.party),
     // Em nome de qual parte o usuário logado ainda pode assinar (nenhuma = já assinou, não é parte, ou o acordo acabou).
-    canSignAs: (() => { const p = partyForSigner(role, ownMemberId === b.memberId); return p && s.status !== 'lifted' && !b.signatures.some((x) => x.party === p) ? p : null; })(),
+    canSignAs: (() => { const p = partyForSigner(role, ownMemberId === b.memberId); return p && s.status !== 'lifted' && s.status !== 'cancelled' && !b.signatures.some((x) => x.party === p) ? p : null; })(),
     memberId: s.memberId,
     kind: s.kind,
     charges,
@@ -73,5 +78,5 @@ export default async function AcordosPage() {
     schedule: s.schedule.map((p) => ({ number: p.number, dueDate: p.dueDate.toISOString(), amount: p.amount, covered: p.covered, late: p.late })),
   }));
 
-  return <AcordosClient agreements={agreements} banks={data.banks} canPay={canPay} canCharge={canHandleAgreementCharge(role)} mayLift={canBlockMembers(role)} />;
+  return <AcordosClient agreements={agreements} banks={data.banks} canPay={canPay} canCharge={canHandleAgreementCharge(role)} mayLift={canBlockMembers(role)} mayCancel={canCancelAgreement(role)} />;
 }

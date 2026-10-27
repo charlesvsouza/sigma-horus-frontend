@@ -19,7 +19,9 @@ export interface AgreementView {
   kind: string; // regularization | settlement
   charges: ChargeRow[];
   memberName: string;
-  status: string; // open | settled | lifted
+  status: string; // open | settled | lifted | cancelled
+  /** Acordo cancelado do irmão que segue bloqueado: aguarda novo acordo ou liberação. */
+  awaitingNew: boolean;
   blockedAt: string;
   powerProtocol: string | null;
   powerSentAt: string | null;
@@ -170,6 +172,96 @@ function RegularizeForm({ a, onDone }: { a: AgreementView; onDone: (msg: string)
   );
 }
 
+function CancelForm({ a, onDone, onClose }: { a: AgreementView; onDone: (msg: string) => void; onClose: () => void }) {
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  async function submit() {
+    setBusy(true);
+    setError('');
+    const res = await fetch(`/api/members/${a.memberId}/block/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) { setError(data.error ?? 'Não foi possível cancelar o acordo.'); return; }
+    onDone(`Acordo cancelado. ${data.returnedDebts ?? 0} dívida(s) voltaram ao saldo em aberto (${brl(data.returnedAmount ?? 0)}).${data.removedCharges ? ` ${data.removedCharges} cobrança(s) do acordo (taxa, multa/juros) foram removidas.` : ''}${data.keptReceived ? ` Ficou mantido o que já foi recebido do acordo: ${brl(data.keptReceived)}.` : ''} O irmão segue bloqueado (Art. 002).`);
+  }
+  return (
+    <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/5 p-3">
+      <p className="text-xs text-sand">
+        Cancelar o acordo de <strong>{a.memberName}</strong>: as dívidas voltam a ficar em aberto, cada uma pelo saldo que ainda falta, e a taxa e a multa/juros do acordo
+        que ninguém pagou deixam de existir. <strong>O irmão continua bloqueado e no Art. 002.</strong> O que já foi pago continua pago.
+        Depois você faz um novo acordo ou as dívidas são pagas normalmente em Pagamentos.
+      </p>
+      {error ? <p className="mt-2 text-xs text-rose-300">{error}</p> : null}
+      <label className="mt-3 block text-xs text-sand-dark">Motivo do cancelamento (obrigatório)
+        <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} className={`mt-1 ${inputClass}`} />
+      </label>
+      <div className="mt-3 flex gap-2">
+        <Button type="button" onClick={() => void submit()} disabled={busy || reason.trim().length < 5}>{busy ? 'Cancelando…' : 'Confirmar o cancelamento'}</Button>
+        <Button type="button" onClick={onClose} disabled={busy}>Voltar</Button>
+      </div>
+    </div>
+  );
+}
+
+function NewAgreementForm({ a, onDone }: { a: AgreementView; onDone: (msg: string) => void }) {
+  const [kind, setKind] = useState<'regularization' | 'settlement'>('regularization');
+  const [fee, setFee] = useState('');
+  const [extra, setExtra] = useState('');
+  const [installments, setInstallments] = useState('1');
+  const [firstDueDate, setFirstDueDate] = useState(todayIso());
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const feeN = kind === 'settlement' ? 0 : parseMoney(fee);
+  const extraN = extra.trim() === '' ? 0 : parseMoney(extra);
+  const n = Number(installments);
+  async function submit() {
+    setBusy(true);
+    setError('');
+    const res = await fetch(`/api/members/${a.memberId}/block/reopen`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind, fee: feeN, extra: extraN, installments: n, firstDueDate }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (res.ok) onDone('Novo acordo aberto com as dívidas em aberto de agora. O irmão segue bloqueado até pagá-lo.');
+    else setError(data.error ?? 'Erro ao abrir o novo acordo.');
+  }
+  return (
+    <div className="mt-3 rounded-lg border border-gold/20 bg-gold/5 p-3">
+      <p className="text-xs text-sand-dark">O novo acordo reúne as dívidas que estão em aberto agora (o que já foi pago não entra de novo).</p>
+      {error ? <p className="mt-2 text-xs text-rose-300">{error}</p> : null}
+      <div className="mt-3 grid gap-3 md:grid-cols-5">
+        <label className="text-xs text-sand-dark">Tipo
+          <select value={kind} onChange={(e) => setKind(e.target.value as 'regularization' | 'settlement')} className={`mt-1 ${inputClass}`}>
+            <option value="regularization">Regularização (com taxa)</option>
+            <option value="settlement">Quitação de dívidas (sem taxa)</option>
+          </select>
+        </label>
+        <label className="text-xs text-sand-dark">Taxa de regularização (R$){kind === 'settlement' ? '' : ' *'}
+          <input value={kind === 'settlement' ? '' : fee} onChange={(e) => setFee(e.target.value)} disabled={kind === 'settlement'} inputMode="decimal" placeholder="0,00" className={`mt-1 ${inputClass}`} />
+        </label>
+        <label className="text-xs text-sand-dark">Multa e juros (R$) — opcional
+          <input value={extra} onChange={(e) => setExtra(e.target.value)} inputMode="decimal" placeholder="0,00" className={`mt-1 ${inputClass}`} />
+        </label>
+        <label className="text-xs text-sand-dark">Pagamento
+          <select value={installments} onChange={(e) => setInstallments(e.target.value)} className={`mt-1 ${inputClass}`}>
+            <option value="1">À vista (padrão)</option>
+            {Array.from({ length: MAX_AGREEMENT_INSTALLMENTS - 1 }, (_, i) => i + 2).map((k) => <option key={k} value={k}>Em {k} parcelas</option>)}
+          </select>
+        </label>
+        <label className="text-xs text-sand-dark">{n > 1 ? '1º vencimento' : 'Vencimento'}
+          <input type="date" value={firstDueDate} min={todayIso()} onChange={(e) => setFirstDueDate(e.target.value)} className={`mt-1 ${inputClass}`} />
+        </label>
+      </div>
+      <Button type="button" className="mt-3" onClick={() => void submit()} disabled={busy || (kind === 'regularization' && !Number.isFinite(feeN))}>
+        {busy ? 'Abrindo…' : 'Abrir novo acordo'}
+      </Button>
+    </div>
+  );
+}
+
 // Lista do mês: parcelas que vencem até o fim deste mês (inclui as atrasadas) de todos os acordos em aberto, com a marca
 // de envio — o Tesoureiro passa por aqui todo mês para enviar o QR / Pix copia e cola.
 function MonthWorklist({ agreements }: { agreements: AgreementView[] }) {
@@ -249,11 +341,13 @@ function ChargesSection({ a }: { a: AgreementView }) {
   );
 }
 
-function AgreementCard({ a, banks, canPay, canCharge, mayLift }: { a: AgreementView; banks: Bank[]; canPay: boolean; canCharge: boolean; mayLift: boolean }) {
+function AgreementCard({ a, banks, canPay, canCharge, mayLift, mayCancel }: { a: AgreementView; banks: Bank[]; canPay: boolean; canCharge: boolean; mayLift: boolean; mayCancel: boolean }) {
   const router = useRouter();
   const askConfirm = useConfirm();
   const [paying, setPaying] = useState(false);
   const [regularizing, setRegularizing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const settlement = isSettlementKind(a.kind);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const late = a.status === 'open' && a.schedule.some((p) => p.late);
@@ -287,7 +381,9 @@ function AgreementCard({ a, banks, canPay, canCharge, mayLift }: { a: AgreementV
     else setMessage({ kind: 'error', text: data.error ?? 'Erro ao concluir.' });
   }
 
-  const badge = a.status === 'lifted' ? <Badge variant="success">Liberado</Badge>
+  const cancelled = a.status === 'cancelled';
+  const badge = cancelled ? <Badge variant={a.awaitingNew ? 'warning' : 'canceled'}>{a.awaitingNew ? 'Acordo cancelado — irmão segue bloqueado' : 'Acordo cancelado'}</Badge>
+    : a.status === 'lifted' ? <Badge variant="success">Liberado</Badge>
     : a.status === 'settled' ? <Badge variant="success">{settlement ? 'Dívidas quitadas — aguardando regularização ou Placet' : 'Quitado — aguardando retorno'}</Badge>
     : late ? <Badge variant="overdue">Parcela em atraso</Badge>
     : <Badge variant="warning">Bloqueado — acordo em andamento</Badge>;
@@ -301,7 +397,7 @@ function AgreementCard({ a, banks, canPay, canCharge, mayLift }: { a: AgreementV
           <p className="mt-1 text-xs text-sand-dark">
             Bloqueado em {formatDateOnly(a.blockedAt)} · {a.overdueDaysAtBlock} dias de atraso na época
             {a.powerProtocol ? ` · protocolo ${a.powerProtocol}` : ''}{a.powerSentAt ? ` · comunicado em ${formatDateOnly(a.powerSentAt)}` : ''}
-            {a.liftedAt ? ` · liberado em ${formatDateOnly(a.liftedAt)}` : ''}
+            {a.liftedAt ? ` · ${cancelled ? 'cancelado' : 'liberado'} em ${formatDateOnly(a.liftedAt)}` : ''}
           </p>
           {a.note ? <p className="mt-1 text-xs text-sand-dark">Obs.: {a.note}</p> : null}
         </div>
@@ -364,8 +460,16 @@ function AgreementCard({ a, banks, canPay, canCharge, mayLift }: { a: AgreementV
 
       {a.status === 'open' && canCharge ? <ChargesSection a={a} /> : null}
 
-      {a.status !== 'lifted' ? (
+      {a.status === 'open' || a.status === 'settled' || (cancelled && a.awaitingNew) ? (
         <div className="mt-4 flex flex-wrap items-center gap-2">
+          {(a.status === 'open' || a.status === 'settled') && mayCancel ? <Button type="button" onClick={() => setCancelling((v) => !v)}>{cancelling ? 'Fechar' : 'Cancelar acordo'}</Button> : null}
+          {cancelled && a.awaitingNew && mayLift ? (
+            <>
+              <Button type="button" onClick={() => setReopening((v) => !v)}>{reopening ? 'Fechar' : 'Novo acordo'}</Button>
+              <Button type="button" onClick={() => void lift()}>Liberar o irmão</Button>
+            </>
+          ) : null}
+          {cancelled && a.awaitingNew ? <p className="text-xs text-sand-dark">As dívidas voltaram ao saldo em aberto. Faça um novo acordo ou receba em Pagamentos; o irmão só é liberado quando não houver dívida.</p> : null}
           {a.status === 'open' && canPay ? <Button type="button" onClick={() => setPaying((v) => !v)}>{paying ? 'Fechar' : 'Registrar pagamento do acordo'}</Button> : null}
           {a.status === 'settled' && mayLift && settlement ? (
             <>
@@ -379,15 +483,17 @@ function AgreementCard({ a, banks, canPay, canCharge, mayLift }: { a: AgreementV
           {a.status === 'open' ? <p className="text-xs text-sand-dark">{settlement ? 'As dívidas com a loja precisam ser totalmente pagas; a regularização fica para depois.' : 'O irmão só volta com o acordo totalmente pago.'}</p> : null}
         </div>
       ) : null}
+      {cancelling && (a.status === 'open' || a.status === 'settled') ? <CancelForm a={a} onClose={() => setCancelling(false)} onDone={(text) => { setCancelling(false); setMessage({ kind: 'ok', text }); router.refresh(); }} /> : null}
+      {reopening && cancelled && a.awaitingNew ? <NewAgreementForm a={a} onDone={(text) => { setReopening(false); setMessage({ kind: 'ok', text }); router.refresh(); }} /> : null}
       {regularizing && a.status === 'settled' && settlement ? <RegularizeForm a={a} onDone={(text) => { setRegularizing(false); setMessage({ kind: 'ok', text }); router.refresh(); }} /> : null}
       {paying && a.status === 'open' ? <PaymentForm a={a} banks={banks} onDone={(text) => { setPaying(false); setMessage({ kind: 'ok', text }); router.refresh(); }} /> : null}
     </Card>
   );
 }
 
-export default function AcordosClient({ agreements, banks, canPay, canCharge, mayLift }: { agreements: AgreementView[]; banks: Bank[]; canPay: boolean; canCharge: boolean; mayLift: boolean }) {
-  const active = agreements.filter((a) => a.status !== 'lifted');
-  const history = agreements.filter((a) => a.status === 'lifted');
+export default function AcordosClient({ agreements, banks, canPay, canCharge, mayLift, mayCancel }: { agreements: AgreementView[]; banks: Bank[]; canPay: boolean; canCharge: boolean; mayLift: boolean; mayCancel: boolean }) {
+  const active = agreements.filter((a) => a.status === 'open' || a.status === 'settled' || (a.status === 'cancelled' && a.awaitingNew));
+  const history = agreements.filter((a) => !active.includes(a));
   const [showHistory, setShowHistory] = useState(false);
 
   return (
@@ -405,14 +511,14 @@ export default function AcordosClient({ agreements, banks, canPay, canCharge, ma
 
         {active.length === 0 ? (
           <EmptyState title="Nenhum irmão bloqueado." description="Quando o Venerável bloquear um irmão do Art. 002, o acordo (de quitação ou de regularização) aparece aqui." />
-        ) : active.map((a) => <AgreementCard key={a.id} a={a} banks={banks} canPay={canPay} canCharge={canCharge} mayLift={mayLift} />)}
+        ) : active.map((a) => <AgreementCard key={a.id} a={a} banks={banks} canPay={canPay} canCharge={canCharge} mayLift={mayLift} mayCancel={mayCancel} />)}
 
         {history.length > 0 ? (
           <section>
             <button type="button" onClick={() => setShowHistory((v) => !v)} className="text-sm text-gold/80 hover:text-gold">
-              {showHistory ? 'Ocultar' : 'Ver'} histórico ({history.length} liberado{history.length > 1 ? 's' : ''})
+              {showHistory ? 'Ocultar' : 'Ver'} histórico ({history.length} encerrado{history.length > 1 ? 's' : ''})
             </button>
-            {showHistory ? <div className="mt-4 space-y-6">{history.map((a) => <AgreementCard key={a.id} a={a} banks={banks} canPay={false} canCharge={false} mayLift={false} />)}</div> : null}
+            {showHistory ? <div className="mt-4 space-y-6">{history.map((a) => <AgreementCard key={a.id} a={a} banks={banks} canPay={false} canCharge={false} mayLift={false} mayCancel={false} />)}</div> : null}
           </section>
         ) : null}
       </div>
