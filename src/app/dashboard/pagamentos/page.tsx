@@ -101,6 +101,11 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
       }))
     : { accounts: [], members: [], payments: [], revenueCharts: [], financialAccounts: [], notices: [], noticeRejections: [], bankLines: [], proofRows: [], expenseReceiptRows: [], receiptChecks: [], cashPayments: [], cashConfirmed: [], hiddenOld: 0, lodgeMode: null };
 
+  const withExpenseReceipt = new Set<string>();
+  for (const id of new Set(data.expenseReceiptRows.map((r) => r.entityId))) {
+    const mine = data.expenseReceiptRows.filter((r) => r.entityId === id);
+    if (currentExpenseReceipt(mine.filter((r) => r.entity === EXPENSE_RECEIPT_ENTITY), mine.filter((r) => r.entity === EXPENSE_RECEIPT_REMOVED_ENTITY))) withExpenseReceipt.add(id);
+  }
   const accounts = data.accounts
     .map((a) => {
       // Conta COMPARTILHADA (cobrança em massa antiga: sem membro, uma Invoice por irmão): os
@@ -181,11 +186,6 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
   );
   const notices = rawNotices.map((n) => ({ ...n, bankMatch: bankMatches.get(leader(n)) ?? null }));
 
-  const withExpenseReceipt = new Set<string>();
-  for (const id of new Set(data.expenseReceiptRows.map((r) => r.entityId))) {
-    const mine = data.expenseReceiptRows.filter((r) => r.entityId === id);
-    if (currentExpenseReceipt(mine.filter((r) => r.entity === EXPENSE_RECEIPT_ENTITY), mine.filter((r) => r.entity === EXPENSE_RECEIPT_REMOVED_ENTITY))) withExpenseReceipt.add(id);
-  }
   const proofPaymentIds = new Set(data.proofRows.map((r) => r.entityId));
   const payments = data.payments.map((p) => ({
     hasProof: proofPaymentIds.has(p.id),
