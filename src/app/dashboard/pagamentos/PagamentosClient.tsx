@@ -141,10 +141,11 @@ export default function PagamentosClient({ accounts, members, payments, financia
     if (!bankAccountId) { setMessage({ kind: 'error', text: 'Escolha a conta bancária onde o Pix caiu.' }); return; }
     setNoticeBusy(notice.accountId);
     setMessage(null);
-    const res = await fetch('/api/payments', {
+    const post = (confirmOutsideAsaas: boolean) => fetch('/api/payments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        ...(confirmOutsideAsaas ? { confirmOutsideAsaas: true } : {}),
         accountId: account.id,
         memberId: account.memberId ?? undefined,
         amount: account.balance,
@@ -158,7 +159,14 @@ export default function PagamentosClient({ accounts, members, payments, financia
         ...(notice.bankMatch && Math.round(notice.bankMatch.amount * 100) === Math.round((account.balance + (notice.lateCharge ?? 0)) * 100) ? { bankTransactionId: notice.bankMatch.lineId } : {}),
       }),
     });
-    const data = await res.json().catch(() => ({}));
+    let res = await post(false);
+    let data = await res.json().catch(() => ({}));
+    // Cobrança ainda aberta no Asaas: o irmão pagou por fora. Só segue com a confirmação (e o Asaas é avisado depois).
+    if (res.status === 409 && data.code === 'ASAAS_CHARGE_OPEN') {
+      if (!(await askConfirm({ title: 'Cobrança aberta no Asaas', message: data.error, confirmLabel: 'Recebido fora do Asaas' }))) { setNoticeBusy(null); return; }
+      res = await post(true);
+      data = await res.json().catch(() => ({}));
+    }
     setNoticeBusy(null);
     if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Não foi possível registrar a baixa.' }); return; }
     setMessage({ kind: 'ok', text: `Baixa registrada: ${account.who ?? ''} — ${account.title}, ${brl(account.balance)}${notice.lateCharge ? ` + ${brl(notice.lateCharge)} de multa e juros (lançados em 1.2.06)` : ''}.` });

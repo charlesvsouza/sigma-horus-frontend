@@ -63,6 +63,8 @@ export function PendenciasCard({
   const [lateMsg, setLateMsg] = useState<{ id: string; kind: 'ok' | 'error'; text: string } | null>(null);
   const [noticeMsg, setNoticeMsg] = useState('');
   const [sendingNotice, setSendingNotice] = useState(false);
+  // Painel "paguei fora do Asaas" (Modo Asaas): só aviso + comprovante, sem gerar cobrança.
+  const [outside, setOutside] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   // Contas do Pix agrupado aberto (congeladas no clique: a seleção pode mudar depois).
   const [groupIds, setGroupIds] = useState<string[]>([]);
@@ -81,6 +83,14 @@ export function PendenciasCard({
     setNote('');
     setReceipt(null);
     setNoticeMsg('');
+    setOutside(false);
+  }
+
+  function openOutside(id: string) {
+    if (openId === id && outside) { close(); return; }
+    close();
+    setOpenId(id);
+    setOutside(true);
   }
 
   function toggle(id: string) {
@@ -170,6 +180,30 @@ export function PendenciasCard({
     if (invalid) { setError(invalid); setReceipt(null); return; }
     setError('');
     setReceipt(f);
+  }
+
+  // Modo Asaas: o irmão que pagou por outro meio (Pix na conta da loja, dinheiro) avisa a Tesouraria com o comprovante.
+  function outsidePanel() {
+    return (
+      <div className="mt-4 space-y-2 rounded-lg border border-gold/20 bg-sigma-blue-deep/70 p-4">
+        <p className="text-xs text-sand-dark">Pagou por fora do Asaas (Pix direto na conta da loja, dinheiro, depósito)? Avise a Tesouraria e anexe o comprovante: ela confere e dá a baixa. Se a cobrança do Asaas já tiver sido enviada, ela fica sem efeito quando a baixa for dada.</p>
+        {noticeMsg ? (
+          <Alert intent="ok">{noticeMsg}</Alert>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} placeholder="Observação (opcional): como e quando você pagou" aria-label="Observação para a Tesouraria" className={`${inputClass} min-w-0 flex-1 text-xs`} />
+              <Button size="sm" variant="secondary" onClick={() => void sendNotice()} disabled={sendingNotice}>{sendingNotice ? 'Enviando…' : 'Já paguei'}</Button>
+            </div>
+            <label className="flex cursor-pointer flex-wrap items-center gap-2 text-xs text-sand-dark">
+              <span className="rounded-full border border-gold/40 px-3 py-1 font-medium text-gold/80 hover:border-gold/60 hover:text-gold">{receipt ? 'Trocar comprovante' : 'Anexar comprovante (opcional)'}</span>
+              <span className="min-w-0 truncate">{receipt ? receipt.name : 'foto ou PDF, até 4 MB'}</span>
+              <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="sr-only" onChange={(e) => { const f = e.target.files?.[0] ?? null; e.target.value = ''; pickReceipt(f); }} />
+            </label>
+          </>
+        )}
+      </div>
+    );
   }
 
   function panel(forGroup: boolean) {
@@ -338,11 +372,14 @@ export function PendenciasCard({
                       {busyId === a.id ? 'Gerando…' : isOpen && result ? 'Fechar' : 'Pagar'}
                     </Button>
                   ) : null}
+                  {collection?.mode === 'asaas' && !a.paidNoticeAt ? (
+                    <button type="button" onClick={() => openOutside(a.id)} className="text-xs text-gold hover:text-gold-light" aria-expanded={isOpen && outside}>Paguei fora do Asaas</button>
+                  ) : null}
                 </div>
               </div>
 
               {isOpen && error ? <Alert intent="danger" className="mt-4">{error}</Alert> : null}
-              {isOpen ? panel(false) : null}
+              {isOpen ? (outside ? outsidePanel() : panel(false)) : null}
             </li>
           );
         })}

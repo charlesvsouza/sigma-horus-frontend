@@ -93,9 +93,6 @@ export async function submitPaymentNotice(params: {
   const { accounts, lodge, member, last, staff, invoices } = ctx;
   if (accounts.some((a) => ctx.inAgreement.has(a.id))) return { ok: false, status: 409, error: 'Esta conta faz parte de um acordo em aberto: avise o pagamento da parcela do acordo.' };
   if (accounts.length !== accountIds.length || !lodge || !member) return { ok: false, status: 404, error: 'Conta não encontrada.' };
-  if (isAsaasMode(lodge)) {
-    return { ok: false, status: 409, error: 'Nesta loja o pagamento pelo portal é confirmado automaticamente — não é preciso avisar.' };
-  }
   const items = accounts.map((a) => ({ account: a, balance: openBalance(a, a.payments) }));
   if (items.some((i) => !canPay(i.account, memberId, i.balance))) {
     return { ok: false, status: 409, error: accountIds.length > 1 ? 'Alguma das contas não está mais em aberto. Recarregue a página.' : 'Esta conta não está em aberto.' };
@@ -171,11 +168,14 @@ export async function submitPaymentNotice(params: {
     : items.length > 1
       ? `O irmão ${member.name} informou pelo portal que pagou num único Pix de ${brl(total)} as ${items.length} contas abaixo:`
       : `O irmão ${member.name} informou pelo portal que pagou via Pix a conta abaixo:`;
+  const asaasNote = isAsaasMode(lodge)
+    ? '\n\nA loja está no Modo Asaas: o irmão diz ter pago FORA do Asaas. Se a cobrança dele ainda estiver aberta no Asaas, ao dar a baixa confirme "recebido fora do Asaas" (o sistema avisa o Asaas para não cobrar de novo).'
+    : '';
   const text = `${intro}
 ${lines.join('\n')}${note ? `\n\nObservação do irmão: ${note}` : ''}${receipt ? `\n\nComprovante em anexo (${receipt.name}).${receiptCheck ? ` Conferência automática: ${receiptCheck.status === 'conferido' ? `CONFERIDO — identificador do QR, valor, recebedor (loja) e nº de controle ${receiptCheck.e2e} batem. No topo de Pagamentos, basta clicar em "Confirmar e dar baixa".` : receiptCheck.status === 'ilegivel' ? 'PDF sem texto legível; confira pela imagem.' : 'COM DIVERGÊNCIA — confira antes de dar baixa.'}` : ''}` : ''}
 
 Confira o crédito no extrato da conta da loja e dê a baixa (cada link abre o formulário preenchido).
-Este aviso não dá baixa automática. Os avisos pendentes também ficam no topo de Financeiro → Pagamentos.
+Este aviso não dá baixa automática. Os avisos pendentes também ficam no topo de Financeiro → Pagamentos.${asaasNote}
 
 ${lodge.name}`;
   // Quem registrou não precisa de e-mail sobre o que acabou de fazer.
