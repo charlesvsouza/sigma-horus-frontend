@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { asaasBaseUrl, isWebhookAuthorized, processWebhook } from './asaas.ts';
+import { asaasBaseUrl, asaasErrorMessage, isWebhookAuthorized, processWebhook } from './asaas.ts';
 
 test('webhook is rejected when the lodge has no token configured (seguro por padrão)', () => {
   assert.equal(isWebhookAuthorized('anything', null), false);
@@ -28,4 +28,14 @@ test('processWebhook surfaces the externalReference used for baixa automática',
   assert.equal(parsed.event, 'PAYMENT_RECEIVED');
   assert.equal(parsed.payment?.externalReference, 'invoice_abc');
   assert.equal(parsed.payment?.value, 150);
+});
+
+test('erro do Asaas vira texto claro; Pix sem aprovação orienta a conta ou o boleto', () => {
+  const pix = JSON.stringify({ errors: [{ code: 'invalid_billingType', description: 'O Pix não está disponível no momento. Para utilizá-lo, sua conta precisa estar aprovada.' }] });
+  const r = asaasErrorMessage(400, pix);
+  assert.equal(r.code, 'invalid_billingType');
+  assert.match(r.message, /Pix ainda não está liberado/);
+  assert.match(r.message, /Boleto/);
+  assert.match(asaasErrorMessage(400, JSON.stringify({ errors: [{ code: 'x', description: 'CPF inválido.' }] })).message, /CPF inválido/);
+  assert.match(asaasErrorMessage(500, '<html>').message, /erro 500/);
 });

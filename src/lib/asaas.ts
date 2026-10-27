@@ -16,9 +16,51 @@ function headers(config: AsaasConfig) {
   };
 }
 
+/**
+ * Erro da API do Asaas já em linguagem de gente: o Asaas devolve `{"errors":[{"code","description"}]}` com a
+ * descrição em português. A tela mostra isto no lugar do JSON cru; o corpo original fica em `raw` (para o registro de erros).
+ */
+export class AsaasApiError extends Error {
+  status: number;
+  code: string | null;
+  raw: string;
+  constructor(message: string, status: number, code: string | null, raw: string) {
+    super(message);
+    this.name = 'AsaasApiError';
+    this.status = status;
+    this.code = code;
+    this.raw = raw;
+  }
+}
+
+/** Texto para o usuário a partir da resposta de erro do Asaas (puro, testável). */
+export function asaasErrorMessage(status: number, body: string): { message: string; code: string | null } {
+  let code: string | null = null;
+  let description = '';
+  try {
+    const first = (JSON.parse(body) as { errors?: { code?: string; description?: string }[] }).errors?.[0];
+    code = first?.code ?? null;
+    description = first?.description?.trim() ?? '';
+  } catch { /* corpo que não é JSON */ }
+
+  // Conta do Asaas ainda sem aprovação para Pix: a loja resolve no painel do Asaas, ou emite boleto enquanto isso.
+  if (code === 'invalid_billingType' && /pix/i.test(description)) {
+    return {
+      code,
+      message: 'O Pix ainda não está liberado na conta do Asaas desta loja: o Asaas só habilita o Pix depois que a conta é aprovada. Conclua a aprovação no painel do Asaas (dados e documentos da conta) ou, enquanto isso, escolha Boleto em Configurações → Recebimento das cobranças → Método emitido no Asaas.',
+    };
+  }
+  if (description) return { code, message: `O Asaas recusou a cobrança: ${description}` };
+  return { code, message: `O Asaas não respondeu como esperado (erro ${status}). Tente de novo em instantes; se persistir, confira a chave e a conta em Integrações.` };
+}
+
 export async function createCustomer(config: AsaasConfig, data: { name: string; email?: string; cpfCnpj: string; phone?: string }) {
   const res = await fetch(`${config.baseUrl}/customers`, { method: 'POST', headers: headers(config), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error(`Asaas customer error: ${res.status} ${await res.text()}`);
+  if (!res.ok) {
+    const raw = await res.text();
+    const { message, code } = asaasErrorMessage(res.status, raw);
+    throw new AsaasApiError(message, res.status, code, raw);
+  }
   return res.json();
 }
 
@@ -32,7 +74,11 @@ export async function createPayment(config: AsaasConfig, data: {
   externalReference?: string;
 }) {
   const res = await fetch(`${config.baseUrl}/payments`, { method: 'POST', headers: headers(config), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error(`Asaas payment error: ${res.status} ${await res.text()}`);
+  if (!res.ok) {
+    const raw = await res.text();
+    const { message, code } = asaasErrorMessage(res.status, raw);
+    throw new AsaasApiError(message, res.status, code, raw);
+  }
   return res.json();
 }
 
