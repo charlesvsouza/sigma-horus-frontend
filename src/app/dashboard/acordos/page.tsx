@@ -3,7 +3,7 @@ import { partyForSigner } from '@/lib/agreement-signature';
 import { canHandleAgreementCharge } from '@/lib/agreement-charge';
 import { agreementChargeRows } from '@/lib/agreement-charge-server';
 import { BLOCKED_STATUS, canBlockMembers, canCancelAgreement } from '@/lib/member-block';
-import { summarizeBlock } from '@/lib/member-block-server';
+import { loadMemberDebts, summarizeBlock } from '@/lib/member-block-server';
 import { syncMemberBlock } from '@/lib/member-block-sync';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -41,7 +41,9 @@ export default async function AcordosPage() {
       : [];
     const summaries = await Promise.all(fresh.map(async (b) => {
       const s = await summarizeBlock(db, b);
-      return { b, s, charges: await agreementChargeRows(db, lodgeId, s) };
+      // Acordo cancelado de irmão que segue bloqueado: as dívidas em aberto ficam à mão (pagar, editar, excluir ou novo acordo).
+      const debts = s.status === 'cancelled' && b.member.status === BLOCKED_STATUS ? await loadMemberDebts(db, lodgeId, b.memberId) : [];
+      return { b, s, debts, charges: await agreementChargeRows(db, lodgeId, s) };
     }));
     const banks = await db.financialAccount.findMany({ where: { lodgeId, active: true }, select: { id: true, name: true, kind: true, isDefault: true }, orderBy: { name: 'asc' } });
     return { summaries, banks };
@@ -51,8 +53,9 @@ export default async function AcordosPage() {
   const latestByMember = new Map<string, string>();
   for (const { b } of data.summaries) if (!latestByMember.has(b.memberId)) latestByMember.set(b.memberId, b.id);
 
-  const agreements: AgreementView[] = data.summaries.map(({ b, s, charges }) => ({
+  const agreements: AgreementView[] = data.summaries.map(({ b, s, charges, debts }) => ({
     id: s.id,
+    debts: debts.map((d) => ({ accountId: d.accountId, title: d.title, balance: Math.round((d.amount - d.paid) * 100) / 100, dueDate: d.dueDate.toISOString() })),
     awaitingNew: s.status === 'cancelled' && latestByMember.get(b.memberId) === b.id && b.member.status === BLOCKED_STATUS,
     signedParties: b.signatures.map((x) => x.party),
     // Em nome de qual parte o usuário logado ainda pode assinar (nenhuma = já assinou, não é parte, ou o acordo acabou).

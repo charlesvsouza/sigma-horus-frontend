@@ -22,6 +22,8 @@ export interface AgreementView {
   status: string; // open | settled | lifted | cancelled
   /** Acordo cancelado do irmão que segue bloqueado: aguarda novo acordo ou liberação. */
   awaitingNew: boolean;
+  /** Dívidas em aberto do irmão (só no acordo cancelado que aguarda novo acordo). */
+  debts: { accountId: string; title: string; balance: number; dueDate: string }[];
   blockedAt: string;
   powerProtocol: string | null;
   powerSentAt: string | null;
@@ -459,6 +461,25 @@ function AgreementCard({ a, banks, canPay, canCharge, mayLift, mayCancel }: { a:
       </div>
 
       {a.status === 'open' && canCharge ? <ChargesSection a={a} /> : null}
+
+      {cancelled && a.awaitingNew ? (
+        <div className="mt-4 rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-medium text-sand-light">Dívidas em aberto de {a.memberName} ({a.debts.length})</p>
+            <Link href={`/dashboard/contas?pessoa=${a.memberId}`} className="text-xs text-gold hover:text-gold-light">Ver, editar ou excluir em Contas</Link>
+          </div>
+          {a.debts.length === 0 ? <p className="mt-2 text-xs text-sand-dark">Nenhuma dívida em aberto: o irmão já pode ser liberado.</p> : (
+            <ul className="mt-2 divide-y divide-white/5">
+              {a.debts.map((d) => (
+                <li key={d.accountId} className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-xs">
+                  <span className="text-sand">{d.title} · venc. {formatDateOnly(d.dueDate)} · <span className="tabular-nums">{brl(d.balance)}</span></span>
+                  <Link href={`/dashboard/pagamentos?conta=${d.accountId}#novo-pagamento`} className="font-medium text-emerald-300 hover:text-emerald-200">Dar baixa</Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
 
       {a.status === 'open' || a.status === 'settled' || (cancelled && a.awaitingNew) ? (
         <div className="mt-4 flex flex-wrap items-center gap-2">
