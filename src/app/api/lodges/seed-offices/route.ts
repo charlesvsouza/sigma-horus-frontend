@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
-import { normalizeRole } from '@/lib/rbac';
+import { canEditLodgeSettings } from '@/lib/rbac';
 import { seedOfficesForRite } from '@/lib/seed-lodge';
 import { OFFICES_BY_RITE } from '@/lib/masonic-reference';
 import { NextResponse } from 'next/server';
@@ -16,8 +16,8 @@ export async function POST(request: Request) {
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const subscription = await requireActiveSubscription(String(lodgeId));
   if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
-  if (normalizeRole(role) !== 'admin') {
-    return NextResponse.json({ error: 'Apenas administradores podem semear os cargos.' }, { status: 403 });
+  if (!canEditLodgeSettings(role)) {
+    return NextResponse.json({ error: 'Apenas o Administrador e o Venerável podem aplicar os cargos do rito.' }, { status: 403 });
   }
 
   const body = await request.json().catch(() => ({}));

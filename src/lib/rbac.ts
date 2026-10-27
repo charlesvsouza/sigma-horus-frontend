@@ -105,6 +105,12 @@ export function normalizeRole(role?: string | null) {
   return role.toLowerCase().trim();
 }
 
+/** Dados cadastrais, brasão e cargos da loja: Administrador e Venerável. Modo de recebimento e backup seguem só do Administrador. */
+export function canEditLodgeSettings(role?: string | null): boolean {
+  const r = normalizeRole(role);
+  return r === 'admin' || r === 'venerable';
+}
+
 // ---------------------------------------------------------------------------
 // Camada estática (síncrona) — fallback e back-compat com os endpoints atuais.
 // ---------------------------------------------------------------------------

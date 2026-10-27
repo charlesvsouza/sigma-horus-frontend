@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
-import { canLodgeAccess, normalizeRole } from '@/lib/rbac';
+import { canEditLodgeSettings, canLodgeAccess } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
 import { hasAtMostCents } from '@/lib/money';
@@ -55,8 +55,8 @@ export async function PUT(request: Request) {
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const subscription = await requireActiveSubscription(String(lodgeId));
   if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
-  if (normalizeRole(role) !== 'admin') {
-    return NextResponse.json({ error: 'Apenas administradores podem editar os dados da loja.' }, { status: 403 });
+  if (!canEditLodgeSettings(role)) {
+    return NextResponse.json({ error: 'Apenas o Administrador e o Venerável podem editar os dados da loja.' }, { status: 403 });
   }
 
   const body = await request.json().catch(() => undefined);

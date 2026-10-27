@@ -2,7 +2,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
-import { normalizeRole } from '@/lib/rbac';
+import { canEditLodgeSettings } from '@/lib/rbac';
 import { buildObjectKey, buildPublicUrl, deleteObject, getR2Client, getR2PublicStorageSettings } from '@/lib/storage';
 import { NextResponse } from 'next/server';
 import { imageUploadError } from '@/lib/upload-guards';
@@ -19,8 +19,8 @@ export async function POST(request: Request) {
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const subscription = await requireActiveSubscription(String(lodgeId));
   if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
-  if (normalizeRole(role) !== 'admin') {
-    return NextResponse.json({ error: 'Apenas administradores podem alterar o brasão da loja.' }, { status: 403 });
+  if (!canEditLodgeSettings(role)) {
+    return NextResponse.json({ error: 'Apenas o Administrador e o Venerável podem alterar o brasão da loja.' }, { status: 403 });
   }
 
   const formData = await request.formData().catch(() => null);
@@ -77,8 +77,8 @@ export async function DELETE() {
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const subscription = await requireActiveSubscription(String(lodgeId));
   if (!subscription.ok) return NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status });
-  if (normalizeRole(role) !== 'admin') {
-    return NextResponse.json({ error: 'Apenas administradores podem alterar o brasão da loja.' }, { status: 403 });
+  if (!canEditLodgeSettings(role)) {
+    return NextResponse.json({ error: 'Apenas o Administrador e o Venerável podem alterar o brasão da loja.' }, { status: 403 });
   }
 
   const previous = await withTenant(String(lodgeId), async (db) => {

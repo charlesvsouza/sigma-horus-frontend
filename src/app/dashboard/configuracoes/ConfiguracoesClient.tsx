@@ -32,7 +32,7 @@ function Field({ label, value, onChange, mask, ...rest }: { label: string; value
   );
 }
 
-export default function ConfiguracoesClient({ initialForm, collection }: { initialForm: LodgeForm; collection: CollectionProps }) {
+export default function ConfiguracoesClient({ initialForm, collection, isAdmin = false }: { initialForm: LodgeForm; collection: CollectionProps; isAdmin?: boolean }) {
   const askConfirm = useConfirm();
   const [form, setForm] = useState<LodgeForm>(initialForm);
   // "Última versão salva" — não é o mesmo que `initialForm` (que não muda sem
@@ -485,7 +485,7 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
           </div>
         </form>
 
-        <CollectionSettings {...collection} />
+        {isAdmin ? <CollectionSettings {...collection} /> : null}
 
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Aparência</h2>
@@ -495,6 +495,7 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
           </div>
         </section>
 
+        {isAdmin ? (
         <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
           <h2 className="text-base font-semibold text-sand-light">Backup dos dados</h2>
           <p className="mt-1 text-sm text-sand-dark">
@@ -508,6 +509,7 @@ export default function ConfiguracoesClient({ initialForm, collection }: { initi
           </div>
           {backupError ? <Alert intent="danger" className="mt-4">{backupError}</Alert> : null}
         </section>
+        ) : null}
       </div>
     </main>
   );

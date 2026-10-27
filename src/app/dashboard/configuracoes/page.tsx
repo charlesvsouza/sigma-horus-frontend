@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import ConfiguracoesClient from './ConfiguracoesClient';
+import { normalizeRole } from '@/lib/rbac';
 import { normalizeBillingChoice, normalizeCollectionMode } from '@/lib/collection';
 
 const EMPTY: Record<string, string> = {
@@ -71,5 +72,5 @@ export default async function ConfiguracoesPage() {
     }
   }
 
-  return <ConfiguracoesClient initialForm={initialForm} collection={collection} />;
+  return <ConfiguracoesClient initialForm={initialForm} collection={collection} isAdmin={normalizeRole(session?.user?.role) === 'admin'} />;
 }
