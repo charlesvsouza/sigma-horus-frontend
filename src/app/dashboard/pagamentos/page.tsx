@@ -30,6 +30,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
           select: {
             id: true, title: true, type: true, amount: true, status: true, dueDate: true, bankAccountId: true, memberId: true, counterpartyName: true,
             member: { select: { name: true } },
+            chartAccount: { select: { code: true, name: true } },
             payments: { select: { amount: true } },
             _count: { select: { invoices: true } },
           },
@@ -113,6 +114,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
       bankAccountId: a.bankAccountId ?? null,
       memberId: a.memberId ?? null,
       who: a.member?.name ?? a.counterpartyName ?? (shared ? 'vários irmãos' : null),
+      category: a.chartAccount ? `${a.chartAccount.code} ${a.chartAccount.name}` : null,
       };
     })
     .filter((a) => a.balance > 0);

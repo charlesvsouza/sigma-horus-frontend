@@ -23,6 +23,8 @@ interface AccountOption {
   memberId: string | null;
   /** Irmão ou contraparte da conta — sem isso, "Mensalidades" repetido não diz de quem é. */
   who: string | null;
+  /** Categoria do plano de contas (código e nome): diz a ORIGEM do débito. */
+  category?: string | null;
 }
 /** "Já paguei" do portal (Modo Loja) ainda sem baixa. */
 interface BankMatch { lineId: string; date: string; amount: number; description: string; by: 'txid' | 'amount'; }
@@ -43,8 +45,11 @@ function brDay(iso: string): string {
   return new Date(new Date(iso).getTime() - 3 * 3_600_000).toISOString().slice(0, 10);
 }
 
-function accountLabel(a: AccountOption): string {
-  return [a.title, a.who, `venc. ${formatDateOnly(a.dueDate)}`, `saldo ${brl(a.balance)}`].filter(Boolean).join(' · ');
+const MONTHS_PT = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+/** Mês de referência = mês do vencimento (a data é um dia sem hora, em UTC). */
+const referenceOf = (iso: string): string => { const d = new Date(iso); return `${MONTHS_PT[d.getUTCMonth()]}/${d.getUTCFullYear()}`; };
+function accountDetailLine(a: AccountOption): string {
+  return [a.who, a.title, `referência ${referenceOf(a.dueDate)}`, a.category, `venc. ${formatDateOnly(a.dueDate)}`, `saldo ${brl(a.balance)}`].filter(Boolean).join(' · ');
 }
 
 const foldText = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -100,7 +105,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
   const accountChoices = (() => {
     const terms = foldText(accountSearch).split(/\s+/).filter(Boolean);
     if (terms.length === 0) return accounts;
-    return accounts.filter((a) => a.id === form.accountId || terms.every((t) => foldText(`${a.title} ${a.who ?? ''}`).includes(t)));
+    return accounts.filter((a) => a.id === form.accountId || terms.every((t) => foldText(`${a.title} ${a.who ?? ''} ${a.category ?? ''} ${referenceOf(a.dueDate)}`).includes(t)));
   })();
 
   function selectAccount(id: string) {
@@ -231,6 +236,10 @@ export default function PagamentosClient({ accounts, members, payments, financia
     event.preventDefault();
     if (!consent) {
       setMessage({ kind: 'error', text: 'Confirme a ciência sobre os lançamentos antes de registrar.' });
+      return;
+    }
+    if (!form.accountId) {
+      setMessage({ kind: 'error', text: 'Escolha na lista a conta que vai receber a baixa.' });
       return;
     }
     if (needsProof && !proofFile) {
@@ -442,7 +451,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
         <FormCard title="Novo pagamento">
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Selecione uma conta">
+              <Field label="Selecione uma conta" className="md:col-span-2">
                 <input
                   type="search"
                   value={accountSearch}
@@ -451,16 +460,40 @@ export default function PagamentosClient({ accounts, members, payments, financia
                   aria-label="Buscar conta por nome do devedor ou título"
                   className={`${INPUT} mb-2`}
                 />
-                <select
-                  value={form.accountId}
-                  onChange={(event) => selectAccount(event.target.value)}
-                  className={INPUT}
-                  size={accountSearch.trim() ? Math.min(8, Math.max(2, accountChoices.length + 1)) : undefined}
-                  required
-                >
-                  <option value="">{accountSearch.trim() ? `${accountChoices.length} conta(s) em aberto encontrada(s)` : 'Selecione…'}</option>
-                  {accountChoices.map((account) => <option key={account.id} value={account.id}>{accountLabel(account)}</option>)}
-                </select>
+                {byId.get(form.accountId) ? (
+                  <p className="mb-2 rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-sand-light">
+                    <span className="text-xs uppercase tracking-wide text-gold">Conta escolhida</span><br />
+                    {accountDetailLine(byId.get(form.accountId)!)}
+                  </p>
+                ) : null}
+                <ul className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-white/8 bg-sigma-blue-deep/40 p-1" aria-label="Contas em aberto">
+                  {accountChoices.length === 0 ? <li className="px-3 py-2 text-sm text-sand-dark">Nenhuma conta em aberto encontrada.</li> : null}
+                  {accountChoices.map((account) => {
+                    const chosen = account.id === form.accountId;
+                    const late = new Date(account.dueDate).getTime() < todayBR().getTime();
+                    return (
+                      <li key={account.id}>
+                        <button
+                          type="button"
+                          onClick={() => selectAccount(account.id)}
+                          aria-pressed={chosen}
+                          className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${chosen ? 'bg-gold/15 ring-1 ring-gold/50' : 'hover:bg-white/5'}`}
+                        >
+                          <span className="flex flex-wrap items-baseline justify-between gap-x-3">
+                            <span className="font-medium text-sand-light">
+                              {account.who ? `${account.who} — ` : ''}{account.title}
+                              {late ? <span className="ml-2 rounded-full border border-rose-500/20 bg-rose-500/12 px-2 py-0.5 text-xs font-medium text-rose-300">Vencida</span> : null}
+                            </span>
+                            <span className="tabular-nums text-sand-light">saldo {brl(account.balance)}</span>
+                          </span>
+                          <span className="mt-0.5 block text-xs text-sand-dark">
+                            {account.type === 'PAYABLE' ? 'A pagar' : 'A receber'} · Referência: {referenceOf(account.dueDate)} · venc. {formatDateOnly(account.dueDate)}{account.category ? ` · ${account.category}` : ''}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               </Field>
               <Field label="Vincular a um membro">
                 <select value={form.memberId} onChange={(event) => setForm({ ...form, memberId: event.target.value })} className={INPUT}>
