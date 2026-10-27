@@ -1,6 +1,19 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { BRAZILIAN_POWERS, BRAZILIAN_RITES, DEFAULT_MATERIALS, LEGACY_INITIATION_FEE_NAME, MASONIC_CHART_OF_ACCOUNTS, OFFICES_BY_RITE } from '@/lib/masonic-reference';
 
+/** Fornecedor padrão da assinatura do sistema (par da categoria 2.1.19): a Tesouraria lança a mensalidade do Sigma Horus como conta a pagar dele. */
+export const SYSTEM_SUPPLIER_NAME = 'Sistema Sigma Horus';
+
+/** Cria o fornecedor "Sistema Sigma Horus" se a loja ainda não o tem (idempotente; nome já existente, ativo ou não, não duplica). */
+export async function ensureSystemSupplier(db: Prisma.TransactionClient, lodgeId: string): Promise<boolean> {
+  const exists = await db.counterparty.findFirst({ where: { lodgeId, name: SYSTEM_SUPPLIER_NAME }, select: { id: true } });
+  if (exists) return false;
+  await db.counterparty.create({
+    data: { lodgeId, kind: 'supplier', name: SYSTEM_SUPPLIER_NAME, legalName: 'Sigma Horus', isCompany: true, category: 'Software / assinatura', notes: 'Assinatura do sistema de gestão da loja.' },
+  });
+  return true;
+}
+
 /**
  * Semeia uma loja com os dados de referência da Maçonaria brasileira:
  * ritos, potências, cargos do rito escolhido e plano de contas típico.
@@ -45,6 +58,8 @@ export async function seedLodgeDefaults(
     });
     result.chartAccounts = missingChart.length;
   }
+
+  await ensureSystemSupplier(db, lodgeId);
 
   // Atualiza isSolidarity nas contas existentes que estão no padrão canônico.
   for (const c of MASONIC_CHART_OF_ACCOUNTS) {
@@ -110,6 +125,8 @@ export async function syncChartAccounts(
       data: toAdd.map((c) => ({ lodgeId, code: c.code, name: c.name, type: c.type, category: c.category, isSolidarity: c.solidarity ?? false, isDues: c.dues ?? false, fundPurpose: c.fund ?? null })),
     });
   }
+
+  await ensureSystemSupplier(db, lodgeId);
 
   // Mensalidades (1.1.01) existente passa a carregar isDues, herdado pelos
   // lançamentos/cobranças gerados a partir da categoria.
