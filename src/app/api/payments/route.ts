@@ -16,7 +16,7 @@ import { lockKey } from '@/lib/locks';
 import { autoSignReceipt } from '@/lib/receipt-signature-server';
 import { formatDayMixed, firstInvalidDate, INVALID_DATE_MESSAGE, todayBR } from '@/lib/date-only';
 import { LATE_CHARGE_CHART, lateChargeMarker } from '@/lib/late-charge';
-import { checkManualSettlement } from '@/lib/settlement-type';
+import { checkManualSettlement, checkPreOpening, isPreOpening } from '@/lib/settlement-type';
 import { PROOF_REQUIRED_MESSAGE, readProofRef } from '@/lib/payment-proof';
 import { proofKeyUsed, recordPaymentProof } from '@/lib/payment-proof-server';
 
@@ -90,13 +90,15 @@ export async function POST(request: Request) {
   if (!isValidMoney(rawAmount)) {
     return NextResponse.json({ error: 'Informe um valor maior que zero, com até 2 casas decimais.' }, { status: 400 });
   }
-  if (!bankAccountId) {
-    return NextResponse.json({ error: 'Selecione a conta bancária/caixa que recebeu ou pagou este valor.' }, { status: 400 });
-  }
   // Tipo de baixa: obrigatório em toda baixa manual (como o recebimento foi confirmado). A baixa automática do Asaas não passa por aqui.
   const settle = checkManualSettlement(body?.settlementType);
   if (!settle.ok) return NextResponse.json({ error: settle.error }, { status: 400 });
   const settlementType = settle.value;
+  // "Pago antes da abertura do livro caixa": o valor já está no saldo de abertura — não escolhe banco/caixa e não é entrada de caixa.
+  const preOpening = isPreOpening(settlementType);
+  if (!preOpening && !bankAccountId) {
+    return NextResponse.json({ error: 'Selecione a conta bancária/caixa que recebeu ou pagou este valor.' }, { status: 400 });
+  }
   if (rawLateCharge !== 0 && !isValidMoney(rawLateCharge)) {
     return NextResponse.json({ error: 'Multa e juros: informe um valor maior que zero, com até 2 casas decimais (ou deixe em branco).' }, { status: 400 });
   }
@@ -110,8 +112,11 @@ export async function POST(request: Request) {
     const locked = await findClosedTermForDate(db, String(lodgeId), paidAt);
     if (locked) return { locked } as const;
     // Livro já conferido com o banco: só com retificação aprovada pelo Venerável.
-    const ledger = await checkLedgerOpen(db, String(lodgeId), [paidAt], { userId: session.user.id, what: 'payment.create' });
-    if (!ledger.ok) return { ledgerLocked: ledger.error } as const;
+    // Valor pago antes da abertura não mexe em banco/caixa: não há o que conferir com o banco nem travar.
+    if (!preOpening) {
+      const ledger = await checkLedgerOpen(db, String(lodgeId), [paidAt], { userId: session.user.id, what: 'payment.create' });
+      if (!ledger.ok) return { ledgerLocked: ledger.error } as const;
+    }
 
     const account = await db.account.findFirst({
       where: { id: accountId, lodgeId: String(lodgeId) },
@@ -119,6 +124,10 @@ export async function POST(request: Request) {
 
     if (!account) {
       return { notFound: true as const };
+    }
+    if (preOpening) {
+      const pre = checkPreOpening({ role, accountType: account.type, lateCharge, paidAt, today: todayBR(), note });
+      if (!pre.ok) return { preOpeningInvalid: pre.error } as const;
     }
     // Uma baixa por vez por conta: sem isto, dois cliques simultâneos passam juntos pela
     // conferência de saldo em aberto abaixo e a conta é paga em dobro.
@@ -132,8 +141,10 @@ export async function POST(request: Request) {
       if (await proofKeyUsed(db, String(lodgeId), proof.ref.key)) return { proofUsed: true as const };
     }
 
-    const bank = await db.financialAccount.findFirst({ where: { id: bankAccountId, lodgeId: String(lodgeId), active: true }, select: { id: true } });
-    if (!bank) {
+    const bank = preOpening
+      ? null
+      : await db.financialAccount.findFirst({ where: { id: String(bankAccountId), lodgeId: String(lodgeId), active: true }, select: { id: true } });
+    if (!preOpening && !bank) {
       return { invalidBank: true as const };
     }
     // O irmão informado precisa ser desta loja (a chave estrangeira sozinha não confere o isolamento entre lojas).
@@ -178,7 +189,7 @@ export async function POST(request: Request) {
         lodgeId: String(lodgeId),
         accountId,
         memberId,
-        bankAccountId: bank.id,
+        bankAccountId: bank?.id ?? null,
         amount,
         paidAt,
         method: method || 'manual',
@@ -212,7 +223,7 @@ export async function POST(request: Request) {
           dueDate: paidAt,
           status: 'paid',
           chartAccountId: chart.id,
-          bankAccountId: bank.id,
+          bankAccountId: bank?.id ?? null,
           description: lateChargeMarker(created.id),
         },
         select: { id: true },
@@ -222,7 +233,7 @@ export async function POST(request: Request) {
           lodgeId: String(lodgeId),
           accountId: lateAccount.id,
           memberId: account.memberId,
-          bankAccountId: bank.id,
+          bankAccountId: bank?.id ?? null,
           amount: lateCharge,
           paidAt,
           method: method || 'manual',
@@ -236,7 +247,7 @@ export async function POST(request: Request) {
 
     // Linha do extrato: só concilia crédito ainda livre e do mesmo valor (com o acréscimo, o crédito é
     // o total) — senão a baixa segue sem vínculo.
-    if (bankTransactionId && account.type === 'RECEIVABLE') {
+    if (bankTransactionId && account.type === 'RECEIVABLE' && !preOpening) {
       const credited = round2(amount + lateCharge);
       await db.bankTransaction.updateMany({
         where: { id: bankTransactionId, lodgeId: String(lodgeId), status: 'unmatched', amount: { gte: credited - 0.005, lte: credited + 0.005 } },
@@ -298,6 +309,8 @@ export async function POST(request: Request) {
       { status: 409 },
     );
   }
+
+  if ('preOpeningInvalid' in result) return NextResponse.json({ error: result.preOpeningInvalid }, { status: 403 });
 
   if ('ledgerLocked' in result) return NextResponse.json({ error: result.ledgerLocked, code: 'LEDGER_LOCKED' }, { status: 409 });
 

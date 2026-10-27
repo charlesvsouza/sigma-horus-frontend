@@ -1,3 +1,4 @@
+import { CASH_PAYMENT_WHERE } from '@/lib/settlement-type';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -28,7 +29,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const to = new Date(bankTx.date.getTime() + WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
     return db.payment.findMany({
-      where: { lodgeId: String(lodgeId), paidAt: { gte: from, lte: to }, bankTransactions: { none: {} }, account: { type: direction } },
+      where: { lodgeId: String(lodgeId), paidAt: { gte: from, lte: to }, ...CASH_PAYMENT_WHERE, bankTransactions: { none: {} }, account: { type: direction } },
       select: { id: true, amount: true, paidAt: true, account: { select: { title: true } }, member: { select: { name: true } } },
       orderBy: { paidAt: 'desc' },
     });

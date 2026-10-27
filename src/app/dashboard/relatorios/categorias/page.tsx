@@ -1,3 +1,4 @@
+import { CASH_PAYMENT_WHERE } from '@/lib/settlement-type';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess, normalizeRole } from '@/lib/rbac';
@@ -72,6 +73,7 @@ export default async function CategoriasPage(props: {
       where: {
         lodgeId: lid,
         paidAt: { lte: to },
+        ...CASH_PAYMENT_WHERE,
         ...(bankId ? { bankAccountId: bankId } : {}),
         ...(selectedIds.length ? { account: { chartAccountId: { in: selectedIds } } } : {}),
       },

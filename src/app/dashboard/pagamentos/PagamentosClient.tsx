@@ -81,8 +81,9 @@ interface PaymentItem {
   bankAccount?: { id: string; name: string; kind: string } | null;
 }
 
-export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null, currentUserId = null, topSlot = null, revenueCharts = [], asaasMode = false }: {
+export default function PagamentosClient({ accounts, members, payments, financialAccounts, notices = [], initialAccountId = null, currentUserId = null, topSlot = null, revenueCharts = [], asaasMode = false, canPreOpening = false }: {
   asaasMode?: boolean;
+  canPreOpening?: boolean;
   revenueCharts?: { id: string; code: string; name: string }[]; topSlot?: React.ReactNode; accounts: AccountOption[]; members: MemberOption[]; payments: PaymentItem[]; financialAccounts: FinancialAccountOption[]; notices?: PaymentNotice[]; initialAccountId?: string | null; currentUserId?: string | null }) {
   const router = useRouter();
   const askConfirm = useConfirm();
@@ -244,7 +245,7 @@ export default function PagamentosClient({ accounts, members, payments, financia
         body: JSON.stringify({
           ...form,
           amount: Number(form.amount),
-          lateCharge: form.lateCharge ? Number(form.lateCharge) : undefined,
+          lateCharge: form.lateCharge && form.settlementType !== 'pre_opening' ? Number(form.lateCharge) : undefined,
           memberId: form.memberId || undefined,
           ...(proofRef ? { proofKey: proofRef.key, proofName: proofRef.name, proofType: proofRef.type } : {}),
           ...(confirmOutsideAsaas ? { confirmOutsideAsaas: true } : {}),
@@ -465,24 +466,32 @@ export default function PagamentosClient({ accounts, members, payments, financia
               <Field label="Tipo de baixa (como foi confirmado)">
                 <select value={form.settlementType} onChange={(event) => setForm({ ...form, settlementType: event.target.value })} className={INPUT} required>
                   <option value="">Selecione…</option>
-                  {SELECTABLE_SETTLEMENTS.map((t) => <option key={t} value={t}>{SETTLEMENT_LABEL[t]}</option>)}
+                  {SELECTABLE_SETTLEMENTS.filter((t) => t !== 'pre_opening' || (canPreOpening && byId.get(form.accountId)?.type === 'RECEIVABLE')).map((t) => <option key={t} value={t}>{SETTLEMENT_LABEL[t]}</option>)}
                 </select>
                 <span className="mt-1 block text-xs text-sand-dark">{asaasMode ? 'A baixa automática do Asaas é registrada pelo próprio sistema; aqui entram os recebimentos conferidos por você ou fora do Asaas.' : 'No Modo Loja a baixa não é automática: diga como o recebimento foi confirmado.'}</span>
               </Field>
-              <Field label="Conta bancária/caixa que recebeu ou pagou">
-                <select value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT} required>
-                  <option value="">Selecione…</option>
-                  {financialAccounts.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                </select>
-              </Field>
+              {form.settlementType === 'pre_opening' ? (
+                <Field label="Conta bancária/caixa" className="md:col-span-2">
+                  <p className="rounded-lg border border-gold/25 bg-gold/10 px-4 py-3 text-sm text-sand-light">
+                    Este valor <strong>não entra no caixa</strong>: o irmão já pagou antes da abertura do livro caixa e o dinheiro está no saldo de abertura. A baixa só quita a conta e gera o recibo. Informe a <strong>data em que o irmão realmente pagou</strong> e descreva o pagamento na observação.
+                  </p>
+                </Field>
+              ) : (
+                <Field label="Conta bancária/caixa que recebeu ou pagou">
+                  <select value={form.bankAccountId} onChange={(event) => setForm({ ...form, bankAccountId: event.target.value })} className={INPUT} required>
+                    <option value="">Selecione…</option>
+                    {financialAccounts.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                  </select>
+                </Field>
+              )}
               {needsProof ? (
                 <Field label="Comprovante do pagamento (obrigatório)" className="md:col-span-2">
                   <input key={proofKey} type="file" accept="application/pdf,image/png,image/jpeg,image/webp" onChange={(e) => setProofFile(e.target.files?.[0] ?? null)} className={INPUT} required />
                   <span className="mt-1 block text-xs text-sand-dark">PDF ou foto, até 4 MB. Toda baixa de despesa leva o seu comprovante (se pagar em duas vezes, um para cada).</span>
                 </Field>
               ) : null}
-              <Field label="Observação" className="md:col-span-2">
-                <textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className={`${INPUT} md:col-span-2`} rows={3} />
+              <Field label={form.settlementType === 'pre_opening' ? 'Observação (obrigatória): como e quando o irmão pagou' : 'Observação'} className="md:col-span-2">
+                <textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className={`${INPUT} md:col-span-2`} rows={3} required={form.settlementType === 'pre_opening'} minLength={form.settlementType === 'pre_opening' ? 5 : undefined} />
               </Field>
             </div>
             <label className="flex items-start gap-3 rounded-lg border border-white/8 bg-sigma-blue-deep/60 px-4 py-3">

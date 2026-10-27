@@ -1,7 +1,7 @@
 import { PAYMENT_PROOF_ENTITY } from '@/lib/payment-proof';
 import { auth } from '@/lib/auth';
 import { isAsaasMode } from '@/lib/collection';
-import { settlementTypeOf } from '@/lib/settlement-type';
+import { canRegisterPreOpening, settlementTypeOf } from '@/lib/settlement-type';
 import { todayBR } from '@/lib/date-only';
 import { matchNoticesToBank } from '@/lib/notice-bank-match';
 import { openBalance, PAYMENT_NOTICE_CHECK_ENTITY, PAYMENT_NOTICE_ENTITY, PAYMENT_NOTICE_REJECT_ENTITY, withoutRejected } from '@/lib/portal-dues';
@@ -210,6 +210,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
       notices={notices}
       currentUserId={session?.user?.id ?? null}
       asaasMode={isAsaasMode(data.lodgeMode)}
+      canPreOpening={canRegisterPreOpening(session?.user?.role)}
       initialAccountId={conta && openById.has(conta) ? conta : null}
     />
     </>

@@ -1,3 +1,4 @@
+import { CASH_PAYMENT_WHERE } from '@/lib/settlement-type';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess } from '@/lib/rbac';
@@ -58,7 +59,7 @@ export default async function DrePage(props: { searchParams: Promise<{ from?: st
       db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
       db.term.findFirst({ where: { lodgeId: String(lodgeId), status: 'active' }, select: { startDate: true } }),
       db.payment.findMany({
-        where: { lodgeId: String(lodgeId) },
+        where: { lodgeId: String(lodgeId), ...CASH_PAYMENT_WHERE },
         select: {
           amount: true,
           paidAt: true,

@@ -1,3 +1,4 @@
+import { CASH_PAYMENT_WHERE } from '@/lib/settlement-type';
 import type { Prisma } from '@/generated/prisma/client';
 import { sumMoney, round2 } from '@/lib/money';
 import { logAudit } from '@/lib/audit';
@@ -22,7 +23,7 @@ export async function generateBalancete(
     // tipo da Account associada não dá pra saber se cada linha é entrada ou
     // saída de caixa (ver findClosedTermForDate/PagamentosClient: o mesmo
     // formulário lança os dois sentidos).
-    db.payment.findMany({ where: { lodgeId, paidAt: { gte: from, lte: to } }, select: { amount: true, account: { select: { type: true } } } }),
+    db.payment.findMany({ where: { lodgeId, paidAt: { gte: from, lte: to }, ...CASH_PAYMENT_WHERE }, select: { amount: true, account: { select: { type: true } } } }),
   ]);
 
   // Somas em centavos inteiros: estes totais são GRAVADOS no balancete; ponto flutuante acumularia erro (140326.45999…).

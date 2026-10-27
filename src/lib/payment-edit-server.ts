@@ -14,7 +14,7 @@ import { syncMemberBlock } from '@/lib/member-block-sync';
 import { mainPaymentIdFromMarker } from '@/lib/late-charge';
 import { autoSignReceipt } from '@/lib/receipt-signature-server';
 import { brl } from '@/lib/currency';
-import { type SettlementType } from '@/lib/settlement-type';
+import { isPreOpening, type SettlementType } from '@/lib/settlement-type';
 
 type Db = Prisma.TransactionClient;
 
@@ -54,6 +54,11 @@ export async function editPayment(
   if (mainPaymentIdFromMarker(payment.account.description)) {
     return { ok: false, status: 409, error: 'Multa e juros lançados junto com uma baixa: estorne a baixa principal (leva o acréscimo junto) e lance de novo.' };
   }
+
+  // "Pago antes da abertura": não passa pelo caixa, então não ganha banco nem troca de tipo (e nenhum outro vira este tipo por edição).
+  const wasPreOpening = isPreOpening(payment.settlementType);
+  if (wasPreOpening && patch.bankAccountId !== undefined) return { ok: false, status: 409, error: 'Pago antes da abertura do livro caixa não tem conta bancária/caixa: o valor já está no saldo de abertura. Para lançar no caixa, estorne esta baixa e lance de novo.' };
+  if (patch.settlementType !== undefined && isPreOpening(patch.settlementType) !== wasPreOpening) return { ok: false, status: 409, error: 'O tipo "Pago antes da abertura do livro caixa" não se troca por edição: estorne a baixa e lance de novo.' };
 
   const next = {
     amount: patch.amount !== undefined ? round2(Number(patch.amount)) : Number(payment.amount),

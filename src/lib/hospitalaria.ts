@@ -1,3 +1,4 @@
+import { CASH_PAYMENT_WHERE } from '@/lib/settlement-type';
 import { MASKED_DONOR_NAME } from '@/lib/donor-mask';
 import type { Prisma } from '@/generated/prisma/client';
 import { fundChartWhere } from '@/lib/funds';
@@ -36,7 +37,7 @@ export async function getTroncoBalance(
   const [chartCount, payments] = await Promise.all([
     db.chartAccount.count({ where: { lodgeId, ...where } }),
     db.payment.findMany({
-      where: { lodgeId, account: { chartAccount: where } },
+      where: { lodgeId, ...CASH_PAYMENT_WHERE, account: { chartAccount: where } },
       select: { amount: true, account: { select: { type: true } } },
     }),
   ]);

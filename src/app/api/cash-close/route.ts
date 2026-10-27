@@ -1,3 +1,4 @@
+import { CASH_PAYMENT_WHERE } from '@/lib/settlement-type';
 import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { withTenant } from '@/lib/prisma';
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
         select: { amount: true, type: true },
       }),
       db.payment.findMany({
-        where: { lodgeId: String(lodgeId), paidAt: { gte: term.startDate, lte: periodEnd } },
+        where: { lodgeId: String(lodgeId), paidAt: { gte: term.startDate, lte: periodEnd }, ...CASH_PAYMENT_WHERE },
         select: { amount: true, account: { select: { type: true } } },
       }),
     ]);

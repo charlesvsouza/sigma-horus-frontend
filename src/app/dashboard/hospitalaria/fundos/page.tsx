@@ -1,3 +1,4 @@
+import { CASH_PAYMENT_WHERE } from '@/lib/settlement-type';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccess, normalizeRole } from '@/lib/rbac';
@@ -64,7 +65,7 @@ export default async function FundosPage(props: { searchParams: Promise<{ fund?:
     const [lodge, payments, members, recentSessions, bankAccounts] = await Promise.all([
       db.lodge.findUnique({ where: { id: lid }, select: { name: true, crestUrl: true, collectionMode: true, asaasSettlementAccountId: true } }),
       db.payment.findMany({
-        where: { lodgeId: lid, account: { chartAccount: fundChartWhere(fund) } },
+        where: { lodgeId: lid, ...CASH_PAYMENT_WHERE, account: { chartAccount: fundChartWhere(fund) } },
         select: {
           id: true,
           amount: true,

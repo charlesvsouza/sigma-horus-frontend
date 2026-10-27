@@ -1,5 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { parseBankStatement } from '@/lib/bank-statement';
+import { CASH_PAYMENT_WHERE } from '@/lib/settlement-type';
 
 const MATCH_WINDOW_DAYS = 3;
 const AMOUNT_TOLERANCE = 0.01;
@@ -18,6 +19,7 @@ async function tryAutoMatch(db: Prisma.TransactionClient, lodgeId: string, date:
       lodgeId,
       amount: { gte: absAmount - AMOUNT_TOLERANCE, lte: absAmount + AMOUNT_TOLERANCE },
       paidAt: { gte: from, lte: to },
+      ...CASH_PAYMENT_WHERE,
       bankTransactions: { none: {} },
       account: { type: direction },
     },

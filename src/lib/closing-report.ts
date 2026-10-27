@@ -1,3 +1,4 @@
+import { CASH_PAYMENT_WHERE } from '@/lib/settlement-type';
 import { withTenant } from '@/lib/prisma';
 import { sumMoney } from '@/lib/money';
 import { reconcileMemberBalances } from '@/lib/closing';
@@ -15,7 +16,7 @@ export async function getClosingReport(lodgeId: string, fromParam: string | null
     const [lodge, payments, accounts, invoices] = await Promise.all([
       db.lodge.findUnique({ where: { id: lodgeId }, select: { name: true, riteName: true, powerName: true, crestUrl: true } }),
       db.payment.findMany({
-        where: { lodgeId },
+        where: { lodgeId, ...CASH_PAYMENT_WHERE },
         include: {
           account: { select: { type: true, title: true, dueDate: true, chartAccount: { select: { code: true, name: true, category: true } } } },
           member: { select: { id: true, name: true } },

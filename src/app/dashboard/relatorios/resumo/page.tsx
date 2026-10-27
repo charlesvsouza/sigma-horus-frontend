@@ -1,3 +1,4 @@
+import { CASH_PAYMENT_WHERE } from '@/lib/settlement-type';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
@@ -36,7 +37,8 @@ export default async function RelatoriosPage(props: { searchParams: Promise<{ fr
 
   const accountWhere: Prisma.AccountWhereInput = { lodgeId: String(lodgeId) };
   const invoiceWhere: Prisma.InvoiceWhereInput = { lodgeId: String(lodgeId) };
-  const paymentWhere: Prisma.PaymentWhereInput = { lodgeId: String(lodgeId) };
+  // Entradas/saídas de caixa: o que foi pago antes da abertura do livro caixa já está no saldo de abertura e não conta.
+  const paymentWhere: Prisma.PaymentWhereInput = { lodgeId: String(lodgeId), ...CASH_PAYMENT_WHERE };
 
   if (fromDate || toDate) {
     const range: Prisma.DateTimeFilter = {};

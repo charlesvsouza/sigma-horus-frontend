@@ -1,6 +1,25 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { checkManualSettlement, settlementLabel, settlementTypeOf } from './settlement-type';
+import { canRegisterPreOpening, checkManualSettlement, checkPreOpening, settlementLabel, settlementTypeOf } from './settlement-type';
+
+const today = new Date('2026-10-27T12:00:00Z');
+const okPre = { role: 'treasurer', accountType: 'RECEIVABLE', lateCharge: 0, paidAt: new Date('2026-03-10T00:00:00Z'), today, note: 'Pagou ao Tesoureiro anterior em março' };
+
+test('pago antes da abertura: tipo escolhível, com nome claro, e só Tesouraria/gestão registram', () => {
+  assert.deepEqual(checkManualSettlement('pre_opening'), { ok: true, value: 'pre_opening' });
+  assert.equal(settlementLabel({ settlementType: 'pre_opening', method: 'manual' }), 'Pago antes da abertura do livro caixa');
+  for (const r of ['admin', 'venerable', 'treasurer', 'Treasurer']) assert.equal(canRegisterPreOpening(r), true);
+  for (const r of ['secretary', 'member', 'hospitaller', '', null, undefined]) assert.equal(canRegisterPreOpening(r), false);
+});
+
+test('pago antes da abertura: só conta a receber, sem multa, data passada e motivo escrito', () => {
+  assert.equal(checkPreOpening(okPre).ok, true);
+  assert.equal(checkPreOpening({ ...okPre, role: 'secretary' }).ok, false);
+  assert.equal(checkPreOpening({ ...okPre, accountType: 'PAYABLE' }).ok, false);
+  assert.equal(checkPreOpening({ ...okPre, lateCharge: 5 }).ok, false);
+  assert.equal(checkPreOpening({ ...okPre, paidAt: new Date('2026-11-01T00:00:00Z') }).ok, false);
+  assert.equal(checkPreOpening({ ...okPre, note: '  ' }).ok, false);
+});
 
 test('tipo gravado vale; sem tipo, deduz da forma e da observação', () => {
   assert.equal(settlementTypeOf({ settlementType: 'cash', method: 'pix' }), 'cash');
