@@ -15,10 +15,20 @@ export async function POST(request: Request) {
   const access = await requireLodgeAccess(lodgeId, session?.user?.role, 'portal', 'write');
   if (!access.ok) return NextResponse.json({ error: access.status === 403 ? PORTAL_WRITE_DENIED : access.error }, { status: access.status });
 
-  const body = await request.json().catch(() => ({}));
+  // Aceita JSON { target, note } ou formulário (multipart) com target + note + file (comprovante, opcional).
+  let body: Record<string, unknown> = {};
+  let file: File | null = null;
+  if ((request.headers.get('content-type') ?? '').includes('multipart/form-data')) {
+    const form = await request.formData().catch(() => null);
+    body = { target: form?.get('target'), note: form?.get('note') };
+    const f = form?.get('file');
+    file = f instanceof File && f.size > 0 ? f : null;
+  } else {
+    body = (await request.json().catch(() => ({}))) ?? {};
+  }
   const target = parseChargeTarget(body?.target);
   if (target == null) return NextResponse.json({ error: 'Escolha a parcela paga.' }, { status: 400 });
-  const r = await submitAgreementNotice(lodgeId, memberId, session!.user.id, target, String(body?.note ?? ''));
+  const r = await submitAgreementNotice(lodgeId, memberId, session!.user.id, target, String(body?.note ?? ''), file);
   if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.status });
   return NextResponse.json({ success: true, notified: r.notified, noticeAt: r.noticeAt });
 }

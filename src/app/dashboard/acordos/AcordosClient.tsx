@@ -293,6 +293,7 @@ function MonthWorklist({ agreements }: { agreements: AgreementView[] }) {
                 </span>
                 <span className="flex items-center gap-2">
                   {c.noticeAt ? <Badge variant="warning">Irmão avisou que pagou</Badge> : null}
+                  {c.noticeHasReceipt ? <a href={`/api/members/${a.memberId}/block/charge/receipt?target=${c.target}`} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-300 hover:text-emerald-200">Ver comprovante</a> : null}
                   {done(c) ? <Badge variant="success">Enviada</Badge> : c.openedAt ? <Badge variant="warning">WhatsApp sem confirmação</Badge> : <Badge variant="overdue">Não enviada</Badge>}
                   <Button type="button" size="sm" onClick={() => setOpen(open === key ? null : key)}>{open === key ? 'Fechar' : 'Gerar cobrança'}</Button>
                 </span>
@@ -333,7 +334,7 @@ function ChargesSection({ a }: { a: AgreementView }) {
                 <Button type="button" size="sm" onClick={() => setOpenTarget(openTarget === c.target ? null : c.target)}>{openTarget === c.target ? 'Fechar' : 'Gerar cobrança'}</Button>
               </div>
               {mark(c) ? <p className="text-[11px] text-sand-dark">{mark(c)}</p> : null}
-              {c.noticeAt ? <p className="text-[11px] text-emerald-300">O irmão avisou que pagou em {formatDateOnly(c.noticeAt)} — confira o recebimento e registre o pagamento.</p> : null}
+              {c.noticeAt ? <p className="text-[11px] text-emerald-300">O irmão avisou que pagou em {formatDateOnly(c.noticeAt)} — confira o recebimento e registre o pagamento.{c.noticeHasReceipt ? <> <a href={`/api/members/${a.memberId}/block/charge/receipt?target=${c.target}`} target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-200">Ver comprovante</a></> : null}</p> : null}
               {openTarget === c.target ? <AgreementChargePanel memberId={a.memberId} target={c.target} label={`${label} — ${brl(c.amount)}`} onClose={() => setOpenTarget(null)} onSent={() => router.refresh()} /> : null}
             </li>
           );

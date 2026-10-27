@@ -16,6 +16,8 @@ import { dispatch } from '@/lib/messaging';
 import { buildPixPayload } from '@/lib/pix';
 import { withTenant } from '@/lib/prisma';
 import { normalizeWhatsAppPhone } from '@/lib/whatsapp-link';
+import { buildObjectKey, putObject } from '@/lib/storage';
+import { receiptUploadError } from '@/lib/upload-guards';
 
 type Db = Prisma.TransactionClient;
 type Fail = { ok: false; status: number; error: string };
@@ -133,6 +135,8 @@ export interface ChargeRow {
   emailedAt: string | null;
   /** Último "Já paguei" do irmão para este alvo. */
   noticeAt: string | null;
+  /** O último aviso trouxe comprovante anexado. */
+  noticeHasReceipt: boolean;
 }
 
 /** Cobranças possíveis de um acordo em aberto (parcelas + saldo) com a marca dos envios já feitos. */
@@ -157,24 +161,30 @@ export async function agreementChargeRows(db: Db, lodgeId: string, summary: Bloc
     return {
       target: key, number: c.number, amount: c.amount, dueDate: c.dueDate.toISOString(), late: c.late,
       sentAt: m?.sentAt?.toISOString() ?? null, openedAt: m?.openedAt?.toISOString() ?? null, emailedAt: m?.emailedAt?.toISOString() ?? null,
-      noticeAt: notices.get(key)?.toISOString() ?? null,
+      noticeAt: notices.get(key)?.at.toISOString() ?? null,
+      noticeHasReceipt: Boolean(notices.get(key)?.receiptKey),
     };
   });
 }
 
 /** Último "Já paguei" do irmão por alvo (parcela ou saldo) de um acordo. */
-async function latestNotices(db: Db, lodgeId: string, blockId: string): Promise<Map<string, Date>> {
+async function latestNotices(db: Db, lodgeId: string, blockId: string): Promise<Map<string, { at: Date; receiptKey: string | null }>> {
   const rows = await db.auditLog.findMany({
     where: { lodgeId, entity: AGREEMENT_NOTICE_ENTITY, entityId: blockId },
     select: { after: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
     take: 50,
   });
-  const out = new Map<string, Date>();
+  const out = new Map<string, { at: Date; receiptKey: string | null }>();
   for (const r of rows) {
     let target: string | null = null;
-    try { target = String((JSON.parse(r.after ?? '{}') as { target?: unknown }).target ?? ''); } catch { target = null; }
-    if (target && !out.has(target)) out.set(target, r.createdAt);
+    let receiptKey: string | null = null;
+    try {
+      const meta = JSON.parse(r.after ?? '{}') as { target?: unknown; receiptKey?: unknown };
+      target = String(meta.target ?? '');
+      receiptKey = typeof meta.receiptKey === 'string' ? meta.receiptKey : null;
+    } catch { target = null; }
+    if (target && !out.has(target)) out.set(target, { at: r.createdAt, receiptKey });
   }
   return out;
 }
@@ -210,8 +220,12 @@ export type NoticeOutcome = { ok: true; notified: number; noticeAt: Date } | Fai
  * "Já paguei" de uma parcela do acordo: registra o aviso e manda UM e-mail à Tesouraria, ao Venerável e aos
  * Administradores. Não dá baixa em nada — a baixa é de quem confere o recebimento ("Registrar pagamento do acordo").
  */
-export async function submitAgreementNotice(lodgeId: string, memberId: string, userId: string, target: ChargeTarget, note: string, now: Date = new Date()): Promise<NoticeOutcome> {
+export async function submitAgreementNotice(lodgeId: string, memberId: string, userId: string, target: ChargeTarget, note: string, file: File | null = null, now: Date = new Date()): Promise<NoticeOutcome> {
   const note300 = note.trim().slice(0, 300);
+  if (file) {
+    const invalid = receiptUploadError(file);
+    if (invalid) return { ok: false, status: 400, error: invalid };
+  }
   const ctx = await withTenant(lodgeId, async (db) => {
     const block = await db.memberBlock.findFirst({ where: { lodgeId, memberId, status: 'open' }, include: { items: true } });
     if (!block) return null;
@@ -228,13 +242,22 @@ export async function submitAgreementNotice(lodgeId: string, memberId: string, u
   const charge = pickCharge(asBlock(ctx.summary), target, todayBR(now));
   if (!charge) return { ok: false, status: 409, error: 'Esta parcela já está coberta pelo que foi pago.' };
   const last = ctx.notices.get(String(charge.target));
-  if (last && now.getTime() - last.getTime() < AGREEMENT_NOTICE_COOLDOWN_MS) {
+  if (last && now.getTime() - last.at.getTime() < AGREEMENT_NOTICE_COOLDOWN_MS) {
     return { ok: false, status: 429, error: 'Você já avisou a Tesouraria sobre esta parcela nas últimas 24 horas.' };
+  }
+
+  // Comprovante: sobe antes de registrar (sem o arquivo no storage, o aviso não o cita).
+  let receipt: { key: string; name: string; type: string } | null = null;
+  if (file) {
+    const key = buildObjectKey(file.name, `payment-receipts/${lodgeId}`);
+    const ok = await putObject(key, Buffer.from(await file.arrayBuffer()), file.type).catch(() => false);
+    if (!ok) return { ok: false, status: 502, error: 'Não foi possível enviar o comprovante. Tente de novo ou avise sem anexo.' };
+    receipt = { key, name: file.name.slice(0, 120), type: file.type };
   }
 
   await withTenant(lodgeId, (db) => logAudit(db, {
     lodgeId, userId, action: 'CREATE', entity: AGREEMENT_NOTICE_ENTITY, entityId: ctx.summary.id,
-    metadata: { target: String(charge.target), amount: charge.amount, memberId, note: note300 || null },
+    metadata: { target: String(charge.target), amount: charge.amount, memberId, note: note300 || null, ...(receipt ? { receiptKey: receipt.key, receiptName: receipt.name, receiptType: receipt.type } : {}) },
   }));
 
   const what = charge.target === 'balance' ? 'a quitação do saldo do acordo' : `a parcela ${charge.number}/${ctx.summary.installments} do acordo`;
@@ -242,6 +265,7 @@ export async function submitAgreementNotice(lodgeId: string, memberId: string, u
   const body =
     `O irmão ${ctx.member.name} avisou que pagou ${what} (${brl(charge.amount)}, ${charge.target === 'balance' ? 'até' : 'vencimento'} ${formatDateOnly(charge.dueDate)}).\n` +
     (note300 ? `Observação do irmão: ${note300}\n` : '') +
+    (receipt ? 'O irmão anexou o comprovante: abra em Tesouraria → Acordos, na parcela, em "Ver comprovante".\n' : '') +
     'Confira o recebimento na conta da loja e registre em Tesouraria → Acordos → Registrar pagamento do acordo.';
   const channels = buildLodgeChannels(ctx.lodge);
   let notified = 0;
@@ -250,4 +274,12 @@ export async function submitAgreementNotice(lodgeId: string, memberId: string, u
     if (r?.status === 'sent') notified++;
   }
   return { ok: true, notified, noticeAt: now };
+}
+
+/** Chave do comprovante do último "Já paguei" de uma parcela (ou do saldo) do acordo em aberto do irmão; null se não houver. */
+export async function agreementNoticeReceiptKey(db: Db, lodgeId: string, memberId: string, target: string): Promise<string | null> {
+  const block = await db.memberBlock.findFirst({ where: { lodgeId, memberId, status: 'open' }, select: { id: true } });
+  if (!block) return null;
+  const key = (await latestNotices(db, lodgeId, block.id)).get(target)?.receiptKey ?? null;
+  return key && key.startsWith(`payment-receipts/${lodgeId}/`) ? key : null;
 }

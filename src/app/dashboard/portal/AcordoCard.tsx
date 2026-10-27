@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Alert, Badge, Button } from '@/components/ui';
 import { brl } from '@/lib/currency';
 import { formatDateOnly } from '@/lib/date-only';
+import { receiptUploadError } from '@/lib/upload-guards';
 
 // "Meu acordo": o irmão com acordo em aberto (quitação de dívidas ou regularização) vê as parcelas e paga cada
 // uma com o Pix da chave da loja (QR ou copia e cola). O Pix cai direto na conta da loja: depois de pagar, "Já paguei"
@@ -29,11 +30,12 @@ export function AcordoCard({ agreement, onChanged }: { agreement: PortalAgreemen
   const [result, setResult] = useState<PixResult | null>(null);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [receipt, setReceipt] = useState<File | null>(null);
   const pct = agreement.total > 0 ? Math.min(100, Math.round((agreement.paid / agreement.total) * 100)) : 0;
 
   async function pay(target: string) {
     if (openTarget === target && result) { setOpenTarget(null); setResult(null); return; }
-    setOpenTarget(target); setResult(null); setError(''); setInfo(''); setBusy(target);
+    setOpenTarget(target); setResult(null); setError(''); setInfo(''); setReceipt(null); setBusy(target);
     const res = await fetch('/api/portal/agreement/charge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target }) });
     const data = await res.json().catch(() => ({}));
     setBusy(null);
@@ -48,11 +50,15 @@ export function AcordoCard({ agreement, onChanged }: { agreement: PortalAgreemen
 
   async function notice(target: string) {
     setBusy(`n-${target}`); setError(''); setInfo('');
-    const res = await fetch('/api/portal/agreement/paid-notice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target }) });
+    const form = new FormData();
+    form.append('target', target);
+    if (receipt) form.append('file', receipt);
+    const res = await fetch('/api/portal/agreement/paid-notice', { method: 'POST', body: form });
     const data = await res.json().catch(() => ({}));
     setBusy(null);
     if (!res.ok) return setError(data.error ?? 'Não foi possível avisar a Tesouraria.');
-    setInfo('Aviso enviado à Tesouraria. Assim que ela confirmar o recebimento, a parcela some desta lista.');
+    setInfo(receipt ? 'Aviso e comprovante enviados à Tesouraria. Assim que ela confirmar o recebimento, a parcela some desta lista.' : 'Aviso enviado à Tesouraria. Assim que ela confirmar o recebimento, a parcela some desta lista.');
+    setReceipt(null);
     onChanged();
   }
 
@@ -101,6 +107,11 @@ export function AcordoCard({ agreement, onChanged }: { agreement: PortalAgreemen
                   <div className="min-w-0">
                     <p className="text-sm text-sand">Pague <strong className="tabular-nums text-gold">{brl(result.amount)}</strong> pelo app do seu banco: escaneie o QR ou use o Pix copia e cola.</p>
                     <textarea readOnly value={result.pixCopyPaste} rows={3} onFocus={(e) => e.currentTarget.select()} className="mt-2 w-full rounded-lg border border-white/10 bg-sigma-blue-deep/60 p-2 font-mono text-[11px] text-sand" aria-label="Pix copia e cola" />
+                    <label className="mt-2 flex flex-wrap items-center gap-2 text-xs text-sand-dark">
+                      <span className="cursor-pointer rounded-full border border-gold/40 px-3 py-1 text-gold hover:border-gold/60">{receipt ? 'Trocar comprovante' : 'Anexar comprovante (opcional)'}</span>
+                      <span className="min-w-0 truncate">{receipt ? receipt.name : 'foto ou PDF, até 4 MB'}</span>
+                      <input type="file" accept="application/pdf,image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { const f = e.target.files?.[0] ?? null; e.target.value = ''; const invalid = f ? receiptUploadError(f) : null; if (invalid) { setError(invalid); return; } setError(''); setReceipt(f); }} />
+                    </label>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button type="button" size="sm" onClick={() => void copy()}>Copiar Pix</Button>
                       <Button type="button" size="sm" onClick={() => void notice(c.target)} disabled={busy === `n-${c.target}`}>{busy === `n-${c.target}` ? 'Enviando…' : 'Já paguei'}</Button>
