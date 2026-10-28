@@ -12,6 +12,8 @@ import { summarizeBlock } from '@/lib/member-block-server';
 import { restrictionNotice } from '@/lib/member-restriction';
 import { ART_002_THRESHOLD_DAYS, getMemberDuesStatus, isArt002Enabled } from '@/lib/overdue';
 import DashboardShell from './DashboardShell';
+import SubscriptionLockedShell from './SubscriptionLockedShell';
+import { AssinaturaContent } from './assinatura/AssinaturaContent';
 
 // Área logada: fora do índice dos buscadores (noindex; NÃO bloquear no robots.txt, senão o Google não lê o noindex).
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -282,6 +284,21 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const access = subscriptionAccess(sub, now); // mesma regra que a API usa para travar escrita
   const trialExpired = access.reason === 'trial_expired';
   const blocked = access.blocked; // inativo, trial expirado, etc.
+
+  // Sem assinatura vigente: qualquer tela do painel mostra só a escolha do plano (ou o Sair). Os filhos nem são
+  // renderizados. O dono da plataforma (superadmin) segue para o painel normal, para dar suporte.
+  if (blocked && !session.user.viaSuperadmin) {
+    return (
+      <SubscriptionLockedShell lodgeName={lodgeName} userName={session.user.name ?? 'Usuário'}>
+        <Alert variant="banner" intent="danger">
+          {trialExpired
+            ? 'Seu período de teste terminou. Assine um plano para continuar usando o Sigma Horus.'
+            : 'Sua loja não possui uma assinatura ativa. Assine um plano para continuar usando o Sigma Horus.'}
+        </Alert>
+        <AssinaturaContent />
+      </SubscriptionLockedShell>
+    );
+  }
 
   const fmtDate = (d: Date | null) =>
     d ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d) : '';
