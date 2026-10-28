@@ -4,6 +4,8 @@ import { PLANS, type PlanId } from '@/lib/plans';
 import { Alert } from '@/components/ui';
 import { canManageSubscription } from '@/lib/rbac';
 import { SubscriptionManager } from './SubscriptionManager';
+import { UpdateCardButton } from './UpdateCardButton';
+import { pastDueGrace, PAST_DUE_GRACE_DAYS } from '@/lib/subscription-access';
 
 function fmtDate(d: Date | null | undefined) {
   return d
@@ -73,6 +75,17 @@ export async function AssinaturaContent() {
         <Alert intent="info" className="mt-4">
           Downgrade para <strong>{PLANS[sub.pendingPlan as PlanId]?.name}</strong> agendado para{' '}
           {fmtDate(sub.pendingPlanEffectiveAt)}. Você mantém o plano atual até essa data.
+        </Alert>
+      ) : null}
+
+      {sub?.status === 'past_due' ? (
+        <Alert intent="warn" className="mt-4">
+          O pagamento da assinatura não foi aprovado.{' '}
+          {pastDueGrace(sub, now)
+            ? `O sistema segue liberado até ${fmtDate(pastDueGrace(sub, now)!.endsAt)}; depois disso será bloqueado.`
+            : `O atraso passou de ${PAST_DUE_GRACE_DAYS} dias e o sistema está bloqueado.`}{' '}
+          Atualize o cartão para regularizar.
+          {canManageSubscription(session?.user?.role) && sub.stripeCustomerId ? <UpdateCardButton /> : null}
         </Alert>
       ) : null}
 

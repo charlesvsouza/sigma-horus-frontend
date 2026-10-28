@@ -1,6 +1,7 @@
 import { prismaAdmin } from '@/lib/prisma';
 import { getStripe, isPlanId } from '@/lib/stripe';
 import { NextResponse } from 'next/server';
+import { markPastDue } from '@/lib/subscription-past-due-server';
 
 function tsToDate(seconds?: number | null): Date | undefined {
   return seconds ? new Date(seconds * 1000) : undefined;
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
               stripeCustomerId: obj.customer,
               plan,
               status: 'active',
+              pastDueSince: null,
               billingInterval: interval,
               paymentMethod: 'card',
               trialEndsAt: null,
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
               stripeCustomerId: obj.customer ?? undefined,
               plan,
               status: 'active',
+              pastDueSince: null,
               billingInterval: 'year',
               paymentMethod: method,
               trialEndsAt: null,
@@ -91,6 +94,21 @@ export async function POST(request: Request) {
 
     case 'checkout.session.async_payment_failed': {
       // Pagamento pré-pago não confirmado: mantém sem acesso (não altera status).
+      break;
+    }
+
+    // Cobrança recorrente recusada (cartão): a loja entra em atraso, com 30 dias de tolerância antes do bloqueio
+    // (lib/subscription-access.ts). A Diretoria é avisada por e-mail uma única vez por atraso.
+    case 'invoice.payment_failed': {
+      const subId = obj.subscription;
+      if (subId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sub = await stripeObj.subscriptions.retrieve(subId) as any;
+        const lodgeId = sub.metadata?.lodgeId;
+        if (lodgeId && sub.status === 'past_due') {
+          await markPastDue(lodgeId, sub.id);
+        }
+      }
       break;
     }
 
@@ -112,6 +130,7 @@ export async function POST(request: Request) {
             },
             data: {
               status: 'active',
+              pastDueSince: null,
               currentPeriodStart: tsToDate(sub.current_period_start),
               currentPeriodEnd: tsToDate(sub.current_period_end),
             },
@@ -142,7 +161,8 @@ export async function POST(request: Request) {
       // Preserva o trial: Stripe trialing → nosso 'trialing' (com trialEndsAt),
       // para o painel mostrar a contagem regressiva. active → 'active'.
       const stripeStatus = live.status;
-      const mappedStatus = stripeStatus === 'active' ? 'active' : stripeStatus === 'trialing' ? 'trialing' : 'inactive';
+      const mappedStatus =
+        stripeStatus === 'active' ? 'active' : stripeStatus === 'trialing' ? 'trialing' : stripeStatus === 'past_due' ? 'past_due' : 'inactive';
       const priceMeta = live.items?.data?.[0]?.price?.metadata;
       const newPlan = priceMeta?.plan;
       const newInterval = priceMeta?.interval === 'year' ? 'year' : priceMeta?.interval === 'month' ? 'month' : undefined;
@@ -152,6 +172,8 @@ export async function POST(request: Request) {
         const data: any = {
           status: mappedStatus,
           trialEndsAt: stripeStatus === 'trialing' ? tsToDate(live.trial_end) ?? null : null,
+          // Em atraso, o início já foi marcado (markPastDue); qualquer outra situação zera a contagem.
+          ...(mappedStatus === 'past_due' ? {} : { pastDueSince: null }),
           currentPeriodStart: tsToDate(live.current_period_start),
           currentPeriodEnd: tsToDate(live.current_period_end),
         };
@@ -175,6 +197,11 @@ export async function POST(request: Request) {
           },
           data,
         });
+        // Atraso detectado só pela atualização da assinatura (sem o evento da fatura): marca o início agora.
+        if (mappedStatus === 'past_due' && event.type !== 'customer.subscription.deleted') {
+          const lodge = await prismaAdmin.subscription.findFirst({ where: { stripeCustomerId: customerId }, select: { lodgeId: true } });
+          if (lodge) await markPastDue(lodge.lodgeId, obj.id);
+        }
       }
       break;
     }

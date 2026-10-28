@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { subscriptionAccess } from './subscription-access.ts';
+import { pastDueGrace, subscriptionAccess } from './subscription-access.ts';
 import { enforcementMode, requireActiveSubscription } from './subscription-guard.ts';
 
 const NOW = Date.parse('2026-09-20T12:00:00Z');
@@ -15,9 +15,21 @@ test('trialing com prazo por vir libera; vencido bloqueia como trial_expired', (
   assert.deepEqual(subscriptionAccess({ status: 'trialing', trialEndsAt: new Date(NOW - 1) }, NOW), { blocked: true, reason: 'trial_expired' });
 });
 
-test('sem assinatura, inativa, cancelada, em atraso ou trial sem data bloqueiam', () => {
+test('em atraso: libera nos 30 dias de tolerância e bloqueia depois (ou sem data de início)', () => {
+  const since = (d: number) => ({ status: 'past_due', trialEndsAt: null, pastDueSince: new Date(NOW - d * day) });
+  assert.equal(subscriptionAccess(since(1), NOW).blocked, false);
+  assert.equal(subscriptionAccess(since(29), NOW).blocked, false);
+  assert.deepEqual(subscriptionAccess(since(30), NOW), { blocked: true, reason: 'past_due_expired' });
+  assert.deepEqual(subscriptionAccess(since(45), NOW), { blocked: true, reason: 'past_due_expired' });
+  assert.deepEqual(subscriptionAccess({ status: 'past_due', trialEndsAt: null }, NOW), { blocked: true, reason: 'past_due_expired' });
+  assert.equal(pastDueGrace(since(10), NOW)?.daysLeft, 20);
+  assert.equal(pastDueGrace(since(31), NOW), null);
+  assert.equal(pastDueGrace({ status: 'active', trialEndsAt: null }, NOW), null);
+});
+
+test('sem assinatura, inativa, cancelada ou trial sem data bloqueiam', () => {
   assert.deepEqual(subscriptionAccess(null, NOW), { blocked: true, reason: 'inactive' });
-  for (const status of ['inactive', 'canceled', 'past_due']) {
+  for (const status of ['inactive', 'canceled']) {
     assert.deepEqual(subscriptionAccess({ status, trialEndsAt: null }, NOW), { blocked: true, reason: 'inactive' });
   }
   assert.equal(subscriptionAccess({ status: 'trialing', trialEndsAt: null }, NOW).blocked, true);

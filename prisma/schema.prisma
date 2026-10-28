@@ -753,6 +753,8 @@ model Subscription {
   billingInterval String   @default("month") // month | year
   paymentMethod   String?  // card | pix | boleto
   trialEndsAt     DateTime?
+  // Início do atraso do pagamento (past_due): conta os 30 dias de tolerância antes de bloquear a loja. null = em dia.
+  pastDueSince    DateTime?
   // Downgrade agendado para o fim do período vigente (sem reembolso)
   pendingPlan     String?
   pendingPlanEffectiveAt DateTime?

@@ -28,7 +28,7 @@ async function loadAccess(lodgeId: string): Promise<SubscriptionAccess> {
   if (hit && Date.now() - hit.at < TTL_MS) return hit.access;
   const sub = await prismaAdmin.subscription.findUnique({
     where: { lodgeId },
-    select: { status: true, trialEndsAt: true },
+    select: { status: true, trialEndsAt: true, pastDueSince: true },
   });
   const access = subscriptionAccess(sub);
   cache.set(lodgeId, { at: Date.now(), access });

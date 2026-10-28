@@ -6,7 +6,8 @@ import { withTenant } from '@/lib/prisma';
 import { canLodgeAccessFor, type Resource } from '@/lib/rbac';
 import { Alert } from '@/components/ui';
 import { brl } from '@/lib/currency';
-import { subscriptionAccess } from '@/lib/subscription-access';
+import { pastDueGrace, subscriptionAccess } from '@/lib/subscription-access';
+import PastDuePopup from '@/components/past-due-popup';
 import { loadNavBadges } from '@/lib/nav-badges-server';
 import { summarizeBlock } from '@/lib/member-block-server';
 import { restrictionNotice } from '@/lib/member-restriction';
@@ -233,6 +234,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     status: string;
     plan: string;
     trialEndsAt: Date | null;
+    pastDueSince: Date | null;
     pendingPlan: string | null;
     pendingPlanEffectiveAt: Date | null;
   } | null = null;
@@ -246,7 +248,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, art002Enabled: true } }),
         db.subscription.findUnique({
           where: { lodgeId: String(lodgeId) },
-          select: { status: true, plan: true, trialEndsAt: true, pendingPlan: true, pendingPlanEffectiveAt: true },
+          select: { status: true, plan: true, trialEndsAt: true, pastDueSince: true, pendingPlan: true, pendingPlanEffectiveAt: true },
         }),
         memberId ? getMemberDuesStatus(db, String(lodgeId), String(memberId)) : Promise.resolve(null),
       ]);
@@ -283,6 +285,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const isActive = sub?.status === 'active';
   const access = subscriptionAccess(sub, now); // mesma regra que a API usa para travar escrita
   const trialExpired = access.reason === 'trial_expired';
+  // Pagamento em atraso dentro dos 30 dias: o sistema segue liberado e só a Diretoria é avisada (faixa + popup a cada 10 min).
+  const grace = ['admin', 'venerable', 'treasurer'].includes(role) ? pastDueGrace(sub, now) : null;
   const blocked = access.blocked; // inativo, trial expirado, etc.
 
   // Sem assinatura vigente: qualquer tela do painel mostra só a escolha do plano (ou o Sair). Os filhos nem são
@@ -293,7 +297,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <Alert variant="banner" intent="danger">
           {trialExpired
             ? 'Seu período de teste terminou. Assine um plano para continuar usando o Sigma Horus.'
-            : 'Sua loja não possui uma assinatura ativa. Assine um plano para continuar usando o Sigma Horus.'}
+            : access.reason === 'past_due_expired'
+              ? 'O pagamento da assinatura está em atraso há mais de 30 dias e o sistema foi bloqueado. Atualize o cartão ou escolha um plano para continuar usando o Sigma Horus.'
+              : 'Sua loja não possui uma assinatura ativa. Assine um plano para continuar usando o Sigma Horus.'}
         </Alert>
         <AssinaturaContent />
       </SubscriptionLockedShell>
@@ -339,6 +345,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             : 'Sua loja não possui uma assinatura ativa.'}{' '}
           <a href="/dashboard/assinatura" className="font-medium underline hover:text-rose-100">Assinar agora</a>
         </Alert>
+      ) : grace ? (
+        <Alert variant="banner" intent="warn">
+          O pagamento da assinatura do Sigma Horus não foi aprovado. Faltam {grace.daysLeft} {grace.daysLeft === 1 ? 'dia' : 'dias'} para o bloqueio do sistema.{' '}
+          <a href="/dashboard/assinatura" className="font-medium underline">Regularizar</a>
+        </Alert>
       ) : isTrialing ? (
         <div className="border-b border-gold/30 bg-gold/10 px-6 py-3 text-center text-sm text-gold">
           Período de teste: {trialDaysLeft} {trialDaysLeft === 1 ? 'dia restante' : 'dias restantes'}.{' '}
@@ -349,6 +360,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           Downgrade agendado para {fmtDate(sub.pendingPlanEffectiveAt)}. Você mantém o plano atual até lá.
         </Alert>
       ) : null}
+      {grace ? <PastDuePopup daysLeft={grace.daysLeft} endsAt={grace.endsAt.toISOString()} /> : null}
       {blockInfo ? (
         <Alert variant="banner" intent="danger">
           {blockInfo.settled

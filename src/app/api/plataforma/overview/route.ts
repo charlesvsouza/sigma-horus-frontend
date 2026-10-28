@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       orderBy: { name: 'asc' },
     }),
     prismaAdmin.subscription.findMany({
-      select: { lodgeId: true, plan: true, status: true, trialEndsAt: true, currentPeriodEnd: true, billingInterval: true, paymentMethod: true },
+      select: { lodgeId: true, plan: true, status: true, trialEndsAt: true, pastDueSince: true, currentPeriodEnd: true, billingInterval: true, paymentMethod: true },
     }),
     prismaAdmin.member.groupBy({ by: ['lodgeId'], where: { status: 'active' }, _count: { _all: true } }),
     prismaAdmin.user.groupBy({ by: ['lodgeId'], where: { status: 'active' }, _count: { _all: true } }),
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
   const rows = lodges.map((l) => {
     const s = subBy.get(l.id) ?? null;
-    const access = subscriptionAccess(s ? { status: s.status, trialEndsAt: s.trialEndsAt } : null, now);
+    const access = subscriptionAccess(s ? { status: s.status, trialEndsAt: s.trialEndsAt, pastDueSince: s.pastDueSince } : null, now);
     const daysToTrialEnd = s?.trialEndsAt ? Math.ceil((s.trialEndsAt.getTime() - now) / 86_400_000) : null;
     return {
       ...l,

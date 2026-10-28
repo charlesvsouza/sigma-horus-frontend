@@ -3,6 +3,7 @@ import { todayBR } from '@/lib/date-only';
 import { alertIncompleteRecords } from '@/lib/incomplete-record-server';
 import { alertBrokenAgreements } from '@/lib/member-block-server';
 import { alertLedgerDrift } from '@/lib/ledger-drift-server';
+import { alertPastDueReminders } from '@/lib/subscription-past-due-server';
 import { reconcileAllTroncoQrs } from '@/lib/tronco-qr-server';
 import { runDailyNotifications } from '@/lib/notifications';
 import { NextResponse } from 'next/server';
@@ -34,6 +35,11 @@ async function run() {
     console.error('tronco qr: falha na conferência diária', err);
     return null;
   });
+  // Assinatura da plataforma em atraso: lembretes à Diretoria nos dias 7, 15 e 25 dos 30 de tolerância.
+  const pastDue = await alertPastDueReminders().catch((err) => {
+    console.error('assinatura em atraso: falha nos lembretes', err);
+    return null;
+  });
   // Segunda-feira (Brasília): resumo ao Secretário + pedido ao irmão para completar o cadastro (CPF, e-mail, nascimento).
   const isMonday = todayBR().getUTCDay() === 1;
   const records = isMonday
@@ -42,7 +48,7 @@ async function run() {
         return null;
       })
     : null;
-  return { ...notifications, agreements, ledgerDrift, absences, troncoQr, records };
+  return { ...notifications, agreements, ledgerDrift, absences, troncoQr, pastDue, records };
 }
 
 export async function GET(request: Request) {
