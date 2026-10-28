@@ -399,7 +399,8 @@ export function ManualBook() {
               </p>
               <Note>
                 No autocadastro, a cobrança é automática ao fim do teste; gerencie ou cancele em <UI>Administração →
-                Assinatura</UI>. Sem assinatura ativa, o acesso é pausado, mas <strong>seus dados permanecem guardados</strong>.
+                Assinatura</UI>. Sem assinatura em vigor, o painel fica <strong>bloqueado</strong> — só aparece a escolha do plano e o botão
+                <UI>Sair</UI> —, mas <strong>seus dados permanecem guardados</strong> (veja o capítulo 12).
               </Note>
 
               <Sub id="checklist-config" title="Checklist de configuração inicial (Administrador)">
@@ -470,9 +471,9 @@ export function ManualBook() {
                 dois e-mails, e entra no sistema com aquele que corresponde à função que vai exercer naquele momento.
               </Note>
               <Bullets>
-                <li><strong>Administrador:</strong> conta, usuários, assinatura, integrações e configurações. Altera todos os cadastros e configurações da loja e é o <strong>único</strong> que cria outro Administrador (no máximo <strong>2 Administradores ativos</strong> por loja).</li>
-                <li><strong>Venerável:</strong> visão gerencial completa, relatórios e aprovações (despesas, prestação de contas e transferências entre contas bancárias); consulta o <UI>Histórico de pagamentos</UI> dos irmãos e emite a <UI>Declaração de regularidade</UI> (7.19 e 7.20); cadastra os materiais da loja e decide baixa e reposição; não lança baixas financeiras.</li>
-                <li><strong>Tesoureiro:</strong> lança e baixa contas, emite cobranças, dá baixa nos avisos &quot;Já paguei&quot; dos irmãos, envia cobranças pelo WhatsApp e registra os comprovantes que os irmãos mandam por fora, fecha o caixa, solicita transferências entre contas bancárias/Caixa e vê relatórios financeiros — inclusive o <UI>Histórico de pagamentos</UI> e a <UI>Declaração de regularidade</UI>.</li>
+                <li><strong>Administrador:</strong> conta, usuários, assinatura (contratação e cartão, junto com o Venerável e o Tesoureiro), integrações e configurações. Altera todos os cadastros e configurações da loja e é o <strong>único</strong> que cria outro Administrador (no máximo <strong>2 Administradores ativos</strong> por loja).</li>
+                <li><strong>Venerável:</strong> visão gerencial completa, <strong>contratação e gestão da assinatura da loja</strong>, relatórios e aprovações (despesas, prestação de contas e transferências entre contas bancárias); consulta o <UI>Histórico de pagamentos</UI> dos irmãos e emite a <UI>Declaração de regularidade</UI> (7.19 e 7.20); cadastra os materiais da loja e decide baixa e reposição; não lança baixas financeiras.</li>
+                <li><strong>Tesoureiro:</strong> <strong>contrata e gerencia a assinatura da loja</strong> (plano e cartão), lança e baixa contas, emite cobranças, dá baixa nos avisos &quot;Já paguei&quot; dos irmãos, envia cobranças pelo WhatsApp e registra os comprovantes que os irmãos mandam por fora, fecha o caixa, solicita transferências entre contas bancárias/Caixa e vê relatórios financeiros — inclusive o <UI>Histórico de pagamentos</UI> e a <UI>Declaração de regularidade</UI>.</li>
                 <li><strong>Secretário:</strong> membros, cargos, períodos, sessões e presença, materiais e patrimônio da loja, documentos institucionais. <strong>Não acessa a Tesouraria</strong> — nem lançamentos nem relatórios financeiros; se a loja quiser, o Administrador libera em <UI>Configurações da loja → Permissões</UI> (módulo Contas).</li>
                 <li><strong>Hospitaleiro:</strong> consulta os irmãos (somente leitura, para contato), gerencia campanhas de benemerência e acompanha o saldo do Tronco de Solidariedade na Visão geral. Os Fundos (Tronco e Doações) ficam na Tesouraria e são só do Administrador, do Venerável e do Tesoureiro.</li>
                 <li><strong>Arquiteto (por cargo):</strong> não é um papel que se atribui em <UI>Usuários &amp; acessos</UI> — o obreiro que ocupa o cargo de Arquiteto no veneralato ativo ganha, <strong>além do papel que já tem</strong>, o acesso ao inventário em <UI>Materiais da loja</UI>: vê a lista de materiais, registra desgaste, dano ou perda e fornece/recebe materiais. Não edita o cadastro, não decide baixa nem reposição e não acessa a Tesouraria. Quando o veneralato é encerrado, o acesso acaba sozinho. O Administrador pode ajustar isso em <UI>Configurações da loja → Permissões</UI> (coluna <UI>Arquiteto (cargo)</UI>).</li>
@@ -534,7 +535,7 @@ export function ManualBook() {
                 <li><strong>Hospitalaria:</strong> <UI>Irmãos (consulta)</UI>, <UI>Campanhas</UI> de benemerência (os <UI>Fundos (Tronco e Doações)</UI> estão na Tesouraria). O obreiro comum vê aqui só o item <UI>Hospitalaria</UI>, onde doa ao Tronco de Solidariedade, faz um pedido e acompanha as campanhas ativas.</li>
                 <li><strong>Administração:</strong> três grupos — <UI>A loja</UI> (<UI>Configurações da loja</UI>, <UI>Usuários &amp; acessos</UI>, <UI>Assinatura</UI>, <UI>Integrações</UI>), <UI>Dados</UI> (<UI>Importar cadastros</UI>, <UI>Importar backup financeiro</UI>, <UI>Auditoria</UI>) e <UI>Bens da loja</UI> (<UI>Patrimônio</UI> e <UI>Materiais da loja</UI>). O Arquiteto (por cargo) vê aqui apenas <UI>Materiais da loja</UI>.</li>
               </Bullets>
-              <p>O topo mostra o nome da loja, o usuário logado e a situação da assinatura (teste, ativa ou pendente).</p>
+              <p>O topo mostra o nome da loja, o usuário logado e a situação da assinatura (teste, ativa ou pendente). Os avisos de teste e de pagamento em atraso aparecem em uma faixa no alto do painel; o de pagamento em atraso é só para o Administrador, o Venerável e o Tesoureiro (veja 6.5). Se a assinatura estiver bloqueada, nenhum menu aparece: só a escolha do plano e o botão <UI>Sair</UI>.</p>
               <p>
                 <strong>Navegação rápida (beta).</strong> O botão <UI>Navegação rápida</UI> (⚡), no topo, liga dois atalhos <strong>só para você</strong> (vale para o seu navegador; quem não liga vê o sistema como sempre foi, e desligar volta ao normal na hora):
                 a <strong>barra de telas irmãs</strong> — no alto de cada tela aparecem as outras telas do mesmo grupo do menu (por exemplo, em Cobranças: Inadimplência, Taxas de grau, Acordos), com a atual marcada, para trocar sem abrir o menu — e o <strong>painel do irmão</strong>: nas listas de <UI>Cobranças</UI>, <UI>Contas</UI> e <UI>Pagamentos</UI> o nome do irmão fica sublinhado; clique nele para abrir, por cima da lista, o painel com o saldo devedor, o vencido, o crédito, as pendências, o plano de taxa (com a entrada, se houver), os últimos pagamentos e o contato, e atalhos para o histórico de pagamentos, a declaração de regularidade e uma nova taxa de grau. <UI>Esc</UI> ou o X fecham o painel e você continua na mesma tela. O painel só mostra o que o seu cargo já pode ver: Tesoureiro, Venerável e Administrador veem o financeiro; o Secretário vê só contato e situação, sem dinheiro; lançamentos do Tronco não aparecem. É somente consulta — nada é gravado por ele.
@@ -740,6 +741,25 @@ export function ManualBook() {
                   Em <UI>Administração → Assinatura</UI> você escolhe e gerencia o plano que a loja paga ao Sigma Horus.
                   Veja os detalhes de planos e regras no capítulo 12. Resumo: <strong>teste de 10 dias</strong>, depois
                   Oficina, Loja ou Potência; no <strong>anual há desconto (10% no cartão, 5% no boleto)</strong>.
+                </p>
+                <p>
+                  <strong>Quem contrata:</strong> o <strong>Administrador, o Venerável e o Tesoureiro</strong> escolhem o plano, trocam de plano e
+                  atualizam o cartão. Os demais cargos, ao abrirem a tela, veem apenas um aviso para procurar um deles.
+                </p>
+                <p>
+                  <strong>Se a assinatura não estiver em vigor</strong> (teste vencido, assinatura cancelada ou pagamento em atraso há mais de 30
+                  dias), o painel é <strong>bloqueado para todos os usuários da loja</strong>: ao entrar — ou ao abrir qualquer tela —, a pessoa vê
+                  só a <strong>escolha do plano</strong> e o botão <UI>Sair</UI>, sem menu. Quem pode contratar escolhe o plano ali mesmo; os demais
+                  avisam um deles ou saem. Os dados da loja permanecem guardados e tudo volta ao normal assim que a assinatura é regularizada
+                  (a liberação pode levar alguns segundos após o pagamento; se a tela não mudar, recarregue a página).
+                </p>
+                <p>
+                  <strong>Pagamento em atraso:</strong> se o cartão da mensalidade da plataforma for recusado, a loja ganha <strong>30 dias de
+                  tolerância</strong>: o sistema segue funcionando normalmente. Nesse período, o Administrador, o Venerável e o Tesoureiro recebem
+                  <strong> e-mail</strong> no primeiro dia e lembretes nos dias 7, 15 e 25, e veem uma faixa no alto do painel e um aviso na tela
+                  (que reaparece <strong>a cada 10 minutos</strong>) dizendo quantos dias faltam para o bloqueio. Os outros cargos não veem esses avisos.
+                  Para regularizar, entre em <UI>Assinatura</UI> e use <UI>Atualizar cartão</UI>. Passados os 30 dias sem regularização, o painel é
+                  bloqueado, como descrito acima.
                 </p>
               </Sub>
 
@@ -2497,6 +2517,30 @@ export function ManualBook() {
                 cancelar a qualquer momento durante o teste, sem custo.
               </p>
               <Note>O <strong>período de teste de 10 dias</strong> é gratuito: nada é debitado durante o teste.</Note>
+
+              <p><strong>Quem contrata e gerencia.</strong> A assinatura é da loja, e quem a gerencia é o <strong>Administrador, o Venerável ou o Tesoureiro</strong>:
+                escolher o plano, trocar de plano e atualizar o cartão. Os demais cargos não têm essa permissão.</p>
+
+              <p><strong>Quando o painel é bloqueado.</strong> O sistema só fica liberado com a assinatura <strong>ativa</strong>, com o <strong>teste dentro dos 10
+                dias</strong> ou com o <strong>pagamento em atraso dentro de 30 dias de tolerância</strong>. Em qualquer outro caso, o painel é bloqueado para
+                todos os usuários da loja:</p>
+              <Bullets>
+                <li><strong>Teste vencido</strong> sem contratar um plano;</li>
+                <li><strong>Assinatura cancelada</strong> ou inativa;</li>
+                <li><strong>Pagamento em atraso há mais de 30 dias.</strong></li>
+              </Bullets>
+              <p>Com o painel bloqueado, quem entra no sistema (de qualquer cargo) vê <strong>somente a tela de escolha do plano e o botão <UI>Sair</UI></strong>, com um
+                aviso do motivo. Não há menu e nenhuma outra tela abre, mesmo digitando o endereço. Quem pode contratar escolhe o plano na hora; os demais avisam o
+                Administrador, o Venerável ou o Tesoureiro. Os dados da loja ficam guardados e o acesso volta assim que a assinatura é regularizada.</p>
+
+              <p><strong>Pagamento em atraso (30 dias de tolerância).</strong> Quando o cartão da assinatura mensal é recusado, o sistema não bloqueia de imediato:</p>
+              <Bullets>
+                <li>Durante <strong>30 dias</strong> a loja continua usando tudo normalmente.</li>
+                <li>O <strong>Administrador, o Venerável e o Tesoureiro</strong> recebem um <strong>e-mail</strong> no primeiro dia do atraso, com a data-limite, e lembretes nos dias 7, 15 e 25.</li>
+                <li>Só esses três cargos veem, na tela, uma faixa com os dias que faltam e um <strong>aviso que reaparece a cada 10 minutos</strong>, informando que o sistema será bloqueado após os 30 dias. Os outros cargos não veem nada.</li>
+                <li>Para regularizar, abra <UI>Assinatura</UI> e use <UI>Atualizar cartão</UI> (abre o portal seguro de pagamento). Assim que o pagamento é aprovado, o atraso some.</li>
+                <li>Se os 30 dias passarem, o painel é bloqueado como descrito acima, até a regularização.</li>
+              </Bullets>
             </Chapter>
 
             {/* ============== 13. REGRAS ============== */}
@@ -2506,7 +2550,7 @@ export function ManualBook() {
                 <li><strong>Upgrade (subir de plano):</strong> vale <strong>imediatamente</strong>, com cobrança proporcional da diferença.</li>
                 <li><strong>Downgrade (descer de plano):</strong> passa a valer <strong>só ao fim do período já contratado</strong>; você mantém o plano atual até lá e nada é devolvido. Um aviso no topo do painel mostra a data em que o downgrade entra em vigor.</li>
               </Bullets>
-              <p>Você gerencia tudo em <UI>Administração → Assinatura</UI>.</p>
+              <p>O Administrador, o Venerável e o Tesoureiro gerenciam tudo em <UI>Administração → Assinatura</UI>, inclusive a atualização do cartão.</p>
             </Chapter>
 
             {/* ============== 14. SEGURANÇA ============== */}
@@ -2562,7 +2606,9 @@ export function ManualBook() {
                 <li><strong>A emissão automática não emitiu uma cobrança.</strong> Ela só emite cobranças que vencem de hoje até 3 dias e ainda não foram emitidas; vencidas ficam com a Tesouraria (ou com o <UI>Pagar</UI> do portal), e irmão sem CPF fica de fora (6.9).</li>
                 <li><strong>Preciso de uma declaração de &quot;nada consta&quot; para um irmão.</strong> <UI>Relatórios → Declaração de regularidade</UI> (7.20). O irmão em dia também emite a dele em <UI>Meu portal</UI>.</li>
                 <li><strong>O irmão diz que já pagou uma mensalidade antiga.</strong> Abra <UI>Relatórios → Histórico de pagamentos</UI> (7.19), filtre pelo irmão e pelo período: cada pagamento tem o recibo. Ele mesmo vê o dele em <UI>Meu portal → Meu histórico de pagamentos</UI>.</li>
-                <li><strong>Meu acesso foi pausado.</strong> O teste de 10 dias terminou — contrate um plano em <UI>Assinatura</UI>; seus dados continuam guardados.</li>
+                <li><strong>Só aparece a tela de Assinatura e o botão Sair.</strong> O painel da loja está bloqueado: o teste de 10 dias terminou, a assinatura foi cancelada ou o pagamento está em atraso há mais de 30 dias. O Administrador, o Venerável ou o Tesoureiro escolhe o plano (ou atualiza o cartão) nessa mesma tela; quem não tem essa permissão deve avisar um deles. Os dados continuam guardados e tudo volta quando a assinatura é regularizada. Se acabou de pagar e a tela não mudou, aguarde alguns segundos e recarregue.</li>
+                <li><strong>Aparece um aviso dizendo que o sistema será bloqueado em alguns dias.</strong> O cartão da assinatura da plataforma foi recusado e a loja está nos 30 dias de tolerância. O aviso reaparece a cada 10 minutos para o Administrador, o Venerável e o Tesoureiro. Em <UI>Assinatura</UI>, clique em <UI>Atualizar cartão</UI> e regularize antes do prazo.</li>
+                <li><strong>O Tesoureiro pode contratar o plano da loja?</strong> Sim: o Administrador, o Venerável e o Tesoureiro contratam, trocam de plano e atualizam o cartão. Os outros cargos não (6.5).</li>
                 <li><strong>Sou Administrador e também membro. Como faço?</strong> Use <strong>dois logins com dois e-mails</strong>: um de Administrador (o da contratação ou o criado em <UI>Novo administrador</UI>) e outro de obreiro (o e-mail do seu cadastro de membro, liberado com <UI>Conceder acesso</UI>). Entre com o login da função que vai exercer. O sistema não aceita o mesmo e-mail nos dois (6.3). No login de Administrador, <UI>Meu portal → Lançamentos no meu CPF</UI> mostra o que está lançado para você (só consulta).</li>
                 <li><strong>Por que não consigo promover alguém a Administrador (nem rebaixar um)?</strong> O papel de Administrador é fixo, de propósito, para que as prerrogativas não se misturem. Para ter outro Administrador, crie-o em <UI>Usuários &amp; acessos → Novo administrador</UI> (limite de 2 ativos).</li>
                 <li><strong>Preciso trocar o e-mail do Administrador.</strong> Em <UI>Minha conta</UI> (6.11): informe o novo e-mail e a senha atual, e confirme pelo link enviado ao novo endereço.</li>
