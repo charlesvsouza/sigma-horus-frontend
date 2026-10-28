@@ -213,7 +213,7 @@ export type PresentedPlan = ReturnType<typeof presentPlan>;
 /**
  * Antecipa para a data prevista do evento as cotas em aberto que venceriam depois
  * dela (a taxa precisa estar quitada até o evento). Cota já emitida no Asaas não é
- * mexida (ela vence em poucos dias de qualquer forma — a emissão é 3 dias antes).
+ * mexida (ela vence em poucos dias de qualquer forma — a emissão é 5 dias antes).
  */
 export async function anticipateToEvent(db: Db, lodgeId: string, planId: string, userId: string): Promise<{ ok: true; moved: number; skipped: number } | Fail> {
   const plan = await db.degreeFeePlan.findFirst({ where: { id: planId, lodgeId }, include: PLAN_INCLUDE });

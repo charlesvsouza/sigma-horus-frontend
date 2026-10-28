@@ -106,6 +106,8 @@ export function PendenciasCard({
     const data = await res.json().catch(() => ({}));
     setBusyId(null);
     if (!res.ok) { setError(data.error ?? 'Não foi possível gerar o pagamento.'); return; }
+    // Sem Pix na cobrança (conta do Asaas ainda sem Pix): abre a página de pagamento do Asaas.
+    if (data.mode === 'asaas' && !data.pixCopyPaste && data.invoiceUrl) window.open(data.invoiceUrl, '_blank', 'noopener');
     setResult(data as PayResult);
   }
 
@@ -215,9 +217,15 @@ export function PendenciasCard({
           <img src={result.qrImage} alt={`QR Code Pix de ${brl(result.amount)}`} width={176} height={176} className="mx-auto rounded-lg bg-white p-2 sm:mx-0" />
         ) : null}
         <div className="min-w-0 space-y-3">
+          {result.mode === 'asaas' && !result.pixCopyPaste && result.invoiceUrl ? (
+            <p className="text-sand-light">
+              Abrimos a página de pagamento do Asaas para <strong>{brl(result.amount)}</strong>. Se ela não abriu, use o link abaixo e escolha como pagar.
+            </p>
+          ) : (
           <p className="text-sand-light">
             Pix de <strong>{brl(result.amount)}</strong>{forGroup ? <> para as <strong>{groupIds.length} contas</strong> selecionadas</> : null}: aponte a câmera do app do banco para o QR ou copie o código.
           </p>
+          )}
           {result.lateCharge && result.lateCharge > 0 ? (
             <p className="text-xs text-amber-300">
               Inclui {brl(result.lateCharge)} de multa e juros por atraso sobre {brl(result.principal ?? result.amount - result.lateCharge)}, calculados até hoje (regra da loja).

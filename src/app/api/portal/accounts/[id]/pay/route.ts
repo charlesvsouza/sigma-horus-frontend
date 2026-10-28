@@ -126,14 +126,18 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   // Trava por conta: dois cliques seguidos não criam duas cobranças.
   const invoiceId = open?.id ?? (await ensureOpenInvoice(lodgeId, account, memberId, balance));
 
-  const result = await emitInvoiceCharge({
+  const emit = (billingType: 'PIX' | 'BOLETO') => emitInvoiceCharge({
     lodgeId,
     invoiceId,
     actorId: session!.user.id,
-    billingType: 'PIX',
+    billingType,
     value: balance,
     missingCpfError: 'Seu CPF não está no cadastro, e o Asaas exige CPF para gerar o Pix. Peça à Secretaria para completar seu cadastro.',
   });
+  let result = await emit('PIX');
+  // Conta do Asaas ainda sem Pix liberado: em vez de travar o irmão, emite boleto e abre a
+  // página de pagamento do Asaas, onde ele escolhe como pagar.
+  if (!result.ok && result.code === 'invalid_billingType') result = await emit('BOLETO');
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
   return NextResponse.json({

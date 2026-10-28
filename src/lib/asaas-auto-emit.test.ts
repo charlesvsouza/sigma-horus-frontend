@@ -7,11 +7,11 @@ const c = (over: Partial<AutoEmitCandidate>): AutoEmitCandidate => ({
   accountAmount: 110, accountStatus: 'pending', accountPaid: [], ...over,
 });
 
-test('janela: de hoje (Brasília) até +3 dias, em data-só-dia', () => {
+test('janela: de hoje (Brasília) até +5 dias, em data-só-dia', () => {
   // 27/09 às 23h em Brasília = 28/09 02:00 UTC — ainda é dia 27 no calendário da loja.
   const w = autoEmitWindow(new Date('2026-09-28T02:00:00Z'));
   assert.equal(w.from.toISOString(), '2026-09-27T00:00:00.000Z');
-  assert.equal(w.to.toISOString(), '2026-09-30T00:00:00.000Z');
+  assert.equal(w.to.toISOString(), '2026-10-02T00:00:00.000Z');
 });
 
 test('emite o saldo da conta do membro (desconta parcial) — nunca acima da cobrança', () => {

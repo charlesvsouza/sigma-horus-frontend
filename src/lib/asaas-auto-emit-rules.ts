@@ -3,7 +3,7 @@ import { remainingAmount, sumMoney } from '@/lib/money';
 
 // Regras puras da emissão automática no Asaas (ver lib/asaas-auto-emit.ts) — testáveis sem Prisma.
 
-export const AUTO_EMIT_DAYS_AHEAD = 3; // mesmo horizonte do lembrete "a vencer"
+export const AUTO_EMIT_DAYS_AHEAD = 5; // primeira emissão 5 dias antes do vencimento (o lembrete "a vencer" segue em 3)
 
 const DAY_MS = 86_400_000;
 

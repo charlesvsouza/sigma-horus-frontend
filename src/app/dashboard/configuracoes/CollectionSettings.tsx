@@ -134,7 +134,7 @@ export default function CollectionSettings({ mode: initialMode, settlementAccoun
             <span className="text-sm text-sand">
               <strong className="text-sand-light">Emitir automaticamente no Asaas</strong>
               <span className="mt-1 block text-xs leading-relaxed text-sand-dark">
-                Toda manhã, o sistema emite no Asaas as cobranças ainda não emitidas que vencem de hoje até 3 dias
+                Toda manhã, o sistema emite no Asaas as cobranças ainda não emitidas que vencem de hoje até 5 dias
                 (as mensalidades da recorrência e as avulsas), no método acima. Assim o lembrete já chega ao irmão com o
                 Pix. Cobranças vencidas não entram — essas continuam com a Tesouraria (ou com o irmão, pelo Pagar do
                 portal). Irmão sem CPF no cadastro fica de fora, porque o Asaas exige CPF.

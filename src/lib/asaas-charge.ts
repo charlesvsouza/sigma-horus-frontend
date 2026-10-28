@@ -1,5 +1,5 @@
 import { AGREEMENT_ITEM_MESSAGE, agreementDebtAccountIds } from '@/lib/agreement-items';
-import { createCustomer, createPayment, deletePayment, getPixQrCode, type AsaasConfig } from '@/lib/asaas';
+import { AsaasApiError, createCustomer, createPayment, deletePayment, getPixQrCode, type AsaasConfig } from '@/lib/asaas';
 import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
 import { logAudit } from '@/lib/audit';
 import { isAsaasMode, normalizeBillingChoice, type AsaasBillingChoice } from '@/lib/collection';
@@ -20,7 +20,7 @@ export interface PixQr {
 
 export type EmitResult =
   | { ok: true; asaasPaymentId: string | null; invoiceUrl: string | null; bankSlipUrl: string | null; pix: PixQr | null; raw: unknown }
-  | { ok: false; status: number; error: string };
+  | { ok: false; status: number; error: string; /** Código do erro do Asaas (ex.: invalid_billingType = Pix não liberado na conta). */ code?: string | null };
 
 /** Vencimento enviado ao Asaas: ele recusa data no passado, então conta vencida vai com "hoje" (Brasília). */
 export function asaasDueDate(dueDate: Date, now: Date = new Date()): string {
@@ -158,6 +158,6 @@ export async function emitInvoiceCharge(params: {
     const pix = billingType === 'PIX' && asaasPaymentId ? await fetchPixQr(config, asaasPaymentId) : null;
     return { ok: true, asaasPaymentId, invoiceUrl, bankSlipUrl, pix, raw: payment };
   } catch (err) {
-    return { ok: false, status: 502, error: err instanceof Error ? err.message : 'Erro ao emitir cobrança no Asaas.' };
+    return { ok: false, status: 502, error: err instanceof Error ? err.message : 'Erro ao emitir cobrança no Asaas.', code: err instanceof AsaasApiError ? err.code : null };
   }
 }
