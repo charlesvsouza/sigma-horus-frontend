@@ -20,9 +20,9 @@ export async function POST(request: Request) {
   if (!lodgeId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  // Cobrança da assinatura da loja: só o Administrador (a tela Assinatura já é só dele).
+  // Cobrança da assinatura da loja: Administrador, Venerável e Tesoureiro.
   if (!canManageSubscription(session?.user?.role)) {
-    return NextResponse.json({ error: 'Apenas o Administrador e o Venerável gerenciam a assinatura da loja.' }, { status: 403 });
+    return NextResponse.json({ error: 'Apenas o Administrador, o Venerável e o Tesoureiro gerenciam a assinatura da loja.' }, { status: 403 });
   }
 
   const body = await request.json().catch(() => ({}));

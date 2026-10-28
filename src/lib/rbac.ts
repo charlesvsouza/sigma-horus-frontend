@@ -105,10 +105,10 @@ export function normalizeRole(role?: string | null) {
   return role.toLowerCase().trim();
 }
 
-/** Assinatura do Sigma Horus (contratar, trocar de plano, cartão e faturas): Administrador e Venerável. */
+/** Assinatura do Sigma Horus (contratar, trocar de plano, cartão e faturas): Administrador, Venerável e Tesoureiro. */
 export function canManageSubscription(role?: string | null): boolean {
   const r = normalizeRole(role);
-  return r === 'admin' || r === 'venerable';
+  return r === 'admin' || r === 'venerable' || r === 'treasurer';
 }
 
 /** Dados cadastrais, brasão e cargos da loja: Administrador e Venerável. Modo de recebimento e backup seguem só do Administrador. */

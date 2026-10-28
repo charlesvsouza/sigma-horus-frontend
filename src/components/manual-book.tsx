@@ -726,7 +726,7 @@ export function ManualBook() {
                   o Membro comum não o baixa. A linha <UI>Auditoria</UI> controla quem vê a trilha de quem fez o quê:
                   por padrão <strong>só o Administrador</strong>; marque <UI>Ver</UI> em Auditoria para o cargo que
                   deve acompanhá-la (o item aparece no menu dele). Já a assinatura da plataforma (plano, cartão,
-                  cancelamento) é <strong>sempre e só do Administrador</strong>, não fazendo parte da matriz.
+                  cancelamento) é <strong>sempre do Administrador, do Venerável e do Tesoureiro</strong>, não fazendo parte da matriz.
                 </p>
                 <p>
                   <strong>Cada loja enxerga só a si mesma.</strong> Ser Administrador ou Venerável dá poder apenas

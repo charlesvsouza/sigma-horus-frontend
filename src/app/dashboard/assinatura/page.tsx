@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { PLANS, type PlanId } from '@/lib/plans';
 import { Alert } from '@/components/ui';
+import { canManageSubscription } from '@/lib/rbac';
 import { SubscriptionManager } from './SubscriptionManager';
 
 function fmtDate(d: Date | null | undefined) {
@@ -75,11 +76,18 @@ export default async function AssinaturaPage() {
         </Alert>
       ) : null}
 
-      <SubscriptionManager
-        currentPlan={currentPlan}
-        isActiveCard={isActiveCard}
-        pendingPlan={(sub?.pendingPlan as PlanId | null) ?? null}
-      />
+      {canManageSubscription(session?.user?.role) ? (
+        <SubscriptionManager
+          currentPlan={currentPlan}
+          isActiveCard={isActiveCard}
+          pendingPlan={(sub?.pendingPlan as PlanId | null) ?? null}
+        />
+      ) : (
+        <Alert intent="info" className="mt-6">
+          A assinatura da loja é contratada pelo Administrador, pelo Venerável ou pelo Tesoureiro. Avise um deles para
+          escolher o plano.
+        </Alert>
+      )}
     </div>
   );
 }

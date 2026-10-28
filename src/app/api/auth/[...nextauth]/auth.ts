@@ -145,7 +145,7 @@ export const authOptions = {
         const lodgeId = credentials?.lodgeId ? String(credentials.lodgeId) : '';
         if (!lodgeId) return null;
 
-        const lodge = await prismaAdmin.lodge.findFirst({ where: { id: lodgeId, status: 'active' } });
+        const lodge = await prismaAdmin.lodge.findFirst({ where: { id: lodgeId } });
         if (!lodge) return null;
 
         const target =

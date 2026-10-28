@@ -13,7 +13,14 @@ export default function PlataformaPage() {
           Painéis internos, fora do fluxo normal de login das lojas.
         </p>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
+        <div className="mt-10 grid gap-6 sm:grid-cols-3">
+          <Link href="/plataforma/lojas" className="block h-full">
+            <Card variant="interactive" className="h-full">
+              <CardTitle>Todas as lojas</CardTitle>
+              <CardDescription>Visão global: assinatura, fim do teste, membros e entrada direta em cada loja.</CardDescription>
+            </Card>
+          </Link>
+
           <Link href="/plataforma/convites" className="block h-full">
             <Card variant="interactive" className="h-full">
               <CardTitle>Convites</CardTitle>

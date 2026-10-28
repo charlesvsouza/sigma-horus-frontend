@@ -13,7 +13,7 @@ export async function POST() {
   }
   // Cobrança da assinatura da loja: só o Administrador (a tela Assinatura já é só dele).
   if (!canManageSubscription(session?.user?.role)) {
-    return NextResponse.json({ error: 'Apenas o Administrador e o Venerável gerenciam a assinatura da loja.' }, { status: 403 });
+    return NextResponse.json({ error: 'Apenas o Administrador, o Venerável e o Tesoureiro gerenciam a assinatura da loja.' }, { status: 403 });
   }
 
   const subscription = await withTenant(String(lodgeId), (db) =>

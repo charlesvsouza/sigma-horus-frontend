@@ -14,10 +14,20 @@ import { OverviewAttention, OverviewFollow } from './OverviewGroups';
 import { splitOverview } from '@/lib/overview-layout';
 import type { OverviewItem } from '@/lib/overview-server';
 import { invoiceOpenBalance } from '@/lib/charge-notice';
+import { subscriptionAccess } from '@/lib/subscription-access';
 
 export default async function DashboardPage() {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
+
+  // Loja sem assinatura vigente (teste vencido, inativa, cancelada): quem entra vai direto para a escolha do plano,
+  // não para o painel. O dono da plataforma (superadmin) entra no painel normalmente, para dar suporte.
+  if (lodgeId && !session?.user?.viaSuperadmin) {
+    const sub = await withTenant(String(lodgeId), (db) =>
+      db.subscription.findUnique({ where: { lodgeId: String(lodgeId) }, select: { status: true, trialEndsAt: true } }),
+    );
+    if (subscriptionAccess(sub).blocked) redirect('/dashboard/assinatura');
+  }
 
   // Visão geral = cargos de gestão (Administrador, Venerável, Tesoureiro, Secretário, Hospitaleiro), cada um com os
   // indicadores da sua área (lib/overview-roles). Obreiro comum e candidato só têm o Meu portal: vão direto para ele.
