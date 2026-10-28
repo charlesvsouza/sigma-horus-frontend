@@ -87,6 +87,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   '/dashboard/contas': Wallet,
   '/dashboard/contas/lancamento': PencilLine,
   '/dashboard/cobrancas': ReceiptText,
+  '/dashboard/asaas': Landmark,
   '/dashboard/pagamentos': CreditCard,
   '/dashboard/transferencias': Repeat,
   '/dashboard/extratos': NotebookText,

@@ -133,6 +133,8 @@ const NAV: NavGroupDef[] = [
         label: 'Cobrar e dar baixa',
         items: [
           { href: '/dashboard/cobrancas', label: 'Cobranças', roles: ['admin', 'treasurer'] },
+          // Cobranças emitidas no Asaas: aguardando, vencidas, pagas e baixadas, saldo e tarifas.
+          { href: '/dashboard/asaas', label: 'Painel do Asaas', roles: ['admin', 'treasurer'] },
           // Conferir os avisos "Já paguei" e dar baixa (quitar) ou recusar; também registra pagamento à mão.
           { href: '/dashboard/pagamentos', label: 'Baixa de pagamentos', roles: ['admin', 'treasurer'] },
           { href: '/dashboard/relatorios/inadimplencia', label: 'Inadimplência (Art. 002)', roles: ['admin', 'venerable', 'treasurer'] },
