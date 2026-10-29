@@ -88,22 +88,32 @@ async function sendEmail(to: string, subject: string, body: string, branding?: {
   if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]{2,}$/.test(to)) {
     return { status: 'failed', detail: 'E-mail do cadastro inválido — corrija o e-mail deste irmão.' };
   }
-  try {
-    const html = buildEmailHtml(body, branding, innerHtml);
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, subject, text: body, ...(html ? { html } : {}), ...(attachments?.length ? { attachments } : {}) }),
-    });
-    if (!res.ok) {
+  const html = buildEmailHtml(body, branding, innerHtml);
+  const payload = JSON.stringify({ from, to, subject, text: body, ...(html ? { html } : {}), ...(attachments?.length ? { attachments } : {}) });
+  // Falha de rede ("fetch failed") e 429/5xx são passageiras: uma segunda tentativa curta evita alerta e e-mail perdido.
+  // Sem Idempotency-Key a repetição poderia duplicar o e-mail se a 1ª tentativa tivesse chegado; a chave evita isso.
+  const idempotencyKey = `sigma-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  let lastDetail = '';
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 800));
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
+        body: payload,
+      });
+      if (res.ok) return { status: 'sent' };
       // O corpo diz o motivo (domínio não verificado, destinatário inválido…); sem ele a falha era um número solto.
       const detail = await res.text().catch(() => '');
-      return { status: 'failed', detail: `Resend ${res.status} ${detail.replace(/\s+/g, ' ').slice(0, 160)}`.trim() };
+      lastDetail = `Resend ${res.status} ${detail.replace(/\s+/g, ' ').slice(0, 160)}`.trim();
+      if (res.status !== 429 && res.status < 500) break;
+    } catch (e) {
+      // O motivo real (ENOTFOUND, ECONNRESET, timeout…) fica em `cause`; sem ele o alerta era só "fetch failed".
+      const cause = (e as { cause?: { code?: string; message?: string } }).cause;
+      lastDetail = `${String(e)}${cause ? ` (${cause.code ?? cause.message ?? 'sem detalhe'})` : ''}`;
     }
-    return { status: 'sent' };
-  } catch (e) {
-    return { status: 'failed', detail: String(e) };
   }
+  return { status: 'failed', detail: lastDetail };
 }
 
 async function sendWhatsApp(to: string, body: string, cfg: WhatsAppCfg): Promise<SendResult> {
