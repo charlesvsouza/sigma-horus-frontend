@@ -56,4 +56,3 @@ tmp_*
 # temp/diagnostico e config local
 _*.mjs
 .codex/
-/proposta_design.md
