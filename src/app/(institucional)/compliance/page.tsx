@@ -56,7 +56,8 @@ export default function CompliancePage() {
         <ul className="list-disc space-y-2 pl-5">
           <li><strong>Teste de 10 dias gratuito</strong> no plano Oficina — nada é debitado durante o período.</li>
           <li><strong>Planos por faixa de membros:</strong> Oficina R$ 110/mês, Loja R$ 170/mês, Potência R$ 220/mês.</li>
-          <li><strong>Anual no cartão:</strong> 10% de desconto, com renovação automática. <strong>Mensal no cartão:</strong> recorrente.</li>
+          <li><strong>Anual no cartão:</strong> 7,5% de desconto, com renovação automática. <strong>Mensal no cartão:</strong> recorrente.</li>
+          <li><strong>Anual no Pix:</strong> 10% de desconto, pago de uma vez, com acesso liberado após a confirmação do pagamento e sem renovação automática.</li>
           <li><strong>Anual no boleto:</strong> 5% de desconto, pago de uma vez, com acesso liberado após a confirmação do pagamento e sem renovação automática.</li>
           <li><strong>Upgrade:</strong> imediato, com cobrança proporcional. <strong>Downgrade:</strong> só no fim do período já contratado.</li>
           <li><strong>Sem reembolso</strong> de valores já pagos do período vigente após a contratação.</li>

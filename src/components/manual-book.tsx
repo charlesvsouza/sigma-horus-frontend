@@ -740,7 +740,7 @@ export function ManualBook() {
                 <p>
                   Em <UI>Administração → Assinatura</UI> você escolhe e gerencia o plano que a loja paga ao Sigma Horus.
                   Veja os detalhes de planos e regras no capítulo 12. Resumo: <strong>teste de 10 dias</strong>, depois
-                  Oficina, Loja ou Potência; no <strong>anual há desconto (10% no cartão, 5% no boleto)</strong>.
+                  Oficina, Loja ou Potência; no <strong>anual há desconto (10% no Pix, 7,5% no cartão, 5% no boleto)</strong>.
                 </p>
                 <p>
                   <strong>Quem contrata:</strong> o <strong>Administrador, o Venerável e o Tesoureiro</strong> escolhem o plano, trocam de plano e
@@ -2507,7 +2507,8 @@ export function ManualBook() {
               <p>Formas de contratação:</p>
               <Bullets>
                 <li><strong>Mensal no cartão:</strong> cobrança recorrente todo mês.</li>
-                <li><strong>Anual no cartão:</strong> 12 meses com <strong>10% de desconto</strong> e renovação automática.</li>
+                <li><strong>Anual no cartão:</strong> 12 meses com <strong>7,5% de desconto</strong> e renovação automática.</li>
+                <li><strong>Anual no Pix:</strong> pago de uma vez, com <strong>10% de desconto</strong> e sem renovação automática. O acesso é liberado <strong>após a confirmação</strong> do pagamento.</li>
                 <li><strong>Anual no boleto:</strong> pago de uma vez, com <strong>5% de desconto</strong> e sem renovação automática. O acesso é liberado <strong>após a confirmação</strong> do pagamento.</li>
               </Bullets>
               <p>

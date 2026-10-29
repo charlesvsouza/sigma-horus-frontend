@@ -109,18 +109,18 @@ export async function POST(request: Request) {
     });
   } else {
     // Anual PIX/boleto — pagamento único pré-pago (1 ano). Acesso só após
-    // confirmação (assíncrona) tratada no webhook.
-    // PIX não é requestable para contas BR no Stripe hoje; usamos boleto (ativo).
-    // Quando pix_payments estiver disponível, incluir 'pix' aqui novamente.
+    // confirmação do pagamento, tratada no webhook.
     checkout = await stripeObj.checkout.sessions.create({
       customer: stripeCustomerId,
       mode: 'payment',
-      payment_method_types: ['boleto'],
+      payment_method_types: [method],
+      // Pix expira em 24h por padrão; damos 3 dias para a diretoria aprovar e pagar.
+      ...(method === 'pix' ? { payment_method_options: { pix: { expires_after_seconds: 3 * 24 * 3600 } } } : {}),
       line_items: [
         {
           price_data: {
             currency: 'brl',
-            product_data: { name: `${plan.name} (anual — boleto)`, description: plan.description },
+            product_data: { name: `${plan.name} (anual — ${method === 'pix' ? 'Pix' : 'boleto'})`, description: plan.description },
             unit_amount: amount,
           },
           quantity: 1,

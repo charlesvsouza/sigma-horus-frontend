@@ -19,7 +19,7 @@ interface Props {
 
 export function SubscriptionManager({ currentPlan, isActiveCard, pendingPlan }: Props) {
   const [interval, setInterval] = useState<BillingInterval>('month');
-  const [method, setMethod] = useState<Extract<PaymentMethod, 'card' | 'boleto'>>('card');
+  const [method, setMethod] = useState<Extract<PaymentMethod, 'card' | 'pix' | 'boleto'>>('card');
   const [loading, setLoading] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
@@ -91,7 +91,13 @@ export function SubscriptionManager({ currentPlan, isActiveCard, pendingPlan }: 
               onClick={() => setMethod('card')}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${method === 'card' ? 'bg-gold/90 text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'}`}
             >
-              Cartão · 10% off (renova auto)
+              Cartão · 7,5% off (renova auto)
+            </button>
+            <button
+              onClick={() => setMethod('pix')}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${method === 'pix' ? 'bg-white/10 text-sand-light' : 'text-sand-dark hover:text-sand-light'}`}
+            >
+              Pix · 10% off
             </button>
             <button
               onClick={() => setMethod('boleto')}
@@ -107,7 +113,7 @@ export function SubscriptionManager({ currentPlan, isActiveCard, pendingPlan }: 
           PIX/boleto exige contratar pelo checkout. */}
       {isActiveCard && isAnnual && method !== 'card' ? (
         <p className="mt-4 text-xs text-sand-dark">
-          Troca direta de plano vale para cartão. Para anual via boleto, contrate pelo botão do plano.
+          Troca direta de plano vale para cartão. Para anual via Pix ou boleto, contrate pelo botão do plano.
         </p>
       ) : null}
 

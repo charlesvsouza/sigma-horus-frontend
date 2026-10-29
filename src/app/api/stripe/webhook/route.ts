@@ -7,6 +7,45 @@ function tsToDate(seconds?: number | null): Date | undefined {
   return seconds ? new Date(seconds * 1000) : undefined;
 }
 
+// Libera 1 ano de acesso após o pagamento único (Pix ou boleto). Idempotente: se o
+// Stripe reentregar o evento para a mesma sessão, não estende o período de novo.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function activatePrepaidYear(obj: any) {
+  const lodgeId = obj.metadata?.lodgeId;
+  if (!lodgeId) return;
+  const plan = isPlanId(obj.metadata?.plan) ? obj.metadata.plan : 'oficina';
+  const method = obj.metadata?.method === 'boleto' ? 'boleto' : 'pix';
+  const current = await prismaAdmin.subscription.findUnique({ where: { lodgeId } });
+  if (
+    current?.status === 'active' &&
+    current.paymentMethod === method &&
+    current.billingInterval === 'year' &&
+    current.currentPeriodStart &&
+    Date.now() - current.currentPeriodStart.getTime() < 10 * 60 * 1000
+  ) {
+    return;
+  }
+  const start = new Date();
+  const end = new Date(start);
+  end.setFullYear(end.getFullYear() + 1);
+  await prismaAdmin.subscription.update({
+    where: { lodgeId },
+    data: {
+      stripeCustomerId: obj.customer ?? undefined,
+      plan,
+      status: 'active',
+      pastDueSince: null,
+      billingInterval: 'year',
+      paymentMethod: method,
+      trialEndsAt: null,
+      pendingPlan: null,
+      pendingPlanEffectiveAt: null,
+      currentPeriodStart: start,
+      currentPeriodEnd: end,
+    },
+  });
+}
+
 export async function POST(request: Request) {
   const body = await request.text();
   const signature = request.headers.get('stripe-signature') ?? '';
@@ -57,38 +96,17 @@ export async function POST(request: Request) {
           });
         }
       }
-      // PIX/boleto (modo payment) é assíncrono: acesso só em async_payment_succeeded.
+      // Pix (modo payment) confirma na hora: a sessão já volta paga. Boleto é assíncrono
+      // e só libera em async_payment_succeeded.
+      if (obj.mode === 'payment' && obj.payment_status === 'paid') {
+        await activatePrepaidYear(obj);
+      }
       break;
     }
 
     // PIX/boleto pré-pago confirmado → libera 1 ano de acesso.
     case 'checkout.session.async_payment_succeeded': {
-      if (obj.mode === 'payment') {
-        const lodgeId = obj.metadata?.lodgeId;
-        const plan = obj.metadata?.plan ?? 'oficina';
-        const method = obj.metadata?.method === 'boleto' ? 'boleto' : 'pix';
-        if (lodgeId) {
-          const start = new Date();
-          const end = new Date(start);
-          end.setFullYear(end.getFullYear() + 1);
-          await prismaAdmin.subscription.update({
-            where: { lodgeId },
-            data: {
-              stripeCustomerId: obj.customer ?? undefined,
-              plan,
-              status: 'active',
-              pastDueSince: null,
-              billingInterval: 'year',
-              paymentMethod: method,
-              trialEndsAt: null,
-              pendingPlan: null,
-              pendingPlanEffectiveAt: null,
-              currentPeriodStart: start,
-              currentPeriodEnd: end,
-            },
-          });
-        }
-      }
+      if (obj.mode === 'payment') await activatePrepaidYear(obj);
       break;
     }
 

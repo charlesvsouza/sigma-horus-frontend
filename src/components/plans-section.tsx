@@ -5,6 +5,7 @@ import { useState } from 'react';
 import {
   PLANS,
   priceFor,
+  annualDiscountFor,
   formatPrice,
   type BillingInterval,
   type PaymentMethod,
@@ -14,7 +15,7 @@ export function PlansSection() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [interval, setInterval] = useState<BillingInterval>('month');
-  const [method, setMethod] = useState<Extract<PaymentMethod, 'card' | 'boleto'>>('card');
+  const [method, setMethod] = useState<Extract<PaymentMethod, 'card' | 'pix' | 'boleto'>>('card');
 
   const isAnnual = interval === 'year';
   const effectiveMethod: PaymentMethod = isAnnual ? method : 'card';
@@ -60,7 +61,7 @@ export function PlansSection() {
         </h2>
         <p className="mt-4 text-base leading-7 text-sand">
           Por faixa de obreiros ativos. Comece com 10 dias de teste; ao final, assine um dos planos.
-          No plano anual você ganha desconto: 10% no cartão, 5% no boleto.
+          No plano anual você ganha desconto: 10% no Pix, 7,5% no cartão, 5% no boleto.
         </p>
       </div>
 
@@ -93,7 +94,15 @@ export function PlansSection() {
                 method === 'card' ? 'bg-gold/90 text-sigma-blue-deep' : 'text-sand-dark hover:text-sand-light'
               }`}
             >
-              Cartão · 10% off (renova auto)
+              Cartão · 7,5% off (renova auto)
+            </button>
+            <button
+              onClick={() => setMethod('pix')}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                method === 'pix' ? 'bg-white/10 text-sand-light' : 'text-sand-dark hover:text-sand-light'
+              }`}
+            >
+              Pix · 10% off
             </button>
             <button
               onClick={() => setMethod('boleto')}
@@ -114,7 +123,8 @@ export function PlansSection() {
           const perMonth = isAnnual ? Math.round(total / 12) : total;
           const fullAnnual = plan.price * 12;
           const isCardAnnual = effectiveMethod === 'card';
-          const discountPct = isCardAnnual ? 10 : 5;
+          const discountPct = annualDiscountFor(effectiveMethod) * 100;
+          const discountLabel = String(discountPct).replace('.', ',');
           return (
             <div
               key={plan.id}
@@ -141,7 +151,7 @@ export function PlansSection() {
               {isAnnual ? (
                 <p className="mt-1 text-xs text-[#5C5346]">
                   {formatPrice(total)} por ano
-                  <span className="ml-2 text-[#8B6914]">{discountPct}% off (de {formatPrice(fullAnnual)})</span>
+                  <span className="ml-2 text-[#8B6914]">{discountLabel}% off (de {formatPrice(fullAnnual)})</span>
                   <span className="ml-2">{isCardAnnual ? '· renova auto' : '· pré-pago 1 ano'}</span>
                 </p>
               ) : (
