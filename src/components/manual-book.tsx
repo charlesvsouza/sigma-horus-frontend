@@ -328,7 +328,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.93 — 4 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.94 — 29 de outubro de 2026</p>
               </div>
             </div>
 
@@ -2385,8 +2385,14 @@ export function ManualBook() {
                   <li>Ajuste o <UI>Título</UI> e a <UI>Meta</UI> (valor estimado, opcional).</li>
                   <li>Em <strong>Para quem?</strong>, escolha o beneficiário: <UI>Pessoa física</UI>, <UI>Empresa</UI> ou <UI>Instituição</UI>, e informe o nome.</li>
                   <li>Defina a <UI>Fonte</UI>: <strong>Tronco de Solidariedade</strong> (se houver fundo), <strong>Doação voluntária dos irmãos</strong> ou <strong>Tronco + doações</strong>.</li>
-                  <li>Escreva a <UI>Descrição</UI> e clique em <UI>Criar campanha</UI>.</li>
+                  <li>Escreva a <UI>Descrição</UI>.</li>
+                  <li>(Opcional) Em <UI>Documentos do pedido</UI>, clique em <UI>Anexar documentos</UI> para juntar laudo, orçamento, ofício ou fotos que ajudem a formalizar o pedido, e clique em <UI>Criar campanha</UI>.</li>
                 </Steps>
+                <p>
+                  <strong>Documentos do pedido:</strong> PDF ou foto (PNG, JPG ou WebP), até 4 MB cada e no máximo 5 por campanha. Também dá para anexar,
+                  abrir e remover documentos depois, no detalhe da campanha, na caixa <UI>Documentos do pedido</UI> — enquanto ela estiver ativa.
+                  Ao <UI>Concluir</UI> ou <UI>Cancelar</UI> a campanha, os documentos ficam guardados como registro e não podem mais ser trocados.
+                </p>
                 <p>
                   Cada campanha mostra o <strong>progresso</strong> (arrecadado em relação à meta). Clique nela para abrir o
                   detalhe e registrar doações, custear pelo Tronco, convocar os irmãos e, ao final, <UI>Concluir</UI> ou
