@@ -12,11 +12,29 @@ import { NextResponse } from 'next/server';
 // criando (gate por "portal", que é o que o papel member tem). Cada POST
 // dispara e-mail pra quem pode atender (admin/venerable/hospitaller) —
 // não espera o cron diário, é um pedido pontual.
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
   const lodgeId = session?.user?.lodgeId;
   const role = session?.user?.role;
+  const memberId = session?.user?.memberId;
   if (!lodgeId) return NextResponse.json({ items: [] });
+
+  const filesInclude = { files: { select: { id: true, name: true, type: true, size: true }, orderBy: { createdAt: 'asc' as const } } };
+
+  // ?mine=1 → o irmão vendo (e podendo editar) os pedidos que ele mesmo fez.
+  if (new URL(request.url).searchParams.get('mine') === '1') {
+    if (!memberId || isCandidateRole(role)) return NextResponse.json({ items: [] });
+    const own = await requireLodgeAccess(String(lodgeId), role, 'portal', 'read');
+    if (!own.ok) return NextResponse.json({ error: own.error }, { status: own.status });
+    const mine = await withTenant(String(lodgeId), (db) =>
+      db.hospitalityRequest.findMany({
+        where: { lodgeId: String(lodgeId), memberId: String(memberId) },
+        include: filesInclude,
+        orderBy: { createdAt: 'desc' },
+      }),
+    );
+    return NextResponse.json({ items: mine });
+  }
 
   const access = await requireLodgeAccess(String(lodgeId), role, 'campaigns', 'read');
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
@@ -24,7 +42,7 @@ export async function GET() {
   const items = await withTenant(String(lodgeId), (db) =>
     db.hospitalityRequest.findMany({
       where: { lodgeId: String(lodgeId) },
-      include: { member: { select: { id: true, name: true, phone: true, email: true } } },
+      include: { member: { select: { id: true, name: true, phone: true, email: true } }, ...filesInclude },
       orderBy: { createdAt: 'desc' },
     }),
   );

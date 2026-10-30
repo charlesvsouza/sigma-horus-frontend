@@ -153,6 +153,7 @@ model Lodge {
   reimbursements     Reimbursement[]
   reimbursementFiles ReimbursementFile[]
   campaignFiles      CampaignFile[]
+  hospitalityRequestFiles HospitalityRequestFile[]
   expenseApprovals   ExpenseApproval[]
   ledgerCheckpoints  LedgerCheckpoint[]
   ledgerRectifications LedgerRectification[]
@@ -925,8 +926,27 @@ model HospitalityRequest {
 
   lodge  Lodge  @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  files  HospitalityRequestFile[]
 
   @@index([lodgeId])
+}
+
+// Documentos (PDF/foto) que o irmão anexa ao pedido que fez à Hospitalaria.
+model HospitalityRequestFile {
+  id           String   @id @default(cuid())
+  lodgeId      String
+  requestId    String
+  key          String
+  name         String
+  type         String
+  size         Int
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  lodge   Lodge               @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  request HospitalityRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([lodgeId, requestId])
 }
 
 model Attendance {

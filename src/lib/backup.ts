@@ -41,6 +41,7 @@ export const BACKUP_MODELS = [
   'accountTransfer',
   'counterparty',
   'hospitalityRequest',
+  'hospitalityRequestFile', // depois de hospitalityRequest (documentos do pedido do irmão)
   'material',
   'materialIncident',
   'venerableGalleryEntry',

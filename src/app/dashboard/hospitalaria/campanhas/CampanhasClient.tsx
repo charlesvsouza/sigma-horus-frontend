@@ -14,7 +14,7 @@ interface Campaign {
 }
 interface BankAccount { id: string; name: string; isDefault: boolean }
 interface Tronco { revenue: number; expense: number; balance: number; configured: boolean }
-interface HospitalityRequestItem { id: string; title: string; description: string | null; status: string; createdAt: string; memberName: string; }
+interface HospitalityRequestItem { id: string; title: string; description: string | null; status: string; createdAt: string; memberName: string; files: { id: string; name: string; size: number }[]; }
 
 const BENEFICIARY = [{ v: 'person', l: 'Pessoa física' }, { v: 'company', l: 'Empresa' }, { v: 'institution', l: 'Instituição' }];
 const FUNDING = [{ v: 'donations', l: 'Doação voluntária dos irmãos' }, { v: 'fund', l: 'Tronco de Solidariedade' }, { v: 'mixed', l: 'Tronco + doações' }];
@@ -151,6 +151,13 @@ export default function CampanhasClient({ items, tronco, channels, requests, ban
                       {r.title} <span className="ml-1 text-xs text-sand-dark">· {r.memberName}</span>
                     </p>
                     {r.description ? <p className="mt-1 text-xs text-sand-dark">{r.description}</p> : null}
+                    {r.files.length > 0 ? (
+                      <ul className="mt-1.5 space-y-0.5">
+                        {r.files.map((f) => (
+                          <li key={f.id}><a href={`/api/hospitality-requests/${r.id}/files/${f.id}`} target="_blank" rel="noopener noreferrer" className="text-xs text-sand underline-offset-2 hover:text-gold hover:underline">📎 {f.name} <span className="text-sand-dark">· {fileSize(f.size)}</span></a></li>
+                        ))}
+                      </ul>
+                    ) : null}
                     <p className="mt-1 text-xs text-sand-dark/70">{new Date(r.createdAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
                   </div>
                   <button

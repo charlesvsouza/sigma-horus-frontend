@@ -22,7 +22,7 @@ export default async function CampanhasPage() {
           db.lodge.findUnique({ where: { id: String(lodgeId) }, select: LODGE_MESSAGING_SELECT }),
           db.hospitalityRequest.findMany({
             where: { lodgeId: String(lodgeId) },
-            include: { member: { select: { name: true } } },
+            include: { member: { select: { name: true } }, files: { select: { id: true, name: true, size: true }, orderBy: { createdAt: 'asc' } } },
             orderBy: { createdAt: 'desc' },
           }),
           db.financialAccount.findMany({
@@ -54,6 +54,7 @@ export default async function CampanhasPage() {
           status: r.status,
           createdAt: r.createdAt.toISOString(),
           memberName: r.member.name,
+          files: r.files,
         }));
         return { items, tronco, channels: channelsAvailable(buildLodgeChannels(lodge)), requests: requestItems, bankAccounts };
       })

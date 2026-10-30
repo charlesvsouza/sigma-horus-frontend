@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Alert, Button, inputClass, Toast } from '@/components/ui';
+import { Alert, Button, FilePicker, inputClass, Toast } from '@/components/ui';
 import { brl } from '@/lib/currency';
 
 interface CampaignItem {
@@ -15,7 +15,28 @@ interface CampaignItem {
   status: string;
 }
 
+interface RequestFile { id: string; name: string; size: number }
+interface MyRequest { id: string; title: string; description: string | null; status: string; createdAt: string; files: RequestFile[] }
+
 const STATUS_LABEL: Record<string, string> = { active: 'Ativa', completed: 'Concluída', canceled: 'Cancelada' };
+const MAX_FILES = 5;
+const FILE_ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp';
+const fileSize = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+/** Envia os arquivos um a um para o pedido; devolve as mensagens de erro (vazio = tudo certo). */
+async function uploadRequestFiles(requestId: string, files: File[]): Promise<string[]> {
+  const errors: string[] = [];
+  for (const file of files) {
+    const body = new FormData();
+    body.append('file', file);
+    const res = await fetch(`/api/hospitality-requests/${requestId}/files`, { method: 'POST', body }).catch(() => null);
+    if (!res || !res.ok) {
+      const data = await res?.json().catch(() => ({}));
+      errors.push(`${file.name}: ${data?.error ?? 'não foi possível enviar.'}`);
+    }
+  }
+  return errors;
+}
 const DONATION_PRESETS = [10, 20, 50, 100, 200];
 
 export default function HospitalariaPortalPage() {
@@ -34,6 +55,18 @@ export default function HospitalariaPortalPage() {
   const [declaring, setDeclaring] = useState(false);
   const [declared, setDeclared] = useState(false);
   const [donationError, setDonationError] = useState<string | null>(null);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [mine, setMine] = useState<MyRequest[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function loadMine() {
+    const res = await fetch('/api/hospitality-requests?mine=1');
+    const data = await res.json().catch(() => ({}));
+    setMine(data.items ?? []);
+  }
 
   useEffect(() => {
     async function load() {
@@ -42,12 +75,14 @@ export default function HospitalariaPortalPage() {
       setCampaigns(data.items ?? []);
       setTroncoBalance(data.tronco?.configured ? Number(data.tronco.balance) : null);
       setLoading(false);
+      await loadMine();
     }
     load();
   }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (newFiles.length > MAX_FILES) { setMessage({ kind: 'error', text: `Anexe no máximo ${MAX_FILES} documentos.` }); return; }
     setSaving(true);
     setMessage(null);
     const res = await fetch('/api/hospitality-requests', {
@@ -55,16 +90,62 @@ export default function HospitalariaPortalPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, description }),
     });
-    setSaving(false);
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      setMessage({ kind: 'ok', text: 'Pedido enviado à Hospitalaria com sucesso.' });
+      // Os documentos vão depois de criado o pedido; se algum falhar, ele já existe e dá para anexar de novo em "Meus pedidos".
+      const errors = newFiles.length > 0 ? await uploadRequestFiles(data.item.id, newFiles) : [];
+      setMessage(errors.length > 0
+        ? { kind: 'error', text: `Pedido enviado, mas nem todos os documentos foram anexados — ${errors.join(' ')} Anexe de novo em "Meus pedidos".` }
+        : { kind: 'ok', text: 'Pedido enviado à Hospitalaria com sucesso.' });
       setTitle('');
       setDescription('');
+      setNewFiles([]);
       setShowForm(false);
+      await loadMine();
     } else {
-      const data = await res.json().catch(() => ({}));
       setMessage({ kind: 'error', text: data.error ?? 'Erro ao enviar o pedido.' });
     }
+    setSaving(false);
+  }
+
+  function startEdit(r: MyRequest) {
+    setEditingId(r.id);
+    setEditTitle(r.title);
+    setEditDescription(r.description ?? '');
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingId) return;
+    setBusyId(editingId);
+    const res = await fetch(`/api/hospitality-requests/${editingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: editTitle, description: editDescription }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusyId(null);
+    if (res.ok) { setEditingId(null); setMessage({ kind: 'ok', text: 'Pedido atualizado.' }); await loadMine(); }
+    else setMessage({ kind: 'error', text: data.error ?? 'Erro ao salvar o pedido.' });
+  }
+
+  async function addFiles(requestId: string, files: File[]) {
+    if (files.length === 0) return;
+    setBusyId(requestId);
+    const errors = await uploadRequestFiles(requestId, files);
+    setBusyId(null);
+    if (errors.length > 0) setMessage({ kind: 'error', text: errors.join(' ') });
+    await loadMine();
+  }
+
+  async function removeFile(requestId: string, file: RequestFile) {
+    if (!window.confirm(`Remover o documento "${file.name}"?`)) return;
+    setBusyId(requestId);
+    const res = await fetch(`/api/hospitality-requests/${requestId}/files/${file.id}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    setBusyId(null);
+    if (!res.ok) setMessage({ kind: 'error', text: data.error ?? 'Erro ao remover o documento.' });
+    await loadMine();
   }
 
   // Pix da chave da loja: o irmão avisa que pagou; a Tesouraria confere no extrato e lança no caixa.
@@ -200,8 +281,67 @@ export default function HospitalariaPortalPage() {
             <form onSubmit={submit} className="mt-4 space-y-3">
               <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} placeholder="Título (ex.: Auxílio para material escolar)" required />
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} placeholder="Descreva a situação e o que está sendo pedido" rows={4} />
+              <div className="space-y-1">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Documentos do pedido (opcional)</span>
+                <p className="text-xs text-sand-dark">Laudo, orçamento, ofício, fotos… ajudam a formalizar o pedido. PDF ou foto, até 4 MB cada, no máximo {MAX_FILES}.</p>
+                <FilePicker ariaLabel="Documentos do pedido" accept={FILE_ACCEPT} multiple buttonLabel="Anexar documentos" emptyLabel="Nenhum documento anexado" fileNames={newFiles.map((x) => x.name)} onFiles={setNewFiles} />
+              </div>
               <Button type="submit" disabled={saving}>{saving ? 'Enviando…' : 'Enviar pedido'}</Button>
             </form>
+          </section>
+        ) : null}
+
+        {mine.length > 0 ? (
+          <section className="rounded-xl border border-white/6 bg-sigma-card p-6">
+            <h2 className="text-base font-semibold text-sand-light">Meus pedidos</h2>
+            <p className="mt-1 text-sm text-sand-dark">Enquanto a Hospitalaria não analisar, você pode corrigir o texto e anexar ou remover documentos.</p>
+            <div className="mt-4 space-y-3">
+              {mine.map((r) => {
+                const pending = r.status === 'pending';
+                return (
+                  <div key={r.id} className="rounded-lg border border-white/5 bg-sigma-blue-deep/50 p-4 text-sm text-sand">
+                    {editingId === r.id ? (
+                      <form onSubmit={saveEdit} className="space-y-3">
+                        <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className={inputClass} placeholder="Título" required />
+                        <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className={inputClass} placeholder="Descreva a situação e o que está sendo pedido" rows={4} />
+                        <div className="flex gap-2">
+                          <Button type="submit" size="sm" disabled={busyId === r.id}>{busyId === r.id ? 'Salvando…' : 'Salvar'}</Button>
+                          <Button type="button" size="sm" variant="secondary" onClick={() => setEditingId(null)}>Cancelar</Button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-medium text-sand-light">{r.title}</p>
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${pending ? 'bg-gold/10 text-gold' : 'bg-emerald-500/10 text-emerald-300'}`}>{pending ? 'Aguardando análise' : 'Analisado'}</span>
+                        </div>
+                        {r.description ? <p className="mt-1 text-sand-dark">{r.description}</p> : null}
+                        <p className="mt-1 text-xs text-sand-dark/70">{new Date(r.createdAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
+                        <div className="mt-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gold">Documentos ({r.files.length})</p>
+                          {r.files.length > 0 ? (
+                            <ul className="mt-1 divide-y divide-white/5">
+                              {r.files.map((f) => (
+                                <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+                                  <a href={`/api/hospitality-requests/${r.id}/files/${f.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 break-words text-sand underline-offset-2 hover:text-gold hover:underline">{f.name} <span className="text-xs text-sand-dark">· {fileSize(f.size)}</span></a>
+                                  {pending ? <button type="button" onClick={() => removeFile(r.id, f)} className="text-xs text-rose-300 hover:text-rose-200">Remover</button> : null}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : <p className="mt-1 text-xs text-sand-dark">Nenhum documento anexado.</p>}
+                          {pending && r.files.length < MAX_FILES ? (
+                            <div className="mt-2">
+                              <FilePicker ariaLabel={`Anexar documentos ao pedido ${r.title}`} accept={FILE_ACCEPT} multiple disabled={busyId === r.id} buttonLabel={busyId === r.id ? 'Enviando…' : 'Anexar documentos'} emptyLabel={`PDF ou foto, até 4 MB (máx. ${MAX_FILES})`} onFiles={(files) => addFiles(r.id, files)} />
+                            </div>
+                          ) : null}
+                        </div>
+                        {pending ? <Button type="button" size="sm" variant="secondary" className="mt-3" onClick={() => startEdit(r)}>Editar pedido</Button> : null}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </section>
         ) : null}
 
