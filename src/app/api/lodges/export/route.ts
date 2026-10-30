@@ -52,7 +52,7 @@ export async function GET() {
       db.cashClose.findMany({ where: { lodgeId: id } }),
       db.balancete.findMany({ where: { lodgeId: id } }),
       db.budget.findMany({ where: { lodgeId: id } }),
-      db.campaign.findMany({ where: { lodgeId: id }, include: { donations: true } }),
+      db.campaign.findMany({ where: { lodgeId: id }, include: { donations: true, files: true } }),
       db.campaignDonation.findMany({ where: { lodgeId: id } }),
       db.rolePermission.findMany({ where: { lodgeId: id } }),
       db.subscription.findUnique({ where: { lodgeId: id } }),

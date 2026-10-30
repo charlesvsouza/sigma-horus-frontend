@@ -69,6 +69,7 @@ export const BACKUP_MODELS = [
   'budget',
   'campaign',
   'campaignDonation',
+  'campaignFile', // depois de campaign (documentos do pedido)
   'rolePermission',
   'subscription',
   'auditLog',

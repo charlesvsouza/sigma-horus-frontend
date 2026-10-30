@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, Skeleton, inputClass, Alert } from '@/components/ui';
+import { Button, EmptyState, FilePicker, Skeleton, inputClass, Alert } from '@/components/ui';
 import { brl } from '@/lib/currency';
 
 interface Donation { id: string; donorName?: string | null; anonymous: boolean; amount: number; receivedAt: string; note?: string | null; }
+interface CampaignFileItem { id: string; name: string; type: string; size: number; }
 interface Campaign {
   id: string; title: string; description?: string | null; beneficiaryType: string; beneficiaryName?: string | null;
   goalAmount?: number | null; fundingSource: string; fundAllocated: number; status: string;
-  raised?: number; totalApplied?: number; donations?: Donation[];
+  raised?: number; totalApplied?: number; donations?: Donation[]; files?: CampaignFileItem[];
 }
 interface BankAccount { id: string; name: string; isDefault: boolean }
 interface Tronco { revenue: number; expense: number; balance: number; configured: boolean }
@@ -25,6 +26,25 @@ const TEMPLATES = [
   { title: 'Medicamentos', description: 'Compra de medicamentos para tratamento de saúde.' },
   { title: 'Doação a instituição', description: 'Doação a entidade assistencial (asilo, abrigo, etc.).' },
 ];
+const MAX_FILES = 5;
+const FILE_ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp';
+const fileSize = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+/** Envia os arquivos um a um para a campanha; devolve as mensagens de erro (vazio = tudo certo). */
+async function uploadCampaignFiles(campaignId: string, files: File[]): Promise<string[]> {
+  const errors: string[] = [];
+  for (const file of files) {
+    const body = new FormData();
+    body.append('file', file);
+    const res = await fetch(`/api/campaigns/${campaignId}/files`, { method: 'POST', body }).catch(() => null);
+    if (!res || !res.ok) {
+      const data = await res?.json().catch(() => ({}));
+      errors.push(`${file.name}: ${data?.error ?? 'não foi possível enviar.'}`);
+    }
+  }
+  return errors;
+}
+
 const STATUS_LABEL: Record<string, string> = { active: 'Ativa', completed: 'Concluída', canceled: 'Cancelada' };
 
 export default function CampanhasClient({ items, tronco, channels, requests, bankAccounts }: { items: Campaign[]; tronco: Tronco | null; channels: Record<string, boolean>; requests: HospitalityRequestItem[]; bankAccounts: BankAccount[] }) {
@@ -36,6 +56,8 @@ export default function CampanhasClient({ items, tronco, channels, requests, ban
   const emptyForm = { title: '', description: '', beneficiaryType: 'person', beneficiaryName: '', goalAmount: '', fundingSource: 'donations' };
   const [form, setForm] = useState(emptyForm);
   const [requestBusy, setRequestBusy] = useState<string | null>(null);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [saving, setSaving] = useState(false);
 
   async function toggleRequestReviewed(id: string, currentStatus: string) {
     setRequestBusy(id);
@@ -70,10 +92,17 @@ export default function CampanhasClient({ items, tronco, channels, requests, ban
   async function createCampaign(e: React.FormEvent) {
     e.preventDefault();
     setMessage('');
+    if (newFiles.length > MAX_FILES) { setMessage(`Anexe no máximo ${MAX_FILES} documentos.`); return; }
+    setSaving(true);
     const res = await fetch('/api/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
     const data = await res.json().catch(() => ({}));
-    if (res.ok) { setMessage('Campanha criada.'); setCreating(false); setForm(emptyForm); router.refresh(); }
-    else setMessage(data.error ?? 'Erro ao criar campanha.');
+    if (res.ok) {
+      // Os documentos vão depois de criada a campanha; se algum falhar, ela já existe e dá para reenviar no detalhe.
+      const errors = newFiles.length > 0 ? await uploadCampaignFiles(data.item.id, newFiles) : [];
+      setMessage(errors.length > 0 ? `Campanha criada, mas nem todos os documentos foram anexados — ${errors.join(' ')} Anexe de novo abrindo a campanha.` : 'Campanha criada.');
+      setCreating(false); setForm(emptyForm); setNewFiles([]); router.refresh();
+    } else setMessage(data.error ?? 'Erro ao criar campanha.');
+    setSaving(false);
   }
 
   return (
@@ -167,7 +196,12 @@ export default function CampanhasClient({ items, tronco, channels, requests, ban
                 </select>
                 <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputClass} md:col-span-2`} placeholder="Descrição da campanha" rows={3} />
               </div>
-              <Button type="submit">Criar campanha</Button>
+              <div className="space-y-1">
+                <span className="text-xs uppercase tracking-wide text-sand-dark/70">Documentos do pedido (opcional)</span>
+                <p className="text-xs text-sand-dark">Laudo, orçamento, ofício, fotos… ajudam a formalizar o pedido. PDF ou foto, até 4 MB cada, no máximo {MAX_FILES}.</p>
+                <FilePicker ariaLabel="Documentos do pedido da campanha" accept={FILE_ACCEPT} multiple buttonLabel="Anexar documentos" emptyLabel="Nenhum documento anexado" fileNames={newFiles.map((x) => x.name)} onFiles={setNewFiles} />
+              </div>
+              <Button type="submit" disabled={saving}>{saving ? 'Criando…' : 'Criar campanha'}</Button>
             </form>
           </section>
         ) : null}
@@ -214,6 +248,7 @@ function CampaignDetail({ campaign, tronco, channels, bankAccounts, onChange }: 
   const [conv, setConv] = useState({ email: true, whatsapp: false, sms: false, scope: 'active', message: '' });
   const [convResult, setConvResult] = useState('');
   const [convBusy, setConvBusy] = useState(false);
+  const [fileBusy, setFileBusy] = useState(false);
 
   async function convocar() {
     setConvResult('');
@@ -246,6 +281,23 @@ function CampaignDetail({ campaign, tronco, channels, bankAccounts, onChange }: 
     const data = await res.json().catch(() => ({}));
     if (res.ok) { setFund(''); onChange(); }
     else setMsg(data.error ?? 'Erro ao custear pelo Tronco.');
+  }
+  async function addFiles(files: File[]) {
+    if (files.length === 0) return;
+    setMsg('');
+    setFileBusy(true);
+    const errors = await uploadCampaignFiles(campaign!.id, files);
+    setFileBusy(false);
+    if (errors.length > 0) setMsg(errors.join(' '));
+    onChange();
+  }
+  async function removeFile(file: CampaignFileItem) {
+    if (!window.confirm(`Remover o documento "${file.name}"?`)) return;
+    setMsg('');
+    const res = await fetch(`/api/campaigns/${campaign!.id}/files/${file.id}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) setMsg(data.error ?? 'Erro ao remover o documento.');
+    onChange();
   }
   async function setStatus(status: string) {
     await fetch(`/api/campaigns/${campaign!.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
@@ -281,6 +333,26 @@ function CampaignDetail({ campaign, tronco, channels, bankAccounts, onChange }: 
           <input type="number" inputMode="decimal" step="0.01" value={fund} onChange={(e) => setFund(e.target.value)} className={inputClass} placeholder="Valor a custear" disabled={!tronco?.configured} />
           <Button type="submit" size="sm" variant="secondary" disabled={!tronco?.configured}>Custear</Button>
         </form>
+      </div>
+
+      {/* Documentos do pedido */}
+      <div className="rounded-lg border border-white/6 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gold">Documentos do pedido ({campaign.files?.length ?? 0})</p>
+        {campaign.files && campaign.files.length > 0 ? (
+          <ul className="mt-2 divide-y divide-white/5">
+            {campaign.files.map((f) => (
+              <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+                <a href={`/api/campaigns/${campaign.id}/files/${f.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 break-words text-sand underline-offset-2 hover:text-gold hover:underline">{f.name} <span className="text-xs text-sand-dark">· {fileSize(f.size)}</span></a>
+                {campaign.status === 'active' ? <button type="button" onClick={() => removeFile(f)} className="text-xs text-rose-300 hover:text-rose-200">Remover</button> : null}
+              </li>
+            ))}
+          </ul>
+        ) : <p className="mt-1 text-xs text-sand-dark">Nenhum documento anexado. É opcional, mas laudo, orçamento ou ofício ajudam a formalizar o pedido.</p>}
+        {campaign.status === 'active' && (campaign.files?.length ?? 0) < MAX_FILES ? (
+          <div className="mt-3">
+            <FilePicker ariaLabel="Anexar documentos à campanha" accept={FILE_ACCEPT} multiple disabled={fileBusy} buttonLabel={fileBusy ? 'Enviando…' : 'Anexar documentos'} emptyLabel={`PDF ou foto, até 4 MB (máx. ${MAX_FILES})`} onFiles={addFiles} />
+          </div>
+        ) : null}
       </div>
 
       {/* Doações registradas */}

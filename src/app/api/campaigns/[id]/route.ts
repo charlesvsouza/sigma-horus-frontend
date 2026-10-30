@@ -19,7 +19,10 @@ export async function GET(_request: Request, { params }: Ctx) {
   const item = await withTenant(String(lodgeId), (db) =>
     db.campaign.findFirst({
       where: { id, lodgeId: String(lodgeId) },
-      include: { donations: { orderBy: { receivedAt: 'desc' } } },
+      include: {
+        donations: { orderBy: { receivedAt: 'desc' } },
+        files: { orderBy: { createdAt: 'asc' }, select: { id: true, name: true, type: true, size: true, createdAt: true } },
+      },
     }),
   );
   if (!item) return NextResponse.json({ error: 'Campanha não encontrada.' }, { status: 404 });

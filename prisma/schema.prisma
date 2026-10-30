@@ -152,6 +152,7 @@ model Lodge {
   memberRestrictions MemberRestriction[]
   reimbursements     Reimbursement[]
   reimbursementFiles ReimbursementFile[]
+  campaignFiles      CampaignFile[]
   expenseApprovals   ExpenseApproval[]
   ledgerCheckpoints  LedgerCheckpoint[]
   ledgerRectifications LedgerRectification[]
@@ -1161,8 +1162,27 @@ model Campaign {
 
   lodge     Lodge              @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   donations CampaignDonation[]
+  files     CampaignFile[]
 
   @@index([lodgeId])
+}
+
+// Documento (PDF ou foto) anexado à campanha para formalizar o pedido (laudo, orçamento, ofício…). Opcional.
+model CampaignFile {
+  id           String   @id @default(cuid())
+  lodgeId      String
+  campaignId   String
+  key          String
+  name         String
+  type         String
+  size         Int
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  lodge    Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([lodgeId, campaignId])
 }
 
 // Doação voluntária captada para uma campanha. O nome do doador pode ser ocultado.
