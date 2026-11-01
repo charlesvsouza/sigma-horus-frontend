@@ -65,6 +65,30 @@ export function convocationEligibility(member: DegreeSource, degrees: number[]):
   return rank >= minimum ? 'eligible' : 'below';
 }
 
+const reached = (mark: string | Date | null | undefined, date: Date): boolean => {
+  if (!mark) return false;
+  const t = new Date(mark).getTime();
+  return !Number.isNaN(t) && t <= date.getTime();
+};
+
+/** Grau simbólico do irmão NA DATA (0 = sem marco até ali; Mestre Instalado vale 3): só conta marco já alcançado. */
+export function degreeOnDate(member: DegreeSource, date: Date): number {
+  if (reached(member.exaltationDate, date) || reached(member.installationDate, date)) return 3;
+  if (reached(member.elevationDate, date)) return 2;
+  if (reached(member.initiationDate, date)) return 1;
+  return 0;
+}
+
+/**
+ * O irmão era convocado para a sessão? Vale para presença e faltas: quem não foi convocado
+ * (grau abaixo do de abertura NA DATA da sessão) não é cobrado nem marcado ausente.
+ * Sessão que abre em Aprendiz (ou sem grau) convoca todos.
+ */
+export function convokedOnDate(member: DegreeSource, degrees: number[], date: Date): boolean {
+  const minimum = openingDegree(degrees);
+  return minimum <= 1 || degreeOnDate(member, date) >= minimum;
+}
+
 export interface ConvocationSessionData {
   lodgeName: string;
   title: string;

@@ -6,15 +6,20 @@
 //    (tipo "outra", como evento social, não conta);
 //  - só conta "ausente" marcado: sem registro do irmão na sessão = "não registrada", que NÃO é falta e interrompe a sequência;
 //  - só sessões a partir da iniciação/admissão do irmão, e só irmãos ativos;
-//  - a sequência é contada da sessão mais recente para trás, até a primeira presença (ou não registrada).
+//  - a sequência é contada da sessão mais recente para trás, até a primeira presença (ou não registrada);
+//  - sessão para a qual o irmão não foi convocado (grau abaixo do de abertura) é pulada: não é falta nem interrompe.
+
+import type { DegreeSource } from '@/lib/masonic-degree';
+import { convokedOnDate } from '@/lib/session-convocation';
 
 export const ABSENCE_STREAK = 3;
 /** Quantas sessões recentes se examinam (limite de custo; a sequência real raramente passa de 12). */
 export const STREAK_WINDOW = 24;
 export const STREAK_SESSION_TYPES = ['ordinary', 'magnificent', 'emergency'];
 
-export interface StreakSession { id: string; date: Date; type: string }
-export interface StreakMember { id: string; name: string; status: string; joinedAt: Date | null }
+/** `degrees`: graus trabalhados na sessão; quem não foi convocado (grau abaixo do de abertura na data) não tem falta nela. */
+export interface StreakSession { id: string; date: Date; type: string; degrees?: number[] }
+export interface StreakMember extends DegreeSource { id: string; name: string; status: string; joinedAt: Date | null }
 /** sessionId → (memberId → 'present' | 'absent'). Sessão sem nenhuma linha = presença não registrada. */
 export type AttendanceMap = Map<string, Map<string, string>>;
 
@@ -44,7 +49,8 @@ export function absenceStreaks(members: StreakMember[], sessions: StreakSession[
   for (const m of members) {
     if (m.status !== 'active') continue;
     // sessões desde a admissão (as da janela, da mais recente para a mais antiga)
-    const mine = recent.filter((s) => !m.joinedAt || s.date.getTime() >= m.joinedAt.getTime());
+    // (sessão para a qual ele não foi convocado é pulada: não conta falta e não interrompe a sequência)
+    const mine = recent.filter((s) => (!m.joinedAt || s.date.getTime() >= m.joinedAt.getTime()) && convokedOnDate(m, s.degrees ?? [], s.date));
     let count = 0;
     for (const s of mine) {
       if (attendance.get(s.id)?.get(m.id) === 'absent') count++;

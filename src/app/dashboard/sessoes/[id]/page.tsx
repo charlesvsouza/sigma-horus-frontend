@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { NOT_CANDIDATE } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccessFor, requireLodgeAccessAny } from '@/lib/rbac';
-import { sessionDegrees } from '@/lib/session-convocation';
+import { convokedOnDate, sessionDegrees } from '@/lib/session-convocation';
 import { minutesDegrees } from '@/lib/session-minutes';
 import { loadConvocation } from '@/lib/session-convocation-server';
 import SessionDetailClient from './SessionDetailClient';
@@ -44,7 +44,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         });
         const members = await db.member.findMany({
           where: { lodgeId: String(lodgeId), ...NOT_CANDIDATE },
-          select: { id: true, name: true },
+          select: { id: true, name: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
           orderBy: { name: 'asc' },
         });
         return { item, members, visits };
@@ -62,6 +62,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
   // Texto que a convocação teria hoje × o último enviado: acusa sessão alterada depois do envio.
   const convocation = await loadConvocation(String(lodgeId), id);
 
+  const degrees = sessionDegrees(data.item);
   const initialAttendance: Record<string, string> = {};
   for (const att of data.item.attendances) initialAttendance[att.member.id] = att.status;
 
@@ -70,7 +71,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
       session={{
         id: data.item.id, title: data.item.title, date: data.item.date.toISOString(),
         endDate: data.item.endDate ? data.item.endDate.toISOString() : null,
-        type: data.item.type, degrees: sessionDegrees(data.item),
+        type: data.item.type, degrees,
         agenda: data.item.agenda ?? null,
         minutesDegrees: minutesDegrees(data.item),
         minutesFiles: data.item.minutesFiles,
@@ -81,7 +82,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         locked: data.item.locked,
         lockedAt: data.item.lockedAt ? data.item.lockedAt.toISOString() : null,
       }}
-      members={data.members}
+      members={data.members.map((m) => ({ id: m.id, name: m.name, convoked: convokedOnDate(m, degrees, data.item!.date) }))}
       visits={data.visits.map((v) => ({
         visitId: v.id,
         visitorId: v.visitorId,

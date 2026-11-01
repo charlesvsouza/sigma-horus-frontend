@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildConvocationText, convocationChanged, convocationEligibility, convocationMessage, degreesLabel,
+  buildConvocationText, convocationChanged, convocationEligibility, convokedOnDate, degreeOnDate, convocationMessage, degreesLabel,
   legacyGradeDegrees, normalizeDegrees, openingDegree, sessionDegrees, stripRectification,
 } from './session-convocation.ts';
 import { toBRDateTimeLocal, parseBRDateTimeLocal } from './br-time.ts';
@@ -72,4 +72,21 @@ test('alteração depois do envio é detectada, inclusive quando o enviado era r
 
 test('datetime-local de Brasília vai e volta sem deslocar o horário', () => {
   assert.equal(toBRDateTimeLocal(parseBRDateTimeLocal('2026-10-01T19:30')), '2026-10-01T19:30');
+});
+
+test('grau na data da sessão: só conta marco já alcançado e convocação por data', () => {
+  const m = { initiationDate: new Date('2024-01-10'), elevationDate: new Date('2026-03-01'), exaltationDate: null };
+  assert.equal(degreeOnDate(m, new Date('2023-12-31')), 0);
+  assert.equal(degreeOnDate(m, new Date('2025-06-01')), 1);
+  assert.equal(degreeOnDate(m, new Date('2026-04-01')), 2);
+  assert.equal(degreeOnDate({ ...m, installationDate: new Date('2026-05-01') }, new Date('2026-06-01')), 3);
+  // sessão de grau 2 (convoca 2 e 3): Aprendiz de então não foi convocado, hoje Companheiro foi
+  assert.equal(convokedOnDate(m, [2], new Date('2025-06-01')), false);
+  assert.equal(convokedOnDate(m, [2], new Date('2026-04-01')), true);
+  assert.equal(convokedOnDate(m, [2, 3], new Date('2025-06-01')), false);
+  assert.equal(convokedOnDate(m, [3], new Date('2026-04-01')), false);
+  // grau 1 (ou sem grau) convoca todos, até quem não tem marcos
+  assert.equal(convokedOnDate({}, [1, 2], new Date('2026-04-01')), true);
+  assert.equal(convokedOnDate({}, [], new Date('2026-04-01')), true);
+  assert.equal(convokedOnDate({}, [2], new Date('2026-04-01')), false);
 });

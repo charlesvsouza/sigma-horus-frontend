@@ -63,3 +63,16 @@ test('só irmãos ativos e só sessões depois da admissão', () => {
   // Paulo foi iniciado em 01/10: só s5 e s6 valem para ele (2 sessões) → não chega a 3. Eduardo está inativo.
   assert.deepEqual(absenceStreaks(members, sessions, a, NOW), []);
 });
+
+test('sessão de grau acima do irmão é pulada: não soma falta e não interrompe a sequência', () => {
+  const aprendiz: StreakMember = { id: 'z', name: 'Aprendiz', status: 'active', joinedAt: d('2020-01-01'), initiationDate: d('2020-01-01') };
+  const grau2: StreakSession[] = sessions.map((s) => (s.id === 's5' ? { ...s, degrees: [2, 3] } : { ...s, degrees: [1] }));
+  // ausente em s4 e s6 (grau 1) e "ausente" indevido em s5 (grau 2): só 2 faltas valem → sem alerta
+  const a = att({ s3: { z: 'absent' }, s4: { z: 'absent' }, s5: { z: 'absent' }, s6: { z: 'absent' } });
+  const res = absenceStreaks([aprendiz], grau2, a, NOW);
+  assert.equal(res[0].count, 3); // s6, s4, s3 — s5 pulada
+  assert.equal(res[0].startSessionId, 's3');
+  // sem s3: só 2 faltas contam (s5 não vale), então não dispara
+  const b = att({ s4: { z: 'absent' }, s5: { z: 'absent' }, s6: { z: 'absent' } });
+  assert.deepEqual(absenceStreaks([aprendiz], grau2, b, NOW), []);
+});

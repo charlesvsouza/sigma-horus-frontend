@@ -91,3 +91,29 @@ test('membros ordenados alfabeticamente por nome, independente da taxa de frequ�
   assert.equal(r.members[0].memberId, 'm1');
   assert.equal(r.members[1].memberId, 'm2');
 });
+
+test('sessão de grau 2: Aprendiz não convocado fica fora do total, da taxa e das faltas', () => {
+  const grupo = [
+    { id: 'm1', name: 'Ir∴ Ana', initiationDate: new Date('2020-01-01'), elevationDate: new Date('2021-01-01') },
+    { id: 'm2', name: 'Ir∴ Bruno', initiationDate: new Date('2025-01-01') }, // Aprendiz
+  ];
+  const sessions = [
+    sess({ id: 's1', date: new Date('2026-06-01'), degrees: [1] }),
+    sess({ id: 's2', date: new Date('2026-06-08'), degrees: [2, 3] }),
+    sess({ id: 's3', date: new Date('2026-06-15'), degrees: [2] }),
+  ];
+  const records = [
+    { sessionId: 's1', memberId: 'm2', status: 'present' },
+    { sessionId: 's2', memberId: 'm1', status: 'present' },
+    { sessionId: 's3', memberId: 'm1', status: 'present' },
+    { sessionId: 's2', memberId: 'm2', status: 'absent' }, // marcação antiga indevida: ignorada
+  ];
+  const r = computeAttendanceReport(grupo, sessions, records, new Date('2026-06-01'), new Date('2026-06-30'));
+  const ana = r.members.find((m) => m.memberId === 'm1')!;
+  const bruno = r.members.find((m) => m.memberId === 'm2')!;
+  assert.equal(ana.totalSessions, 3);
+  assert.deepEqual({ t: bruno.totalSessions, p: bruno.present, a: bruno.absent, u: bruno.unmarked, c: bruno.consecutiveAbsences }, { t: 1, p: 1, a: 0, u: 0, c: 0 });
+  assert.equal(bruno.attendanceRate, 1);
+  const s2 = r.sessions.find((s) => s.sessionId === 's2')!;
+  assert.deepEqual({ total: s2.total, present: s2.present, absent: s2.absent, unmarked: s2.unmarked }, { total: 1, present: 1, absent: 0, unmarked: 0 });
+});

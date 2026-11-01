@@ -4,7 +4,12 @@
 // 'absent'; ausência de registro = "não registrada", terceiro estado — nunca
 // tratado como presença nem falta, pra não fingir dado que não existe).
 
-export interface AttendanceMemberInput {
+import type { DegreeSource } from '@/lib/masonic-degree';
+import { convokedOnDate } from '@/lib/session-convocation';
+
+// Quem não foi convocado para a sessão (grau abaixo do de abertura na data dela) fica fora
+// do total, das faltas e da taxa dele: sem `degrees` na sessão, todos são convocados.
+export interface AttendanceMemberInput extends DegreeSource {
   id: string;
   name: string;
 }
@@ -14,6 +19,7 @@ export interface AttendanceSessionInput {
   title: string;
   date: Date;
   type: string;
+  degrees?: number[];
 }
 
 export interface AttendanceRecordInput {
@@ -68,7 +74,8 @@ export function computeAttendanceReport(
       let present = 0;
       let absent = 0;
       let unmarked = 0;
-      for (const s of periodSessions) {
+      const mine = periodSessions.filter((s) => convokedOnDate(m, s.degrees ?? [], s.date));
+      for (const s of mine) {
         const st = statusOf.get(`${s.id}:${m.id}`);
         if (st === 'present') present++;
         else if (st === 'absent') absent++;
@@ -76,14 +83,14 @@ export function computeAttendanceReport(
       }
 
       let consecutiveAbsences = 0;
-      for (let i = periodSessions.length - 1; i >= 0; i--) {
-        const st = statusOf.get(`${periodSessions[i].id}:${m.id}`);
+      for (let i = mine.length - 1; i >= 0; i--) {
+        const st = statusOf.get(`${mine[i].id}:${m.id}`);
         if (st === 'present') break;
         if (st === 'absent') consecutiveAbsences++;
         // não registrada: nem quebra nem conta a sequência — ausência de dado não é sinal.
       }
 
-      const totalSessions = periodSessions.length;
+      const totalSessions = mine.length;
       return {
         memberId: m.id,
         memberName: m.name,
@@ -101,13 +108,16 @@ export function computeAttendanceReport(
     let present = 0;
     let absent = 0;
     let unmarked = 0;
+    let total = 0;
     for (const m of members) {
+      if (!convokedOnDate(m, s.degrees ?? [], s.date)) continue;
+      total++;
       const st = statusOf.get(`${s.id}:${m.id}`);
       if (st === 'present') present++;
       else if (st === 'absent') absent++;
       else unmarked++;
     }
-    return { sessionId: s.id, title: s.title, date: s.date.toISOString(), type: s.type, present, absent, unmarked, total: members.length };
+    return { sessionId: s.id, title: s.title, date: s.date.toISOString(), type: s.type, present, absent, unmarked, total };
   });
 
   return { members: memberStats, sessions: sessionSummaries };

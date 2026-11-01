@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccessAny } from '@/lib/rbac';
 import { computeAttendanceReport } from '@/lib/attendance-report';
+import { sessionDegrees } from '@/lib/session-convocation';
 import FrequenciaClient from './FrequenciaClient';
 
 export default async function FrequenciaPage(props: { searchParams: Promise<{ from?: string; to?: string }> }) {
@@ -34,14 +35,24 @@ export default async function FrequenciaPage(props: { searchParams: Promise<{ fr
   const data = await withTenant(String(lodgeId), async (db) => {
     const [lodge, members, sessions, attendances] = await Promise.all([
       db.lodge.findUnique({ where: { id: String(lodgeId) }, select: { name: true, crestUrl: true } }),
-      db.member.findMany({ where: { lodgeId: String(lodgeId), status: 'active' }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
-      db.session.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, title: true, date: true, type: true } }),
+      db.member.findMany({
+        where: { lodgeId: String(lodgeId), status: 'active' },
+        select: { id: true, name: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
+        orderBy: { name: 'asc' },
+      }),
+      db.session.findMany({ where: { lodgeId: String(lodgeId) }, select: { id: true, title: true, date: true, type: true, degrees: true, grade: true } }),
       db.attendance.findMany({ where: { lodgeId: String(lodgeId) }, select: { sessionId: true, memberId: true, status: true } }),
     ]);
     return { lodge, members, sessions, attendances };
   });
 
-  const report = computeAttendanceReport(data.members, data.sessions, data.attendances, from, to);
+  const report = computeAttendanceReport(
+    data.members,
+    data.sessions.map((s) => ({ id: s.id, title: s.title, date: s.date, type: s.type, degrees: sessionDegrees(s) })),
+    data.attendances,
+    from,
+    to,
+  );
 
   return (
     <FrequenciaClient

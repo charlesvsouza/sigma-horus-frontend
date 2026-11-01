@@ -4,6 +4,7 @@ import { formatDateOnly } from '@/lib/date-only';
 import { dispatch, EMPTY_CHANNELS } from '@/lib/messaging';
 import { memberIdsRestricted } from '@/lib/member-restriction-server';
 import { prismaAdmin, withTenant } from '@/lib/prisma';
+import { sessionDegrees } from '@/lib/session-convocation';
 
 type Db = Prisma.TransactionClient;
 
@@ -15,13 +16,13 @@ export async function listAbsenceStreaks(db: Db, lodgeId: string, now: Date = ne
     where: { lodgeId, type: { in: STREAK_SESSION_TYPES }, date: { lte: now } },
     orderBy: { date: 'desc' },
     take: STREAK_WINDOW + 6,
-    select: { id: true, date: true, type: true },
+    select: { id: true, date: true, type: true, degrees: true, grade: true },
   });
   if (sessions.length === 0) return [];
   const onLeave = [...(await memberIdsRestricted(db, lodgeId, ['convocation']))]; // licença: faltas não contam
   const [rows, members] = await Promise.all([
     db.attendance.findMany({ where: { lodgeId, sessionId: { in: sessions.map((s) => s.id) } }, select: { sessionId: true, memberId: true, status: true } }),
-    db.member.findMany({ where: { lodgeId, status: 'active', deceased: false, ...(onLeave.length ? { id: { notIn: onLeave } } : {}) }, select: { id: true, name: true, status: true, initiationDate: true } }),
+    db.member.findMany({ where: { lodgeId, status: 'active', deceased: false, ...(onLeave.length ? { id: { notIn: onLeave } } : {}) }, select: { id: true, name: true, status: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true } }),
   ]);
   const attendance: AttendanceMap = new Map();
   for (const r of rows) {
@@ -29,7 +30,12 @@ export async function listAbsenceStreaks(db: Db, lodgeId: string, now: Date = ne
     m.set(r.memberId, r.status);
     attendance.set(r.sessionId, m);
   }
-  return absenceStreaks(members.map((m) => ({ id: m.id, name: m.name, status: m.status, joinedAt: m.initiationDate })), sessions, attendance, now);
+  return absenceStreaks(
+    members.map((m) => ({ ...m, joinedAt: m.initiationDate })),
+    sessions.map((s) => ({ id: s.id, date: s.date, type: s.type, degrees: sessionDegrees(s) })),
+    attendance,
+    now,
+  );
 }
 
 /**
