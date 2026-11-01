@@ -266,7 +266,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 10 de outubro de 2026 · versão 1.104</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 1 de novembro de 2026 · versão 1.95</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -328,7 +328,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.94 — 29 de outubro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.95 — 1 de novembro de 2026</p>
               </div>
             </div>
 
@@ -1993,6 +1993,13 @@ export function ManualBook() {
                   aparece na prévia para você corrigir o cadastro.
                 </p>
                 <p>
+                  <strong>Quem não foi convocado não tem presença nem falta.</strong> O irmão de grau abaixo do que abre a
+                  sessão (ex.: Aprendiz numa sessão de 2º grau) não conta falta: na tela de presença ele aparece como
+                  <UI> Não convocado</UI>, sem poder ser marcado, e a sessão fica fora das suas faltas seguidas e da sua
+                  frequência. O grau vale <strong>na data da sessão</strong> — quem foi elevado depois continua sem falta
+                  nas sessões antigas de 2º grau.
+                </p>
+                <p>
                   Ao criar, a sessão já abre na tela de detalhe (na lista, use <UI>Abrir</UI>), com estes blocos:
                 </p>
                 <Bullets>
@@ -2004,7 +2011,7 @@ export function ManualBook() {
                   <li><strong>Enviar também pelo WhatsApp:</strong> depois do e-mail, lista os convocados para você mandar o mesmo texto irmão por irmão, pelo seu WhatsApp (como no envio de cobranças): <UI>Enviar</UI> abre a conversa com o texto pronto; ao voltar, confirme <UI>Sim, enviei</UI>. Se a sessão mudou, a lista só volta depois da retificação.</li>
                   <li><strong>Ordem do dia:</strong> edite e clique em <UI>Salvar ordem do dia</UI>. Ela vai na convocação.</li>
                   <li><strong>Balaustre / Ata:</strong> <strong>não é digitado no sistema</strong> — importe o arquivo (PDF ou Word) em <UI>Enviar arquivo</UI>. <strong>Um balaustre por grau:</strong> se a sessão trabalhou os três graus (marcados na convocação), aparecem três linhas — Aprendiz, Companheiro e Mestre — e você envia um arquivo em cada. Na Secretaria do portal, cada irmão baixa o balaustre do <strong>seu grau e dos graus inferiores</strong> (um Aprendiz não vê o do Mestre). <UI>Trocar arquivo</UI> substitui a versão do grau; <UI>Remover</UI> tira o arquivo daquele grau. Quando todos os graus da sessão têm balaustre, a sessão é <strong>trancada automaticamente</strong>; enquanto falta algum, ela continua aberta para você enviar o restante.</li>
-                  <li><strong>Registrar presença:</strong> toggle por obreiro (presente/ausente) — <strong>só libera depois do horário de término da sessão</strong> (campo <UI>Término</UI> da criação); antes disso os botões ficam desabilitados. Sessões criadas antes deste recurso (sem término definido) não são bloqueadas.</li>
+                  <li><strong>Registrar presença:</strong> toggle por obreiro (presente/ausente) — <strong>só libera depois do horário de término da sessão</strong> (campo <UI>Término</UI> da criação); antes disso os botões ficam desabilitados. Sessões criadas antes deste recurso (sem término definido) não são bloqueadas. Irmão <UI>Não convocado</UI> (grau abaixo do da sessão) aparece esmaecido e não pode ser marcado.</li>
                 </Bullets>
                 <Note>
                   <strong>Chancelaria → Visitantes</strong> é o cadastro geral dos irmãos visitantes: busca por nome, e-mail, loja ou Oriente;
@@ -2030,7 +2037,8 @@ export function ManualBook() {
                 <p>
                   Em <UI>Chancelaria → Frequência às sessões</UI>, veja quem tem faltado — a lista de obreiros ativos
                   fica ordenada pela pior frequência primeiro, com <UI>faltas seguidas</UI> destacada quando chega a 3
-                  ou mais.
+                  ou mais. Só entram as sessões para as quais o irmão foi convocado: sessão de grau acima do dele não
+                  conta presença, falta nem sequência de faltas.
                 </p>
                 <Steps>
                   <li>Escolha o período (<UI>De</UI>/<UI>Até</UI>) ou um atalho: <UI>Ano atual</UI>, <UI>Últimos 6 meses</UI>, <UI>Últimos 12 meses</UI> ou <UI>Todas as sessões</UI>.</li>
@@ -2607,7 +2615,7 @@ export function ManualBook() {
                 <li><strong>Enviei a cobrança pelo WhatsApp. Como sei que chegou?</strong> O WhatsApp não avisa o sistema. Ao voltar para o Sigma Horus, responda <UI>Sim, enviei</UI> para marcar como enviada; o &quot;entregue/lida&quot; (✓✓) só existiria com a integração oficial da Meta. A resposta do irmão (o comprovante) é o melhor retorno.</li>
                 <li><strong>O Pix saiu com valor maior que a mensalidade.</strong> A loja ligou <UI>Cobrar multa e juros no Pix de cobrança vencida</UI> (7.9): o Pix de cobrança vencida inclui multa e juros até o dia, e a mensagem mostra o cálculo. Desligue em Configurações se não for a regra da loja.</li>
                 <li><strong>Convoquei a sessão e depois precisei mudar.</strong> Pode editar: o sistema avisa, mostra a versão enviada ao lado da atual e o botão vira <UI>Revisar e enviar retificação</UI> — a mensagem sai marcada como RETIFICAÇÃO (8.7).</li>
-                <li><strong>Um irmão não apareceu na convocação de uma sessão de Mestre.</strong> A convocação vai pelo menor grau marcado na sessão, e o grau de cada irmão vem dos marcos de evolução do cadastro. Irmão sem data de iniciação (ou de elevação/exaltação) fica de fora e aparece na prévia — complete o cadastro em <UI>Membros</UI> (8.7).</li>
+                <li><strong>Um irmão não apareceu na convocação de uma sessão de Mestre.</strong> A convocação vai pelo menor grau marcado na sessão, e o grau de cada irmão vem dos marcos de evolução do cadastro. Irmão sem data de iniciação (ou de elevação/exaltação) fica de fora e aparece na prévia — complete o cadastro em <UI>Membros</UI> (8.7). Pelo mesmo motivo ele aparece como <UI>Não convocado</UI> na presença dessa sessão.</li>
                 <li><strong>A baixa foi recusada: &quot;faz parte de um Pix agrupado&quot;.</strong> O irmão gerou um Pix para várias contas e ele está aberto no Asaas. Aguarde a confirmação; se ele pagou por fora, <UI>Reemita</UI> a cobrança em Cobranças (desfaz o agrupado) e depois dê a baixa (7.4).</li>
                 <li><strong>O irmão não consegue pagar pelo portal.</strong> No Modo Asaas, o cadastro dele precisa de CPF (a Secretaria completa em <UI>Membros</UI>). No Modo Loja, a loja precisa ter a chave Pix em <UI>Configurações da loja → Dados bancários</UI>.</li>
                 <li><strong>A emissão automática não emitiu uma cobrança.</strong> Ela só emite cobranças que vencem de hoje até 3 dias e ainda não foram emitidas; vencidas ficam com a Tesouraria (ou com o <UI>Pagar</UI> do portal), e irmão sem CPF fica de fora (6.9).</li>
