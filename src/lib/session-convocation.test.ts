@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildConvocationText, convocationChanged, convocationEligibility, convokedOnDate, degreeOnDate, convocationMessage, degreesLabel,
+  buildConvocationText, convocationChanged, convocationEligibility, convokedOnDate, degreeOnDate, notConvokedReason, convocationMessage, degreesLabel,
   legacyGradeDegrees, normalizeDegrees, openingDegree, sessionDegrees, stripRectification,
 } from './session-convocation.ts';
 import { toBRDateTimeLocal, parseBRDateTimeLocal } from './br-time.ts';
@@ -89,4 +89,17 @@ test('grau na data da sessão: só conta marco já alcançado e convocação por
   assert.equal(convokedOnDate({}, [1, 2], new Date('2026-04-01')), true);
   assert.equal(convokedOnDate({}, [], new Date('2026-04-01')), true);
   assert.equal(convokedOnDate({}, [2], new Date('2026-04-01')), false);
+});
+
+test('não convocado: bloqueado (com ou sem acordo), outra situação, licença ou grau — qualquer grau do irmão', () => {
+  const mestre = { status: 'active', initiationDate: new Date('2010-01-01'), elevationDate: new Date('2011-01-01'), exaltationDate: new Date('2012-01-01') };
+  const data = new Date('2026-06-01');
+  assert.equal(notConvokedReason(mestre, false, [3], data), null);
+  // Art. 002 / bloqueado — Potência: fora mesmo sendo Mestre e a sessão abrindo em Aprendiz
+  assert.equal(notConvokedReason({ ...mestre, status: 'blocked' }, false, [1], data), 'status');
+  assert.equal(notConvokedReason({ ...mestre, status: 'art_002' }, false, [3], data), 'status');
+  assert.equal(notConvokedReason({ ...mestre, status: 'suspended' }, false, [1], data), 'status');
+  assert.equal(notConvokedReason({ ...mestre, deceased: true }, false, [1], data), 'status');
+  assert.equal(notConvokedReason(mestre, true, [1], data), 'leave');
+  assert.equal(notConvokedReason({ status: 'active', initiationDate: new Date('2025-01-01') }, false, [2], data), 'degree');
 });

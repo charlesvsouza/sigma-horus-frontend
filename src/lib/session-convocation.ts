@@ -89,6 +89,24 @@ export function convokedOnDate(member: DegreeSource, degrees: number[], date: Da
   return minimum <= 1 || degreeOnDate(member, date) >= minimum;
 }
 
+export type NotConvokedReason = 'status' | 'leave' | 'degree';
+
+/**
+ * Por que o irmão NÃO é convocado (e portanto não tem presença nem falta), ou null se é convocado.
+ * 'status': qualquer situação diferente de Ativo (Bloqueado — Potência, com ou sem acordo, Suspenso, Inativo…) ou falecido;
+ * 'leave': licença (restrição só de convocação); 'degree': grau abaixo do que abre a sessão na data dela.
+ */
+export function notConvokedReason(
+  member: DegreeSource & { status: string; deceased?: boolean | null },
+  onLeave: boolean,
+  degrees: number[],
+  date: Date,
+): NotConvokedReason | null {
+  if (member.status !== 'active' || member.deceased) return 'status';
+  if (onLeave) return 'leave';
+  return convokedOnDate(member, degrees, date) ? null : 'degree';
+}
+
 export interface ConvocationSessionData {
   lodgeName: string;
   title: string;

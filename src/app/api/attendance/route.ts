@@ -1,7 +1,8 @@
 import { auth } from '@/lib/auth';
 import { withTenant } from '@/lib/prisma';
 import { requireLodgeAccessAny } from '@/lib/rbac';
-import { convokedOnDate, sessionDegrees } from '@/lib/session-convocation';
+import { memberIdsRestricted } from '@/lib/member-restriction-server';
+import { notConvokedReason, sessionDegrees } from '@/lib/session-convocation';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
@@ -26,13 +27,16 @@ export async function POST(request: Request) {
     const meeting = await db.session.findFirst({ where: { id: sessionId, lodgeId: String(lodgeId) }, select: { endDate: true, locked: true, date: true, degrees: true, grade: true } });
     if (!meeting) return { error: 'not_found' as const };
     if (meeting.locked) return { error: 'locked' as const };
-    // Quem não foi convocado (grau abaixo do de abertura na data da sessão) não tem presença nem falta registrada.
+    // Quem não foi convocado (bloqueado, licença, situação diferente de Ativo ou grau abaixo do de abertura
+    // na data da sessão) não tem presença nem falta registrada.
     const member = await db.member.findFirst({
       where: { id: memberId, lodgeId: String(lodgeId) },
-      select: { initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
+      select: { status: true, deceased: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
     });
     if (!member) return { error: 'member_not_found' as const };
-    if (!convokedOnDate(member, sessionDegrees(meeting), meeting.date)) return { error: 'not_convoked' as const };
+    const onLeave = (await memberIdsRestricted(db, String(lodgeId), ['convocation'])).has(memberId);
+    const reason = notConvokedReason(member, onLeave, sessionDegrees(meeting), meeting.date);
+    if (reason) return { error: 'not_convoked' as const, reason };
     // Sessões sem endDate (cadastradas antes deste campo existir) não são
     // bloqueadas — o gate só vale pra sessões que já têm término definido.
     if (meeting.endDate && new Date() < meeting.endDate) {
@@ -52,7 +56,14 @@ export async function POST(request: Request) {
   if ('error' in result) {
     if (result.error === 'not_found') return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
     if (result.error === 'member_not_found') return NextResponse.json({ error: 'Irmão não encontrado.' }, { status: 404 });
-    if (result.error === 'not_convoked') return NextResponse.json({ error: 'Este irmão não foi convocado: a sessão abre num grau acima do dele.' }, { status: 400 });
+    if (result.error === 'not_convoked') {
+      const text = result.reason === 'degree'
+        ? 'Este irmão não foi convocado: a sessão abre num grau acima do dele.'
+        : result.reason === 'leave'
+          ? 'Este irmão está em licença: não é convocado e não tem presença nem falta.'
+          : 'Este irmão não está ativo (ex.: bloqueado — Potência): não é convocado e não tem presença nem falta.';
+      return NextResponse.json({ error: text }, { status: 400 });
+    }
     if (result.error === 'locked') return NextResponse.json({ error: 'Sessão trancada — peça ao Venerável ou Administrador para destrancar.' }, { status: 423 });
     return NextResponse.json({ error: 'A presença só pode ser marcada depois do término da sessão.' }, { status: 400 });
   }

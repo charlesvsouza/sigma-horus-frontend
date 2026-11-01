@@ -2,7 +2,9 @@ import { auth } from '@/lib/auth';
 import { NOT_CANDIDATE } from '@/lib/candidate';
 import { withTenant } from '@/lib/prisma';
 import { canLodgeAccessFor, requireLodgeAccessAny } from '@/lib/rbac';
-import { convokedOnDate, sessionDegrees } from '@/lib/session-convocation';
+import { memberIdsRestricted } from '@/lib/member-restriction-server';
+import { memberStatusLabel } from '@/lib/member-status';
+import { notConvokedReason, sessionDegrees } from '@/lib/session-convocation';
 import { minutesDegrees } from '@/lib/session-minutes';
 import { loadConvocation } from '@/lib/session-convocation-server';
 import SessionDetailClient from './SessionDetailClient';
@@ -44,12 +46,13 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         });
         const members = await db.member.findMany({
           where: { lodgeId: String(lodgeId), ...NOT_CANDIDATE },
-          select: { id: true, name: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
+          select: { id: true, name: true, status: true, deceased: true, initiationDate: true, elevationDate: true, exaltationDate: true, installationDate: true },
           orderBy: { name: 'asc' },
         });
-        return { item, members, visits };
+        const onLeave = await memberIdsRestricted(db, String(lodgeId), ['convocation']);
+        return { item, members, visits, onLeave };
       })
-    : { item: null, members: [], visits: [] };
+    : { item: null, members: [], visits: [], onLeave: new Set<string>() };
 
   if (!data.item) {
     return (
@@ -82,7 +85,12 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         locked: data.item.locked,
         lockedAt: data.item.lockedAt ? data.item.lockedAt.toISOString() : null,
       }}
-      members={data.members.map((m) => ({ id: m.id, name: m.name, convoked: convokedOnDate(m, degrees, data.item!.date) }))}
+      members={data.members.map((m) => {
+        // Quem não é convocado (bloqueado — Potência, licença, outra situação ou grau abaixo) não tem presença nem falta.
+        const reason = notConvokedReason(m, data.onLeave.has(m.id), degrees, data.item!.date);
+        const notConvoked = reason === 'status' ? `Não convocado — ${memberStatusLabel(m.status)}` : reason === 'leave' ? 'Não convocado — em licença' : reason === 'degree' ? 'Não convocado' : null;
+        return { id: m.id, name: m.name, notConvoked };
+      })}
       visits={data.visits.map((v) => ({
         visitId: v.id,
         visitorId: v.visitorId,

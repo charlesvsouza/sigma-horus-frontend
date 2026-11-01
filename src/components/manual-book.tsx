@@ -266,7 +266,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 1 de novembro de 2026 · versão 1.95</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 1 de novembro de 2026 · versão 1.96</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -328,7 +328,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.95 — 1 de novembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.96 — 1 de novembro de 2026</p>
               </div>
             </div>
 
@@ -1993,11 +1993,13 @@ export function ManualBook() {
                   aparece na prévia para você corrigir o cadastro.
                 </p>
                 <p>
-                  <strong>Quem não foi convocado não tem presença nem falta.</strong> O irmão de grau abaixo do que abre a
-                  sessão (ex.: Aprendiz numa sessão de 2º grau) não conta falta: na tela de presença ele aparece como
+                  <strong>Quem não foi convocado não tem presença nem falta.</strong> Não é convocado: o irmão de grau
+                  abaixo do que abre a sessão (ex.: Aprendiz numa sessão de 2º grau), o <strong>Bloqueado — Potência</strong>
+                  (Art. 002, com ou sem acordo — qualquer que seja o grau dele), quem está em licença e quem não está
+                  Ativo (Suspenso, Inativo, Quit Placet…). Na tela de presença ele aparece esmaecido como
                   <UI> Não convocado</UI>, sem poder ser marcado, e a sessão fica fora das suas faltas seguidas e da sua
                   frequência. O grau vale <strong>na data da sessão</strong> — quem foi elevado depois continua sem falta
-                  nas sessões antigas de 2º grau.
+                  nas sessões antigas de 2º grau. Ao liberar o bloqueio, o irmão volta a ser convocado nas próximas sessões.
                 </p>
                 <p>
                   Ao criar, a sessão já abre na tela de detalhe (na lista, use <UI>Abrir</UI>), com estes blocos:
@@ -2011,7 +2013,7 @@ export function ManualBook() {
                   <li><strong>Enviar também pelo WhatsApp:</strong> depois do e-mail, lista os convocados para você mandar o mesmo texto irmão por irmão, pelo seu WhatsApp (como no envio de cobranças): <UI>Enviar</UI> abre a conversa com o texto pronto; ao voltar, confirme <UI>Sim, enviei</UI>. Se a sessão mudou, a lista só volta depois da retificação.</li>
                   <li><strong>Ordem do dia:</strong> edite e clique em <UI>Salvar ordem do dia</UI>. Ela vai na convocação.</li>
                   <li><strong>Balaustre / Ata:</strong> <strong>não é digitado no sistema</strong> — importe o arquivo (PDF ou Word) em <UI>Enviar arquivo</UI>. <strong>Um balaustre por grau:</strong> se a sessão trabalhou os três graus (marcados na convocação), aparecem três linhas — Aprendiz, Companheiro e Mestre — e você envia um arquivo em cada. Na Secretaria do portal, cada irmão baixa o balaustre do <strong>seu grau e dos graus inferiores</strong> (um Aprendiz não vê o do Mestre). <UI>Trocar arquivo</UI> substitui a versão do grau; <UI>Remover</UI> tira o arquivo daquele grau. Quando todos os graus da sessão têm balaustre, a sessão é <strong>trancada automaticamente</strong>; enquanto falta algum, ela continua aberta para você enviar o restante.</li>
-                  <li><strong>Registrar presença:</strong> toggle por obreiro (presente/ausente) — <strong>só libera depois do horário de término da sessão</strong> (campo <UI>Término</UI> da criação); antes disso os botões ficam desabilitados. Sessões criadas antes deste recurso (sem término definido) não são bloqueadas. Irmão <UI>Não convocado</UI> (grau abaixo do da sessão) aparece esmaecido e não pode ser marcado.</li>
+                  <li><strong>Registrar presença:</strong> toggle por obreiro (presente/ausente) — <strong>só libera depois do horário de término da sessão</strong> (campo <UI>Término</UI> da criação); antes disso os botões ficam desabilitados. Sessões criadas antes deste recurso (sem término definido) não são bloqueadas. Irmão <UI>Não convocado</UI> (grau abaixo do da sessão, bloqueado — Potência, em licença) aparece esmaecido e não pode ser marcado.</li>
                 </Bullets>
                 <Note>
                   <strong>Chancelaria → Visitantes</strong> é o cadastro geral dos irmãos visitantes: busca por nome, e-mail, loja ou Oriente;

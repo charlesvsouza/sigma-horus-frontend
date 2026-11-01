@@ -13,7 +13,7 @@ import { ConvocationPanel } from './ConvocationPanel';
 import { VisitorsPanel, type SessionVisit } from './VisitorsPanel';
 import SessionTroncoCard from './SessionTroncoCard';
 
-interface Member { id: string; name: string; convoked: boolean; }
+interface Member { id: string; name: string; notConvoked: string | null; }
 interface SessionInfo {
   id: string; title: string; date: string; endDate?: string | null; type: string; degrees: number[];
   agenda?: string | null; minutesDegrees: number[]; minutesFiles: { degree: number; fileName: string }[];
@@ -180,7 +180,7 @@ export default function SessionDetailClient({
 
   async function toggleAttendance(memberId: string) {
     if (!sessionEnded || locked) return;
-    if (!members.find((m) => m.id === memberId)?.convoked) return; // não convocado: não se marca presença nem falta
+    if (members.find((m) => m.id === memberId)?.notConvoked !== null) return; // não convocado: não se marca presença nem falta
     const current = attendanceMap[memberId];
     const nextStatus = current === 'present' ? 'absent' : 'present';
     setAttendanceMap((prev) => ({ ...prev, [memberId]: nextStatus }));
@@ -360,16 +360,16 @@ export default function SessionDetailClient({
             {locked
               ? 'Sessão trancada — destranque para alterar a presença.'
               : sessionEnded
-              ? 'Clique no membro para marcar presença/ausência. Irmãos de grau abaixo do da sessão não foram convocados: não têm presença nem falta.'
+              ? 'Clique no membro para marcar presença/ausência. Quem não foi convocado (grau abaixo do da sessão, bloqueado — Potência, em licença ou fora do quadro ativo) não tem presença nem falta.'
               : `Disponível após o término da sessão${endDate ? `, em ${fmtDateTime(session.endDate!)}` : ''}.`}
           </p>
           <div className="mt-5 space-y-2">
             {members.map((member) => {
-              if (!member.convoked) {
+              if (member.notConvoked) {
                 return (
                   <div key={member.id} className="flex w-full items-center justify-between rounded-lg border border-white/5 bg-sigma-blue-deep/30 px-4 py-3 text-sand-dark opacity-60">
                     <span>{member.name}</span>
-                    <span className="text-xs">Não convocado</span>
+                    <span className="text-xs">{member.notConvoked}</span>
                   </div>
                 );
               }
