@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { artBytesMatch, artUploadError } from '@/lib/certificate-art';
 import { withTenant } from '@/lib/prisma';
-import { normalizeRole } from '@/lib/rbac';
+import { canEditLodgeSettings } from '@/lib/rbac';
 import { buildObjectKey, deleteObject, putObject } from '@/lib/storage';
 import { requireActiveSubscription } from '@/lib/subscription-guard';
 import { NextResponse } from 'next/server';
@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 // Arte do certificado de presença no modelo da loja (fundo do diploma). Fica no bucket PRIVADO
 // (só o servidor lê, para montar o PDF). Trocar a arte mantém o layout gravado — as posições dos
 // campos são da arte e são configuradas pela equipe do Sigma Horus (lib/certificate-art.ts).
-// Só o Administrador, como o brasão.
+// Administrador e Venerável, como o brasão e os dados da loja (canEditLodgeSettings).
 
 async function guard() {
   const session = await auth();
@@ -18,8 +18,8 @@ async function guard() {
   if (!lodgeId || !session?.user?.id) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   const subscription = await requireActiveSubscription(lodgeId);
   if (!subscription.ok) return { error: NextResponse.json({ error: subscription.error, code: subscription.code }, { status: subscription.status }) };
-  if (normalizeRole(session.user.role) !== 'admin') {
-    return { error: NextResponse.json({ error: 'Apenas administradores podem alterar a arte do certificado.' }, { status: 403 }) };
+  if (!canEditLodgeSettings(session.user.role)) {
+    return { error: NextResponse.json({ error: 'Apenas o Administrador e o Venerável podem alterar a arte do certificado.' }, { status: 403 }) };
   }
   return { lodgeId, userId: session.user.id };
 }
