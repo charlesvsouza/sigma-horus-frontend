@@ -8,6 +8,7 @@ import { Alert, Button, EmptyState, Field, FormCard, inputClass, useConfirm, Toa
 import { fetchWhatsAppShare, WhatsAppSendDialog, type WhatsAppShare } from '@/components/whatsapp-send-dialog';
 import { fetchReceiptContext, RegisterReceiptDialog, type ReceiptContext } from '@/components/register-receipt-dialog';
 import { ChargeReminderDialog } from '@/components/charge-reminder-dialog';
+import { AsaasBatchEmitDialog } from '@/components/asaas-batch-emit-dialog';
 import { brl } from '@/lib/currency';
 import { MemberLink } from '@/components/quick-nav';
 import { formatDateOnly } from '@/lib/date-only';
@@ -57,6 +58,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
   const urlFilter = useSearchParams().get('filtro');
   const [listFilter, setListFilter] = useState<ListFilter>(() => (urlFilter && ['open', 'overdue', 'upcoming', 'paid', 'all'].includes(urlFilter) ? (urlFilter as ListFilter) : 'open'));
   const [reminderOpen, setReminderOpen] = useState(false);
+  const [batchEmitOpen, setBatchEmitOpen] = useState(false);
   // Envio pelo WhatsApp (só Modo Loja): diálogo da cobrança e atalho logo após criar uma avulsa.
   const [share, setShare] = useState<WhatsAppShare | null>(null);
   const [sharingId, setSharingId] = useState('');
@@ -398,6 +400,11 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
               <Button type="button" onClick={() => setReminderOpen(true)} title="Um e-mail por irmão com todas as cobranças em aberto dele — você confere a lista antes de enviar">
                 Enviar lembretes por e-mail
               </Button>
+              {!lodgeMode ? (
+                <Button type="button" variant="ghost" onClick={() => setBatchEmitOpen(true)} title="Emite no Asaas as cobranças em aberto que ainda não foram emitidas — você confere a lista antes">
+                  Emitir em lote no Asaas
+                </Button>
+              ) : null}
               {lodgeMode ? (
                 <Link href="/dashboard/cobrancas/whatsapp" className="inline-flex items-center justify-center rounded-full border border-white/10 bg-sigma-blue-mid/30 px-5 py-2.5 text-sm text-sand-light transition-all duration-200 ease-out hover:bg-sigma-blue-mid/50">
                   Envio pelo WhatsApp
@@ -486,6 +493,7 @@ export default function CobrancasClient({ invoices, chartAccounts, members, coll
       </div>
       {share ? <WhatsAppSendDialog key={share.key} share={share} onClose={() => setShare(null)} /> : null}
       {reminderOpen ? <ChargeReminderDialog onClose={() => setReminderOpen(false)} /> : null}
+      {batchEmitOpen ? <AsaasBatchEmitDialog onClose={() => setBatchEmitOpen(false)} onDone={() => router.refresh()} /> : null}
       {receiptCtx ? <RegisterReceiptDialog key={receiptCtx.invoiceId} ctx={receiptCtx} onClose={() => setReceiptCtx(null)} onDone={() => { setReceiptCtx(null); router.refresh(); }} /> : null}
     </main>
   );

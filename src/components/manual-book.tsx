@@ -266,7 +266,7 @@ export function ManualBook() {
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Guia do usuário</p>
             <h1 className="mt-2 text-3xl font-bold text-sand-light lg:text-4xl">Manual do Sigma Horus</h1>
-            <p className="mt-1 text-sm text-sand-dark">Atualizado em 1 de novembro de 2026 · versão 1.96</p>
+            <p className="mt-1 text-sm text-sand-dark">Atualizado em 1 de novembro de 2026 · versão 1.97</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -328,7 +328,7 @@ export function ManualBook() {
                 <p style={{ letterSpacing: '0.3em', fontSize: '12pt' }}>SIGMA HORUS</p>
                 <p style={{ fontSize: '30pt', margin: '1.5cm 0 0.4cm', color: '#111' }}>Manual do Usuário</p>
                 <p style={{ fontSize: '13pt', fontStyle: 'italic' }}>A tesouraria da sua loja no prumo</p>
-                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.96 — 1 de novembro de 2026</p>
+                <p style={{ marginTop: '4cm', fontSize: '11pt' }}>Versão 1.97 — 1 de novembro de 2026</p>
               </div>
             </div>
 
@@ -1098,6 +1098,18 @@ export function ManualBook() {
                   <li>O sistema cria o cliente do membro no Asaas, gera a cobrança em <strong>Pix ou boleto</strong> (conforme o método padrão da loja — nunca cartão) e devolve o link <UI>Abrir cobrança</UI> para enviar ao membro. Os lembretes automáticos e o lembrete avulso já levam esse link.</li>
                   <li>A situação passa a <strong>Emitida</strong>. Se precisar refazer, use <UI>Reemitir</UI> — a cobrança anterior é cancelada no Asaas, para o irmão não pagar duas vezes.</li>
                 </Steps>
+                <p>
+                  <strong>Emitir em lote.</strong> Para emitir de uma vez as cobranças em aberto que ainda não foram emitidas
+                  (por exemplo, as herdadas do Modo Loja ou as que venceram antes de a emissão automática ser ligada), use
+                  <UI> Emitir em lote no Asaas</UI>, no quadro <UI>Cobrar quem está em aberto</UI>. A tela mostra antes
+                  quantas cobranças e quanto serão emitidos, quais ficam de fora e por quê (<strong>sem CPF</strong>,
+                  <strong> dívida em acordo</strong>, cota de taxa de grau no cartão) e deixa decidir se as <strong>vencidas</strong>
+                  entram. Marque <UI>Conferi a lista</UI> e clique em <UI>Emitir</UI>: o sistema emite uma a uma, em Pix ou
+                  boleto (padrão da loja), e mostra o resultado, com o motivo de cada falha. <strong>Nada é cancelado nem
+                  recriado</strong>: o número e o vencimento no sistema continuam os mesmos (a cobrança vencida vai ao Asaas com
+                  vencimento de hoje), e as cobranças já emitidas não são tocadas. Sem a conta de repasse escolhida (6.9), o
+                  lote não roda.
+                </p>
                 <p>
                   <strong>O irmão também paga sozinho, pelo portal.</strong> Em <UI>Meu portal → Pendências</UI> ele
                   clica em <UI>Pagar</UI> em qualquer conta dele em aberto. Se a cobrança ainda não foi emitida — por exemplo, a
