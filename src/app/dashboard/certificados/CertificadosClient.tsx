@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, inputClass, useConfirm, Toast } from '@/components/ui';
 import { CERTIFICATE_TEMPLATES, LODGE_TEMPLATE_LABEL, normalizeTemplate, type CertificateTemplate } from '@/lib/certificate';
+import { artUploadError } from '@/lib/certificate-art';
 
 export interface CertSession { id: string; title: string; date: string; typeLabel: string; ended: boolean; visitors: number; sent: number }
 export interface CertVisit {
@@ -67,14 +68,22 @@ export default function CertificadosClient({
   }
 
   async function uploadArt(file: File) {
-    setArtBusy(true);
     setMessage(null);
+    // Confere tipo e tamanho antes de enviar: arquivo grande demais é barrado pela hospedagem sem resposta legível.
+    const check = artUploadError(file);
+    if ('error' in check) { setMessage({ kind: 'error', text: check.error }); return; }
+    setArtBusy(true);
     const form = new FormData();
     form.append('file', file);
-    const res = await fetch('/api/certificates/art', { method: 'POST', body: form });
-    const data = await res.json().catch(() => ({}));
+    const res = await fetch('/api/certificates/art', { method: 'POST', body: form }).catch(() => null);
+    const data = res ? await res.json().catch(() => ({})) : {};
     setArtBusy(false);
-    if (!res.ok) { setMessage({ kind: 'error', text: data.error ?? 'Erro ao enviar a arte.' }); return; }
+    if (!res) { setMessage({ kind: 'error', text: 'Sem conexão com o servidor. Tente de novo.' }); return; }
+    if (!res.ok) {
+      const tooBig = res.status === 413 ? 'A arte passa de 4 MB. Exporte em JPG (cerca de 200 dpi) e tente de novo.' : null;
+      setMessage({ kind: 'error', text: data.error ?? tooBig ?? 'Erro ao enviar a arte.' });
+      return;
+    }
     setMessage({ kind: 'ok', text: 'Arte do certificado atualizada. Confira na prévia.' });
     router.refresh();
   }
