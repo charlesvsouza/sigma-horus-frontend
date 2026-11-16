@@ -154,6 +154,7 @@ model Lodge {
   reimbursementFiles ReimbursementFile[]
   campaignFiles      CampaignFile[]
   hospitalityRequestFiles HospitalityRequestFile[]
+  bankIntegrations        BankIntegration[]
   expenseApprovals   ExpenseApproval[]
   ledgerCheckpoints  LedgerCheckpoint[]
   ledgerRectifications LedgerRectification[]
@@ -500,6 +501,11 @@ model Invoice {
   nextDueDate        DateTime?
   recurrenceEndNoticeAt DateTime? // aviso "a recorrência vai acabar" já enviado à diretoria (zera ao renovar)
   asaasPaymentId     String?  // id da cobrança no Asaas (reconciliação reversa)
+  // Cobrança emitida por um banco (API própria, ex.: Itaú): quem emitiu, o código dela no banco (txid do Pix)
+  // e o "copia e cola" guardado (o banco não oferece link; o Asaas gera o QR sob demanda).
+  chargeProvider     String?  // asaas | itau | null (cobrança sem provedor)
+  chargeExternalId   String?  // txid da cobrança no banco
+  pixCopiaECola      String?
   asaasInvoiceUrl    String?  // link universal da cobrança no Asaas (boleto/PIX/cartão), persistido p/ sobreviver a reload
   asaasBillingType   String?  // método efetivamente pago (informado pelo Asaas na baixa)
   asaasNetValue      Float?   // valor líquido após a tarifa do Asaas
@@ -514,6 +520,7 @@ model Invoice {
   @@index([lodgeId])
   @@index([accountId])
   @@index([memberId])
+  @@index([lodgeId, chargeExternalId])
 }
 
 model Payment {
@@ -932,6 +939,40 @@ model HospitalityRequest {
 }
 
 // Documentos (PDF/foto) que o irmão anexa ao pedido que fez à Hospitalaria.
+// Integração da loja com a API de um banco (hoje: Itaú) para cobrar e dar baixa em Pix/boleto direto na conta da loja,
+// sem intermediário. Uma por loja e banco. Os segredos (client_id, client_secret, certificado e chave privada) ficam
+// CIFRADOS (lib/crypto) — nunca em texto aberto. Cada loja usa as próprias credenciais e o próprio certificado.
+model BankIntegration {
+  id       String @id @default(cuid())
+  lodgeId  String
+  provider String // itau
+  env      String @default("production") // sandbox | production
+  // pending = credenciais ainda não validadas | active | error | disabled
+  status   String @default("pending")
+
+  clientIdEnc       String?
+  clientSecretEnc   String?
+  certificateEnc    String? // certificado (.crt, PEM) cifrado
+  privateKeyEnc     String? // chave privada do certificado (PEM) cifrada
+  certNotAfter      DateTime? // vencimento do certificado (renovar nos 30 dias finais; vencido = refazer do zero)
+  certAlertedAt     DateTime? // último aviso de vencimento enviado ao Tesoureiro
+
+  pixKey            String? // chave Pix da loja que recebe as cobranças
+  settlementAccountId String? // conta corrente (FinancialAccount) onde o dinheiro cai
+  tokenPath         String? // endereço do token que funcionou na validação (a documentação do banco diverge)
+  lastPixPollAt     DateTime? // até onde a consulta de Pix recebidos já olhou
+  lastCheckAt       DateTime? // última validação de conexão
+  lastError         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lodge Lodge @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+
+  @@unique([lodgeId, provider])
+  @@index([lodgeId])
+}
+
 model HospitalityRequestFile {
   id           String   @id @default(cuid())
   lodgeId      String

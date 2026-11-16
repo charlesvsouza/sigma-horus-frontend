@@ -38,6 +38,7 @@ export const BACKUP_MODELS = [
   'ledgerRectification', // pedido de retificação de período conferido (ciência do Venerável)
   'user',
   'financialAccount',
+  'bankIntegration', // integração com a API de um banco (credenciais JÁ cifradas; sem FK além da loja)
   'accountTransfer',
   'counterparty',
   'hospitalityRequest',
