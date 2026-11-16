@@ -1,41 +1,29 @@
 import { AGREEMENT_ITEM_MESSAGE, agreementDebtAccountIds } from '@/lib/agreement-items';
-import { AsaasApiError, createCustomer, createPayment, deletePayment, getPixQrCode, type AsaasConfig } from '@/lib/asaas';
-import { buildLodgeAsaasConfig } from '@/lib/asaas-config';
+import { type AsaasConfig } from '@/lib/asaas';
+import { asaasDueDate } from '@/lib/asaas-due-date';
 import { logAudit } from '@/lib/audit';
+import { BillingProviderError, type PixQr } from '@/lib/billing-provider';
+import { createAsaasProvider } from '@/lib/billing-provider-asaas';
+import { resolveBillingProvider } from '@/lib/billing-provider-registry';
 import { isAsaasMode, normalizeBillingChoice, type AsaasBillingChoice } from '@/lib/collection';
-import { todayBR } from '@/lib/date-only';
 import { withTenant } from '@/lib/prisma';
 import { detachGroupSiblings } from '@/lib/asaas-group-db';
 
-// Emissão de uma cobrança (Invoice) no Asaas da loja — compartilhada pela Tesouraria
+// Emissão de uma cobrança (Invoice) no provedor da loja (hoje o Asaas) — compartilhada pela Tesouraria
 // (Cobranças → Emitir) e pelo próprio irmão (Portal → Pagar). Rede SEMPRE fora da
-// transação: lê (curta) → chama o Asaas → persiste (curta).
+// transação: lê (curta) → chama o provedor → persiste (curta).
+// O que é específico do provedor (cliente, cancelamento, chamadas) fica em `billing-provider-asaas.ts`.
 
-export interface PixQr {
-  /** "Pix copia e cola". */
-  payload: string;
-  /** PNG em base64 (sem o prefixo data:). */
-  encodedImage: string;
-}
+export type { PixQr };
+export { asaasDueDate };
 
 export type EmitResult =
   | { ok: true; asaasPaymentId: string | null; invoiceUrl: string | null; bankSlipUrl: string | null; pix: PixQr | null; raw: unknown }
   | { ok: false; status: number; error: string; /** Código do erro do Asaas (ex.: invalid_billingType = Pix não liberado na conta). */ code?: string | null };
 
-/** Vencimento enviado ao Asaas: ele recusa data no passado, então conta vencida vai com "hoje" (Brasília). */
-export function asaasDueDate(dueDate: Date, now: Date = new Date()): string {
-  const today = todayBR(now);
-  return (dueDate.getTime() < today.getTime() ? today : dueDate).toISOString().slice(0, 10);
-}
-
 /** QR do Pix de uma cobrança já emitida; null se o Asaas não devolver (ex.: boleto). */
 export async function fetchPixQr(config: AsaasConfig, asaasPaymentId: string): Promise<PixQr | null> {
-  try {
-    const qr = await getPixQrCode(config, asaasPaymentId);
-    return qr?.payload ? { payload: qr.payload, encodedImage: qr.encodedImage } : null;
-  } catch {
-    return null;
-  }
+  return createAsaasProvider(config).fetchPixQr(asaasPaymentId);
 }
 
 export async function emitInvoiceCharge(params: {
@@ -73,8 +61,8 @@ export async function emitInvoiceCharge(params: {
   // Cartão fica fora: a emissão é sempre explícita em Pix ou boleto (o padrão vem da loja).
   const billingType: AsaasBillingChoice = normalizeBillingChoice(params.billingType, normalizeBillingChoice(ctx.lodge.asaasBillingType));
 
-  const config = buildLodgeAsaasConfig(ctx.lodge);
-  if (!config) return { ok: false, status: 409, error: 'Asaas não conectado para esta loja. Configure em Integrações.' };
+  const provider = resolveBillingProvider(ctx.lodge);
+  if (!provider) return { ok: false, status: 409, error: 'Asaas não conectado para esta loja. Configure em Integrações.' };
   const invoice = ctx.invoice;
   if (!invoice) return { ok: false, status: 404, error: 'Cobrança não encontrada.' };
   // Cota de taxa de grau no cartão é parcela de um parcelamento do Asaas: reemitir em Pix/boleto
@@ -89,52 +77,22 @@ export async function emitInvoiceCharge(params: {
 
   const value = params.value ?? Number(invoice.amount);
 
-  // 2) Chamadas de rede ao Asaas (FORA da transação).
-  let customerId = member.asaasCustomerId;
-  let createdCustomer = false;
+  // 2) Chamadas de rede ao provedor (FORA da transação).
   try {
-    if (!customerId) {
-      const customer = await createCustomer(config, {
-        name: member.name,
-        email: member.email ?? undefined,
-        cpfCnpj: member.cpf,
-        phone: member.phone ?? undefined,
-      });
-      customerId = customer?.id ?? null;
-      createdCustomer = true;
-    }
-    if (!customerId) return { ok: false, status: 502, error: 'Falha ao criar/obter o cliente no Asaas.' };
-
-    // Reemissão: a cobrança anterior ainda existe no Asaas e poderia ser paga em duplicidade — cancela antes.
-    if (invoice.asaasPaymentId && invoice.status !== 'paid') {
-      try {
-        await deletePayment(config, invoice.asaasPaymentId);
-      } catch (error) {
-        // Cobrança que já não existe no Asaas não impede a reemissão; qualquer outra falha sim —
-        // seguir deixaria duas cobranças abertas para o mesmo irmão (pagamento em duplicidade).
-        const message = error instanceof Error ? error.message : String(error);
-        if (!/404|not.?found|n[ãa]o.?encontr/i.test(message)) {
-          return { ok: false, status: 502, error: `Não foi possível cancelar a cobrança anterior no Asaas: ${message}. Tente de novo.` };
-        }
-      }
-    }
-
-    const payment = await createPayment(config, {
-      customer: customerId,
-      billingType,
+    const emitted = await provider.emit({
+      invoice: { id: invoice.id, number: invoice.number, description: invoice.description, dueDate: invoice.dueDate },
+      member: { id: member.id, name: member.name, email: member.email, phone: member.phone, cpf: member.cpf, providerCustomerId: member.asaasCustomerId },
       value,
-      dueDate: asaasDueDate(invoice.dueDate),
-      description: invoice.description ?? `Cobrança ${invoice.number}`,
-      externalReference: invoice.id,
+      method: billingType,
+      replaceExternalId: invoice.asaasPaymentId && invoice.status !== 'paid' ? invoice.asaasPaymentId : null,
     });
-    const asaasPaymentId: string | null = payment?.id ?? null;
-    const invoiceUrl: string | null = payment?.invoiceUrl ?? null;
-    const bankSlipUrl: string | null = payment?.bankSlipUrl ?? null;
+    const asaasPaymentId = emitted.externalId;
+    const { invoiceUrl, bankSlipUrl } = emitted;
 
     // 3) Persiste o customerId novo + marca a cobrança como emitida (transação curta).
     await withTenant(lodgeId, async (db) => {
-      if (createdCustomer && customerId) {
-        await db.member.update({ where: { id: member.id }, data: { asaasCustomerId: customerId } });
+      if (emitted.newProviderCustomerId) {
+        await db.member.update({ where: { id: member.id }, data: { asaasCustomerId: emitted.newProviderCustomerId } });
       }
       // A cobrança anterior (apagada acima) pode ter sido um Pix agrupado: as outras contas dele
       // perdem o Pix e voltam a pendente, para gerar um novo.
@@ -155,9 +113,10 @@ export async function emitInvoiceCharge(params: {
       });
     });
 
-    const pix = billingType === 'PIX' && asaasPaymentId ? await fetchPixQr(config, asaasPaymentId) : null;
-    return { ok: true, asaasPaymentId, invoiceUrl, bankSlipUrl, pix, raw: payment };
+    const pix = billingType === 'PIX' && asaasPaymentId ? await provider.fetchPixQr(asaasPaymentId) : null;
+    return { ok: true, asaasPaymentId, invoiceUrl, bankSlipUrl, pix, raw: emitted.raw };
   } catch (err) {
-    return { ok: false, status: 502, error: err instanceof Error ? err.message : 'Erro ao emitir cobrança no Asaas.', code: err instanceof AsaasApiError ? err.code : null };
+    if (err instanceof BillingProviderError) return { ok: false, status: err.status, error: err.message, code: err.code };
+    return { ok: false, status: 502, error: err instanceof Error ? err.message : `Erro ao emitir cobrança no ${provider.label}.`, code: null };
   }
 }
