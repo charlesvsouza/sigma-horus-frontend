@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { BillingProviderError, type BillingProvider, type PixQr, type ProviderEmitInput, type ProviderEmitOutput } from '@/lib/billing-provider';
 import type { BankCredentials } from '@/lib/bank-credentials';
+import { bancoPorId } from '@/lib/bank-catalog';
+import { buildPixCobBody as buildPixCobBodyBacen, buscarQrPix, criarCobrancaPix, mensagemDoBanco as mensagemDoBancoBacen, sanitizeTxid as txidBacen } from '@/lib/bacen-pix';
 
 /**
  * Adaptador do Itaú para o contrato de provedor de cobrança.
@@ -31,25 +33,18 @@ export interface ItauEndpoints {
   apiKeyHeader: string | null;
 }
 
+const ITAU_SPEC = bancoPorId('itau');
+if (!ITAU_SPEC?.endpoints) throw new Error('O catálogo de bancos não tem os endpoints do Itaú.');
+
+function endpointsDoItau(env: 'production' | 'sandbox'): ItauEndpoints {
+  const e = (ITAU_SPEC!.endpoints![env] ?? ITAU_SPEC!.endpoints!.production)!;
+  return { ...e, boleto: e.boleto ?? '' };
+}
+
+/** Endpoints do Itaú, derivados do catálogo (`lib/bank-catalog`) — um só lugar para todos os bancos. */
 export const ITAU_ENDPOINTS: Record<'production' | 'sandbox', ItauEndpoints> = {
-  production: {
-    tokenBase: 'https://sts.itau.com.br',
-    apiBase: 'https://api.itau.com.br',
-    tokenPath: '/api/oauth/token',
-    pixCob: '/pix/v2/cob',
-    pixCobQr: '/pix/v2/cob/{txid}/qrcode',
-    boleto: '/cobranca/v2/boletos',
-    apiKeyHeader: 'x-itau-apikey',
-  },
-  sandbox: {
-    tokenBase: 'https://sts.sandbox.itau.com.br',
-    apiBase: 'https://api.sandbox.itau.com.br',
-    tokenPath: '/api/oauth/token',
-    pixCob: '/pix/v2/cob',
-    pixCobQr: '/pix/v2/cob/{txid}/qrcode',
-    boleto: '/cobranca/v2/boletos',
-    apiKeyHeader: 'x-itau-apikey',
-  },
+  production: endpointsDoItau('production'),
+  sandbox: endpointsDoItau('sandbox'),
 };
 
 export interface ItauConfig {
@@ -84,11 +79,8 @@ export type ItauTransport = (req: {
   privateKeyPem: string;
 }) => Promise<ItauResponse>;
 
-/** txid do Pix: 26 a 35 caracteres alfanuméricos (Bacen), derivado do id da cobrança. */
-export function sanitizeTxid(invoiceId: string): string {
-  const base = invoiceId.replace(/[^A-Za-z0-9]/g, '').toLowerCase().slice(0, 35);
-  return base.length >= 26 ? base : base.padEnd(26, '0');
-}
+/** Regra do txid mora no Pix padrão Bacen (lib/bacen-pix); mantida exportada aqui por compatibilidade. */
+export const sanitizeTxid = txidBacen;
 
 /** Data do Itaú é sempre AAAA-MM-DD, no fuso de Brasília. */
 export function itauDate(date: Date): string {
@@ -101,14 +93,8 @@ export function onlyDigits(value: string): string {
   return (value || '').replace(/\D/g, '');
 }
 
-export function buildPixCobBody(input: { value: number; dueDate: Date; description: string | null; txid: string; pixKey: string }): Record<string, unknown> {
-  return {
-    calendario: { expiracao: 3600 * 24 * 3 },
-    valor: { original: input.value.toFixed(2) },
-    chave: input.pixKey,
-    txid: input.txid,
-    solicitacaoPagador: (input.description ?? '').slice(0, 140) || undefined,
-  };
+export function buildPixCobBody(input: { value: number; description: string | null; txid: string; pixKey: string }): Record<string, unknown> {
+  return buildPixCobBodyBacen(input);
 }
 
 export function buildBoletoBody(input: {
@@ -158,10 +144,7 @@ function texto(value: unknown): string | null {
 }
 
 function mensagemDoBanco(body: unknown, status: number): string {
-  const b = obj(body);
-  const erro = Array.isArray(b.erro) ? obj(b.erro[0]) : {};
-  const detalhe = texto(b.detail) ?? texto(b.mensagem) ?? texto(b.message) ?? texto(erro.mensagem) ?? texto(b.title);
-  return `${status}${detalhe ? `: ${detalhe.slice(0, 200)}` : ''}`;
+  return mensagemDoBancoBacen(body, status);
 }
 
 export function createItauProvider(config: ItauConfig, transport?: ItauTransport): BillingProvider {
@@ -239,26 +222,21 @@ export function createItauProvider(config: ItauConfig, transport?: ItauTransport
         };
       }
 
-      const txid = sanitizeTxid(input.invoice.id);
-      const res = await chamar('PUT', `${endpoints.pixCob}/${txid}`, buildPixCobBody({
-        value: input.value, dueDate: input.invoice.dueDate, description: input.invoice.description,
-        txid, pixKey: config.pixKey!,
-      }), accessToken);
-      if (res.status >= 300) throw new BillingProviderError(`O Itaú não criou a cobrança Pix (${mensagemDoBanco(res.body, res.status)}).`, 502);
+      const criada = await criarCobrancaPix(
+        (method, path, body) => chamar(method, path, body, accessToken),
+        endpoints.pixCob,
+        { value: input.value, description: input.invoice.description, pixKey: config.pixKey!, txid: sanitizeTxid(input.invoice.id) },
+        'O Itaú',
+      );
+      if (!criada.ok) throw new BillingProviderError(criada.error, criada.status);
 
-      return { externalId: txid, invoiceUrl: null, bankSlipUrl: null, newProviderCustomerId: null, raw: res.body };
+      return { externalId: criada.txid, invoiceUrl: null, bankSlipUrl: null, newProviderCustomerId: null, raw: criada.raw };
     },
 
     async fetchPixQr(externalId: string): Promise<PixQr | null> {
       if (!config.credentials) throw missingCredentialsError();
       const accessToken = await token();
-      const res = await chamar('GET', endpoints.pixCobQr.replace('{txid}', externalId), undefined, accessToken);
-      if (res.status >= 300) return null;
-      const b = obj(res.body);
-      const payload = texto(b.qrcode);
-      if (!payload) return null;
-      const encodedImage = (texto(b.imagemQrcode) ?? '').replace(/^data:image\/png;base64,/, '');
-      return { payload, encodedImage };
+      return buscarQrPix((method, path, body) => chamar(method, path, body, accessToken), endpoints.pixCobQr, externalId);
     },
   };
 }

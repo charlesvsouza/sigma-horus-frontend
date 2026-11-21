@@ -5,6 +5,7 @@ import { sealBankCredentials, bankCredentialsHint, openBankCredentials } from '@
 import { inspectCertificate, certificateMatchesKey, certificateHealth } from '@/lib/bank-certificate';
 import { validateItauCredentials } from '@/lib/billing-provider-itau';
 import { billingProviderSummary, itauIntegrationOf } from '@/lib/billing-provider-registry';
+import { bancoPorId, bancoPadrao, bancosProntos } from '@/lib/bank-catalog';
 import { logAudit } from '@/lib/audit';
 import { NextResponse } from 'next/server';
 
@@ -29,6 +30,9 @@ export async function GET() {
   const lodgeId = session?.user?.lodgeId;
   if (!lodgeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  // Bancos que a tela pode oferecer vêm do catálogo: banco novo homologado aparece sozinho.
+  const bancos = bancosProntos().map((b) => ({ id: b.id, label: b.label, auth: b.auth, temBoleto: Boolean(b.endpoints?.production.boleto) }));
+
   const data = await withTenant(String(lodgeId), async (db) => {
     const lodge = await db.lodge.findUnique({
       where: { id: String(lodgeId) },
@@ -41,6 +45,7 @@ export async function GET() {
     const summary = billingProviderSummary(lodge);
     return {
       provider: summary,
+      bancos,
       integration: bi
         ? {
             env: bi.env,
@@ -72,6 +77,10 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => undefined);
   if (!body) return NextResponse.json({ error: 'Corpo da requisição inválido: envie um JSON válido.' }, { status: 400 });
 
+  const banco = bancoPorId(body?.provider) ?? bancoPadrao();
+  if (!banco || banco.status !== 'ready') {
+    return NextResponse.json({ error: 'Banco não homologado para cobrança. Fale com o suporte antes de tentar conectar.' }, { status: 400 });
+  }
   const env = body?.env === 'sandbox' ? 'sandbox' : 'production';
   const clientId = String(body?.clientId ?? '').trim();
   const clientSecret = String(body?.clientSecret ?? '').trim();
@@ -97,6 +106,7 @@ export async function POST(request: Request) {
   }
 
   const selada = sealBankCredentials({ clientId, clientSecret, certificatePem, privateKeyPem });
+  // Hoje o único banco homologado é o Itaú; o catálogo é quem diz isso (`bank-catalog`).
   const teste = await validateItauCredentials({ env, credentials: { clientId, clientSecret, certificatePem, privateKeyPem }, pixKey });
 
   const salvo = await withTenant(String(lodgeId), async (db) => {

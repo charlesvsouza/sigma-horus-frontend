@@ -13,8 +13,16 @@ import { Alert, Button, inputClass } from '@/components/ui';
  * nenhuma cobrança quebra por falta de credencial.
  */
 
+interface Banco {
+  id: string;
+  label: string;
+  auth: string;
+  temBoleto: boolean;
+}
+
 interface Estado {
   provider: { id: string | null; label: string; ready: boolean; reason: string | null };
+  bancos: Banco[];
   integration: {
     env: string; status: string; clientHint: string | null; pixKey: string | null;
     certNotAfter: string | null; certHealth: 'ok' | 'renew' | 'expired' | null;
@@ -36,7 +44,7 @@ export default function ItauIntegration() {
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [form, setForm] = useState({
-    env: 'production', clientId: '', clientSecret: '', certificatePem: '', privateKeyPem: '', pixKey: '',
+    provider: 'itau', env: 'production', clientId: '', clientSecret: '', certificatePem: '', privateKeyPem: '', pixKey: '',
   });
 
   async function carregar() {
@@ -82,15 +90,17 @@ export default function ItauIntegration() {
 
   const integ = estado?.integration ?? null;
   const status = integ?.status ?? 'pending';
+  const bancos = estado?.bancos ?? [];
+  const bancoAtual = bancos.find((b) => b.id === form.provider) ?? bancos[0] ?? null;
 
   return (
     <section className="mt-4 rounded-xl border border-white/6 bg-sigma-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-sand-light">Cobrança pelo banco (Itaú)</h2>
+          <h2 className="text-base font-semibold text-sand-light">Cobrança pelo banco{bancoAtual ? ` (${bancoAtual.label})` : ''}</h2>
           <p className="mt-1 text-sm text-sand-dark">
-            Pix e boleto emitidos pelo próprio Itaú: o dinheiro cai direto na conta da loja, sem intermediário.
-            Precisa do credenciamento da conta no Itaú (client_id, client_secret e certificado).
+            Pix e boleto emitidos pelo próprio banco: o dinheiro cai direto na conta da loja, sem intermediário.
+            Precisa do credenciamento da conta no banco (client_id, client_secret e certificado).
           </p>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${status === 'active' ? 'bg-emerald-500/15 text-emerald-300' : status === 'error' ? 'bg-red-500/15 text-red-300' : 'bg-amber-500/15 text-amber-300'}`}>
@@ -120,6 +130,14 @@ export default function ItauIntegration() {
 
       {aberto ? (
         <div className="mt-5 grid gap-4">
+          {bancos.length > 1 ? (
+            <label className="block text-sm text-sand-dark">
+              Banco
+              <select value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value })} className={`mt-1.5 ${inputClass}`}>
+                {bancos.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
+              </select>
+            </label>
+          ) : null}
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm text-sand-dark">
               Ambiente
