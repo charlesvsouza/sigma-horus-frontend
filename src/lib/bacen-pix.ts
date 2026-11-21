@@ -1,4 +1,4 @@
-import type { PixQr } from '@/lib/billing-provider';
+import type { PixQr, ProviderChargeStatus } from '@/lib/billing-provider';
 
 /**
  * Pix no padrão do Bacen (cobrança imediata + QR), compartilhado entre bancos.
@@ -58,6 +58,30 @@ export function mensagemDoBanco(body: unknown, status: number): string {
   const erro = Array.isArray(b.erro) ? obj(b.erro[0]) : {};
   const detalhe = texto(b.detail) ?? texto(b.mensagem) ?? texto(b.message) ?? texto(erro.mensagem) ?? texto(b.title);
   return `${status}${detalhe ? `: ${detalhe.slice(0, 200)}` : ''}`;
+}
+
+/**
+ * Traduz a cobrança Pix do banco para a situação do contrato.
+ * Contrato do Bacen: `status` = ATIVA | CONCLUIDA | REMOVIDA_PELO_USUARIO_RECEBEDOR | REMOVIDA_PELO_PSP,
+ * e `pix[]` traz endToEndId, valor e horário do recebimento.
+ */
+export function mapearCobrancaPix(body: unknown): ProviderChargeStatus {
+  const b = obj(body);
+  const status = (texto(b.status) ?? '').toUpperCase();
+  const pix = Array.isArray(b.pix) ? obj(b.pix[0]) : {};
+  const horario = texto(pix.horario);
+  const valor = Number(pix.valor);
+  if (status === 'CONCLUIDA') {
+    return {
+      state: 'paid',
+      paidAt: horario ? new Date(horario) : null,
+      endToEndId: texto(pix.endToEndId),
+      value: Number.isFinite(valor) && valor > 0 ? valor : null,
+    };
+  }
+  if (status === 'ATIVA') return { state: 'open', paidAt: null, endToEndId: null, value: null };
+  if (status.startsWith('REMOVIDA')) return { state: 'cancelled', paidAt: null, endToEndId: null, value: null };
+  return { state: 'unknown', paidAt: null, endToEndId: null, value: null };
 }
 
 export type PixCreateResult =

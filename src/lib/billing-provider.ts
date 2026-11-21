@@ -3,7 +3,7 @@
 // provedor: cliente do Asaas, tipo de cobrança, link da cobrança etc. ficam dentro de cada adaptador.
 
 /** Provedores conhecidos. "itau" ainda não tem adaptador (ver `resolveBillingProvider`). */
-export type BillingProviderId = 'asaas' | 'itau';
+export type BillingProviderId = 'asaas' | 'itau' | (string & {});
 
 export interface PixQr {
   /** "Pix copia e cola". */

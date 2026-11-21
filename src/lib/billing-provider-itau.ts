@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { BillingProviderError, type BillingProvider, type PixQr, type ProviderChargeStatus, type ProviderEmitInput, type ProviderEmitOutput } from '@/lib/billing-provider';
 import type { BankCredentials } from '@/lib/bank-credentials';
 import { bancoPorId } from '@/lib/bank-catalog';
-import { buildPixCobBody as buildPixCobBodyBacen, buscarQrPix, criarCobrancaPix, mensagemDoBanco as mensagemDoBancoBacen, sanitizeTxid as txidBacen } from '@/lib/bacen-pix';
+import { buildPixCobBody as buildPixCobBodyBacen, buscarQrPix, criarCobrancaPix, mapearCobrancaPix, mensagemDoBanco as mensagemDoBancoBacen, sanitizeTxid as txidBacen } from '@/lib/bacen-pix';
 
 /**
  * Adaptador do Itaú para o contrato de provedor de cobrança.
@@ -147,28 +147,8 @@ function mensagemDoBanco(body: unknown, status: number): string {
   return mensagemDoBancoBacen(body, status);
 }
 
-/**
- * Traduz a cobrança Pix do banco para a situação do contrato.
- * Contrato do Bacen: `status` = ATIVA | CONCLUIDA | REMOVIDA_PELO_USUARIO_RECEBEDOR | REMOVIDA_PELO_PSP,
- * e `pix[]` traz endToEndId, valor e horário do recebimento.
- */
-export function mapearCobrancaPix(body: unknown): ProviderChargeStatus {
-  const b = obj(body);
-  const status = (texto(b.status) ?? '').toUpperCase();
-  const pix = Array.isArray(b.pix) ? obj(b.pix[0]) : {};
-  const horario = texto(pix.horario);
-  const valor = Number(pix.valor);
-  const pago: ProviderChargeStatus = {
-    state: 'paid',
-    paidAt: horario ? new Date(horario) : null,
-    endToEndId: texto(pix.endToEndId),
-    value: Number.isFinite(valor) && valor > 0 ? valor : null,
-  };
-  if (status === 'CONCLUIDA') return pago;
-  if (status === 'ATIVA') return { state: 'open', paidAt: null, endToEndId: null, value: null };
-  if (status.startsWith('REMOVIDA')) return { state: 'cancelled', paidAt: null, endToEndId: null, value: null };
-  return { state: 'unknown', paidAt: null, endToEndId: null, value: null };
-}
+/** Regra do mapeamento mora no Pix padrão Bacen (lib/bacen-pix); mantida exportada aqui por compatibilidade. */
+export { mapearCobrancaPix };
 
 export function createItauProvider(config: ItauConfig, transport?: ItauTransport): BillingProvider {
   const endpoints: ItauEndpoints = { ...ITAU_ENDPOINTS[config.env], ...(config.endpoints ?? {}) };

@@ -110,7 +110,7 @@ export async function POST(request: Request) {
   const teste = await validateItauCredentials({ env, credentials: { clientId, clientSecret, certificatePem, privateKeyPem }, pixKey });
 
   const salvo = await withTenant(String(lodgeId), async (db) => {
-    const existente = await db.bankIntegration.findFirst({ where: { lodgeId: String(lodgeId), provider: 'itau' }, select: { id: true } });
+    const existente = await db.bankIntegration.findFirst({ where: { lodgeId: String(lodgeId), provider: banco.id }, select: { id: true } });
     const dados = {
       ...selada,
       env,
@@ -123,14 +123,14 @@ export async function POST(request: Request) {
     };
     const row = existente
       ? await db.bankIntegration.update({ where: { id: existente.id }, data: dados, select: SELECT })
-      : await db.bankIntegration.create({ data: { ...dados, lodgeId: String(lodgeId), provider: 'itau' }, select: SELECT });
+      : await db.bankIntegration.create({ data: { ...dados, lodgeId: String(lodgeId), provider: banco.id }, select: SELECT });
     await logAudit(db, {
       lodgeId: String(lodgeId),
       userId: session?.user?.id ?? null,
       action: 'UPDATE',
       entity: 'bankIntegration',
       entityId: row.provider,
-      metadata: { provider: 'itau', env, status: row.status, certificadoVence: certNotAfter.toISOString().slice(0, 10) },
+      metadata: { provider: banco.id, env, status: row.status, certificadoVence: certNotAfter.toISOString().slice(0, 10) },
     });
     return row;
   });
