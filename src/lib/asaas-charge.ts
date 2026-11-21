@@ -43,7 +43,13 @@ export async function emitInvoiceCharge(params: {
   const ctx = await withTenant(lodgeId, async (db) => {
     const lodge = await db.lodge.findUnique({
       where: { id: lodgeId },
-      select: { asaasApiKeyEnc: true, asaasEnv: true, collectionMode: true, asaasSettlementAccountId: true, asaasBillingType: true },
+      select: {
+        asaasApiKeyEnc: true, asaasEnv: true, collectionMode: true, asaasSettlementAccountId: true, asaasBillingType: true,
+        bankIntegrations: {
+          where: { provider: 'itau' },
+          select: { provider: true, env: true, status: true, clientIdEnc: true, clientSecretEnc: true, certificateEnc: true, privateKeyEnc: true, pixKey: true, tokenPath: true },
+        },
+      },
     });
     const invoice = await db.invoice.findFirst({ where: { id: invoiceId, lodgeId }, include: { member: true, account: { select: { degreeFeePlan: { select: { paymentMethod: true } } } } } });
     const inAgreement = invoice ? (await agreementDebtAccountIds(db, lodgeId)).has(invoice.accountId) : false;

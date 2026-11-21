@@ -4,6 +4,7 @@ import { buildLodgeChannels, LODGE_MESSAGING_SELECT } from '@/lib/lodge-channels
 import { channelsAvailable } from '@/lib/messaging';
 import { withTenant } from '@/lib/prisma';
 import IntegracoesClient from './IntegracoesClient';
+import ItauIntegration from './ItauIntegration';
 
 // Server Component: status das integrações (Asaas + Comunicação) no servidor.
 export default async function IntegracoesPage() {
@@ -44,5 +45,10 @@ export default async function IntegracoesPage() {
     },
   };
 
-  return <IntegracoesClient asaas={asaas} messaging={messaging} />;
+  return (
+    <>
+      <IntegracoesClient asaas={asaas} messaging={messaging} />
+      <ItauIntegration />
+    </>
+  );
 }
