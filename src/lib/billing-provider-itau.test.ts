@@ -48,11 +48,18 @@ test('documento vai só com dígitos', () => {
   assert.equal(onlyDigits('123.456.789-09'), '12345678909');
 });
 
+interface CorpoBoleto {
+  valor: { valor_total: number };
+  vencimento: { data_vencimento: string };
+  pagador: { tipo_pessoa: { codigo_tipo_pessoa: string }; pessoa: { tipo_pessoa_cpf: { numero_cpf: string } } };
+  dado_boleto: { descricao_instrumento_cobranca: string };
+}
+
 test('boleto: valor, vencimento e pagador pessoa física', () => {
   const body = buildBoletoBody({
     value: 220.5, dueDate: new Date('2026-12-05T12:00:00Z'), invoiceNumber: 'COB-202612-0007',
     description: 'Mensalidade 12/2026', member: { name: 'Ir. Teste da Silva', cpf: '123.456.789-09', email: 't@e.com', phone: '21999990000' },
-  }) as any;
+  }) as unknown as CorpoBoleto;
   assert.equal(body.valor.valor_total, 220.5);
   assert.equal(body.vencimento.data_vencimento, '2026-12-05');
   assert.equal(body.pagador.tipo_pessoa.codigo_tipo_pessoa, 'F');
