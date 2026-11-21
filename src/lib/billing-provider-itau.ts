@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { BillingProviderError, type BillingProvider, type PixQr, type ProviderEmitInput, type ProviderEmitOutput } from '@/lib/billing-provider';
+import { BillingProviderError, type BillingProvider, type PixQr, type ProviderChargeStatus, type ProviderEmitInput, type ProviderEmitOutput } from '@/lib/billing-provider';
 import type { BankCredentials } from '@/lib/bank-credentials';
 import { bancoPorId } from '@/lib/bank-catalog';
 import { buildPixCobBody as buildPixCobBodyBacen, buscarQrPix, criarCobrancaPix, mensagemDoBanco as mensagemDoBancoBacen, sanitizeTxid as txidBacen } from '@/lib/bacen-pix';
@@ -147,6 +147,29 @@ function mensagemDoBanco(body: unknown, status: number): string {
   return mensagemDoBancoBacen(body, status);
 }
 
+/**
+ * Traduz a cobrança Pix do banco para a situação do contrato.
+ * Contrato do Bacen: `status` = ATIVA | CONCLUIDA | REMOVIDA_PELO_USUARIO_RECEBEDOR | REMOVIDA_PELO_PSP,
+ * e `pix[]` traz endToEndId, valor e horário do recebimento.
+ */
+export function mapearCobrancaPix(body: unknown): ProviderChargeStatus {
+  const b = obj(body);
+  const status = (texto(b.status) ?? '').toUpperCase();
+  const pix = Array.isArray(b.pix) ? obj(b.pix[0]) : {};
+  const horario = texto(pix.horario);
+  const valor = Number(pix.valor);
+  const pago: ProviderChargeStatus = {
+    state: 'paid',
+    paidAt: horario ? new Date(horario) : null,
+    endToEndId: texto(pix.endToEndId),
+    value: Number.isFinite(valor) && valor > 0 ? valor : null,
+  };
+  if (status === 'CONCLUIDA') return pago;
+  if (status === 'ATIVA') return { state: 'open', paidAt: null, endToEndId: null, value: null };
+  if (status.startsWith('REMOVIDA')) return { state: 'cancelled', paidAt: null, endToEndId: null, value: null };
+  return { state: 'unknown', paidAt: null, endToEndId: null, value: null };
+}
+
 export function createItauProvider(config: ItauConfig, transport?: ItauTransport): BillingProvider {
   const endpoints: ItauEndpoints = { ...ITAU_ENDPOINTS[config.env], ...(config.endpoints ?? {}) };
   if (config.tokenPath) endpoints.tokenPath = config.tokenPath;
@@ -237,6 +260,15 @@ export function createItauProvider(config: ItauConfig, transport?: ItauTransport
       if (!config.credentials) throw missingCredentialsError();
       const accessToken = await token();
       return buscarQrPix((method, path, body) => chamar(method, path, body, accessToken), endpoints.pixCobQr, externalId);
+    },
+
+    /** Situação da cobrança Pix (base da baixa automática por cron). null = não deu para consultar. */
+    async fetchCharge(externalId: string): Promise<ProviderChargeStatus | null> {
+      if (!config.credentials) throw missingCredentialsError();
+      const accessToken = await token();
+      const res = await chamar('GET', `${endpoints.pixCob}/${externalId}`, undefined, accessToken);
+      if (res.status >= 300) return null;
+      return mapearCobrancaPix(res.body);
     },
   };
 }

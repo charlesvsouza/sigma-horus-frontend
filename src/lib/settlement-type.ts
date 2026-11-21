@@ -2,11 +2,12 @@
 // (Payment.method: pix, dinheiro, cartão…): a forma diz como o dinheiro andou; o tipo de baixa diz
 // como a loja ficou sabendo e deu a conta por quitada. Só descritivo — não muda saldo nem relatório de valores.
 
-export type SettlementType = 'asaas_auto' | 'receipt_check' | 'bank_statement' | 'cash' | 'manual_other' | 'import' | 'pre_opening';
+export type SettlementType = 'asaas_auto' | 'bank_auto' | 'receipt_check' | 'bank_statement' | 'cash' | 'manual_other' | 'import' | 'pre_opening';
 
 export const SETTLEMENT_LABEL: Record<SettlementType, string> = {
   asaas_auto: 'Automática Asaas',
   receipt_check: 'Conferência de comprovante',
+  bank_auto: 'Baixa automática pelo banco',
   bank_statement: 'Conferência de extrato',
   cash: 'Recebido em mãos / dinheiro',
   manual_other: 'Manual — outro',

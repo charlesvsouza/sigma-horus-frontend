@@ -34,6 +34,17 @@ export interface ProviderEmitOutput {
   raw: unknown;
 }
 
+/** Situação de uma cobrança já emitida, consultada no provedor (base da baixa automática). */
+export interface ProviderChargeStatus {
+  state: 'paid' | 'open' | 'cancelled' | 'unknown';
+  /** Momento do pagamento, quando pago. */
+  paidAt: Date | null;
+  /** Identificador do Pix recebido (endToEndId), quando houver. */
+  endToEndId: string | null;
+  /** Valor efetivamente pago, quando o provedor informa. */
+  value: number | null;
+}
+
 export interface BillingProvider {
   readonly id: BillingProviderId;
   /** Nome para mensagens ao usuário (ex.: "Asaas"). */
@@ -41,6 +52,11 @@ export interface BillingProvider {
   emit(input: ProviderEmitInput): Promise<ProviderEmitOutput>;
   /** QR do Pix de uma cobrança já emitida; null se o provedor não devolver. */
   fetchPixQr(externalId: string): Promise<PixQr | null>;
+  /**
+   * Situação da cobrança no provedor — é o que permite a baixa automática sem webhook.
+   * Opcional: provedor que não consulta fica de fora do cron (o Asaas usa webhook).
+   */
+  fetchCharge?(externalId: string): Promise<ProviderChargeStatus | null>;
 }
 
 /** Erro do provedor já em linguagem de gente, com o status HTTP a devolver e o código do provedor (se houver). */

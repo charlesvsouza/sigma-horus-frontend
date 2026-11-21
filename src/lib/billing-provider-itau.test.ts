@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createItauProvider, sanitizeTxid, itauDate, onlyDigits, buildBoletoBody, ITAU_ENDPOINTS, type ItauTransport } from './billing-provider-itau.ts';
+import { createItauProvider, sanitizeTxid, itauDate, onlyDigits, buildBoletoBody, ITAU_ENDPOINTS, mapearCobrancaPix, type ItauTransport } from './billing-provider-itau.ts';
 import { BillingProviderError, type ProviderEmitInput } from './billing-provider.ts';
 
 process.env.ENCRYPTION_KEY ??= 'chave-de-teste-com-tamanho-suficiente';
@@ -155,4 +155,47 @@ test('endpoints de produção e sandbox não se misturam', () => {
   assert.match(ITAU_ENDPOINTS.production.tokenBase, /sts\.itau\.com\.br/);
   assert.match(ITAU_ENDPOINTS.sandbox.tokenBase, /sandbox/);
   assert.notEqual(ITAU_ENDPOINTS.production.apiBase, ITAU_ENDPOINTS.sandbox.apiBase);
+});
+
+test('cobrança concluída vira pago, com endToEndId e valor', () => {
+  const st = mapearCobrancaPix({ status: 'CONCLUIDA', pix: [{ endToEndId: 'E123', horario: '2026-11-21T13:05:00Z', valor: '220.00' }] });
+  assert.equal(st.state, 'paid');
+  assert.equal(st.endToEndId, 'E123');
+  assert.equal(st.value, 220);
+  assert.equal(st.paidAt?.toISOString(), '2026-11-21T13:05:00.000Z');
+});
+
+test('cobrança ativa continua em aberto', () => {
+  assert.equal(mapearCobrancaPix({ status: 'ATIVA' }).state, 'open');
+});
+
+test('cobrança removida vira cancelada', () => {
+  assert.equal(mapearCobrancaPix({ status: 'REMOVIDA_PELO_USUARIO_RECEBEDOR' }).state, 'cancelled');
+  assert.equal(mapearCobrancaPix({ status: 'REMOVIDA_PELO_PSP' }).state, 'cancelled');
+});
+
+test('status desconhecido não vira pago por engano', () => {
+  assert.equal(mapearCobrancaPix({ status: 'QUALQUER' }).state, 'unknown');
+  assert.equal(mapearCobrancaPix(null).state, 'unknown');
+});
+
+test('fetchCharge consulta a cobrança e traduz a situação', async () => {
+  const { transport, chamadas } = fakeTransport({
+    'POST /api/oauth/token': [200, { access_token: 'tok-9' }],
+    'GET /pix/v2/cob/abc123': [200, { status: 'CONCLUIDA', pix: [{ endToEndId: 'E9', horario: '2026-12-01T10:00:00Z', valor: '50.00' }] }],
+  });
+  const provider = createItauProvider({ env: 'sandbox', credentials: credenciais, pixKey: 'loja@exemplo.com' }, transport);
+  const st = await provider.fetchCharge?.('abc123');
+  assert.equal(st?.state, 'paid');
+  assert.equal(st?.value, 50);
+  assert.equal(chamadas.filter((c) => c.method === 'GET').length, 1);
+});
+
+test('fetchCharge devolve null quando o banco recusa a consulta', async () => {
+  const { transport } = fakeTransport({
+    'POST /api/oauth/token': [200, { access_token: 'tok-8' }],
+    'GET /pix/v2/cob/nao-existe': [404, { detail: 'Cobrança não encontrada' }],
+  });
+  const provider = createItauProvider({ env: 'sandbox', credentials: credenciais, pixKey: 'loja@exemplo.com' }, transport);
+  assert.equal(await provider.fetchCharge?.('nao-existe'), null);
 });

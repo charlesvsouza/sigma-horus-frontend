@@ -24,6 +24,10 @@
     {
       "path": "/api/cron/generate-balancete",
       "schedule": "0 6 1 * *"
+    },
+    {
+      "path": "/api/cron/bank-settle",
+      "schedule": "0 * * * *"
     }
   ]
 }
