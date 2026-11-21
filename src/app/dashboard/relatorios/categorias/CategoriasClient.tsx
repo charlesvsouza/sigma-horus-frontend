@@ -26,7 +26,7 @@ const fmtInput = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateStrin
 const num = (n: number) => n.toFixed(2).replace('.', ',');
 
 export default function CategoriasClient({
-  lodgeName, crestUrl, issuedBy, from, to, direction, includeOpen, bankId, selectedIds, charts, banks, ledger,
+  lodgeName, crestUrl, issuedBy, from, to, direction, includeOpen, bankId, selectedIds, charts, banks, ledger, ordemRecente = false,
 }: {
   lodgeName: string;
   crestUrl: string | null;
@@ -40,6 +40,8 @@ export default function CategoriasClient({
   charts: ChartOption[];
   banks: { id: string; name: string; active: boolean }[];
   ledger: Ledger;
+  /** Tronco de Solidariedade: lista da sessão mais recente para a mais antiga. */
+  ordemRecente?: boolean;
 }) {
   const router = useRouter();
   const [fromVal, setFromVal] = useState(from);
@@ -141,7 +143,7 @@ export default function CategoriasClient({
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="rpt-noprint">
           <h1 className="font-display text-2xl font-bold text-sand-light">Razão por categoria</h1>
-          <p className="mt-1 text-sm text-sand-dark">Tudo o que foi lançado em cada categoria do plano de contas, lançamento a lançamento, com o banco ou caixa por onde o dinheiro passou. O Tronco e as Doações são categorias como as outras.</p>
+          <p className="mt-1 text-sm text-sand-dark">Tudo o que foi lançado em cada categoria do plano de contas, lançamento a lançamento, com o banco ou caixa por onde o dinheiro passou. O Tronco e as Doações são categorias como as outras.{ordemRecente ? <strong className="text-sand-light"> No Tronco de Solidariedade a lista vem da sessão mais recente para a mais antiga.</strong> : null}</p>
         </div>
 
         <section className="rpt-noprint space-y-4 rounded-xl border border-white/6 bg-sigma-card p-6">

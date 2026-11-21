@@ -7,6 +7,7 @@ import { ledgerPeriod } from '@/lib/ledger-day';
 import { todayBR } from '@/lib/date-only';
 import { fundChartWhere, isFundPurpose } from '@/lib/funds';
 import { buildCategoryLedger, type LedgerPaymentInput, type LedgerOpenItemInput, type RequestedChart } from '@/lib/category-ledger';
+import { ehRelatorioDoTronco, naOrdemRecente } from '@/lib/category-ledger-order';
 import CategoriasClient from './CategoriasClient';
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -163,6 +164,12 @@ export default async function CategoriasPage(props: {
 
   const ledger = buildCategoryLedger(inputs, from, to, direction, openInputs, requestedCharts);
 
+  // Relatório do Tronco de Solidariedade (pedido do Venerável): da sessão mais recente para a
+  // mais antiga. Vale quando o filtro é o fundo Tronco (?fund=tronco) ou quando só há categorias
+  // do Tronco marcadas; os demais razões seguem cronológicos, do mais antigo para o mais novo.
+  const marcadas = data.charts.filter((c) => data.selectedIds.includes(c.id));
+  const ordemRecente = ehRelatorioDoTronco(sp.fund, marcadas);
+
   return (
     <CategoriasClient
       lodgeName={data.lodge?.name ?? 'Loja'}
@@ -184,9 +191,13 @@ export default async function CategoriasPage(props: {
         dues: c.isDues,
       }))}
       banks={data.banks}
+      ordemRecente={ordemRecente}
       ledger={{
         totals: ledger.totals,
-        groups: ledger.groups.map((g) => ({ ...g, rows: g.rows.map((r) => ({ ...r, date: r.date.toISOString() })) })),
+        groups: ledger.groups.map((g) => ({
+          ...g,
+          rows: naOrdemRecente(g.rows, ordemRecente).map((r) => ({ ...r, date: r.date.toISOString() })),
+        })),
       }}
     />
   );
